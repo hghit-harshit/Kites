@@ -13,7 +13,8 @@
 #include <cstdint>
 #include <array>
 
-RegisterFile::RegisterFile() = default;
+RegisterFile::RegisterFile(QObject* parent) : QObject(parent){}
+
 
 void RegisterFile::Reset() {
   gpr_.fill(0);
@@ -31,6 +32,7 @@ uint64_t RegisterFile::ReadGpr(size_t reg) const {
 void RegisterFile::WriteGpr(size_t reg, uint64_t value) {
   if (reg >= NUM_GPR) throw std::out_of_range("Invalid GPR index");
   if (reg==0) return;
+  //emit updateRegister(reg,value);
   gpr_[reg] = value;
 }
 
@@ -74,8 +76,6 @@ void RegisterFile::ModifyRegister(const std::string &reg_name, uint64_t value) {
     throw std::invalid_argument("Invalid register name: " + reg_name_n);
   }
 }
-
-
 
 const std::unordered_set<std::string> valid_general_purpose_registers = {
     "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9",

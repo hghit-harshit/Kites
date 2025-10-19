@@ -8,9 +8,9 @@
 #define PARSER_H
 
 
-#include "assembler/tokens.h"
-#include "assembler/code_generator.h"
-#include "assembler/errors.h"
+#include "tokens.h"
+#include "code_generator.h"
+#include "errors.h"
 
 #include <map>
 #include <string>
@@ -62,7 +62,8 @@ struct SymbolData {
 /**
  * @brief The Parser class is responsible for parsing tokens and generating intermediate code and symbol tables.
  */
-class Parser {
+class Parser 
+{
  private:
   std::string filename_; ///< The filename being parsed.
   std::vector<Token> tokens_; ///< The list of tokens to parse.

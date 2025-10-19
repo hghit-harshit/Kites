@@ -10,11 +10,11 @@
 #define ASSEMBLER_H
 
 
-#include "assembler/lexer.h"
-#include "assembler/parser.h"
+#include "lexer.h"
+#include "parser.h"
 
 #include "code_generator.h"
-#include "vm_asm_mw.h"
+#include "../vm_asm_mw.h"
 
 /**
  * @brief Assembles the intermediate code into machine code.

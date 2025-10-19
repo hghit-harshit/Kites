@@ -7,7 +7,7 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include "assembler/tokens.h"
+#include "tokens.h"
 #include <vector>
 #include <fstream>
 

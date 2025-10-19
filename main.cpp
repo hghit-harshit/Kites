@@ -5,7 +5,7 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    MainWindow w;
+    Kites::MainWindow w;
     w.show();
     return a.exec();
 }

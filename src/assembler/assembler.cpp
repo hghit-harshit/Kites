@@ -18,7 +18,8 @@
 #include <iostream>
 #include <algorithm>
 
-AssembledProgram assemble(const std::string &filename) {
+AssembledProgram assemble(const std::string &filename)
+{
   std::unique_ptr<Lexer> lexer;
   try {
     lexer = std::make_unique<Lexer>(filename);

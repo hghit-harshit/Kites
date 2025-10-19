@@ -81,8 +81,6 @@ void VmBase::LoadProgram(const AssembledProgram &program) {
   output_status_ = "VM_PROGRAM_LOADED";
 
   DumpState(globals::vm_state_dump_file_path);
-    
-
 }
 
 uint64_t VmBase::GetProgramCounter() const {

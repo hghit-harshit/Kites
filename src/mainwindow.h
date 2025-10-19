@@ -1,6 +1,4 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
-
+#pragma once
 #include <QMainWindow>
 #include <QSplitter>
 #include <QTextEdit>
@@ -12,7 +10,14 @@
 #include <QAction>
 #include <QFileDialog>
 #include <QMessageBox>
-
+#include <QListWidget>
+#include <QStackedWidget>
+#include <QWidget>
+#include <map>
+#include "ui/kitestab.h"
+#include "ui/registercontainer.h"
+namespace Kites
+{
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -23,12 +28,32 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+    enum class TabIndex {
+        EditorTabIndex = 0,
+        MemoryTabIndex = 1
+    };
+
 public:
     MainWindow(QWidget *parent = nullptr);
     void setUpUI();
+    //void connectActions();
     ~MainWindow();
 
 private:
+
+    void setUpToolBar();
+    void setUpSidebar();
+    void setUpMenubar();
+
+    void run();
     Ui::MainWindow *ui;
+
+    //QToolBar *m_mainToolbar = nullptr;
+    QListWidget* m_sidebar = nullptr;
+    QStackedWidget *m_stackedTabs = nullptr;
+    RegisterContainer *m_registercontainer = nullptr;
+    std::map<TabIndex, KitesTab*> m_tabs;
+    TabIndex m_currentTabIndex = TabIndex::EditorTabIndex;
+
 };
-#endif // MAINWINDOW_H
+} // namespace Kites

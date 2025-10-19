@@ -39,64 +39,8 @@ struct StepDelta {
 };
 
 
-// class RingUndoRedo {
-//   std::vector<StepDelta> buffer_;
-//   int current_;      // index of current state
-//   int size_;         // number of valid entries
-//   int head_;
-//   const int capacity_;
-
-//  public:
-//   explicit RingUndoRedo(int cap)
-//     : buffer_(cap), current_(-1), size_(0), head_(-1), capacity_(cap) {}
-
-//   void push(const StepDelta& delta) {
-//     head_ = (head_ + 1) % capacity_;
-//     buffer_[head_] = delta;
-//     current_ = head_;  // move current to new step
-
-//     if (size_ < capacity_)
-//         size_++;
-//     else {
-//         ; // overwrite oldest entry
-//     }
-
-//     // Invalidate all redos beyond head_
-//     int i = (head_ + 1) % capacity_;
-//     while (i != current_) {
-//         buffer_[i] = StepDelta(); // or mark invalid
-//         i = (i + 1) % capacity_;
-//     }
-// }
-
-
-//   bool can_undo() const {
-//     return size_ > 0 && current_ != -1;
-//   }
-
-//   bool can_redo() const {
-//     return current_ != head_ && !buffer_[(current_ + 1) % capacity_].register_changes.empty();
-// }
-
-//   StepDelta undo() {
-//     if (!can_undo()) throw std::runtime_error("Nothing to undo");
-//     StepDelta delta = buffer_[current_];
-//     current_ = (current_ - 1 + capacity_) % capacity_;
-//     return delta;
-//   }
-
-//   StepDelta redo() {
-//     if (!can_redo()) throw std::runtime_error("Nothing to redo");
-
-//     current_ = (current_ + 1) % capacity_;
-//     return buffer_[current_];
-// }
-// };
-
-
-
-
-class RVSSVM : public VmBase {
+class RVSSVM : public VmBase
+{
  public:
   RVSSControlUnit control_unit_;
   std::atomic<bool> stop_requested_ = false;

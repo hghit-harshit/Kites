@@ -12,11 +12,12 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <string>
-
+#include <QObject>
 /**
  * @brief Represents a register file containing integer, floating-point, and vector registers.
  */
-class RegisterFile {
+class RegisterFile : public QObject{
+  Q_OBJECT
  private:
   static constexpr size_t NUM_GPR = 32; ///< Number of General-Purpose Registers (GPR).
   static constexpr size_t NUM_FPR = 32; ///< Number of Floating-Point Registers (FPR).
@@ -40,8 +41,9 @@ class RegisterFile {
     CSR              ///< Control and Status Register (CSR).
   };
 
-  RegisterFile();
-
+  explicit RegisterFile(QObject* parent = nullptr);
+  virtual ~RegisterFile() = default;
+  
   void Reset();
 
   /**
@@ -90,6 +92,9 @@ class RegisterFile {
 
 
   void ModifyRegister(const std::string &reg_name, uint64_t value);
+
+  signals:
+  void updateRegister(size_t reg, uint64_t value);
 
 };
 

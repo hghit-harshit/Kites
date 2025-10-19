@@ -1,61 +1,99 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "../include/assembler/assembler.h"
+#include "../include/assembler/assembler.h"
+#include "../include/assembler/code_generator.h"
+#include "../include/vm_asm_mw.h"
+#include "../include/utils.h"
+#include "vm/vm_base.h"
+#include "ui/editortab.h"
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
+namespace Kites
 {
-    setUpUI();
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
+//ui(new Ui::MainWindow)
+{
+    //ui->setuoUi(this);
+    setWindowTitle("Kites RISC-V Simulator");
+    setupVmStateDirectory();
+
+    QWidget *central = new QWidget(this);
+    QHBoxLayout *mainLayout = new QHBoxLayout(central);
+    QSplitter *splitter = new QSplitter(Qt::Horizontal,this);
+
+    m_stackedTabs = new QStackedWidget(this);
+    m_sidebar = new QListWidget(this);
+    setUpSidebar();
+    setUpToolBar();
+    setUpMenubar();
+
+    m_tabs[TabIndex::EditorTabIndex] = new EditorTab(this);
+    m_registercontainer = new RegisterContainer(this);
+    m_stackedTabs->addWidget(m_tabs[TabIndex::EditorTabIndex]);
+    mainLayout->addWidget(m_sidebar);
+    
+    splitter->addWidget(m_stackedTabs);
+    splitter->addWidget(m_registercontainer);
+    splitter->setStretchFactor(0, 3);
+    splitter->setStretchFactor(1, 1);
+    
+    mainLayout->addWidget(splitter);
+    mainLayout->setStretchFactor(m_sidebar, 1);
+    mainLayout->setStretchFactor(splitter, 4);
+    setCentralWidget(central);
+    resize(1200, 800);
+    //setUpUI();
 }
 
-void MainWindow::setUpUI()
+void MainWindow::setUpToolBar()
 {
-    QSplitter *mainSplitter = new QSplitter(Qt::Horizontal, this);
+    QToolBar *toolbar = addToolBar("Main Toolbar");
+    QAction *runAction = new QAction("Run", this);
+    //toolbar->addAction(preferencesAction);
+    toolbar->addAction(runAction);
 
-    // === Left side: text editor ===
-    QTextEdit *editor = new QTextEdit();
-    editor->setPlaceholderText("Write your assembly code here...");
-    mainSplitter->addWidget(editor);
 
-    // === Right side: vertical splitter for registers + disassembly ===
-    //QSplitter *rightSplitter = new QSplitter(Qt::Vertical, this);
+    connect(runAction,&QAction::triggered,this,&MainWindow::run);
+    // connect(runAction,&QAction::triggered, this, [=](){
+    //     std::string code = editor->toPlainText().toStdString();
+    //     //std::string asmcode = code.toStdString();
+    //     std::string tempFile = "temp.asm";
 
-    // Register view
-    QTableWidget *registerTable = new QTableWidget(32, 2);
-    registerTable->setHorizontalHeaderLabels({"Register", "Value"});
-    for (int i = 0; i < 32; ++i) {
-        registerTable->setItem(i, 0, new QTableWidgetItem(QString("x%1").arg(i)));
-        registerTable->setItem(i, 1, new QTableWidgetItem("0x00000000"));
-    }
+    //     std::ofstream out(tempFile);
+    //     out << code;
+    //     out.close();
 
-    // Disassembly view
-    QTextEdit *disassemblyView = new QTextEdit();
-    disassemblyView->setReadOnly(true);
-    disassemblyView->setPlaceholderText("Disassembled code will appear here...");
+    //     AssembledProgram asmprog = assemble(tempFile);
+    //     std::vector<uint32_t> disassembledCode = generateMachineCode(asmprog.intermediate_code);
+    //     QString disassemblyText;
+    //     for (const auto& line : disassembledCode) {
+    //         std::ostringstream oss;
+    //         oss << "0x" << std::hex << std::setw(8) << std::setfill('0') << line;
+    //         disassemblyText += oss.str() + "\n";
+    //     }
+    //     disassemblyView->setPlainText(disassemblyText);
 
-    // Add both to right splitter
-    mainSplitter->addWidget(disassemblyView);
-    mainSplitter->addWidget(registerTable);
+    // });
+}
 
-    // Add the right splitter to main splitter
-    //mainSplitter->addWidget(rightSplitter);
+void MainWindow::setUpSidebar()
+{
+    m_sidebar->addItem("Editor");
+    m_sidebar->addItem("Memory");
+    m_sidebar->setFixedWidth(80);
+    m_sidebar->setCurrentRow(0);
 
-    // Optional: set initial sizes (ratio)
-    mainSplitter->setStretchFactor(0, 3);
-    mainSplitter->setStretchFactor(1, 2);
+    connect(m_sidebar, &QListWidget::currentRowChanged, m_stackedTabs, &QStackedWidget::setCurrentIndex);
+}
 
-    setCentralWidget(mainSplitter);
-    setWindowTitle("RISC-V Visual Assembler");
-    resize(1200, 800);
-
-    // === Create the menu bar ===
+void MainWindow::setUpMenubar()
+{
     QMenu *fileMenu = menuBar()->addMenu("&File");
     QMenu *settingsMenu = menuBar()->addMenu("&Settings");
     QMenu *helpMenu = menuBar()->addMenu("&Help");
-
     QAction *openAction = new QAction("Open", this);
     QAction *saveAction = new QAction("Save", this);
     QAction *exitAction = new QAction("Exit", this);
-    QAction *runAction = new QAction("Run",this);
     QAction *preferencesAction = new QAction("Preferences", this);
     QAction *aboutAction = new QAction("About", this);
 
@@ -67,48 +105,128 @@ void MainWindow::setUpUI()
     settingsMenu->addAction(preferencesAction);
     helpMenu->addAction(aboutAction);
 
-    // === Create a top toolbar ===
-    QToolBar *toolbar = addToolBar("Main Toolbar");
-    toolbar->addAction(openAction);
-    toolbar->addAction(saveAction);
-    toolbar->addSeparator();
-    //toolbar->addAction(preferencesAction);
-    toolbar->addAction(runAction);
+    // connect(openAction, &QAction::triggered, this, [=]() {
+    //     QString fileName = QFileDialog::getOpenFileName(this, "Open Assembly File", "", "Assembly Files (*.s *.asm);;All Files (*)");
+    //     if (!fileName.isEmpty()) {
+    //         QFile file(fileName);
+    //         if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+    //             editor->setPlainText(file.readAll());
+    //     }
+    // });
 
-    // === Connect actions ===
-    connect(openAction, &QAction::triggered, this, [=]() {
-        QString fileName = QFileDialog::getOpenFileName(this, "Open Assembly File", "", "Assembly Files (*.s *.asm);;All Files (*)");
-        if (!fileName.isEmpty()) {
-            QFile file(fileName);
-            if (file.open(QIODevice::ReadOnly | QIODevice::Text))
-                editor->setPlainText(file.readAll());
-        }
-    });
+    // connect(saveAction, &QAction::triggered, this, [=]() {
+    //     QString fileName = QFileDialog::getSaveFileName(this, "Save Assembly File", "", "Assembly Files (*.s *.asm);;All Files (*)");
+    //     if (!fileName.isEmpty()) {
+    //         QFile file(fileName);
+    //         if (file.open(QIODevice::WriteOnly | QIODevice::Text))
+    //             file.write(editor->toPlainText().toUtf8());
+    //     }
+    // });
 
-    connect(saveAction, &QAction::triggered, this, [=]() {
-        QString fileName = QFileDialog::getSaveFileName(this, "Save Assembly File", "", "Assembly Files (*.s *.asm);;All Files (*)");
-        if (!fileName.isEmpty()) {
-            QFile file(fileName);
-            if (file.open(QIODevice::WriteOnly | QIODevice::Text))
-                file.write(editor->toPlainText().toUtf8());
-        }
-    });
+    // connect(exitAction, &QAction::triggered, this, &MainWindow::close);
 
-    connect(exitAction, &QAction::triggered, this, &MainWindow::close);
-
-    connect(aboutAction, &QAction::triggered, this, [=]() {
-        QMessageBox::about(this, "About", "RISC-V Visual Assembler\nBuilt with Qt");
-    });
-
-    connect(runAction,&QAction::triggered, this, [=](){
-        QString code = editor->toPlainText();
-        std::string asmcode = code.toStdString();
-
-        std::string dissassmbledCode = assemble().
-    });
+    // connect(aboutAction, &QAction::triggered, this, [=]() {
+    //     QMessageBox::about(this, "About", "RISC-V Visual Assembler\nBuilt with Qt");
+    // });
 }
+
+void MainWindow::run()
+{
+    //will change this later for now we just want to compile
+    auto editor = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
+    std::string rawText = editor->getRawText();
+    std::string tempFile = "temp.asm";
+    std::ofstream out(tempFile);
+    out << rawText;
+    out.close();
+    std::string disassemblyTextFile = "disassembly.txt";
+    AssembledProgram assembledProgram = assemble(tempFile);
+    DumpDisasssembly(disassemblyTextFile,assembledProgram);
+    std::ifstream in(disassemblyTextFile);
+    std::stringstream buffer;
+    buffer << in.rdbuf();
+    editor->updateDisassemblyView(buffer.str());
+
+    
+
+}
+
+// void MainWindow::setUpUI()
+// {
+   
+
+
+//     //sidebar
+    
+
+//     //Editor View
+//     QStackedWidget *stack = new QStackedWidget();
+//     QSplitter *mainSplitter = new QSplitter(Qt::Horizontal, this);
+
+//     // === Left side: text editor ===
+//     QTextEdit *editor = new QTextEdit();
+//     editor->setPlaceholderText("Write your assembly code here...");
+//     mainSplitter->addWidget(editor);
+
+//     // === Right side: vertical splitter for registers + disassembly ===
+//     //QSplitter *rightSplitter = new QSplitter(Qt::Vertical, this);
+
+//     // Register view
+//     QTableWidget *registerTable = new QTableWidget(32, 2);
+//     registerTable->setHorizontalHeaderLabels({"Register", "Value"});
+//     for (int i = 0; i < 32; ++i) {
+//         registerTable->setItem(i, 0, new QTableWidgetItem(QString("x%1").arg(i)));
+//         registerTable->setItem(i, 1, new QTableWidgetItem("0x00000000"));
+//     }
+
+//     // Disassembly view
+//     QTextEdit *disassemblyView = new QTextEdit();
+//     disassemblyView->setReadOnly(true);
+//     disassemblyView->setPlaceholderText("Disassembled code will appear here...");
+
+//     // Add both to right splitter
+//     mainSplitter->addWidget(disassemblyView);
+//     mainSplitter->addWidget(registerTable);
+
+//     // Add the right splitter to main splitter
+//     //mainSplitter->addWidget(rightSplitter);
+
+//     // Optional: set initial sizes (ratio)
+//     mainSplitter->setStretchFactor(0, 3);
+//     mainSplitter->setStretchFactor(1, 2);
+
+//     stack->addWidget(mainSplitter);
+
+//     //Memory View
+//     QTextEdit *memoryView = new QTextEdit();
+//     memoryView->setPlaceholderText("This will show the memory");
+//     stack->addWidget(memoryView);
+
+//     //adding to Layout
+
+//     mainLayout->addWidget(sidebar);
+//     mainLayout->addWidget(stack);
+
+
+//     setCentralWidget(central);
+//     setWindowTitle("RISC-V Visual Assembler");
+//
+
+//     // === Create the menu bar ===
+    
+
+//     // === Create a top toolbar ===
+  
+
+//     // === Connect actions ===
+
+    
+
+// }
+
 
 MainWindow::~MainWindow()
 {
     delete ui;
 }
+}// namespace Kites

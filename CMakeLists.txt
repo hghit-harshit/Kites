@@ -4,15 +4,33 @@ project(RISC_V_Simulator LANGUAGES CXX)
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets)
 
 qt_standard_project_setup()
+set(CMAKE_AUTOMOC ON)
+set(SRC_DIR "src")
+set(INCLUDE_DIR "include")
+set(TEST_DIR "test")
+
+file(GLOB_RECURSE SRC_FILES "${SRC_DIR}/*.cpp")
+file(GLOB_RECURSE TEST_FILES "${TEST_DIR}/*.cpp")
 
 qt_add_executable(RISC_V_Simulator
     WIN32 MACOSX_BUNDLE
     main.cpp
-    src/mainwindow.cpp
-    src/mainwindow.h
-    src/mainwindow.ui
+    "${INCLUDE_DIR}/vm/registers.h"
+    src/ui/editortab.cpp
+    src/ui/kitestab.cpp
+    src/ui/registercontainer.cpp
+    ${SRC_FILES}
 )
 
+target_precompile_headers(${PROJECT_NAME} PRIVATE
+    <cstdint>
+    <string>
+    <array>
+)
+
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIR})
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -frounding-math -ffloat-store -g -O3)
 target_link_libraries(RISC_V_Simulator
     PRIVATE
         Qt::Core

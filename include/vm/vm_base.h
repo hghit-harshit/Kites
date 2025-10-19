@@ -7,7 +7,6 @@
 #define VM_BASE_H
 
 
-#include "registers.h"
 #include "memory_controller.h"
 #include "alu.h"
 
@@ -58,10 +57,6 @@ public:
 
     std::string output_status_;
 
-    
-
-
-
     MemoryController memory_controller_;
     RegisterFile registers_;
     
@@ -98,7 +93,8 @@ public:
     void DumpState(const std::filesystem::path &filename);
 
     void ModifyRegister(const std::string &reg_name, uint64_t value);
-    void PushInput(const std::string& input) {
+    void PushInput(const std::string& input) 
+    {
         std::lock_guard<std::mutex> lock(input_mutex_);
         input_queue_.push(input);
         input_cv_.notify_one();
