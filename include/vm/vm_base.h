@@ -9,7 +9,7 @@
 
 #include "memory_controller.h"
 #include "alu.h"
-
+#include "vm/registers.h"
 #include "vm_asm_mw.h"
 
 #include <vector>
@@ -31,7 +31,9 @@ enum SyscallCode {
     SYSCALL_WRITE = 64,
 };
 
-
+/** 
+ * @brief Base class for the virtual machine.
+ */
 class VmBase {
 public:
     VmBase() = default;
