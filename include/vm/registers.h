@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <string>
 #include <QObject>
+
 /**
  * @brief Represents a register file containing integer, floating-point, and vector registers.
  */
@@ -94,7 +95,7 @@ class RegisterFile : public QObject{
   void ModifyRegister(const std::string &reg_name, uint64_t value);
 
   signals:
-  void updateRegister(size_t reg, uint64_t value);
+  void updateRegister(size_t regIndex, uint64_t value);
 
 };
 
