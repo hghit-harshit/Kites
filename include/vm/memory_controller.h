@@ -93,6 +93,9 @@ public:
       return memory_.GetMemoryPoint(address);
     }
 
+    // signals:
+    // void memoryUpdated(uint64_t address);
+
 };
 
 #endif // MEMORY_CONTROLLER_H

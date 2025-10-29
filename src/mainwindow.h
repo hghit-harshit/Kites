@@ -16,6 +16,8 @@
 #include <map>
 #include "ui/kitestab.h"
 #include "ui/registercontainer.h"
+#include "vm/vm_manager.h"
+#include <memory>
 namespace Kites
 {
 QT_BEGIN_NAMESPACE
@@ -30,7 +32,8 @@ class MainWindow : public QMainWindow
 
     enum class TabIndex {
         EditorTabIndex = 0,
-        MemoryTabIndex = 1
+        MemoryTabIndex,
+        ProcessorTabIndex
     };
 
 public:
@@ -44,16 +47,19 @@ private:
     void setUpToolBar();
     void setUpSidebar();
     void setUpMenubar();
-
+    void setUpTabs();
     void run();
+    void processorChangeDialog();
     Ui::MainWindow *ui;
-
+    
     //QToolBar *m_mainToolbar = nullptr;
     QListWidget* m_sidebar = nullptr;
     QStackedWidget *m_stackedTabs = nullptr;
-    RegisterContainer *m_registercontainer = nullptr;
+    RegisterContainer* m_registerContainer = nullptr;
     std::map<TabIndex, KitesTab*> m_tabs;
     TabIndex m_currentTabIndex = TabIndex::EditorTabIndex;
+
+    VMManager *m_vmManager = nullptr;
 
 };
 } // namespace Kites

@@ -3,7 +3,7 @@
  * @brief Implementation for the 5-stage pipelined Control Unit.
  * @author Atharva and Harshit
  */
-#include "vm/rv5s/rv5s_control_unit.h"
+#include "vm/rv5s_vms/rv5s_control_unit.h"
 #include "common/instructions.h" // For instruction encoding maps if needed
 #include "vm/alu.h"
 

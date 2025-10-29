@@ -117,57 +117,56 @@
  * @brief Header for the 5-stage pipelined VM (RV5S).
  * @author Atharva and Harshit
  */
-#ifndef RV5S_VM_H
-#define RV5S_VM_H
+#pragma once
 
-#include "vm/vm_base.h"
+#include "vm/rv5s_vms/rv5s_vm_base.h"
 #include "vm/pipeline_registers.h"
-#include "vm/rv5s/rv5s_control_unit.h"
+#include "vm/rv5s_vms/rv5s_control_unit.h"
 #include <stack>
 #include <vector>
 
 // uselesss well define diffrent classes for each type of vm here
 // Enum to manage the different hazard handling modes for future extension
-enum class PipelineMode {
-    NO_HAZARD_NO_FORWARDING,      // Option 1
-    FORWARDING_NO_HAZARD,         // Option 2
-    HAZARD_NO_FORWARDING,         // Option 3
-    HAZARD_AND_FORWARDING,        // Option 4
-    STATIC_BRANCH_PREDICTION,     // Option 5
-    DYNAMIC_BRANCH_PREDICTION     // Option 6
-};
+// enum class PipelineMode {
+//     NO_HAZARD_NO_FORWARDING,      // Option 1
+//     FORWARDING_NO_HAZARD,         // Option 2
+//     HAZARD_NO_FORWARDING,         // Option 3
+//     HAZARD_AND_FORWARDING,        // Option 4
+//     STATIC_BRANCH_PREDICTION,     // Option 5
+//     DYNAMIC_BRANCH_PREDICTION     // Option 6
+// };
 
-// --- Data structures for Undo/Redo state tracking ---
+// // --- Data structures for Undo/Redo state tracking ---
 
-struct RegisterChange
-{
-    unsigned int reg_index;
-    unsigned int reg_type; // 0 for GPR, 1 for CSR, 2 for FPR
-    uint64_t old_value;
-    uint64_t new_value;
-};
+// struct RegisterChange
+// {
+//     unsigned int reg_index;
+//     unsigned int reg_type; // 0 for GPR, 1 for CSR, 2 for FPR
+//     uint64_t old_value;
+//     uint64_t new_value;
+// };
 
-struct MemoryChange
-{
-    uint64_t address;
-    std::vector<uint8_t> old_bytes_vec;
-    std::vector<uint8_t> new_bytes_vec;
-};
+// struct MemoryChange
+// {
+//     uint64_t address;
+//     std::vector<uint8_t> old_bytes_vec;
+//     std::vector<uint8_t> new_bytes_vec;
+// };
 
-// A StepDelta records all architectural state changes that complete in a single clock cycle.
-struct StepDelta
-{
-    uint64_t old_pc;
-    uint64_t new_pc;
-    std::vector<RegisterChange> register_changes; // From the WB stage
-    std::vector<MemoryChange> memory_changes;     // From the MEM stage
-};
+// // A StepDelta records all architectural state changes that complete in a single clock cycle.
+// struct StepDelta
+// {
+//     uint64_t old_pc;
+//     uint64_t new_pc;
+//     std::vector<RegisterChange> register_changes; // From the WB stage
+//     std::vector<MemoryChange> memory_changes;     // From the MEM stage
+// };
 
-class RV5StageVM : public VmBase
+class RV5StageVM_NH_NF : public RV5StageVM_Base
 {
 public:
-    RV5StageVM();
-    ~RV5StageVM() = default;
+    RV5StageVM_NH_NF();
+    ~RV5StageVM_NH_NF() = default;
 
     // Overridden virtual functions from VmBase
     void Run() override;
@@ -176,8 +175,6 @@ public:
     void Undo() override;
     void Redo() override;
     void Reset() override;
-
-    void SetPipelineMode(PipelineMode mode);
 
     // --- VM Control Functions ---
     void RequestStop()
@@ -198,14 +195,11 @@ public:
     }
 
 private:
-    // --- Pipeline Components ---
-    PipelineMode current_mode_;
-
     // Pipeline Registers
-    IF_ID_Register if_id_reg_;
-    ID_EX_Register id_ex_reg_;
-    EX_MEM_Register ex_mem_reg_;
-    MEM_WB_Register mem_wb_reg_;
+    // IF_ID_Register if_id_reg_;
+    // ID_EX_Register id_ex_reg_;
+    // EX_MEM_Register ex_mem_reg_;
+    // MEM_WB_Register mem_wb_reg_;
 
     // The control unit for the pipeline
     RV5SControlUnit control_unit_;
@@ -230,4 +224,4 @@ private:
     void handle_syscall();
 };
 
-#endif // RV5S_VM_H
+

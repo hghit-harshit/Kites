@@ -6,9 +6,8 @@
 #ifndef RVSS_VM_H
 #define RVSS_VM_H
 
-
 #include "vm/vm_base.h"
-
+#include "vm/vm_manager.h"
 #include "rvss_control_unit.h"
 
 #include <stack>
@@ -18,39 +17,19 @@
 
 // TODO: use a circular buffer instead of a stack for undo/redo
 
-struct RegisterChange {
-  unsigned int reg_index;
-  unsigned int reg_type; // 0 for GPR, 1 for CSR, 2 for FPR
-  uint64_t old_value;
-  uint64_t new_value;
-};
-
-struct MemoryChange {
-  uint64_t address;
-  std::vector<uint8_t> old_bytes_vec; 
-  std::vector<uint8_t> new_bytes_vec; 
-};
-
-struct StepDelta {
-  uint64_t old_pc;
-  uint64_t new_pc;
-  std::vector<RegisterChange> register_changes;
-  std::vector<MemoryChange> memory_changes;
-};
 
 
 class RVSSVM : public VmBase
 {
- public:
+public:
   RVSSControlUnit control_unit_;
   std::atomic<bool> stop_requested_ = false;
 
-
-  std::stack<StepDelta> undo_stack_;
-  std::stack<StepDelta> redo_stack_;
+  // std::stack<StepDelta> undo_stack_;
+  // std::stack<StepDelta> redo_stack_;
   // RingUndoRedo history_{1000}; // or however many steps you want to store
 
-  StepDelta current_delta_;
+  //StepDelta current_delta_;
 
   // intermediate variables
   int64_t execution_result_{};
@@ -97,19 +76,23 @@ class RVSSVM : public VmBase
   void Redo() override;
   void Reset() override;
 
-  void RequestStop() {
+  void RequestStop()
+  {
     stop_requested_ = true;
   }
 
-  bool IsStopRequested() const {
+  bool IsStopRequested() const
+  {
     return stop_requested_;
   }
-  
-  void ClearStop() {
+
+  void ClearStop()
+  {
     stop_requested_ = false;
   }
 
-  void PrintType() {
+  void PrintType()
+  {
     std::cout << "rvssvm" << std::endl;
   }
 };

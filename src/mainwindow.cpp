@@ -7,7 +7,10 @@
 #include "../include/utils.h"
 #include "vm/vm_base.h"
 #include "ui/editortab.h"
-
+#include "ui/memorytab.h"
+#include "ui/processortab.h"
+#include "ui/processor_dialog.h"
+#include "vm/vm_manager.h"
 namespace Kites
 {
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
@@ -16,7 +19,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     //ui->setuoUi(this);
     setWindowTitle("Kites RISC-V Simulator");
     setupVmStateDirectory();
-
+    m_vmManager = new VMManager(this);
+    //VMManager::getInstance(); //will initialize the VMManager singleton
+    m_registerContainer = new RegisterContainer(this,m_vmManager->getRegisterFile());
     QWidget *central = new QWidget(this);
     QHBoxLayout *mainLayout = new QHBoxLayout(central);
     QSplitter *splitter = new QSplitter(Qt::Horizontal,this);
@@ -26,17 +31,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     setUpSidebar();
     setUpToolBar();
     setUpMenubar();
-
-    m_tabs[TabIndex::EditorTabIndex] = new EditorTab(this);
-    m_registercontainer = new RegisterContainer(this);
-    m_stackedTabs->addWidget(m_tabs[TabIndex::EditorTabIndex]);
+    setUpTabs();
+    
+    //m_registerContainer = new RegisterContainer(this);
     mainLayout->addWidget(m_sidebar);
     
     splitter->addWidget(m_stackedTabs);
-    splitter->addWidget(m_registercontainer);
-    splitter->setStretchFactor(0, 3);
-    splitter->setStretchFactor(1, 1);
-    
+    splitter->addWidget(m_registerContainer);
+    // splitter->setStretchFactor(0, 2);
+    // splitter->setStretchFactor(1, 1);
+    splitter->widget(1)->setMaximumWidth(300);
     mainLayout->addWidget(splitter);
     mainLayout->setStretchFactor(m_sidebar, 1);
     mainLayout->setStretchFactor(splitter, 4);
@@ -48,12 +52,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 void MainWindow::setUpToolBar()
 {
     QToolBar *toolbar = addToolBar("Main Toolbar");
+    QAction *processorAction = new QAction("Processor",this);
     QAction *runAction = new QAction("Run", this);
     //toolbar->addAction(preferencesAction);
     toolbar->addAction(runAction);
+    toolbar->addAction(processorAction);
 
 
     connect(runAction,&QAction::triggered,this,&MainWindow::run);
+    connect(processorAction,&QAction::triggered,this,&MainWindow::processorChangeDialog);
     // connect(runAction,&QAction::triggered, this, [=](){
     //     std::string code = editor->toPlainText().toStdString();
     //     //std::string asmcode = code.toStdString();
@@ -80,6 +87,7 @@ void MainWindow::setUpSidebar()
 {
     m_sidebar->addItem("Editor");
     m_sidebar->addItem("Memory");
+    m_sidebar->addItem("Processor");
     m_sidebar->setFixedWidth(80);
     m_sidebar->setCurrentRow(0);
 
@@ -130,9 +138,20 @@ void MainWindow::setUpMenubar()
     // });
 }
 
+void MainWindow::setUpTabs()
+{
+    m_tabs[TabIndex::EditorTabIndex] = new EditorTab(this);
+    m_tabs[TabIndex::MemoryTabIndex] = new MemoryTab(this);
+    m_tabs[TabIndex::ProcessorTabIndex] = new ProcessorTab(this); //will add later
+
+    m_stackedTabs->addWidget(m_tabs[TabIndex::EditorTabIndex]);
+    m_stackedTabs->addWidget(m_tabs[TabIndex::MemoryTabIndex]);
+    m_stackedTabs->addWidget(m_tabs[TabIndex::ProcessorTabIndex]);
+}
 void MainWindow::run()
 {
     //will change this later for now we just want to compile
+    m_vmManager->reset();
     auto editor = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
     std::string rawText = editor->getRawText();
     std::string tempFile = "temp.asm";
@@ -147,10 +166,15 @@ void MainWindow::run()
     buffer << in.rdbuf();
     editor->updateDisassemblyView(buffer.str());
 
-    
-
+    m_vmManager->loadProgram(assembledProgram);
+    m_vmManager->run();
 }
 
+void MainWindow::processorChangeDialog()
+{
+    ProcessorDialog dialog(this);
+    dialog.exec();
+}
 // void MainWindow::setUpUI()
 // {
    

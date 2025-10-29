@@ -75,7 +75,6 @@ void RVSSControlUnit::SetControlSignals(uint32_t instruction) {
             break;
         }
 
-
         // F extension + D extension
         case 0b0000111: {// F-Type Load instructions (FLW, FLD)
             alu_src_ = true;
@@ -96,9 +95,6 @@ void RVSSControlUnit::SetControlSignals(uint32_t instruction) {
             break;
         }
 
-
-
-
         default:
             break;
     }
@@ -106,7 +102,8 @@ void RVSSControlUnit::SetControlSignals(uint32_t instruction) {
     
 }
 
-alu::AluOp RVSSControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp) {
+alu::AluOp RVSSControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp) 
+{
     (void)ALUOp; // Suppress unused variable warning
     // DONT UNCOMMENT THIS WITHOUT SUPPORTING ALUOP IN CONTROL SIGNAL SETTING
     // if (!AluOp) {

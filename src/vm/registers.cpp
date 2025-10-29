@@ -5,7 +5,7 @@
  */
 
 #include "vm/registers.h"
-
+#include "../mainwindow.h"
 #include <stdexcept>
 #include <unordered_set>
 #include <unordered_map>
@@ -13,7 +13,10 @@
 #include <cstdint>
 #include <array>
 
-RegisterFile::RegisterFile(QObject* parent) : QObject(parent){}
+RegisterFile::RegisterFile(QObject* parent) : QObject(parent)
+{
+  
+}
 
 
 void RegisterFile::Reset() {
@@ -33,6 +36,7 @@ void RegisterFile::WriteGpr(size_t reg, uint64_t value) {
   if (reg >= NUM_GPR) throw std::out_of_range("Invalid GPR index");
   if (reg==0) return;
   //emit updateRegister(reg,value);
+  
   gpr_[reg] = value;
 }
 

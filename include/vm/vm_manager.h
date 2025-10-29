@@ -46,7 +46,9 @@ class VMManager : public QObject
         void run();
         void debugRun();
 
+        
         RegisterFile* getRegisterFile();
+        MemoryController* getMemoryController();
         
     private:
     

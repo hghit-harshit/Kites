@@ -1,20 +1,27 @@
-#pragma once
-#include <QWidget>
-#include <QTableWidget>
+#ifndef REGISTERCONTAINER_H
+#define REGISTERCONTAINER_H
 
-namespace Kites
-{
+#include <QWidget>
+#include "registermodel.h"
+#include <memory>
+namespace Kites {
+namespace Ui {
+class RegisterContainer;
+}
+
 class RegisterContainer : public QWidget
 {
-    public:
-    explicit RegisterContainer(QWidget* parent = nullptr);
-    void resetRegisters();
+    Q_OBJECT
 
-    private:
-    QTableWidget* m_registerTable;
-    void setup();
-
-    public slots: 
-    void updateRegisterValue(int regIndex, uint64_t);
+public:
+    explicit RegisterContainer(QWidget *parent = nullptr,RegisterFile* regfile = nullptr);
+    ~RegisterContainer();
+// private slots:
+//     void updateRegisterValue(size_t regIndex, uint64_t value);
+private:
+    void setupRegisterTable();
+    Ui::RegisterContainer *ui;
+    RegisterModel* m_registerModel;
 };
-}
+}// namespace Kites
+#endif // REGISTERCONTAINER_H
