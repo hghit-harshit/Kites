@@ -3,10 +3,17 @@ project(RISC_V_Simulator LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-#tod change it to fetch content later
-set( CMAKE_PREFIX_PATH "D:/QT/6.9.2/mingw_64/lib/cmake")
-set(MINGW_PATH "D:/Qt/Tools/mingw1310_64")
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets)
+
+# This works for Harshit
+# set( CMAKE_PREFIX_PATH "D:/QT/6.9.2/mingw_64/lib/cmake")
+# set(MINGW_PATH "D:/Qt/Tools/mingw1310_64")
+# find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets)
+
+# This works for Atharva
+set(CMAKE_PREFIX_PATH "/home/atharv/Qt/6.10.0/gcc_64")
+set(Qt6_DIR "/home/atharv/Qt/6.10.0/gcc_64/lib/cmake/Qt6")
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+
 
 include(FetchContent)
 FetchContent_Declare(
