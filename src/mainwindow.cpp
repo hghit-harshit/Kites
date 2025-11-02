@@ -11,6 +11,7 @@
 #include "ui/processortab.h"
 #include "ui/processor_dialog.h"
 #include "vm/vm_manager.h"
+#include <QActionGroup>
 namespace Kites
 {
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
@@ -18,6 +19,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
     //ui->setuoUi(this);
     setWindowTitle("Kites RISC-V Simulator");
+    setWindowIcon(QIcon(":/icons/kite.png"));
+    setUpPalettes();
+    toggleTheme(Theme::Light);
     setupVmStateDirectory();
     m_vmManager = new VMManager(this);
     //VMManager::getInstance(); //will initialize the VMManager singleton
@@ -40,13 +44,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     splitter->addWidget(m_registerContainer);
     // splitter->setStretchFactor(0, 2);
     // splitter->setStretchFactor(1, 1);
-    splitter->widget(1)->setMaximumWidth(300);
+    splitter->widget(1)->setMaximumWidth(350);
     mainLayout->addWidget(splitter);
     mainLayout->setStretchFactor(m_sidebar, 1);
     mainLayout->setStretchFactor(splitter, 4);
     setCentralWidget(central);
     resize(1200, 800);
-    //setUpUI();
 }
 
 void MainWindow::setUpToolBar()
@@ -99,20 +102,47 @@ void MainWindow::setUpMenubar()
     QMenu *fileMenu = menuBar()->addMenu("&File");
     QMenu *settingsMenu = menuBar()->addMenu("&Settings");
     QMenu *helpMenu = menuBar()->addMenu("&Help");
+    QMenu *preferencesMenu = new QMenu("Preferences",this);
+
     QAction *openAction = new QAction("Open", this);
     QAction *saveAction = new QAction("Save", this);
     QAction *exitAction = new QAction("Exit", this);
-    QAction *preferencesAction = new QAction("Preferences", this);
+    //QAction *preferencesAction = new QAction("Preferences", this);
     QAction *aboutAction = new QAction("About", this);
 
+///////////File Menu///////////////////
     fileMenu->addAction(openAction);
     fileMenu->addAction(saveAction);
     fileMenu->addSeparator();
     fileMenu->addAction(exitAction);
+////////////Setting Menu////////////////
+    settingsMenu->addMenu(preferencesMenu);
 
-    settingsMenu->addAction(preferencesAction);
+    
+    QAction *lightThemeAction = new QAction("Light", this);
+    lightThemeAction->setCheckable(true); // Make it checkable
+    lightThemeAction->setChecked(true);
+    QAction *darkThemeAction = new QAction("Dark", this);
+    darkThemeAction->setCheckable(true); // Make it checkable
+
+    QActionGroup *themeGroup = new QActionGroup(this);
+    themeGroup->addAction(lightThemeAction);
+    themeGroup->addAction(darkThemeAction);
+
+    preferencesMenu->addAction(lightThemeAction);
+    preferencesMenu->addAction(darkThemeAction);
+
+///////////Help Menu///////////////////
     helpMenu->addAction(aboutAction);
+    
 
+    connect(lightThemeAction, &QAction::triggered, this, [this]() {
+        toggleTheme(Theme::Light);
+    });
+    connect(darkThemeAction, &QAction::triggered, this, [this]() {
+        toggleTheme(Theme::Dark);
+    });
+   
     // connect(openAction, &QAction::triggered, this, [=]() {
     //     QString fileName = QFileDialog::getOpenFileName(this, "Open Assembly File", "", "Assembly Files (*.s *.asm);;All Files (*)");
     //     if (!fileName.isEmpty()) {
@@ -141,7 +171,7 @@ void MainWindow::setUpMenubar()
 void MainWindow::setUpTabs()
 {
     m_tabs[TabIndex::EditorTabIndex] = new EditorTab(this);
-    m_tabs[TabIndex::MemoryTabIndex] = new MemoryTab(this);
+    m_tabs[TabIndex::MemoryTabIndex] = new MemoryTab(this,m_vmManager->getMemoryController());
     m_tabs[TabIndex::ProcessorTabIndex] = new ProcessorTab(this); //will add later
 
     m_stackedTabs->addWidget(m_tabs[TabIndex::EditorTabIndex]);
@@ -175,79 +205,39 @@ void MainWindow::processorChangeDialog()
     ProcessorDialog dialog(this);
     dialog.exec();
 }
-// void MainWindow::setUpUI()
-// {
-   
 
 
-//     //sidebar
-    
+void MainWindow::setUpPalettes()
+{
 
-//     //Editor View
-//     QStackedWidget *stack = new QStackedWidget();
-//     QSplitter *mainSplitter = new QSplitter(Qt::Horizontal, this);
+    m_palettes[Theme::Light].setColor(QPalette::Window, Qt::white);
+    m_palettes[Theme::Light].setColor(QPalette::WindowText, Qt::black);
+    m_palettes[Theme::Light].setColor(QPalette::Base, QColor(245, 245, 245));
+    m_palettes[Theme::Light].setColor(QPalette::AlternateBase, Qt::white);
+    m_palettes[Theme::Light].setColor(QPalette::ToolTipBase, Qt::white);
+    m_palettes[Theme::Light].setColor(QPalette::ToolTipText, Qt::black);
+    m_palettes[Theme::Light].setColor(QPalette::Text, Qt::black);
+    m_palettes[Theme::Light].setColor(QPalette::Button, Qt::white);
+    m_palettes[Theme::Light].setColor(QPalette::ButtonText, Qt::black);
+    m_palettes[Theme::Light].setColor(QPalette::Highlight, QColor(42, 130, 218));
+    m_palettes[Theme::Light].setColor(QPalette::HighlightedText, Qt::white);
 
-//     // === Left side: text editor ===
-//     QTextEdit *editor = new QTextEdit();
-//     editor->setPlaceholderText("Write your assembly code here...");
-//     mainSplitter->addWidget(editor);
+    // --- Define the Dark Palette ---
+    m_palettes[Theme::Dark].setColor(QPalette::Window, QColor(53, 53, 53));
+    m_palettes[Theme::Dark].setColor(QPalette::WindowText, Qt::white);
+    m_palettes[Theme::Dark].setColor(QPalette::Base, QColor(25, 25, 25));
+    m_palettes[Theme::Dark].setColor(QPalette::AlternateBase, QColor(53, 53, 53));
+    m_palettes[Theme::Dark].setColor(QPalette::Text, Qt::white);
+    m_palettes[Theme::Dark].setColor(QPalette::Button, QColor(53, 53, 53));
+    m_palettes[Theme::Dark].setColor(QPalette::ButtonText, Qt::white);
+    m_palettes[Theme::Dark].setColor(QPalette::Highlight, QColor(42, 130, 218));
+    m_palettes[Theme::Dark].setColor(QPalette::HighlightedText, Qt::black);
+}
 
-//     // === Right side: vertical splitter for registers + disassembly ===
-//     //QSplitter *rightSplitter = new QSplitter(Qt::Vertical, this);
-
-//     // Register view
-//     QTableWidget *registerTable = new QTableWidget(32, 2);
-//     registerTable->setHorizontalHeaderLabels({"Register", "Value"});
-//     for (int i = 0; i < 32; ++i) {
-//         registerTable->setItem(i, 0, new QTableWidgetItem(QString("x%1").arg(i)));
-//         registerTable->setItem(i, 1, new QTableWidgetItem("0x00000000"));
-//     }
-
-//     // Disassembly view
-//     QTextEdit *disassemblyView = new QTextEdit();
-//     disassemblyView->setReadOnly(true);
-//     disassemblyView->setPlaceholderText("Disassembled code will appear here...");
-
-//     // Add both to right splitter
-//     mainSplitter->addWidget(disassemblyView);
-//     mainSplitter->addWidget(registerTable);
-
-//     // Add the right splitter to main splitter
-//     //mainSplitter->addWidget(rightSplitter);
-
-//     // Optional: set initial sizes (ratio)
-//     mainSplitter->setStretchFactor(0, 3);
-//     mainSplitter->setStretchFactor(1, 2);
-
-//     stack->addWidget(mainSplitter);
-
-//     //Memory View
-//     QTextEdit *memoryView = new QTextEdit();
-//     memoryView->setPlaceholderText("This will show the memory");
-//     stack->addWidget(memoryView);
-
-//     //adding to Layout
-
-//     mainLayout->addWidget(sidebar);
-//     mainLayout->addWidget(stack);
-
-
-//     setCentralWidget(central);
-//     setWindowTitle("RISC-V Visual Assembler");
-//
-
-//     // === Create the menu bar ===
-    
-
-//     // === Create a top toolbar ===
-  
-
-//     // === Connect actions ===
-
-    
-
-// }
-
+void MainWindow::toggleTheme(Theme theme)
+{
+    QApplication::setPalette(m_palettes[theme]);
+}
 
 MainWindow::~MainWindow()
 {

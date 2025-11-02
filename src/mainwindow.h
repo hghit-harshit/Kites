@@ -3,7 +3,7 @@
 #include <QSplitter>
 #include <QTextEdit>
 #include <QTableWidget>
-#include <QTreeView>
+//#include <QTreeView>
 #include <QVBoxLayout>
 #include <QMenuBar>
 #include <QToolBar>
@@ -18,6 +18,9 @@
 #include "ui/registercontainer.h"
 #include "vm/vm_manager.h"
 #include <memory>
+#include <QStyleFactory> // For setting the style
+#include <QPalette>      // For setting the colors
+#include <QColor>
 namespace Kites
 {
 QT_BEGIN_NAMESPACE
@@ -36,6 +39,12 @@ class MainWindow : public QMainWindow
         ProcessorTabIndex
     };
 
+    enum class Theme
+    {
+        Light,
+        Dark
+    }; // for now only two can add more in future
+
 public:
     MainWindow(QWidget *parent = nullptr);
     void setUpUI();
@@ -48,6 +57,8 @@ private:
     void setUpSidebar();
     void setUpMenubar();
     void setUpTabs();
+    void setUpPalettes();
+    void toggleTheme(Theme theme);
     void run();
     void processorChangeDialog();
     Ui::MainWindow *ui;
@@ -60,6 +71,6 @@ private:
     TabIndex m_currentTabIndex = TabIndex::EditorTabIndex;
 
     VMManager *m_vmManager = nullptr;
-
+    std::map<Theme,QPalette> m_palettes;
 };
 } // namespace Kites
