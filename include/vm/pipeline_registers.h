@@ -1,15 +1,10 @@
 /**
  * @file pipeline_registers.h
- * @brief 
- *This file defines the "latches" or registers that sit between each of the
- *five pipeline stages. They hold all the data and control signals needed
- *by the subsequent stages.
- * @version 0.1
- * @date 2025-10-29
- * 
+ * @brief Pipeline registers supporting RV64I/M/F/D extensions.
+ * @version 0.3
+ * @date 2025-11-03
  * @copyright Copyright (c) 2025
- * 
- */
+ * */
 
 #pragma once
 
@@ -32,33 +27,49 @@ struct IF_ID_Register
 // --- Data passed from Decode (ID) to Execute (EX) ---
 struct ID_EX_Register
 {
-    // Data values
+    // --- GPR Data ---
     uint64_t pc = 0;
     uint32_t instruction = 0x00000013; // Pass full instruction for decoding in EX
-    uint64_t reg1_data = 0;
-    uint64_t reg2_data = 0;
+    uint64_t reg1_data = 0;     // GPR rs1 data
+    uint64_t reg2_data = 0;     // GPR rs2 data
     int32_t imm = 0;
 
-    // Register indices (needed for forwarding and hazard detection)
-    uint8_t rs1 = 0;
-    uint8_t rs2 = 0;
-    uint8_t rd = 0;
+    // --- FPR Data (for F-type instructions) ---
+    uint64_t freg1_data = 0;    // FPR frs1 data
+    uint64_t freg2_data = 0;    // FPR frs2 data
+    uint64_t freg3_data = 0;    // FPR frs3 data (for FMA instructions)
 
-    // Control signals generated in Decode stage
-    bool reg_write = false;
+
+    // --- Register Indices (for GPR and FPR) ---
+    uint8_t rs1 = 0;            // GPR source 1 index
+    uint8_t rs2 = 0;            // GPR source 2 index
+    uint8_t rd = 0;             // GPR destination index
+
+    uint8_t frs1 = 0;           // FPR source 1 index
+    uint8_t frs2 = 0;           // FPR source 2 index
+    uint8_t frs3 = 0;           // FPR source 3 index
+    uint8_t frd = 0;            // FPR destination index
+
+
+    // --- Control signals generated in Decode stage ---
+    bool reg_write = false;     // Write to GPRs (x0-x31)
+    bool freg_write = false;    // Write to FPRs (f0-f31)
+    
     bool mem_to_reg = false;
     bool mem_read = false;
     bool mem_write = false;
     bool branch = false;
     bool alu_src = false;
-    uint8_t alu_op = 0; // Hint for the ALU Control Unit
+    uint8_t alu_op = 0;         // Hint for the ALU Control Unit
 
     void reset()
     {
-        // Resetting injects a "bubble" with all control signals off.
+        // Resetting injects a "bubble"
         pc = reg1_data = reg2_data = imm = rs1 = rs2 = rd = 0;
+        freg1_data = freg2_data = freg3_data = frs1 = frs2 = frs3 = frd = 0;
+        
         instruction = 0x00000013;
-        reg_write = mem_to_reg = mem_read = mem_write = branch = alu_src = false;
+        reg_write = freg_write = mem_to_reg = mem_read = mem_write = branch = alu_src = false;
         alu_op = 0;
     }
 };
@@ -66,17 +77,22 @@ struct ID_EX_Register
 // --- Data passed from Execute (EX) to Memory (MEM) ---
 struct EX_MEM_Register
 {
-    // Data values
-    uint64_t alu_result = 0;
-    uint64_t reg2_data = 0; // Data from rs2, needed for Store instructions
-    uint8_t rd = 0;         // Destination register index
+    // --- GPR Results ---
+    uint64_t alu_result = 0;    // GPR Write Data (ALU Result, Link Address, etc.)
+    uint64_t reg2_data = 0;     // Data from rs2, needed for Store instructions
+    uint8_t rd = 0;             // GPR Destination register index
+
+    // --- FPR Results ---
+    uint64_t f_alu_result = 0;  // FPR Write Data (F-ALU Result, Conversions)
+    uint8_t frd = 0;            // FPR Destination register index
 
     // Branching info calculated in EX stage
     bool branch_taken = false;
     uint64_t branch_target_pc = 0;
 
     // Control signals passed through from the previous stage
-    bool reg_write = false;
+    bool reg_write = false;     // GPR Write enable
+    bool freg_write = false;    // FPR Write enable
     bool mem_to_reg = false;
     bool mem_read = false;
     bool mem_write = false;
@@ -84,27 +100,37 @@ struct EX_MEM_Register
     void reset()
     {
         alu_result = reg2_data = rd = 0;
+        f_alu_result = frd = 0;
+
         branch_taken = false;
         branch_target_pc = 0;
-        reg_write = mem_to_reg = mem_read = mem_write = false;
+        reg_write = freg_write = mem_to_reg = mem_read = mem_write = false;
     }
 };
 
 // --- Data passed from Memory (MEM) to Writeback (WB) ---
 struct MEM_WB_Register
 {
-    // Data values
-    uint64_t memory_data = 0; // Data read from memory in a Load
-    uint64_t alu_result = 0;  // Result from the ALU
-    uint8_t rd = 0;           // Destination register index
+    // --- GPR Results ---
+    uint64_t memory_data = 0;   // GPR Write Data (Data read from memory in a Load)
+    uint64_t alu_result = 0;    // GPR Write Data (ALU result, Link Address, etc.)
+    uint8_t rd = 0;             // GPR Destination register index
+
+    // --- FPR Results ---
+    uint64_t f_memory_data = 0; // FPR Write Data (Data read from memory in FLW/FLD)
+    uint64_t f_alu_result = 0;  // FPR Write Data (F-ALU result)
+    uint8_t frd = 0;            // FPR Destination register index
+
 
     // Control signals passed through
-    bool reg_write = false;
+    bool reg_write = false;     // GPR Write enable
+    bool freg_write = false;    // FPR Write enable
     bool mem_to_reg = false;
 
     void reset()
     {
         memory_data = alu_result = rd = 0;
-        reg_write = mem_to_reg = false;
+        f_memory_data = f_alu_result = frd = 0;
+        reg_write = freg_write = mem_to_reg = false;
     }
 };

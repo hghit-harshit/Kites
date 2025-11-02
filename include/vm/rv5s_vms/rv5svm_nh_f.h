@@ -11,12 +11,8 @@
 #include <stack>
 #include <vector>
 #include <iostream>
+#include <cstdint>
 
-// --- Programmer NOP Requirements for Mode 2 ---
-// * Data Hazards (ALU-ALU): 0 NOPs (Handled by Forwarding)
-// * Load-Use Hazards: 1 NOP (Hardware cannot forward in time)
-// * Conditional Branch Hazards: 3 NOPs (Same as Mode 1, no prediction/detection)
-// * Unconditional Jumps (JAL/JALR): 1 NOP (Same as Mode 1)
 
 class RV5StageVM_NH_F : public RV5StageVM_Base
 {
@@ -51,13 +47,12 @@ public:
         std::cout << "RV5StageVM_NH_F" << std::endl;
     }
 
-private:
-    // --- Undo/Redo History (Managed internally) ---
+protected: 
     std::stack<StepDelta> undo_stack_;
     std::stack<StepDelta> redo_stack_;
     StepDelta current_delta_;
 
-    // --- Private methods for each pipeline stage ---
+
     void pipeline_fetch();
     void pipeline_decode();
     void pipeline_execute();
@@ -65,4 +60,10 @@ private:
     void pipeline_writeback();
 
     void print_pipeline_registers_debug();
+
+    // --- Specialized handler functions (Overrides) ---
+    void execute_float();
+    void execute_double();
+    void execute_csr();
+    void handle_syscall();
 };

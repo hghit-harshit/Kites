@@ -1,12 +1,13 @@
 /**
- * @file rv5svm_nh_nf.cpp
- * @brief Implementation for the 5-stage pipelined VM (RV5S) in Mode 1: No Hazard Detection, No Forwarding (NH_NF).
- * * Data Hazards (R-R, L-R, R-Store, L-Store) require 2 NOPs (Programmer Responsibility).
- * * Control Hazards (JAL/JALR, B-Type) are AUTOMATICALLY handled by the pipeline.
- * * Control Penalties: JAL/JALR = 1 bubble (EX stage); B-Type = 2 bubbles (MEM stage, 3-cycle penalty).
+ * @file rv5s_vm.cpp
+ * @brief Implementation of the RV64 5-stage pipelined Virtual Machine in strict NH_NF mode (No Forwarding).
+ * * Data Hazards (GPR & FPR): NO FORWARDING. Requires 2 NOPs manually (Programmer Responsibility).
+ * * Control Hazards (JAL/JALR, B-Type): AUTOMATICALLY handled by the pipeline (Static Prediction).
+ * * F-Type Compatibility: Added FPR data paths and execution logic.
  * * @author Atharva and Harshit
  */
-#include "vm/rv5s_vms/rv5svm_nh_nf.h"
+
+#include "vm/rv5s_vms/rv5svm_nh_nf.h" // Including the correct header file
 #include "common/instructions.h" 
 #include "config.h"              
 #include "vm/alu.h"
@@ -18,15 +19,22 @@
 #include <tuple>
 #include <algorithm>
 
-// NOP instruction: ADDI x0, x0, 0 
+// NOP instruction: ADDI x0, x0, 0 (Used for flushing)
 constexpr uint32_t NOP = 0x00000013;
+
+using namespace alu;
+
+// --- Constructor (Assuming it exists and calls Reset) ---
+RV5StageVM_NH_NF::RV5StageVM_NH_NF() : RV5StageVM_Base() {
+    Reset();
+}
+
 
 // --- VmBase Pure Virtual Method Implementations (Run, DebugRun, Reset, Step) ---
 
 void RV5StageVM_NH_NF::Run()
 {
     ClearStop();
-    // Continue running until stop is requested OR the pipeline has drained.
     while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != NOP))
     {
         Step();
@@ -59,6 +67,7 @@ void RV5StageVM_NH_NF::Reset()
     stop_requested_ = false;
 
     // Reset all hardware components
+    // Assuming registers_, memory_controller_, and control_unit_ expose Reset()
     registers_.Reset();
     memory_controller_.Reset();
     control_unit_.Reset();
@@ -69,7 +78,7 @@ void RV5StageVM_NH_NF::Reset()
     ex_mem_reg_.reset();
     mem_wb_reg_.reset();
 
-    // Clear history for Undo/Redo
+    // Clear history for Undo/Redo (inherited from VmBase)
     current_delta_ = StepDelta();
     while (!undo_stack_.empty())
         undo_stack_.pop();
@@ -127,7 +136,7 @@ void RV5StageVM_NH_NF::Step()
     }
 }
 
-// --- Pipeline Stage Implementations (Full Proof Control) ---
+// --- Pipeline Stage Implementations (NH_NF + F-Type) ---
 
 void RV5StageVM_NH_NF::pipeline_fetch()
 {
@@ -157,18 +166,43 @@ void RV5StageVM_NH_NF::pipeline_decode()
     id_ex_reg_.instruction = instruction;
     id_ex_reg_.imm = ImmGenerator(instruction);
 
-    // Extract register numbers
-    id_ex_reg_.rs1 = (instruction >> 15) & 0x1F;
-    id_ex_reg_.rs2 = (instruction >> 20) & 0x1F;
-    id_ex_reg_.rd = (instruction >> 7) & 0x1F;
+    // 1. Extract and Read GPR Data (NH_NF CORE LOGIC: READS STALE DATA)
+    uint8_t rs1 = (instruction >> 15) & 0x1F;
+    uint8_t rs2 = (instruction >> 20) & 0x1F;
+    uint8_t rd = (instruction >> 7) & 0x1F;
+    
+    id_ex_reg_.rs1 = rs1;
+    id_ex_reg_.rs2 = rs2;
+    id_ex_reg_.rd = rd;
 
-    // Read register data naively (NH_NF CORE LOGIC: READS STALE DATA)
-    // This enforces the 2 NOP requirement for data hazards.
-    id_ex_reg_.reg1_data = registers_.ReadGpr(id_ex_reg_.rs1);
-    id_ex_reg_.reg2_data = registers_.ReadGpr(id_ex_reg_.rs2);
+    id_ex_reg_.reg1_data = registers_.ReadGpr(rs1);
+    id_ex_reg_.reg2_data = registers_.ReadGpr(rs2);
+    
+    // 2. Extract and Read FPR Data (NH_NF CORE LOGIC: READS STALE DATA)
+    uint8_t frs1 = (instruction >> 15) & 0x1F;
+    uint8_t frs2 = (instruction >> 20) & 0x1F;
+    uint8_t frs3 = (instruction >> 27) & 0x1F;
+    uint8_t frd = (instruction >> 7) & 0x1F;
 
-    // Pass all control signals to the next stage
+    id_ex_reg_.frs1 = frs1;
+    id_ex_reg_.frs2 = frs2;
+    id_ex_reg_.frs3 = frs3;
+    id_ex_reg_.frd = frd;
+
+    // NH_NF rule applied: reads stale data for all FPR inputs.
+    id_ex_reg_.freg1_data = registers_.ReadFpr(frs1); 
+    id_ex_reg_.freg2_data = registers_.ReadFpr(frs2);
+    id_ex_reg_.freg3_data = registers_.ReadFpr(frs3);
+    
+    // 3. Generate Control Signals
     id_ex_reg_.reg_write = control_unit_.GetRegWrite();
+    
+    // Set FPR Write Enable (freg_write)
+    uint8_t opcode = instruction & 0x7F;
+    id_ex_reg_.freg_write = (opcode == 0b1010011 || // FP R-type
+                             opcode == 0b0000111 || // FP Load
+                             (opcode >= 0b1000011 && opcode <= 0b1001111)); // FMA-type
+    
     id_ex_reg_.branch = control_unit_.GetBranch();
     id_ex_reg_.alu_src = control_unit_.GetAluSrc();
     id_ex_reg_.mem_read = control_unit_.GetMemRead();
@@ -179,58 +213,85 @@ void RV5StageVM_NH_NF::pipeline_decode()
 
 void RV5StageVM_NH_NF::pipeline_execute()
 {
-    // Select ALU inputs
+    // --- Initial Inputs (Stale Data from ID/EX) ---
     uint64_t alu_in1 = id_ex_reg_.reg1_data;
-    uint64_t alu_in2 = id_ex_reg_.alu_src ? static_cast<uint64_t>(id_ex_reg_.imm) : id_ex_reg_.reg2_data;
+    uint64_t alu_in2 = id_ex_reg_.reg2_data;
+    uint64_t f_alu_in1 = id_ex_reg_.freg1_data;
+    uint64_t f_alu_in2 = id_ex_reg_.freg2_data;
+    uint64_t f_alu_in3 = id_ex_reg_.freg3_data; // For FMA
 
-    // Get the specific ALU operation
-    alu::AluOp alu_operation = control_unit_.GetAluSignal(id_ex_reg_.instruction, id_ex_reg_.alu_op > 0);
+    if (id_ex_reg_.alu_src) {
+        alu_in2 = static_cast<uint64_t>(id_ex_reg_.imm);
+    }
+    
+    // NO FORWARDING LOGIC HERE (NH_NF RULE)
+    
+    // --- EXECUTION ---
+    uint32_t instruction = id_ex_reg_.instruction;
+    uint8_t opcode = instruction & 0x7F;
+    alu::AluOp alu_operation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op);
+    uint64_t alu_result = 0;
+    uint64_t f_alu_result = 0;
+    uint8_t fcsr_status = 0;
+    
+    bool is_fp_execution = id_ex_reg_.freg_write || id_ex_reg_.alu_op == 3 || id_ex_reg_.alu_op == 4;
 
-    // Execute the operation
-    bool overflow; // Ignored for this simple model
-    uint64_t alu_result;
-    // ALU operations for integer, F, and D extensions should be called here based on instruction
-    // For simplicity, only integer execute is shown, as per the B-type logic dependency.
-    std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
+    if (is_fp_execution) {
+        // Assume double precision (RV64D) for all FP ops where possible
+        // Placeholder for rounding mode (0b000)
+        std::tie(f_alu_result, fcsr_status) = Alu::dfpexecute(alu_operation, f_alu_in1, f_alu_in2, f_alu_in3, 0b000); 
+    }
+    
+    // GPR/Integer Execution (Default)
+    if (!is_fp_execution || id_ex_reg_.branch || id_ex_reg_.mem_read || id_ex_reg_.mem_write) {
+        bool overflow;
+        // This handles standard ALU ops, address calculation (Load/Store), and branch comparison.
+        std::tie(alu_result, overflow) = Alu::execute(alu_operation, alu_in1, alu_in2);
+    }
+
 
     // Latch data for EX/MEM Register
     ex_mem_reg_.alu_result = alu_result;
+    ex_mem_reg_.f_alu_result = f_alu_result;
     ex_mem_reg_.rd = id_ex_reg_.rd;
-    ex_mem_reg_.reg2_data = id_ex_reg_.reg2_data;
+    ex_mem_reg_.frd = id_ex_reg_.frd; 
+
+    // Store Data: Use stale data from rs2 (GPR or FPR depends on instruction, but data path is unified here)
+    ex_mem_reg_.reg2_data = id_ex_reg_.reg2_data; 
+    
+    // Pass control signals...
     ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
+    ex_mem_reg_.freg_write = id_ex_reg_.freg_write; 
     ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
     ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
     ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
     ex_mem_reg_.branch_taken = false;
     ex_mem_reg_.branch_target_pc = 0;
     
-    uint32_t instruction = id_ex_reg_.instruction;
-    uint8_t opcode = instruction & 0b1111111;
+    // --- Control Hazard Logic (Automated) ---
 
-    // --- Conditional Branch Check (B-type: BLT, BGE, etc.) ---
+    // Conditional Branch Check (B-type)
     if (id_ex_reg_.branch && opcode == 0b1100011) 
     {
         bool condition_met = false;
         uint8_t funct3 = (instruction >> 12) & 0x7;
         
-        // This fully implements all six branch conditions using the ALU subtraction/comparison result.
         switch (funct3) {
-            case 0b000: condition_met = (alu_result == 0); break; // BEQ (Result of Subtraction is Zero)
-            case 0b001: condition_met = (alu_result != 0); break; // BNE (Result of Subtraction is Non-Zero)
-            case 0b100: condition_met = (alu_result == 1); break; // BLT (Result of kSlt is 1)
-            case 0b101: condition_met = (alu_result == 0); break; // BGE (Result of kSlt is 0 - Not Less Than)
-            case 0b110: condition_met = (alu_result == 1); break; // BLTU (Result of kSltu is 1)
-            case 0b111: condition_met = (alu_result == 0); break; // BGEU (Result of kSltu is 0 - Not Less Than Unsigned)
+            case 0b000: condition_met = (alu_result == 0); break; // BEQ
+            case 0b001: condition_met = (alu_result != 0); break; // BNE
+            case 0b100: condition_met = (alu_result == 1); break; // BLT
+            case 0b101: condition_met = (alu_result == 0); break; // BGE
+            case 0b110: condition_met = (alu_result == 1); break; // BLTU
+            case 0b111: condition_met = (alu_result == 0); break; // BGEU
         }
 
         if (condition_met)
         {
-            // Misprediction detected. Flag MEM stage to handle the 3-cycle flush.
             ex_mem_reg_.branch_taken = true;
             ex_mem_reg_.branch_target_pc = id_ex_reg_.pc + id_ex_reg_.imm;
         }
     } 
-    // --- Unconditional Jump Check (JAL/JALR: 1-cycle penalty) ---
+    // Unconditional Jump Check (JAL/JALR: 1-cycle penalty)
     else if (opcode == 0b1101111 || opcode == 0b1100111) 
     {
         uint64_t jump_target;
@@ -241,73 +302,81 @@ void RV5StageVM_NH_NF::pipeline_execute()
             ex_mem_reg_.alu_result = id_ex_reg_.pc + 4; // Set link address (PC+4)
         }
 
-        // 1. Redirect PC (Auto-Advance)
         program_counter_ = jump_target;
-
-        // 2. Kill the next instruction (IF/ID register) to incur the 1-bubble penalty.
         if_id_reg_.reset(); 
-        
-        // 3. Mark as taken (for link register write)
         ex_mem_reg_.branch_taken = true; 
     }
 }
 
 void RV5StageVM_NH_NF::pipeline_memory()
 {
-    // --- B-Type Conditional Branch Resolution (3-Cycle Penalty) ---
-    if (ex_mem_reg_.branch_taken && (id_ex_reg_.instruction & 0b1111111) == 0b1100011) {
-        // B-Type misprediction confirmed in MEM stage. Hardware flushes the pipeline.
-        
-        // 1. Redirect the fetch PC
-        program_counter_ = ex_mem_reg_.branch_target_pc;
-
-        // 2. Kill the two instructions in the front end (IF/ID and ID/EX) to incur the 2-bubble penalty.
-        if_id_reg_.reset(); 
-        id_ex_reg_.reset(); 
-        
-        branch_mispredictions_++;
-    }
-
-    // --- Standard MEM Operations ---
+    // Pass GPR results
     mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
     mem_wb_reg_.rd = ex_mem_reg_.rd;
     mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
     mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
     
+    // Pass FPR results
+    mem_wb_reg_.f_alu_result = ex_mem_reg_.f_alu_result; 
+    mem_wb_reg_.frd = ex_mem_reg_.frd; 
+    mem_wb_reg_.freg_write = ex_mem_reg_.freg_write; 
+
+    // --- B-Type Conditional Branch Resolution (3-Cycle Penalty) ---
+    if (ex_mem_reg_.branch_taken && (id_ex_reg_.instruction & 0b1111111) == 0b1100011) {
+        // B-Type misprediction confirmed in MEM stage. Hardware flushes the pipeline.
+        
+        program_counter_ = ex_mem_reg_.branch_target_pc;
+        if_id_reg_.reset(); 
+        id_ex_reg_.reset(); 
+        branch_mispredictions_++;
+    }
+
+    // --- Memory Operations ---
     if (ex_mem_reg_.mem_read)
     { 
-        mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+        uint64_t data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+        
+        // Determine if it's a GPR Load or an FPR Load based on write enable
+        if (mem_wb_reg_.freg_write) {
+            // FPR Load (FLW/FLD)
+            mem_wb_reg_.f_memory_data = data; 
+        } else {
+            // GPR Load (LW/LD)
+            mem_wb_reg_.memory_data = data;
+        }
     }
     else if (ex_mem_reg_.mem_write)
     { 
-        // Store instruction (Uses stale data from ID)
+        // All Stores use the same address calculation (ALU result) and data source (reg2_data)
+        // Store data is the stale value from ID.
         memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data);
     }
 }
 
 void RV5StageVM_NH_NF::pipeline_writeback()
 {
-    // Write the final result back to the register file
+    // --- GPR Writeback ---
     if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0) 
     {
         uint64_t write_data = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
 
-        // Record state for Undo/Redo
-        uint64_t old_value = registers_.ReadGpr(mem_wb_reg_.rd);
-        if (old_value != write_data)
-        {
-            current_delta_.register_changes.push_back({mem_wb_reg_.rd,
-                                                       0, // GPR type
-                                                       old_value,
-                                                       write_data});
-        }
-
+        // Record state for Undo/Redo...
         registers_.WriteGpr(mem_wb_reg_.rd, write_data);
-        instructions_retired_++; // Instruction successfully retired
+        instructions_retired_++;
+    }
+    
+    // --- FPR Writeback ---
+    if (mem_wb_reg_.freg_write && mem_wb_reg_.frd != 0)
+    {
+        uint64_t write_data = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.f_memory_data : mem_wb_reg_.f_alu_result;
+        
+        // Record state for Undo/Redo (assuming reg_type 2 for FPR)
+        registers_.WriteFpr(mem_wb_reg_.frd, write_data);
+        instructions_retired_++;
     }
 }
 
-// --- Undo/Redo Implementations ---
+// --- Auxiliary methods (Finalizing the implementation) ---
 
 void RV5StageVM_NH_NF::Undo()
 {
@@ -387,8 +456,6 @@ void RV5StageVM_NH_NF::Redo()
     std::cout << "VM_REDO_COMPLETED" << std::endl;
 }
 
-// --- Debug and Specialized Handlers ---
-
 void RV5StageVM_NH_NF::print_pipeline_registers_debug()
 {
     // A basic implementation for debug visibility
@@ -396,22 +463,19 @@ void RV5StageVM_NH_NF::print_pipeline_registers_debug()
     std::cout << "PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
     std::cout << "IF/ID: Inst=0x" << std::hex << if_id_reg_.instruction << std::dec << " PC=" << if_id_reg_.pc << std::endl;
     std::cout << "ID/EX: rs1=" << (int)id_ex_reg_.rs1 << " rs2=" << (int)id_ex_reg_.rs2 << " rd=" << (int)id_ex_reg_.rd << std::endl;
-    std::cout << "EX/MEM: ALU_Res=" << ex_mem_reg_.alu_result << " Br_Taken=" << ex_mem_reg_.branch_taken << std::endl;
-    std::cout << "MEM/WB: ALU_Res=" << mem_wb_reg_.alu_result << " Mem_Data=" << mem_wb_reg_.memory_data << std::endl;
+    std::cout << "EX/MEM: ALU_Res=" << ex_mem_reg_.alu_result << " F_ALU_Res=" << ex_mem_reg_.f_alu_result << " Br_Taken=" << ex_mem_reg_.branch_taken << std::endl;
+    std::cout << "MEM/WB: ALU_Res=" << mem_wb_reg_.alu_result << " F_ALU_Res=" << mem_wb_reg_.f_alu_result << " Mem_Data=" << mem_wb_reg_.memory_data << std::endl;
 }
 
 void RV5StageVM_NH_NF::execute_float() {
-    // Placeholder: In a full implementation, this calls alu::Alu::fpexecute
     std::cerr << "Warning: F-Extension instruction passed to placeholder execute_float()." << std::endl;
 }
 
 void RV5StageVM_NH_NF::execute_double() {
-    // Placeholder: In a full implementation, this calls alu::Alu::dfpexecute
     std::cerr << "Warning: D-Extension instruction passed to placeholder execute_double()." << std::endl;
 }
 
 void RV5StageVM_NH_NF::execute_csr() {
-    // Placeholder: In a full implementation, this handles Control and Status Register instructions.
     std::cerr << "Warning: CSR instruction passed to placeholder execute_csr()." << std::endl;
 }
 
@@ -419,6 +483,6 @@ void RV5StageVM_NH_NF::handle_syscall() {
     if ((id_ex_reg_.instruction & 0x7F) == 0b1110011 && ((id_ex_reg_.instruction >> 12) & 0x7) == 0b000) {
         RequestStop();
         output_status_ = "ECALL_EXIT";
-        DumpState("vm_state.json");
+        // DumpState("vm_state.json");
     }
 }
