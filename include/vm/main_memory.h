@@ -8,35 +8,23 @@
 #define MAIN_MEMORY_H
 
 #include "config.h"
-
+#include "memory_block.h"
 #include <vector>
 #include <unordered_map>
 #include <cstdint>
 #include <string>
 #include <stdexcept>
 
-/**
- * @brief Represents a memory block containing 1 KB of memory.
- */
-struct MemoryBlock {
-  std::vector<uint8_t> data; ///< A vector representing the memory block data.
-  unsigned int block_size = vm_config::config.getMemoryBlockSize(); ///< The size of the memory block in bytes.
 
-  /**
-   * @brief Constructs a MemoryBlock with a size of 1 KB initialized to 0.
-   */
-  MemoryBlock() {
-    data.resize(block_size, 0);
-  }
-};
 
 /**
  * @brief Represents a memory management system with dynamic memory block allocation.
  */
-class Memory {
- private:
-  std::unordered_map<uint64_t, MemoryBlock> blocks_; ///< A map storing memory blocks, indexed by block index.
-  unsigned int block_size_; ///< The size of each memory block in bytes.
+class Memory
+{
+private:
+  std::unordered_map<uint64_t, MemoryBlock> blocks_;         ///< A map storing memory blocks, indexed by block index.
+  unsigned int block_size_;                                  ///< The size of each memory block in bytes.
   uint64_t memory_size_ = vm_config::config.getMemorySize(); ///< The total memory size in bytes.
 
   /**
@@ -72,7 +60,7 @@ class Memory {
    * @param address The memory address to read from.
    * @return The value read from the specified memory address.
    */
-  template<typename T>
+  template <typename T>
   T ReadGeneric(uint64_t address);
 
   /**
@@ -81,14 +69,15 @@ class Memory {
    * @param address The memory address to write to.
    * @param value The value to write to the specified memory address.
    */
-  template<typename T>
+  template <typename T>
   void WriteGeneric(uint64_t address, T value);
 
- public:
+public:
   /**
    * @brief Constructs a Memory object.
    */
-  Memory() {
+  Memory()
+  {
     block_size_ = vm_config::config.getMemoryBlockSize();
   }
   /**
@@ -96,7 +85,8 @@ class Memory {
    */
   ~Memory() = default;
 
-  void Reset() {
+  void Reset()
+  {
     blocks_.clear();
   }
 
@@ -115,10 +105,10 @@ class Memory {
   void Write(uint64_t address, uint8_t value);
 
   /**
-  * @brief Reads a single byte from the given memory address.
-  * @param address The memory address to read from.
-  * @return The byte value at the given address.
-  */
+   * @brief Reads a single byte from the given memory address.
+   * @param address The memory address to read from.
+   * @return The byte value at the given address.
+   */
   uint8_t ReadByte(uint64_t address);
 
   /**
