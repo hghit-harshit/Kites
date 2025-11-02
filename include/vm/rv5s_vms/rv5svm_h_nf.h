@@ -8,7 +8,7 @@
 #include "vm/rv5s_vms/rv5s_vm_base.h"
 #include "vm/pipeline_registers.h"
 #include "vm/rv5s_vms/rv5s_control_unit.h"
-#include "vm/rv5s_vms/rv5s_hazard_unit.h" // <-- Including the new HDU
+#include "vm/rv5s_vms/rv5s_hdu.h" // <-- Including the new HDU
 
 #include <stack>
 #include <vector>
@@ -48,8 +48,6 @@ public:
     }
 
 private:
-    // The Hazard Detection Unit instance
-    RV5SHazardUnit hazard_unit_;
 
     // This flag is used to control the pipeline flow when a stall is detected.
     // If true, the IF stage freezes the PC and does not update IF/ID.
@@ -66,6 +64,11 @@ private:
     void pipeline_execute();
     void pipeline_memory();
     void pipeline_writeback();
+
+    void execute_float();
+    void execute_double();
+    void execute_csr();
+    void handle_syscall();
     
     // Helper function to consolidate hazard checks using the dedicated unit
     bool check_for_hazard();
