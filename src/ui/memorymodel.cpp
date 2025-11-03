@@ -101,7 +101,7 @@ QVariant MemoryModel::data(const QModelIndex &index,int role) const
         return Qt::AlignCenter;
     }
 
-    if(role == Qt::DisplayRole)
+    if(role == Qt::DisplayRole || role == Qt::ToolTipRole)
     {
         //if(!m_memoryController) return QString("hello");
         int offsetAddress = ((((m_rowsVisible * 8) / 2) / 8) * 8) - (index.row() * 8);
