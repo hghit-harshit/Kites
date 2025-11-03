@@ -13,8 +13,16 @@ FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
 )
+
+# FetchContent_Declare(
+#     vsrtl
+#     GIT_REPOSITORY https://github.com/mortbopet/VSRTL.git
+# )
 # This makes GTest's targets (like GTest::gtest_main) available
-FetchContent_MakeAvailable(googletest)
+FetchContent_MakeAvailable(googletest) #vsrtl)
+
+set(VSRTL_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(VSRTL_BUILD_APP OFF CACHE BOOL "" FORCE)
 
 qt_standard_project_setup()
 
@@ -33,6 +41,10 @@ file(GLOB_RECURSE HEADER_FILES
     "${INCLUDE_DIR}/*.h"
     "${SRC_DIR}/*.h")
 
+##############resourecs setup#################
+qt6_add_resources(ICONS_SRC ${CMAKE_SOURCE_DIR}/resources/icons/icons.qrc)
+##############################################
+
 qt_add_executable(RISC_V_Simulator
     WIN32 MACOSX_BUNDLE
     main.cpp
@@ -42,6 +54,7 @@ qt_add_executable(RISC_V_Simulator
     ${HEADER_FILES}
     ${SRC_FILES}
     ${UI_FILES}
+    ${ICONS_SRC}
 )
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE
@@ -57,6 +70,7 @@ target_link_libraries(RISC_V_Simulator
     PRIVATE
         Qt::Core
         Qt::Widgets
+        #vsrtl::vsrtl
 )
 
 include(GNUInstallDirs)
@@ -73,6 +87,8 @@ qt_generate_deploy_app_script(
     NO_UNSUPPORTED_PLATFORM_ERROR
 )
 install(SCRIPT ${deploy_script})
+
+
 
 # tests
 option(ENABLE_TESTS "Build tests" OFF)
