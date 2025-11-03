@@ -33,7 +33,7 @@ class MemoryModel : public QAbstractTableModel
         //std::shared_ptr<MemoryController> m_memoryController;
         // MemoryBlock m_currentMemoryBlock;
         int m_rowsVisible = 0;
-        uint64_t m_currentCentralAddress = 0xfffffffffffffff;
+        uint64_t m_currentCentralAddress = 1024;
         // well caculate which row to show when user scrolls pass
         // the current window with this 
         MemoryController* m_memoryController;

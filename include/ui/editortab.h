@@ -21,5 +21,7 @@ class EditorTab : public KitesTab
         QPlainTextEdit* m_editor = nullptr;
         QPlainTextEdit* m_disassemblyView = nullptr;
         //RegisterContainer* m_registerContainer = nullptr;
+    public slots:
+        void highlightLine(int lineNumber);
 };
 } // namespace Kites
