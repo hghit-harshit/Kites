@@ -10,3 +10,5 @@ TODO.md
 ss.py
 cmake-build-debug/
 TODO.md
+*.autosave
+CMakeLists.txt.user
