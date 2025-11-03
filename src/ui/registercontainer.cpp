@@ -10,6 +10,7 @@ RegisterContainer::RegisterContainer(QWidget *parent,RegisterFile* regfile)
     ui->setupUi(this);
     ui->tableView->setModel(m_registerModel);
     ui->tableView->verticalHeader()->setVisible(false);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     //setupRegisterTable();
     
 }

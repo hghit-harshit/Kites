@@ -36,6 +36,11 @@ RegisterFile* VMManager::getRegisterFile()
     return &m_currentVM->registers_;
 }
 
+MemoryController* VMManager::getMemoryController()
+{
+    return &m_currentVM->memory_controller_;
+}
+
 void VMManager::reset()
 {
     m_currentVM->Reset();
