@@ -17,10 +17,34 @@ int RegisterModel::rowCount(const QModelIndex &parent) const
 int RegisterModel::columnCount(const QModelIndex &parent) const
 { return 3; }// Register name, alias, value
 
+QVariant RegisterModel::headerData(int section, Qt::Orientation orientation,int role) const
+{
+    if(role != Qt::DisplayRole)
+        return QVariant{};
+    
+    if(orientation == Qt::Horizontal)
+    {
+        switch(section)
+        {
+            case 0:
+                return QString("Register");
+            case 1:
+                return QString("Alias");
+            case 2:
+                return QString("Value");
+        }
+    }
+}
+
 QVariant RegisterModel::data(const QModelIndex &index, int role) const
 {
     if(!m_currentRegisterFile)
         return QVariant{};
+
+    if (role == Qt::TextAlignmentRole) 
+    {
+        return Qt::AlignCenter;
+    }
     if(role == Qt::DisplayRole)
     {
         size_t row = static_cast<size_t>(index.row());
