@@ -181,23 +181,30 @@ void MainWindow::setUpTabs()
 void MainWindow::run()
 {
     //will change this later for now we just want to compile
-    m_vmManager->reset();
-    auto editor = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
-    std::string rawText = editor->getRawText();
-    std::string tempFile = "temp.asm";
-    std::ofstream out(tempFile);
-    out << rawText;
-    out.close();
-    std::string disassemblyTextFile = "disassembly.txt";
-    AssembledProgram assembledProgram = assemble(tempFile);
-    DumpDisasssembly(disassemblyTextFile,assembledProgram);
-    std::ifstream in(disassemblyTextFile);
-    std::stringstream buffer;
-    buffer << in.rdbuf();
-    editor->updateDisassemblyView(buffer.str());
+    try
+    {
+        m_vmManager->reset();
+        auto editor = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
+        std::string rawText = editor->getRawText();
+        std::string tempFile = "temp.asm";
+        std::ofstream out(tempFile);
+        out << rawText;
+        out.close();
+        std::string disassemblyTextFile = "disassembly.txt";
+        AssembledProgram assembledProgram = assemble(tempFile);
+        DumpDisasssembly(disassemblyTextFile,assembledProgram);
+        std::ifstream in(disassemblyTextFile);
+        std::stringstream buffer;
+        buffer << in.rdbuf();
+        editor->updateDisassemblyView(buffer.str());
 
-    m_vmManager->loadProgram(assembledProgram);
-    m_vmManager->run();
+        m_vmManager->loadProgram(assembledProgram);
+        m_vmManager->run();
+    }
+    catch(const std::exception& e)
+    {
+        QMessageBox::critical(this, "Error", e.what());
+    }
 }
 
 void MainWindow::processorChangeDialog()
