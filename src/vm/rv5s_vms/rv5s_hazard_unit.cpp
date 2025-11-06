@@ -55,3 +55,8 @@ bool RV5SHazardUnit::check_for_control_stall(const IF_ID_Register& if_id)
 
     return false;
 }
+
+bool RV5SHazardUnit::check_for_load_use_stall(
+    const IF_ID_Register& if_id,
+    const ID_EX_Register& id_ex,
+    const EX_MEM_Register& ex_mem){return true;}; //place holder for now
