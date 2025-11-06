@@ -165,7 +165,7 @@
 class RV5StageVM_NH_NF : public RV5StageVM_Base
 {
 public:
-    RV5StageVM_NH_NF();
+    RV5StageVM_NH_NF() ;
     ~RV5StageVM_NH_NF() = default;
 
     // Overridden virtual functions from VmBase
@@ -211,17 +211,15 @@ private:
 
     void print_pipeline_registers_debug();
     // --- Private methods for each pipeline stage ---
-    void pipeline_fetch();
-    void pipeline_decode();
-    void pipeline_execute();
-    void pipeline_memory();
-    void pipeline_writeback();
+    void pipeline_fetch() override;
+    void pipeline_decode() override;
+    void pipeline_execute() override;
+    void pipeline_memory() override;
+    void pipeline_writeback() override;
 
     // --- Specialized handler functions (called from pipeline stages) ---
-    void execute_float();
-    void execute_double();
-    void execute_csr();
-    void handle_syscall();
+    
+    void handle_syscall() override;
 };
 
 

@@ -8,7 +8,7 @@
 #include "vm/rv5s_vms/rv5s_vm_base.h"
 #include "vm/pipeline_registers.h"
 #include "vm/rv5s_vms/rv5s_control_unit.h"
-#include "vm/rv5s_vms/rv5s_hazard_unit.h" // <-- Including the HDU
+#include "vm/rv5s_vms/rv5s_hdu.h" // <-- Including the HDU
 
 #include <stack>
 #include <vector>
@@ -49,7 +49,7 @@ public:
 
 private:
     // The Hazard Detection Unit instance
-    RV5SHazardUnit hazard_unit_;
+    //RV5SHazardUnit hazard_unit_;
 
     // This flag controls freezing the front-end (IF/ID registers and PC)
     bool stall_fetch_and_decode_ = false; 
@@ -60,14 +60,15 @@ private:
     StepDelta current_delta_;
 
     // --- Private methods for each pipeline stage ---
-    void pipeline_fetch();
-    void pipeline_decode();
-    void pipeline_execute();
-    void pipeline_memory();
-    void pipeline_writeback();
-    
+    void pipeline_fetch() override;
+    void pipeline_decode() override;
+    void pipeline_execute() override;
+    void pipeline_memory() override;
+    void pipeline_writeback() override;
+
     // Helper function to consolidate hazard checks (now only Load-Use)
     bool check_for_hazard();
 
     void print_pipeline_registers_debug();
+    void handle_syscall() override;
 };

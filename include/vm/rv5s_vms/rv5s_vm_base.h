@@ -42,15 +42,12 @@ protected:
     
     void print_pipeline_registers_debug();
     // --- Private methods for each pipeline stage ---
-    void pipeline_fetch();
-    void pipeline_decode();
-    void pipeline_execute();
-    void pipeline_memory();
-    void pipeline_writeback();
+    virtual void pipeline_fetch() = 0;
+    virtual void pipeline_decode() = 0;
+    virtual void pipeline_execute() = 0;
+    virtual void pipeline_memory() = 0;
+    virtual void pipeline_writeback() = 0;
 
     // --- Specialized handler functions (called from pipeline stages) ---
-    void execute_float();
-    void execute_double();
-    void execute_csr();
-    void handle_syscall();
+    virtual void handle_syscall() = 0;
 };

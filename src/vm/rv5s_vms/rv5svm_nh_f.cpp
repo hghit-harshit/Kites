@@ -1,16 +1,16 @@
 /**
- * @file rv5svm_nh_f.cpp
- * @brief Implementation for the 5-stage pipelined VM (RV5S) in Mode 2: No Hazard Detection, With Forwarding.
- * * NOTE: This VM includes a Forwarding Unit to resolve ALU-to-ALU data hazards.
- * * The programmer must still insert NOPs for:
- * * 1. Load-Use Hazards: 1 NOP
- * * 2. Conditional Branch Hazards (Resolves in MEM stage): 3 NOPs
- * * 3. Unconditional Jumps (JAL/JALR, resolves in ID stage): 1 NOP
- * @author Atharva and Harshit
+ * @file rv5svm_nh_nf.cpp
+ * @brief Implementation for the 5-stage pipelined VM (RV5S) with Forwarding.
+ * * Data Hazards: Now solved by forwarding, except for Load-Use.
+ * * Load-Use Hazard: Requires 1 NOP manually (Programmer Responsibility).
+ * * Control Hazards: AUTOMATICALLY handled (JAL/JALR = 1 bubble, B-Type = 2 bubbles).
+ * * @author Atharva and Harshit
  */
 #include "vm/rv5s_vms/rv5svm_nh_f.h"
-#include "common/instructions.h"
-#include "config.h"
+#include "common/instructions.h" 
+#include "config.h"              
+#include "vm/alu.h"
+#include "vm/vm_base.h" // For ImmGenerator, etc.
 
 #include <iostream>
 #include <thread>
@@ -18,10 +18,36 @@
 #include <tuple>
 #include <algorithm>
 
-// Constructor initializes the base class and resets the VM state.
-RV5StageVM_NH_F::RV5StageVM_NH_F() : RV5StageVM_Base()
+// NOP instruction: ADDI x0, x0, 0 
+constexpr uint32_t NOP = 0x00000013;
+
+// --- VmBase Pure Virtual Method Implementations (Run, DebugRun, Reset, Step) ---
+
+void RV5StageVM_NH_F::Run()
 {
-    Reset();
+    ClearStop();
+    // Continue running until stop is requested OR the pipeline has drained.
+    while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != NOP))
+    {
+        Step();
+    }
+}
+
+void RV5StageVM_NH_F::DebugRun()
+{
+    ClearStop();
+    while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != NOP))
+    {
+        if (CheckBreakpoint(program_counter_))
+        {
+            std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
+            output_status_ = "VM_BREAKPOINT_HIT";
+            break;
+        }
+        print_pipeline_registers_debug();
+        Step();
+        std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
+    }
 }
 
 void RV5StageVM_NH_F::Reset()
@@ -53,21 +79,39 @@ void RV5StageVM_NH_F::Reset()
 
 void RV5StageVM_NH_F::Step()
 {
-    // Simulate a single clock cycle by running stages in reverse order
-    // (WB -> MEM -> EX -> ID -> IF) to avoid premature data overwrites.
-
+    // Capture PC before potential redirection in EX/MEM stages
+    uint64_t old_pc_before_redirect = program_counter_;
+    
+    // Prepare a new delta for recording state changes for Undo/Redo.
     current_delta_ = StepDelta();
     current_delta_.old_pc = program_counter_;
 
+    // 1. Execute stages (WB -> MEM -> EX -> ID -> IF)
     pipeline_writeback();
-    pipeline_memory();
-    pipeline_execute();
+    pipeline_memory(); // Branch (3-cycle) resolution and PC redirect
+    pipeline_execute(); // JAL/JALR (1-cycle) resolution and PC redirect
     pipeline_decode();
+    
+    // 2. Determine the next PC (Redirection logic overrides sequential advance)
+    uint64_t next_pc = program_counter_; 
+    
+    // If no redirect happened in EX or MEM, advance sequentially.
+    if (next_pc == old_pc_before_redirect) {
+        next_pc = old_pc_before_redirect + 4;
+    }
+    
+    // Commit the new PC for the Fetch stage
+    program_counter_ = next_pc; 
+    
+    // Fetch the instruction at the committed PC address.
     pipeline_fetch();
 
-    cycle_s_++; 
+    cycle_s_++; // One clock cycle has passed
 
-    current_delta_.new_pc = program_counter_;
+    // Finalize the delta and manage history stacks.
+    current_delta_.new_pc = program_counter_; 
+
+    // Check if any architectural state changed (registers or memory)
     if (!current_delta_.register_changes.empty() || !current_delta_.memory_changes.empty())
     {
         undo_stack_.push(current_delta_);
@@ -76,61 +120,36 @@ void RV5StageVM_NH_F::Step()
             redo_stack_.pop();
         }
     }
-}
-
-// --- High-Level Execution Loops ---
-
-void RV5StageVM_NH_F::Run()
-{
-    ClearStop();
-    while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != 0x13))
-    {
-        Step();
+    
+    // Draining check: if PC is past the program AND ID/EX is a NOP (implying pipeline drain)
+    if (program_counter_ >= program_size_ && id_ex_reg_.instruction == NOP) {
+        RequestStop();
     }
 }
 
-void RV5StageVM_NH_F::DebugRun()
-{
-    ClearStop();
-    while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != 0x13))
-    {
-        if (CheckBreakpoint(program_counter_))
-        {
-            std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
-            output_status_ = "VM_BREAKPOINT_HIT";
-            break;
-        }
-        // print_pipeline_registers_debug(); // Keep debug functions if implemented
-        Step();
-        std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
-        unsigned int delay_ms = vm_config::config.getRunStepDelay();
-        std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
-    }
-}
-
-// --- Pipeline Stage Implementations (Mode 2: With Forwarding) ---
+// --- Pipeline Stage Implementations (Full Proof Control + Forwarding) ---
 
 void RV5StageVM_NH_F::pipeline_fetch()
 {
-    // Jumps (JAL/JALR) are handled in MEM stage (1 NOP delay)
-    // Conditional Branches are handled in WB stage (3 NOP delay)
-    // PC update logic remains the same as Mode 1, as only the data hazard logic changes.
-
     if (program_counter_ < program_size_)
     {
+        // Latch the instruction and PC for the next stage (IF/ID register)
         if_id_reg_.instruction = memory_controller_.ReadWord(program_counter_);
         if_id_reg_.pc = program_counter_;
-        program_counter_ += 4;
     }
     else
     {
+        // Once past the end of the program, inject NOPs to drain the pipeline.
         if_id_reg_.reset();
     }
 }
 
 void RV5StageVM_NH_F::pipeline_decode()
 {
+    // Get instruction from the IF/ID register
     uint32_t instruction = if_id_reg_.instruction;
+
+    // Control Unit: Generate signals based on the instruction
     control_unit_.SetControlSignals(instruction);
 
     // Latch data for the ID/EX register
@@ -143,8 +162,8 @@ void RV5StageVM_NH_F::pipeline_decode()
     id_ex_reg_.rs2 = (instruction >> 20) & 0x1F;
     id_ex_reg_.rd = (instruction >> 7) & 0x1F;
 
-    // Read register data naively (NO STALLING for Load-Use, NO FORWARDING yet)
-    // The actual forwarding selection happens in the Execute stage.
+    // Read register data naively (Data will be overwritten by forwarding logic in EX)
+    // The base read is still performed, even if it is stale.
     id_ex_reg_.reg1_data = registers_.ReadGpr(id_ex_reg_.rs1);
     id_ex_reg_.reg2_data = registers_.ReadGpr(id_ex_reg_.rs2);
 
@@ -160,162 +179,180 @@ void RV5StageVM_NH_F::pipeline_decode()
 
 void RV5StageVM_NH_F::pipeline_execute()
 {
-    // Get the register read indices from the ID/EX register
-    uint8_t rs1_id_ex = id_ex_reg_.rs1;
-    uint8_t rs2_id_ex = id_ex_reg_.rs2;
+    // Initial ALU inputs are the stale values read from the register file (ID_EX)
     uint64_t alu_in1 = id_ex_reg_.reg1_data;
-    uint64_t alu_in2 = id_ex_reg_.alu_src ? static_cast<uint64_t>(id_ex_reg_.imm) : id_ex_reg_.reg2_data;
+    uint64_t alu_in2 = id_ex_reg_.reg2_data;
 
-    // --- FORWARDING UNIT LOGIC (Mode 2) ---
+    // If AluSrc is true (I-type ALU, Load, Store), override reg2_data with the immediate
+    if (id_ex_reg_.alu_src) {
+        alu_in2 = static_cast<uint64_t>(id_ex_reg_.imm);
+    }
     
-    // 1. Check EX/MEM Register for Forwarding (One stage back)
-    // Forwarding A (rs1)
-    if (ex_mem_reg_.reg_write && ex_mem_reg_.rd != 0 && ex_mem_reg_.rd == rs1_id_ex) {
-        alu_in1 = ex_mem_reg_.alu_result; // Forward ALU result
-    } 
-    // Forwarding B (rs2)
-    if (ex_mem_reg_.reg_write && ex_mem_reg_.rd != 0 && ex_mem_reg_.rd == rs2_id_ex) {
-        alu_in2 = ex_mem_reg_.alu_result; // Forward ALU result
+    // Forwarding values (Source = 00 means no forwarding, use ID_EX value)
+    uint8_t forward_a = 0; // 10 = EX/MEM, 01 = MEM/WB
+    uint8_t forward_b = 0;
+
+    // --- FORWARDING LOGIC (R-R, R-Store, L-Store resolved here) ---
+
+    // **Priority 1: EX/MEM (Data available from current instruction in MEM)**
+    // R-R, R-Store, Load-Store dependencies (I_n-1) -> I_n
+    if (ex_mem_reg_.reg_write && (ex_mem_reg_.rd != 0)) {
+        if (ex_mem_reg_.rd == id_ex_reg_.rs1) {
+            forward_a = 2; // Forward A from EX/MEM ALU result
+        }
+        if (ex_mem_reg_.rd == id_ex_reg_.rs2) {
+            forward_b = 2; // Forward B from EX/MEM ALU result
+        }
     }
 
-    // 2. Check MEM/WB Register for Forwarding (Two stages back)
-    // Note: The MEM/WB check overrides the EX/MEM check if both match, which is correct 
-    // for a Load instruction that skipped the EX/MEM path, or to handle R-Type/I-Type 
-    // results that pass through memory.
+    // **Priority 2: MEM/WB (Data available from current instruction in WB)**
+    // R-R, R-Store, Load-Store dependencies (I_n-2) -> I_n
+    if (mem_wb_reg_.reg_write && (mem_wb_reg_.rd != 0)) {
+        // Forward A from MEM/WB unless EX/MEM is forwarding to the same register (Priority)
+        if (mem_wb_reg_.rd == id_ex_reg_.rs1 && forward_a != 2) {
+            forward_a = 1; // Forward A from MEM/WB result (ALU or Memory)
+        }
+        // Forward B from MEM/WB unless EX/MEM is forwarding to the same register (Priority)
+        if (mem_wb_reg_.rd == id_ex_reg_.rs2 && forward_b != 2) {
+            forward_b = 1; // Forward B from MEM/WB result (ALU or Memory)
+        }
+    }
     
-    // Forwarding A (rs1)
-    if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0 && mem_wb_reg_.rd == rs1_id_ex) {
-        // Source is Load result (memory_data) or ALU result (alu_result)
+    // --- FORWARDING APPLICATION ---
+
+    // Forwarding Source A
+    if (forward_a == 2) { // Forward from EX/MEM
+        alu_in1 = ex_mem_reg_.alu_result;
+    } else if (forward_a == 1) { // Forward from MEM/WB
         alu_in1 = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
     }
-    // Forwarding B (rs2)
-    if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0 && mem_wb_reg_.rd == rs2_id_ex) {
+
+    // Forwarding Source B
+    // NOTE: Store instructions use rs2's value (`reg2_data`) which is passed through EX/MEM.
+    if (forward_b == 2) { // Forward from EX/MEM
+        alu_in2 = ex_mem_reg_.alu_result;
+    } else if (forward_b == 1) { // Forward from MEM/WB
         alu_in2 = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
     }
 
-    // IMPORTANT: LOAD-USE HAZARDS ARE NOT HANDLED.
-    // If the instruction in EX/MEM is a Load (`ex_mem_reg_.mem_read` is true), 
-    // and the current instruction (in ID/EX) uses its result, the forwarded data 
-    // will be stale (or from the ALU calculation). The programmer must insert 1 NOP.
-    
-    // --- ALU Execution ---
-    alu::AluOp alu_operation = control_unit_.GetAluSignal(id_ex_reg_.instruction, id_ex_reg_.alu_op > 0);
+    // Re-apply immediate value check after forwarding for ALU_B if needed
+    if (id_ex_reg_.alu_src && id_ex_reg_.alu_op != 0) { // If it's an ALU immediate, not Load/Store address calc (ALUOp=0)
+        alu_in2 = static_cast<uint64_t>(id_ex_reg_.imm); 
+    } else if (id_ex_reg_.alu_src && (id_ex_reg_.mem_read || id_ex_reg_.mem_write)) { 
+        // If it's a Load/Store address calculation (ALUOp=0), use the forwarded alu_in2 if it's rs2's data (for Store) 
+        // or the immediate if it's the address calculation. Since Load/Store address is rs1 + imm, only rs1 is forwarded.
+        // We only override alu_in2 if it was an immediate *and* it wasn't forwarded to (which is correct, forwarding is for register data).
+        alu_in2 = id_ex_reg_.alu_src ? static_cast<uint64_t>(id_ex_reg_.imm) : alu_in2;
+    }
+
+
+    // --- EXECUTION (Same as before) ---
+    uint32_t instruction = id_ex_reg_.instruction;
+    alu::AluOp alu_operation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
     bool overflow;
-    std::tie(ex_mem_reg_.alu_result, overflow) = alu_.execute(alu_operation, alu_in1, alu_in2);
+    uint64_t alu_result;
+    std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
 
-    // --- Control Hazard Logic (Same as Mode 1: Programmer must insert NOPs) ---
+    // Latch data for EX/MEM Register
+    ex_mem_reg_.alu_result = alu_result;
+    ex_mem_reg_.rd = id_ex_reg_.rd;
+    // CRITICAL: The data to be stored (reg2_data for Store) must ALSO be forwarded!
+    uint64_t store_data = id_ex_reg_.reg2_data;
+    if (forward_b == 2) { // Forward from EX/MEM
+        store_data = ex_mem_reg_.alu_result;
+    } else if (forward_b == 1) { // Forward from MEM/WB
+        store_data = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
+    }
+    ex_mem_reg_.reg2_data = store_data;
+    // Pass control signals... (omitted for brevity, they are all correctly copied)
+    ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
+    ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
+    ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
+    ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
     ex_mem_reg_.branch_taken = false;
-    uint8_t opcode = id_ex_reg_.instruction & 0b1111111;
+    ex_mem_reg_.branch_target_pc = 0;
+    
+    // ... (Control Hazard Logic remains the same, omitted for brevity) ...
 
-    if (id_ex_reg_.branch && opcode == 0b1100011) // Conditional Branch (B-type)
+    uint8_t opcode = instruction & 0b1111111;
+
+    // --- Conditional Branch Check (B-type: BLT, BGE, etc.) ---
+    if (id_ex_reg_.branch && opcode == 0b1100011) 
     {
         bool condition_met = false;
-        uint8_t funct3 = (id_ex_reg_.instruction >> 12) & 0x7;
+        uint8_t funct3 = (instruction >> 12) & 0x7;
         
-        if ((funct3 == 0b000 && ex_mem_reg_.alu_result == 0) || // BEQ (result == 0)
-            (funct3 == 0b001 && ex_mem_reg_.alu_result != 0))   // BNE (result != 0)
-        {
-            condition_met = true;
+        // This fully implements all six branch conditions using the ALU subtraction/comparison result.
+        switch (funct3) {
+            case 0b000: condition_met = (alu_result == 0); break; // BEQ
+            case 0b001: condition_met = (alu_result != 0); break; // BNE 
+            case 0b100: condition_met = (alu_result == 1); break; // BLT 
+            case 0b101: condition_met = (alu_result == 0); break; // BGE 
+            case 0b110: condition_met = (alu_result == 1); break; // BLTU 
+            case 0b111: condition_met = (alu_result == 0); break; // BGEU 
         }
-        
+
         if (condition_met)
         {
             ex_mem_reg_.branch_taken = true;
             ex_mem_reg_.branch_target_pc = id_ex_reg_.pc + id_ex_reg_.imm;
         }
-    }
-    else if (opcode == 0b1101111) // JAL (J-type)
+    } 
+    // --- Unconditional Jump Check (JAL/JALR: 1-cycle penalty) ---
+    else if (opcode == 0b1101111 || opcode == 0b1100111) 
     {
-        ex_mem_reg_.branch_taken = true;
-        ex_mem_reg_.branch_target_pc = id_ex_reg_.pc + id_ex_reg_.imm;
-    }
-    else if (opcode == 0b1100111) // JALR (I-type)
-    {
-        ex_mem_reg_.branch_taken = true;
-        ex_mem_reg_.branch_target_pc = ex_mem_reg_.alu_result & ~1;
-    }
+        uint64_t jump_target;
+        if (opcode == 0b1101111) {
+            jump_target = id_ex_reg_.pc + id_ex_reg_.imm; // JAL
+        } else {
+            jump_target = alu_result & ~1; // JALR (ALU result is Reg + Imm)
+            ex_mem_reg_.alu_result = id_ex_reg_.pc + 4; // Set link address (PC+4)
+        }
 
-    // Pass necessary data to the next stage
-    ex_mem_reg_.reg2_data = id_ex_reg_.reg2_data; // Data for Store instructions
-    ex_mem_reg_.rd = id_ex_reg_.rd;
-
-    // Pass control signals through
-    ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
-    ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
-    ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
-    ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
+        program_counter_ = jump_target;
+        if_id_reg_.reset(); 
+        ex_mem_reg_.branch_taken = true; 
+    }
 }
 
 void RV5StageVM_NH_F::pipeline_memory()
 {
-    // PC Redirection for Unconditional Jumps (1 NOP delay)
-    if (ex_mem_reg_.branch_taken) {
-        uint32_t instruction_in_ex = id_ex_reg_.instruction; 
-        uint8_t opcode = instruction_in_ex & 0b1111111;
+    // --- B-Type Conditional Branch Resolution (3-Cycle Penalty) ---
+    if (ex_mem_reg_.branch_taken && (id_ex_reg_.instruction & 0b1111111) == 0b1100011) {
+        // B-Type misprediction confirmed in MEM stage. Hardware flushes the pipeline.
+        
+        // 1. Redirect the fetch PC
+        program_counter_ = ex_mem_reg_.branch_target_pc;
 
-        if (opcode == 0b1101111 || opcode == 0b1100111) { // JAL or JALR
-            program_counter_ = ex_mem_reg_.branch_target_pc;
-            if_id_reg_.reset(); // Kill the instruction (should be the programmer's NOP)
-        }
+        // 2. Kill the two instructions in the front end (IF/ID and ID/EX) to incur the 2-bubble penalty.
+        if_id_reg_.reset(); 
+        id_ex_reg_.reset(); 
+        
+        branch_mispredictions_++;
     }
 
-
-    // Record memory changes for Undo/Redo
-    std::vector<uint8_t> old_bytes_vec;
-    std::vector<uint8_t> new_bytes_vec;
-    uint64_t addr = ex_mem_reg_.alu_result;
-
+    // --- Standard MEM Operations ---
+    mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
+    mem_wb_reg_.rd = ex_mem_reg_.rd;
+    mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
+    mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
+    
     if (ex_mem_reg_.mem_read)
     { 
-        mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(addr);
+        // Load instruction: Result available at end of this stage (Load-Use still needs 1 NOP)
+        mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
     }
     else if (ex_mem_reg_.mem_write)
     { 
-        // Store instruction
-        for (size_t i = 0; i < 8; ++i)
-            old_bytes_vec.push_back(memory_controller_.ReadByte_d(addr + i));
-
-        memory_controller_.WriteDoubleWord(addr, ex_mem_reg_.reg2_data);
-
-        for (size_t i = 0; i < 8; ++i)
-            new_bytes_vec.push_back(memory_controller_.ReadByte_d(addr + i));
-
-        if (old_bytes_vec != new_bytes_vec)
-        {
-            current_delta_.memory_changes.push_back({addr, old_bytes_vec, new_bytes_vec});
-        }
+        // Store instruction (R-Store, L-Store solved by forwarding store_data from EX)
+        memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data);
     }
-
-    // Pass necessary data to the final stage (MEM/WB register)
-    mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
-    mem_wb_reg_.rd = ex_mem_reg_.rd;
-
-    // Pass control signals through
-    mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
-    mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
 }
 
 void RV5StageVM_NH_F::pipeline_writeback()
 {
-    // PC Redirection for Conditional Branches (3 NOP delay)
-    if (ex_mem_reg_.branch_taken) {
-        uint32_t instruction_in_mem = id_ex_reg_.instruction; 
-        uint8_t opcode = instruction_in_mem & 0b1111111;
-
-        if (opcode == 0b1100011) { // Conditional Branch (B-type)
-            // Redirect the fetch PC
-            program_counter_ = ex_mem_reg_.branch_target_pc;
-            
-            // Kill instructions I1, I2, I3
-            id_ex_reg_.reset(); 
-            if_id_reg_.reset();
-            mem_wb_reg_.reset(); // Kill I3 (in MEM/WB)
-        }
-    }
-    
-
     // Write the final result back to the register file
-    if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0)
+    if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0) 
     {
         uint64_t write_data = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
 
@@ -330,12 +367,11 @@ void RV5StageVM_NH_F::pipeline_writeback()
         }
 
         registers_.WriteGpr(mem_wb_reg_.rd, write_data);
-        instructions_retired_++;
+        instructions_retired_++; // Instruction successfully retired
     }
 }
 
-// --- Undo/Redo Implementations (No changes from base) ---
-
+// --- Auxiliary methods (omitted for brevity) ---
 void RV5StageVM_NH_F::Undo()
 {
     if (undo_stack_.empty())
@@ -347,11 +383,13 @@ void RV5StageVM_NH_F::Undo()
     StepDelta last = undo_stack_.top();
     undo_stack_.pop();
 
+    // Revert register changes
     for (const auto &change : last.register_changes)
     {
         registers_.WriteGpr(change.reg_index, change.old_value);
     }
 
+    // Revert memory changes
     for (const auto &change : last.memory_changes)
     {
         for (size_t i = 0; i < change.old_bytes_vec.size(); ++i)
@@ -360,15 +398,17 @@ void RV5StageVM_NH_F::Undo()
         }
     }
 
+    // Restore the PC to the state *before* the undone cycle
     program_counter_ = last.old_pc;
     
+    // Reset pipeline registers to NOPs for a clean step
     if_id_reg_.reset();
     id_ex_reg_.reset();
     ex_mem_reg_.reset();
     mem_wb_reg_.reset();
 
     redo_stack_.push(last);
-    std::cout << "VM_UNDO_COMPLETED" << std::endl;
+    std::cout << "VM_REDO_COMPLETED" << std::endl;
 }
 
 void RV5StageVM_NH_F::Redo()
@@ -382,11 +422,13 @@ void RV5StageVM_NH_F::Redo()
     StepDelta next = redo_stack_.top();
     redo_stack_.pop();
 
+    // Reapply register changes
     for (const auto &change : next.register_changes)
     {
         registers_.WriteGpr(change.reg_index, change.new_value);
     }
 
+    // Reapply memory changes
     for (const auto &change : next.memory_changes)
     {
         for (size_t i = 0; i < change.new_bytes_vec.size(); ++i)
@@ -395,8 +437,10 @@ void RV5StageVM_NH_F::Redo()
         }
     }
 
+    // Restore the PC to the state *after* the redone cycle
     program_counter_ = next.new_pc;
     
+    // Reset pipeline registers for a clean step
     if_id_reg_.reset();
     id_ex_reg_.reset();
     ex_mem_reg_.reset();
@@ -408,5 +452,34 @@ void RV5StageVM_NH_F::Redo()
 
 void RV5StageVM_NH_F::print_pipeline_registers_debug()
 {
-    // Implementation for printing debug state (can be added later if needed)
+    // A basic implementation for debug visibility
+    std::cout << "--- Pipeline Debug (Cycle " << cycle_s_ << ") ---" << std::endl;
+    std::cout << "PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
+    std::cout << "IF/ID: Inst=0x" << std::hex << if_id_reg_.instruction << std::dec << " PC=" << if_id_reg_.pc << std::endl;
+    std::cout << "ID/EX: rs1=" << (int)id_ex_reg_.rs1 << " rs2=" << (int)id_ex_reg_.rs2 << " rd=" << (int)id_ex_reg_.rd << std::endl;
+    std::cout << "EX/MEM: ALU_Res=" << ex_mem_reg_.alu_result << " Br_Taken=" << ex_mem_reg_.branch_taken << std::endl;
+    std::cout << "MEM/WB: ALU_Res=" << mem_wb_reg_.alu_result << " Mem_Data=" << mem_wb_reg_.memory_data << std::endl;
+}
+
+// void RV5StageVM_NH_F::execute_float() {
+//     // Placeholder: In a full implementation, this calls alu::Alu::fpexecute
+//     std::cerr << "Warning: F-Extension instruction passed to placeholder execute_float()." << std::endl;
+// }
+
+// void RV5StageVM_NH_F::execute_double() {
+//     // Placeholder: In a full implementation, this calls alu::Alu::dfpexecute
+//     std::cerr << "Warning: D-Extension instruction passed to placeholder execute_double()." << std::endl;
+// }
+
+// void RV5StageVM_NH_F::execute_csr() {
+//     // Placeholder: In a full implementation, this handles Control and Status Register instructions.
+//     std::cerr << "Warning: CSR instruction passed to placeholder execute_csr()." << std::endl;
+// }
+
+void RV5StageVM_NH_F::handle_syscall() { 
+    if ((id_ex_reg_.instruction & 0x7F) == 0b1110011 && ((id_ex_reg_.instruction >> 12) & 0x7) == 0b000) {
+        RequestStop();
+        output_status_ = "ECALL_EXIT";
+        DumpState("vm_state.json");
+    }
 }

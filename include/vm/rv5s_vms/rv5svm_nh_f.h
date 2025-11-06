@@ -58,11 +58,12 @@ private:
     StepDelta current_delta_;
 
     // --- Private methods for each pipeline stage ---
-    void pipeline_fetch();
-    void pipeline_decode();
-    void pipeline_execute();
-    void pipeline_memory();
-    void pipeline_writeback();
+    void pipeline_fetch() override;
+    void pipeline_decode() override;
+    void pipeline_execute() override;
+    void pipeline_memory() override;
+    void pipeline_writeback() override;
 
     void print_pipeline_registers_debug();
+    void handle_syscall() override;
 };

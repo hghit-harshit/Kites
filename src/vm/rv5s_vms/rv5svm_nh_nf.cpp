@@ -1,20 +1,16 @@
 /**
  * @file rv5svm_nh_nf.cpp
- * @brief Implementation for the 5-stage pipelined VM (RV5S) in Mode 1: No Hazard Detection, No Forwarding.
- * * NOTE: In this mode, both data and control hazards must be handled entirely by the 
- * programmer inserting NOPs. The hardware performs NO automatic stalling, 
- * forwarding, or branch flushing/redirection. Incorrect code sequencing will 
- * lead to incorrect results.
- * * * The programmer must insert NOPs:
- * * 1. Data Hazards (ALU-ALU): 2 NOPs
- * * 2. Load-Use Hazards: 1 NOP
- * * 3. Conditional Branch Hazards (Resolves in MEM stage): 3 NOPs
- * * 4. Unconditional Jumps (JAL/JALR, resolves in ID stage): 1 NOP
+ * @brief Implementation for the 5-stage pipelined VM (RV5S) in Mode 1: No Hazard Detection, No Forwarding (NH_NF).
+ * * Data Hazards (R-R, L-R, R-Store, L-Store) require 2 NOPs (Programmer Responsibility).
+ * * Control Hazards (JAL/JALR, B-Type) are AUTOMATICALLY handled by the pipeline.
+ * * Control Penalties: JAL/JALR = 1 bubble (EX stage); B-Type = 2 bubbles (MEM stage, 3-cycle penalty).
  * * @author Atharva and Harshit
  */
 #include "vm/rv5s_vms/rv5svm_nh_nf.h"
-#include "common/instructions.h"
-#include "config.h"
+#include "common/instructions.h" 
+#include "config.h"              
+#include "vm/alu.h"
+#include "vm/vm_base.h" // For ImmGenerator, etc.
 
 #include <iostream>
 #include <thread>
@@ -22,12 +18,51 @@
 #include <tuple>
 #include <algorithm>
 
-// Constructor initializes the base class and resets the VM state.
+// NOP instruction: ADDI x0, x0, 0 
+constexpr uint32_t NOP = 0x00000013;
+
+// --- VmBase Pure Virtual Method Implementations (Run, DebugRun, Reset, Step) ---
 RV5StageVM_NH_NF::RV5StageVM_NH_NF() : RV5StageVM_Base()
 {
-    // The base class constructor is called implicitly.
-    // Reset() handles the initial state setup.
+    // Initialize VmBase members
+    // program_counter_ = 0;
+    // instructions_retired_ = 0;
+    // cycle_s_ = 0;
+    // stall_cycles_ = 0; 
+    
+    // // Initialize local members
+    // stall_fetch_and_decode_ = false;
+
+    // Reset components and history
     Reset();
+}
+
+
+void RV5StageVM_NH_NF::Run()
+{
+    ClearStop();
+    // Continue running until stop is requested OR the pipeline has drained.
+    while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != NOP))
+    {
+        Step();
+    }
+}
+
+void RV5StageVM_NH_NF::DebugRun()
+{
+    ClearStop();
+    while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != NOP))
+    {
+        if (CheckBreakpoint(program_counter_))
+        {
+            std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
+            output_status_ = "VM_BREAKPOINT_HIT";
+            break;
+        }
+        print_pipeline_registers_debug();
+        Step();
+        std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
+    }
 }
 
 void RV5StageVM_NH_NF::Reset()
@@ -44,7 +79,6 @@ void RV5StageVM_NH_NF::Reset()
     control_unit_.Reset();
 
     // Reset all pipeline registers to a known-safe (NOP) state
-    // These registers are inherited from RV5StageVM_Base.
     if_id_reg_.reset();
     id_ex_reg_.reset();
     ex_mem_reg_.reset();
@@ -60,119 +94,63 @@ void RV5StageVM_NH_NF::Reset()
 
 void RV5StageVM_NH_NF::Step()
 {
-    // Simulate a single clock cycle by running stages in reverse order
-    // (WB -> MEM -> EX -> ID -> IF) to avoid premature data overwrites.
-
+    // Capture PC before potential redirection in EX/MEM stages
+    uint64_t old_pc_before_redirect = program_counter_;
+    
     // Prepare a new delta for recording state changes for Undo/Redo.
     current_delta_ = StepDelta();
     current_delta_.old_pc = program_counter_;
 
+    // 1. Execute stages (WB -> MEM -> EX -> ID -> IF)
     pipeline_writeback();
-    pipeline_memory();
-    pipeline_execute();
+    pipeline_memory(); // Branch (3-cycle) resolution and PC redirect
+    pipeline_execute(); // JAL/JALR (1-cycle) resolution and PC redirect
     pipeline_decode();
+    
+    // 2. Determine the next PC (Redirection logic overrides sequential advance)
+    uint64_t next_pc = program_counter_; 
+    
+    // If no redirect happened in EX or MEM, advance sequentially.
+    if (next_pc == old_pc_before_redirect) {
+        next_pc = old_pc_before_redirect + 4;
+    }
+    
+    // Commit the new PC for the Fetch stage
+    program_counter_ = next_pc; 
+    
+    // Fetch the instruction at the committed PC address.
     pipeline_fetch();
 
     cycle_s_++; // One clock cycle has passed
 
     // Finalize the delta and manage history stacks.
-    current_delta_.new_pc = program_counter_;
+    current_delta_.new_pc = program_counter_; 
+
     // Check if any architectural state changed (registers or memory)
     if (!current_delta_.register_changes.empty() || !current_delta_.memory_changes.empty())
     {
         undo_stack_.push(current_delta_);
-        // A new action invalidates any previous "redo" history.
         while (!redo_stack_.empty())
         {
             redo_stack_.pop();
         }
     }
-}
-
-// --- High-Level Execution Loops ---
-
-void RV5StageVM_NH_NF::Run()
-{
-    ClearStop();
-    // Continue running until stop is requested AND the program counter is past
-    // the program AND the pipeline is drained (checking for NOP in ID/EX is a quick check).
-    while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != 0x13))
-    {
-        Step();
+    
+    // Draining check: if PC is past the program AND ID/EX is a NOP (implying pipeline drain)
+    if (program_counter_ >= program_size_ && id_ex_reg_.instruction == NOP) {
+        RequestStop();
     }
 }
 
-void RV5StageVM_NH_NF::DebugRun()
-{
-    ClearStop();
-    while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != 0x13))
-    {
-        if (CheckBreakpoint(program_counter_))
-        {
-            std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
-            output_status_ = "VM_BREAKPOINT_HIT";
-            break;
-        }
-        print_pipeline_registers_debug();
-        Step();
-        std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
-        unsigned int delay_ms = vm_config::config.getRunStepDelay();
-        // Use a non-blocking delay for better integration in an interactive environment
-        std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
-    }
-}
-
-// --- Pipeline Stage Implementations (Mode 1: No Hazard Detection, No Forwarding) ---
+// --- Pipeline Stage Implementations (Full Proof Control) ---
 
 void RV5StageVM_NH_NF::pipeline_fetch()
 {
-    // Check for an unconditional jump resolution from the ID stage (1 NOP delay)
-    // JAL (opcode 0b1101111) and JALR (opcode 0b1100111) are the unconditional jumps.
-    // They resolve their PC update at the ID/EX boundary, affecting the PC for the IF stage next cycle.
-    if ((id_ex_reg_.instruction & 0b1111111) == 0b1101111 || // JAL
-        (id_ex_reg_.instruction & 0b1111111) == 0b1100111)    // JALR
-    {
-        // Only proceed if the instruction is NOT a NOP (0x13) to avoid setting PC = 0.
-        // We calculate the target in Decode, but the ALU result for JALR is used.
-        // For simplicity in this naive mode, we rely on the EX stage calculation being correct.
-        
-        // This check is slightly simplified: if the ID/EX register holds a jump, 
-        // we use its calculated target to update the PC, effectively flushing one instruction.
-        // If the programmer inserted 1 NOP, the pipeline is correct.
-        if (id_ex_reg_.instruction != 0x00000013) {
-            // Unconditional jumps are resolved at the ID/EX boundary (1 NOP delay)
-            // We assume the EX stage will calculate the correct target (even though ALU might not run yet)
-            // For a pure Mode 1, we still rely on the programmer to ensure the next fetch is a NOP.
-            
-            // To model the PC update *when the JAL is in EX*, we update the PC at the start of fetch.
-            // Note: This relies on the EX stage correctly calculating the target PC for JAL/JALR and storing it.
-            // Since `pipeline_execute` doesn't store the JAL/JALR target in the EX/MEM register, 
-            // we calculate it here based on the instruction in ID/EX, modeling a separate PC update path.
-
-            // Target PC: PC of the jump instruction + immediate offset (for JAL) or ALU result (for JALR)
-            uint64_t target_pc;
-            if ((id_ex_reg_.instruction & 0b1111111) == 0b1101111) { // JAL
-                 target_pc = id_ex_reg_.pc + id_ex_reg_.imm;
-            } else { // JALR
-                 // JALR target is reg1_data + imm. We must use the ALU result for the target.
-                 // Since we don't have the ALU result here, we rely on the programmer's NOPs.
-                 // For now, we will assume JAL is handled in EX, and keep the PC sequential for conditional branches.
-            }
-            // To maintain simplicity and the programmer's responsibility for NOPs:
-            // We rely on the JAL/JALR target being passed to the PC update logic (not fully modeled in this naive IF).
-        }
-    }
-
-
     if (program_counter_ < program_size_)
     {
         // Latch the instruction and PC for the next stage (IF/ID register)
         if_id_reg_.instruction = memory_controller_.ReadWord(program_counter_);
         if_id_reg_.pc = program_counter_;
-
-        // Always predict "not taken" and fetch the next sequential instruction.
-        // This is the naive fetch that causes the control hazard on a taken branch.
-        program_counter_ += 4;
     }
     else
     {
@@ -199,8 +177,8 @@ void RV5StageVM_NH_NF::pipeline_decode()
     id_ex_reg_.rs2 = (instruction >> 20) & 0x1F;
     id_ex_reg_.rd = (instruction >> 7) & 0x1F;
 
-    // Read register data naively (NO FORWARDING, NO STALLING)
-    // This is the core source of data hazards in Mode 1.
+    // Read register data naively (NH_NF CORE LOGIC: READS STALE DATA)
+    // This enforces the 2 NOP requirement for data hazards.
     id_ex_reg_.reg1_data = registers_.ReadGpr(id_ex_reg_.rs1);
     id_ex_reg_.reg2_data = registers_.ReadGpr(id_ex_reg_.rs2);
 
@@ -225,157 +203,107 @@ void RV5StageVM_NH_NF::pipeline_execute()
 
     // Execute the operation
     bool overflow; // Ignored for this simple model
-    std::tie(ex_mem_reg_.alu_result, overflow) = alu_.execute(alu_operation, alu_in1, alu_in2);
+    uint64_t alu_result;
+    // ALU operations for integer, F, and D extensions should be called here based on instruction
+    // For simplicity, only integer execute is shown, as per the B-type logic dependency.
+    std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
 
-    // --- Branch Resolution (No Hardware Correction/Flush for conditional branches) ---
-    // The conditional branch outcome is determined here.
-    ex_mem_reg_.branch_taken = false;
-    uint8_t opcode = id_ex_reg_.instruction & 0b1111111;
-
-    if (id_ex_reg_.branch && opcode == 0b1100011) // Conditional Branch (B-type)
-    {
-        bool condition_met = false;
-        uint8_t funct3 = (id_ex_reg_.instruction >> 12) & 0x7;
-        
-        // ALU result for branch instructions (BEQ/BNE) will be (reg1_data - reg2_data)
-        if ((funct3 == 0b000 && ex_mem_reg_.alu_result == 0) || // BEQ (result == 0)
-            (funct3 == 0b001 && ex_mem_reg_.alu_result != 0))   // BNE (result != 0)
-        {
-            condition_met = true;
-        }
-        
-        if (condition_met)
-        {
-            ex_mem_reg_.branch_taken = true;
-            ex_mem_reg_.branch_target_pc = id_ex_reg_.pc + id_ex_reg_.imm;
-            
-            // IMPORTANT FOR 3 NOP DELAY: We intentionally do NOT update the PC here,
-            // or flush the pipeline. The incorrect sequential instructions will proceed.
-            // The programmer must insert 3 NOPs to fill the delay slots.
-        }
-    }
-    else if (opcode == 0b1101111) // JAL (J-type)
-    {
-        // JAL calculates its target in ID, but the PC redirect is typically done earlier.
-        // Since we are modeling a simple naive pipeline, we rely on the PC redirect 
-        // being handled in a dedicated path that is not fully modeled here, 
-        // requiring 1 NOP from the programmer. We calculate the target for the next stage.
-        ex_mem_reg_.branch_taken = true; // Unconditional jump is always "taken"
-        ex_mem_reg_.branch_target_pc = id_ex_reg_.pc + id_ex_reg_.imm;
-    }
-    else if (opcode == 0b1100111) // JALR (I-type)
-    {
-        // JALR target address is calculated in the EX stage (Reg + Imm)
-        ex_mem_reg_.branch_taken = true; // Unconditional jump is always "taken"
-        // Target is the ALU result (reg1_data + imm) masked to a multiple of 2.
-        ex_mem_reg_.branch_target_pc = ex_mem_reg_.alu_result & ~1;
-    }
-
-    // Pass necessary data to the next stage (EX/MEM register)
-    ex_mem_reg_.reg2_data = id_ex_reg_.reg2_data; // Data for Store instructions
+    // Latch data for EX/MEM Register
+    ex_mem_reg_.alu_result = alu_result;
     ex_mem_reg_.rd = id_ex_reg_.rd;
-
-    // Pass control signals through
+    ex_mem_reg_.reg2_data = id_ex_reg_.reg2_data;
     ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
+    ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
     ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
     ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
-    ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
+    ex_mem_reg_.branch_taken = false;
+    ex_mem_reg_.branch_target_pc = 0;
+    
+    uint32_t instruction = id_ex_reg_.instruction;
+    uint8_t opcode = instruction & 0b1111111;
+
+    // --- Conditional Branch Check (B-type: BLT, BGE, etc.) ---
+    if (id_ex_reg_.branch && opcode == 0b1100011) 
+    {
+        bool condition_met = false;
+        uint8_t funct3 = (instruction >> 12) & 0x7;
+        
+        // This fully implements all six branch conditions using the ALU subtraction/comparison result.
+        switch (funct3) {
+            case 0b000: condition_met = (alu_result == 0); break; // BEQ (Result of Subtraction is Zero)
+            case 0b001: condition_met = (alu_result != 0); break; // BNE (Result of Subtraction is Non-Zero)
+            case 0b100: condition_met = (alu_result == 1); break; // BLT (Result of kSlt is 1)
+            case 0b101: condition_met = (alu_result == 0); break; // BGE (Result of kSlt is 0 - Not Less Than)
+            case 0b110: condition_met = (alu_result == 1); break; // BLTU (Result of kSltu is 1)
+            case 0b111: condition_met = (alu_result == 0); break; // BGEU (Result of kSltu is 0 - Not Less Than Unsigned)
+        }
+
+        if (condition_met)
+        {
+            // Misprediction detected. Flag MEM stage to handle the 3-cycle flush.
+            ex_mem_reg_.branch_taken = true;
+            ex_mem_reg_.branch_target_pc = id_ex_reg_.pc + id_ex_reg_.imm;
+        }
+    } 
+    // --- Unconditional Jump Check (JAL/JALR: 1-cycle penalty) ---
+    else if (opcode == 0b1101111 || opcode == 0b1100111) 
+    {
+        uint64_t jump_target;
+        if (opcode == 0b1101111) {
+            jump_target = id_ex_reg_.pc + id_ex_reg_.imm; // JAL
+        } else {
+            jump_target = alu_result & ~1; // JALR (ALU result is Reg + Imm)
+            ex_mem_reg_.alu_result = id_ex_reg_.pc + 4; // Set link address (PC+4)
+        }
+
+        // 1. Redirect PC (Auto-Advance)
+        program_counter_ = jump_target;
+
+        // 2. Kill the next instruction (IF/ID register) to incur the 1-bubble penalty.
+        if_id_reg_.reset(); 
+        
+        // 3. Mark as taken (for link register write)
+        ex_mem_reg_.branch_taken = true; 
+    }
 }
 
 void RV5StageVM_NH_NF::pipeline_memory()
 {
-    // Check for an unconditional jump resolution from the EX stage (JAL/JALR)
-    // The target PC is now available in the EX/MEM register.
-    if (ex_mem_reg_.branch_taken) {
-        uint32_t instruction_in_ex = id_ex_reg_.instruction; // Instruction in EX stage this cycle
-        uint8_t opcode = instruction_in_ex & 0b1111111;
+    // --- B-Type Conditional Branch Resolution (3-Cycle Penalty) ---
+    if (ex_mem_reg_.branch_taken && (id_ex_reg_.instruction & 0b1111111) == 0b1100011) {
+        // B-Type misprediction confirmed in MEM stage. Hardware flushes the pipeline.
+        
+        // 1. Redirect the fetch PC
+        program_counter_ = ex_mem_reg_.branch_target_pc;
 
-        if (opcode == 0b1101111 || opcode == 0b1100111) { // JAL or JALR
-            // Unconditional jumps are resolved here, requiring 1 NOP after them.
-            // The next instruction will be fetched from the target.
-            // We update the PC, and the instruction currently in IF/ID is effectively killed (a NOP).
-            // The instruction currently in ID/EX (the NOP) proceeds to EX.
-            program_counter_ = ex_mem_reg_.branch_target_pc;
-            if_id_reg_.reset(); // Kill the instruction (should be the programmer's NOP)
-        }
-        // Conditional branches (B-type) are NOT handled here, ensuring the 3-NOP delay.
+        // 2. Kill the two instructions in the front end (IF/ID and ID/EX) to incur the 2-bubble penalty.
+        if_id_reg_.reset(); 
+        id_ex_reg_.reset(); 
+        
+        branch_mispredictions_++;
     }
 
-
-    // Record memory changes for Undo/Redo
-    std::vector<uint8_t> old_bytes_vec;
-    std::vector<uint8_t> new_bytes_vec;
-    uint64_t addr = ex_mem_reg_.alu_result;
-
+    // --- Standard MEM Operations ---
+    mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
+    mem_wb_reg_.rd = ex_mem_reg_.rd;
+    mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
+    mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
+    
     if (ex_mem_reg_.mem_read)
     { 
-        // Load instruction: Read from memory
-        // Assuming all loads are RV64 (LD/LWU, etc.) which read a double word or 8 bytes
-        mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(addr);
+        mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
     }
     else if (ex_mem_reg_.mem_write)
     { 
-        // Store instruction: Write to memory
-        
-        // 1. Record state BEFORE the write for Undo
-        for (size_t i = 0; i < 8; ++i)
-            old_bytes_vec.push_back(memory_controller_.ReadByte_d(addr + i));
-
-        // 2. Perform the write (assuming SD/Store Double Word for simplicity)
-        memory_controller_.WriteDoubleWord(addr, ex_mem_reg_.reg2_data);
-
-        // 3. Record state AFTER the write for Redo
-        for (size_t i = 0; i < 8; ++i)
-            new_bytes_vec.push_back(memory_controller_.ReadByte_d(addr + i));
-
-        // 4. Save delta if a change occurred
-        if (old_bytes_vec != new_bytes_vec)
-        {
-            current_delta_.memory_changes.push_back({addr, old_bytes_vec, new_bytes_vec});
-        }
+        // Store instruction (Uses stale data from ID)
+        memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data);
     }
-
-    // Pass necessary data to the final stage (MEM/WB register)
-    mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
-    mem_wb_reg_.rd = ex_mem_reg_.rd;
-
-    // Pass control signals through
-    mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
-    mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
 }
 
 void RV5StageVM_NH_NF::pipeline_writeback()
 {
-    // Check for a conditional branch resolution from the MEM stage (3 NOP delay)
-    if (ex_mem_reg_.branch_taken) {
-        uint32_t instruction_in_mem = id_ex_reg_.instruction; // Instruction was in ID/EX last cycle
-        uint8_t opcode = instruction_in_mem & 0b1111111;
-
-        if (opcode == 0b1100011) { // Conditional Branch (B-type)
-            // The branch outcome is confirmed in the MEM stage.
-            // This is the point where the PC must be redirected for the 3 NOP delay.
-            
-            // To model the 3 NOP delay:
-            // 1. Instructions I1, I2, I3 (the NOPs) have already been fetched.
-            // 2. We now need to redirect the PC for the *next* fetch (which will be the target).
-            // 3. We must also kill I1, I2, I3 in the pipeline.
-
-            // Kill instructions I1 (ID/EX) and I2 (IF/ID) that are still in the front end
-            id_ex_reg_.reset(); 
-            if_id_reg_.reset();
-            
-            // The instruction currently in MEM/WB (I3) will proceed to WB and write back 
-            // garbage if it wasn't a NOP. We need to kill that too.
-            mem_wb_reg_.reset();
-
-            // Redirect the fetch PC
-            program_counter_ = ex_mem_reg_.branch_target_pc;
-        }
-    }
-    
-
     // Write the final result back to the register file
-    if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0) // x0 (rd=0) is hardwired to zero
+    if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0) 
     {
         uint64_t write_data = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
 
@@ -394,7 +322,7 @@ void RV5StageVM_NH_NF::pipeline_writeback()
     }
 }
 
-// --- Undo/Redo Implementations (No changes) ---
+// --- Undo/Redo Implementations ---
 
 void RV5StageVM_NH_NF::Undo()
 {
@@ -425,10 +353,7 @@ void RV5StageVM_NH_NF::Undo()
     // Restore the PC to the state *before* the undone cycle
     program_counter_ = last.old_pc;
     
-    // Reset pipeline registers to NOPs. This is necessary because the Undo step
-    // only reverts architectural state (PC, Registers, Memory), but the pipeline
-    // registers (non-architectural state) must be cleared to allow the user
-    // to start stepping cleanly from the restored PC.
+    // Reset pipeline registers to NOPs for a clean step
     if_id_reg_.reset();
     id_ex_reg_.reset();
     ex_mem_reg_.reset();
@@ -467,7 +392,7 @@ void RV5StageVM_NH_NF::Redo()
     // Restore the PC to the state *after* the redone cycle
     program_counter_ = next.new_pc;
     
-    // Reset pipeline registers for a clean start
+    // Reset pipeline registers for a clean step
     if_id_reg_.reset();
     id_ex_reg_.reset();
     ex_mem_reg_.reset();
@@ -477,7 +402,38 @@ void RV5StageVM_NH_NF::Redo()
     std::cout << "VM_REDO_COMPLETED" << std::endl;
 }
 
+// --- Debug and Specialized Handlers ---
+
 void RV5StageVM_NH_NF::print_pipeline_registers_debug()
 {
-    // Implementation for printing debug state (can be added later if needed)
+    // A basic implementation for debug visibility
+    std::cout << "--- Pipeline Debug (Cycle " << cycle_s_ << ") ---" << std::endl;
+    std::cout << "PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
+    std::cout << "IF/ID: Inst=0x" << std::hex << if_id_reg_.instruction << std::dec << " PC=" << if_id_reg_.pc << std::endl;
+    std::cout << "ID/EX: rs1=" << (int)id_ex_reg_.rs1 << " rs2=" << (int)id_ex_reg_.rs2 << " rd=" << (int)id_ex_reg_.rd << std::endl;
+    std::cout << "EX/MEM: ALU_Res=" << ex_mem_reg_.alu_result << " Br_Taken=" << ex_mem_reg_.branch_taken << std::endl;
+    std::cout << "MEM/WB: ALU_Res=" << mem_wb_reg_.alu_result << " Mem_Data=" << mem_wb_reg_.memory_data << std::endl;
+}
+
+// void RV5StageVM_NH_NF::execute_float() {
+//     // Placeholder: In a full implementation, this calls alu::Alu::fpexecute
+//     std::cerr << "Warning: F-Extension instruction passed to placeholder execute_float()." << std::endl;
+// }
+
+// void RV5StageVM_NH_NF::execute_double() {
+//     // Placeholder: In a full implementation, this calls alu::Alu::dfpexecute
+//     std::cerr << "Warning: D-Extension instruction passed to placeholder execute_double()." << std::endl;
+// }
+
+// void RV5StageVM_NH_NF::execute_csr() {
+//     // Placeholder: In a full implementation, this handles Control and Status Register instructions.
+//     std::cerr << "Warning: CSR instruction passed to placeholder execute_csr()." << std::endl;
+// }
+
+void RV5StageVM_NH_NF::handle_syscall() { 
+    if ((id_ex_reg_.instruction & 0x7F) == 0b1110011 && ((id_ex_reg_.instruction >> 12) & 0x7) == 0b000) {
+        RequestStop();
+        output_status_ = "ECALL_EXIT";
+        DumpState("vm_state.json");
+    }
 }
