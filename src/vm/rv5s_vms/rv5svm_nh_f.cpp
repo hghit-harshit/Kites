@@ -22,6 +22,20 @@
 constexpr uint32_t NOP = 0x00000013;
 
 // --- VmBase Pure Virtual Method Implementations (Run, DebugRun, Reset, Step) ---
+RV5StageVM_NH_F::RV5StageVM_NH_F() : RV5StageVM_Base()
+{
+    // Initialize VmBase members
+    // program_counter_ = 0;
+    // instructions_retired_ = 0;
+    // cycle_s_ = 0;
+    // stall_cycles_ = 0; 
+    
+    // // Initialize local members
+    // stall_fetch_and_decode_ = false;
+
+    // Reset components and history
+    Reset();
+}
 
 void RV5StageVM_NH_F::Run()
 {
