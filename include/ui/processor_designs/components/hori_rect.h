@@ -1,21 +1,22 @@
-#ifndef RECT_ITEM_H
-#define RECT_ITEM_H
+#ifndef HORI_RECT_H
+#define HORI_RECT_H
+
 #include "ui/processor_designs/components/base_component.h"
 #include <QJsonObject>
 
 namespace Kites
 {
-class RectItem : public BaseComponent
+class HoriRect : public BaseComponent
 {
 public:
-    RectItem(const QString& name = "",QGraphicsItem *parent = nullptr)
+    HoriRect(const QString& name = "",QGraphicsItem *parent = nullptr)
         :BaseComponent
         ([](){
             QPainterPath path;
             path.moveTo(0, 0);
             path.lineTo(80, 0);
-            path.lineTo(80, 100);
-            path.lineTo(0, 100);
+            path.lineTo(80, 40);
+            path.lineTo(0, 40);
             // aluPath.lineTo(0, 60);
             // aluPath.lineTo(10, 50);
             // aluPath.lineTo(0, 40);
@@ -28,10 +29,12 @@ public:
     QJsonObject toJson()
     {
         QJsonObject obj = BaseComponent::toJson();
-        obj["type"] = "RectItem";
+        obj["type"] = "HoriRect";
 
         return obj;
     }
+
 };
 } // namespace Kites
-#endif // RECT_ITEM_H
+
+#endif // HORI_RECT_H

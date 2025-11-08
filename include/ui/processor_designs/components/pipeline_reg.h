@@ -1,21 +1,21 @@
-#ifndef RECT_ITEM_H
-#define RECT_ITEM_H
+#ifndef PIPELINE_REG_H
+#define PIPELINE_REG_H
 #include "ui/processor_designs/components/base_component.h"
 #include <QJsonObject>
 
 namespace Kites
 {
-class RectItem : public BaseComponent
+class PipelineReg : public BaseComponent
 {
 public:
-    RectItem(const QString& name = "",QGraphicsItem *parent = nullptr)
+    PipelineReg(const QString& name = "",QGraphicsItem *parent = nullptr)
         :BaseComponent
         ([](){
             QPainterPath path;
             path.moveTo(0, 0);
-            path.lineTo(80, 0);
-            path.lineTo(80, 100);
-            path.lineTo(0, 100);
+            path.lineTo(20, 0);
+            path.lineTo(20, 450);
+            path.lineTo(0, 450);
             // aluPath.lineTo(0, 60);
             // aluPath.lineTo(10, 50);
             // aluPath.lineTo(0, 40);
@@ -28,10 +28,10 @@ public:
     QJsonObject toJson()
     {
         QJsonObject obj = BaseComponent::toJson();
-        obj["type"] = "RectItem";
+        obj["type"] = "PipelineReg";
 
         return obj;
     }
 };
 } // namespace Kites
-#endif // RECT_ITEM_H
+#endif // PIPELINE_REG_H

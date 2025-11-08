@@ -1,21 +1,21 @@
-#ifndef RECT_ITEM_H
-#define RECT_ITEM_H
-#include "ui/processor_designs/components/base_component.h"
+#ifndef SHORT_RECT_H
+#define SHORT_RECT_H
+#include "ui/processor_designs/components/base_component.h" 
 #include <QJsonObject>
 
 namespace Kites
 {
-class RectItem : public BaseComponent
+class ShortRect : public BaseComponent
 {
 public:
-    RectItem(const QString& name = "",QGraphicsItem *parent = nullptr)
+    ShortRect(const QString& name = "",QGraphicsItem *parent = nullptr)
         :BaseComponent
         ([](){
             QPainterPath path;
             path.moveTo(0, 0);
-            path.lineTo(80, 0);
-            path.lineTo(80, 100);
-            path.lineTo(0, 100);
+            path.lineTo(20, 0);
+            path.lineTo(20, 50);
+            path.lineTo(0, 50);
             // aluPath.lineTo(0, 60);
             // aluPath.lineTo(10, 50);
             // aluPath.lineTo(0, 40);
@@ -28,10 +28,10 @@ public:
     QJsonObject toJson()
     {
         QJsonObject obj = BaseComponent::toJson();
-        obj["type"] = "RectItem";
+        obj["type"] = "ShortRect";
 
         return obj;
     }
 };
 } // namespace Kites
-#endif // RECT_ITEM_H
+#endif // SHORT_RECT_H
