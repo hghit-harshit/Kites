@@ -17,6 +17,8 @@
 #include <chrono>
 #include <tuple>
 #include <algorithm>
+#include <thread>
+#include <chrono>
 
 // NOP instruction: ADDI x0, x0, 0 
 constexpr uint32_t NOP = 0x00000013;
@@ -38,11 +40,32 @@ RV5StageVM_NH_NF::RV5StageVM_NH_NF() : RV5StageVM_Base()
 }
 
 
+bool RV5StageVM_NH_NF::is_pipeline_drained() const
+{
+    // IF/ID and ID/EX registers directly store the instruction word.
+    if (if_id_reg_.instruction != NOP) return false;
+    if (id_ex_reg_.instruction != NOP) return false;
+    
+    // EX/MEM: Check for architectural side effects (Reg Write, Mem Read, Mem Write).
+    // A NOP will have all these control signals disabled (false).
+    if (ex_mem_reg_.reg_write || ex_mem_reg_.mem_read || ex_mem_reg_.mem_write) return false;
+
+    // MEM/WB: Check for final architectural side effect (Reg Write).
+    if (mem_wb_reg_.reg_write) return false;
+    
+    return true;
+}
+
 void RV5StageVM_NH_NF::Run()
 {
     ClearStop();
     // Continue running until stop is requested OR the pipeline has drained.
-    while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != NOP))
+    // while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != NOP))
+    // {
+    //     Step();
+    // }
+
+    while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
     {
         Step();
     }
@@ -51,18 +74,21 @@ void RV5StageVM_NH_NF::Run()
 void RV5StageVM_NH_NF::DebugRun()
 {
     ClearStop();
-    while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != NOP))
+    while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
     {
-        if (CheckBreakpoint(program_counter_))
-        {
-            std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
-            output_status_ = "VM_BREAKPOINT_HIT";
-            break;
-        }
+        // if (CheckBreakpoint(program_counter_))
+        // {
+        //     std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
+        //     output_status_ = "VM_BREAKPOINT_HIT";
+        //     break;
+        // }
         print_pipeline_registers_debug();
         Step();
+        
         std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
+    print_pipeline_registers_debug();
 }
 
 void RV5StageVM_NH_NF::Reset()
@@ -106,7 +132,8 @@ void RV5StageVM_NH_NF::Step()
     pipeline_memory(); // Branch (3-cycle) resolution and PC redirect
     pipeline_execute(); // JAL/JALR (1-cycle) resolution and PC redirect
     pipeline_decode();
-    
+    // Fetch the instruction at the committed PC address.
+    pipeline_fetch();
     // 2. Determine the next PC (Redirection logic overrides sequential advance)
     uint64_t next_pc = program_counter_; 
     
@@ -116,11 +143,7 @@ void RV5StageVM_NH_NF::Step()
     }
     
     // Commit the new PC for the Fetch stage
-    program_counter_ = next_pc; 
-    
-    // Fetch the instruction at the committed PC address.
-    pipeline_fetch();
-
+    program_counter_ = next_pc;
     cycle_s_++; // One clock cycle has passed
 
     // Finalize the delta and manage history stacks.
@@ -137,9 +160,9 @@ void RV5StageVM_NH_NF::Step()
     }
     
     // Draining check: if PC is past the program AND ID/EX is a NOP (implying pipeline drain)
-    if (program_counter_ >= program_size_ && id_ex_reg_.instruction == NOP) {
-        RequestStop();
-    }
+    // if (program_counter_ >= program_size_ && id_ex_reg_.instruction == NOP) {
+    //     RequestStop();
+    // }
 }
 
 // --- Pipeline Stage Implementations (Full Proof Control) ---
@@ -155,7 +178,8 @@ void RV5StageVM_NH_NF::pipeline_fetch()
     else
     {
         // Once past the end of the program, inject NOPs to drain the pipeline.
-        if_id_reg_.reset();
+        //if_id_reg_.reset();
+        if_id_reg_.insertNop();
     }
 }
 
@@ -163,7 +187,25 @@ void RV5StageVM_NH_NF::pipeline_decode()
 {
     // Get instruction from the IF/ID register
     uint32_t instruction = if_id_reg_.instruction;
+    if (instruction == NOP) {
+        // Pass through fields as needed
+        id_ex_reg_.pc = if_id_reg_.pc;
+        id_ex_reg_.instruction = instruction;
+        id_ex_reg_.imm = 0;
+        id_ex_reg_.rs1 = id_ex_reg_.rs2 = id_ex_reg_.rd = 0;
+        id_ex_reg_.reg1_data = 0;
+        id_ex_reg_.reg2_data = 0;
 
+        // Critically: zero *all* control signals so downstream stages are idle
+        id_ex_reg_.reg_write = false;
+        id_ex_reg_.branch    = false;
+        id_ex_reg_.alu_src   = false;
+        id_ex_reg_.mem_read  = false;
+        id_ex_reg_.mem_write = false;
+        id_ex_reg_.mem_to_reg= false;
+        id_ex_reg_.alu_op    = 0;
+        return;
+    }
     // Control Unit: Generate signals based on the instruction
     control_unit_.SetControlSignals(instruction);
 
@@ -194,6 +236,37 @@ void RV5StageVM_NH_NF::pipeline_decode()
 
 void RV5StageVM_NH_NF::pipeline_execute()
 {
+    // if (if_id_reg_.pc >= program_size_) {
+    //     // Turn everything off — this acts as a bubble
+    //     id_ex_reg_.instruction = NOP;   // purely cosmetic, no effect
+    //     id_ex_reg_.pc = if_id_reg_.pc;
+    //     id_ex_reg_.imm = 0;
+    //     id_ex_reg_.rs1 = id_ex_reg_.rs2 = id_ex_reg_.rd = 0;
+    //     id_ex_reg_.reg1_data = id_ex_reg_.reg2_data = 0;
+    //     id_ex_reg_.reg_write = false;
+    //     id_ex_reg_.branch = false;
+    //     id_ex_reg_.alu_src = false;
+    //     id_ex_reg_.mem_read = false;
+    //     id_ex_reg_.mem_write = false;
+    //     id_ex_reg_.mem_to_reg = false;
+    //     id_ex_reg_.alu_op = 0;
+
+    //     //ex_mem_reg_.alu_result = alu_result;
+    //     ex_mem_reg_.rd = id_ex_reg_.rd;
+    //     ex_mem_reg_.reg2_data = id_ex_reg_.reg2_data;
+    //     ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
+    //     ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
+    //     ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
+    //     ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
+    //     ex_mem_reg_.branch_taken = false;
+    //     ex_mem_reg_.branch_target_pc = 0;
+
+    //     return;
+    // }
+    //  uint32_t instruction = if_id_reg_.instruction;
+    // // --- Bubble for injected NOPs (end-of-program or flushed) ---
+    
+
     // Select ALU inputs
     uint64_t alu_in1 = id_ex_reg_.reg1_data;
     uint64_t alu_in2 = id_ex_reg_.alu_src ? static_cast<uint64_t>(id_ex_reg_.imm) : id_ex_reg_.reg2_data;
@@ -209,6 +282,7 @@ void RV5StageVM_NH_NF::pipeline_execute()
     std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
 
     // Latch data for EX/MEM Register
+    ex_mem_reg_.instruction = id_ex_reg_.instruction;
     ex_mem_reg_.alu_result = alu_result;
     ex_mem_reg_.rd = id_ex_reg_.rd;
     ex_mem_reg_.reg2_data = id_ex_reg_.reg2_data;
@@ -284,6 +358,7 @@ void RV5StageVM_NH_NF::pipeline_memory()
     }
 
     // --- Standard MEM Operations ---
+    mem_wb_reg_.instruction = ex_mem_reg_.instruction;
     mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
     mem_wb_reg_.rd = ex_mem_reg_.rd;
     mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
@@ -318,6 +393,7 @@ void RV5StageVM_NH_NF::pipeline_writeback()
         }
 
         registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+        std::cout << "Wrote " << write_data << " to x" << mem_wb_reg_.rd << std::endl; // for debugging
         instructions_retired_++; // Instruction successfully retired
     }
 }
@@ -409,10 +485,38 @@ void RV5StageVM_NH_NF::print_pipeline_registers_debug()
     // A basic implementation for debug visibility
     std::cout << "--- Pipeline Debug (Cycle " << cycle_s_ << ") ---" << std::endl;
     std::cout << "PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
-    std::cout << "IF/ID: Inst=0x" << std::hex << if_id_reg_.instruction << std::dec << " PC=" << if_id_reg_.pc << std::endl;
-    std::cout << "ID/EX: rs1=" << (int)id_ex_reg_.rs1 << " rs2=" << (int)id_ex_reg_.rs2 << " rd=" << (int)id_ex_reg_.rd << std::endl;
-    std::cout << "EX/MEM: ALU_Res=" << ex_mem_reg_.alu_result << " Br_Taken=" << ex_mem_reg_.branch_taken << std::endl;
-    std::cout << "MEM/WB: ALU_Res=" << mem_wb_reg_.alu_result << " Mem_Data=" << mem_wb_reg_.memory_data << std::endl;
+
+    auto inst_to_mnemonic = [](uint32_t inst) -> const char* {
+        if (inst == NOP) return "NOP";
+        uint8_t opc = inst & 0x7F;
+        switch (opc) {
+            case 0b1101111: return "JAL";
+            case 0b1100111: return "JALR";
+            case 0b1100011: return "BR";
+            case 0b0000011: return "LOAD";
+            case 0b0100011: return "STORE";
+            case 0b0010011: return "ALU_IMM";
+            case 0b0110011: return "ALU_REG";
+            case 0b1110011: return "SYSTEM";
+            default: return "OTHER";
+        }
+    };
+
+    // Pretty-print pipeline registers in an ASCII box
+    // Compact table: Stage | Instruction (hex) | Mnemonic
+    auto print_row = [&](const char* stage, uint32_t inst){
+        std::cout << "| " << stage << " | 0x" << std::hex << inst << std::dec
+                  << " | " << inst_to_mnemonic(inst) << " |\n";
+    };
+
+    std::cout << "+-----------------------------------------------+\n";
+    std::cout << "| Stage   | Instruction (hex) | Mnemonic         |\n";
+    std::cout << "+-----------------------------------------------+\n";
+    print_row("IF/ID",  if_id_reg_.instruction);
+    print_row("ID/EX",  id_ex_reg_.instruction);
+    print_row("EX/MEM", ex_mem_reg_.instruction);
+    print_row("MEM/WB", mem_wb_reg_.instruction);
+    std::cout << "+-----------------------------------------------+\n";
 }
 
 // void RV5StageVM_NH_NF::execute_float() {

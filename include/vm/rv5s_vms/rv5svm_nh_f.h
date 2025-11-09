@@ -64,6 +64,6 @@ private:
     void pipeline_memory() override;
     void pipeline_writeback() override;
 
-    void print_pipeline_registers_debug();
+    //void print_pipeline_registers_debug();
     void handle_syscall() override;
 };

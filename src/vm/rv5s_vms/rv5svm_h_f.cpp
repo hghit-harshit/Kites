@@ -57,18 +57,19 @@ void RV5StageVM_H_F::Run()
 void RV5StageVM_H_F::DebugRun()
 {
     ClearStop();
-    while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != NOP))
+    while (!stop_requested_ && (program_counter_ < program_size_ ||!is_pipeline_drained()))
     {
-        if (CheckBreakpoint(program_counter_))
-        {
-            std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
-            output_status_ = "VM_BREAKPOINT_HIT";
-            break;
-        }
+        // if (CheckBreakpoint(program_counter_))
+        // {
+        //     std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
+        //     output_status_ = "VM_BREAKPOINT_HIT";
+        //     break;
+        // }
         print_pipeline_registers_debug();
         Step();
         std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
     }
+    print_pipeline_registers_debug();
 }
 
 void RV5StageVM_H_F::Reset()
@@ -143,6 +144,9 @@ void RV5StageVM_H_F::Step()
         stall_fetch_and_decode_ = false;
     }
     
+    
+    // Fetch the instruction at the committed PC address.
+    pipeline_fetch();
     // 3. PC Update and Fetch
     uint64_t next_pc = program_counter_; 
     
@@ -155,9 +159,6 @@ void RV5StageVM_H_F::Step()
     // Commit the new PC for the Fetch stage
     program_counter_ = next_pc; 
     
-    // Fetch the instruction at the committed PC address.
-    pipeline_fetch();
-
     cycle_s_++; // One clock cycle has passed
 
     // Finalize the delta and manage history stacks.
@@ -174,9 +175,9 @@ void RV5StageVM_H_F::Step()
     }
     
     // Draining check: if PC is past the program AND ID/EX is a NOP (implying pipeline drain)
-    if (program_counter_ >= program_size_ && id_ex_reg_.instruction == NOP) {
-        RequestStop();
-    }
+    // if (program_counter_ >= program_size_ && id_ex_reg_.instruction == NOP) {
+    //     RequestStop();
+    // }
 }
 
 // --- Pipeline Stage Implementations (Mode 4: H_F) ---
@@ -204,6 +205,25 @@ void RV5StageVM_H_F::pipeline_decode()
 {
     // This function only runs if a stall was NOT active in Step().
     uint32_t instruction = if_id_reg_.instruction;
+    if (instruction == NOP) {
+        // Pass through fields as needed
+        id_ex_reg_.pc = if_id_reg_.pc;
+        id_ex_reg_.instruction = instruction;
+        id_ex_reg_.imm = 0;
+        id_ex_reg_.rs1 = id_ex_reg_.rs2 = id_ex_reg_.rd = 0;
+        id_ex_reg_.reg1_data = 0;
+        id_ex_reg_.reg2_data = 0;
+
+        // Critically: zero *all* control signals so downstream stages are idle
+        id_ex_reg_.reg_write = false;
+        id_ex_reg_.branch    = false;
+        id_ex_reg_.alu_src   = false;
+        id_ex_reg_.mem_read  = false;
+        id_ex_reg_.mem_write = false;
+        id_ex_reg_.mem_to_reg= false;
+        id_ex_reg_.alu_op    = 0;
+        return;
+    }
     control_unit_.SetControlSignals(instruction);
 
     // Latch data for the ID/EX register
@@ -293,6 +313,7 @@ void RV5StageVM_H_F::pipeline_execute()
     ex_mem_reg_.reg2_data = store_data;
     
     // Pass control signals...
+    ex_mem_reg_.instruction = instruction;
     ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
     ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
     ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
@@ -355,6 +376,7 @@ void RV5StageVM_H_F::pipeline_memory()
     }
 
     // --- Standard MEM Operations ---
+    mem_wb_reg_.instruction = ex_mem_reg_.instruction;
     mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
     mem_wb_reg_.rd = ex_mem_reg_.rd;
     mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
@@ -467,16 +489,16 @@ void RV5StageVM_H_F::Redo()
     std::cout << "VM_REDO_COMPLETED" << std::endl;
 }
 
-void RV5StageVM_H_F::print_pipeline_registers_debug()
-{
-    // A basic implementation for debug visibility
-    std::cout << "--- Pipeline Debug (Cycle " << cycle_s_ << ") ---" << std::endl;
-    std::cout << "PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
-    std::cout << "IF/ID: Inst=0x" << std::hex << if_id_reg_.instruction << std::dec << " PC=" << if_id_reg_.pc << std::endl;
-    std::cout << "ID/EX: rs1=" << (int)id_ex_reg_.rs1 << " rs2=" << (int)id_ex_reg_.rs2 << " rd=" << (int)id_ex_reg_.rd << std::endl;
-    std::cout << "EX/MEM: ALU_Res=" << ex_mem_reg_.alu_result << " Br_Taken=" << ex_mem_reg_.branch_taken << std::endl;
-    std::cout << "MEM/WB: ALU_Res=" << mem_wb_reg_.alu_result << " Mem_Data=" << mem_wb_reg_.memory_data << std::endl;
-}
+// void RV5StageVM_H_F::print_pipeline_registers_debug()
+// {
+//     // A basic implementation for debug visibility
+//     std::cout << "--- Pipeline Debug (Cycle " << cycle_s_ << ") ---" << std::endl;
+//     std::cout << "PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
+//     std::cout << "IF/ID: Inst=0x" << std::hex << if_id_reg_.instruction << std::dec << " PC=" << if_id_reg_.pc << std::endl;
+//     std::cout << "ID/EX: rs1=" << (int)id_ex_reg_.rs1 << " rs2=" << (int)id_ex_reg_.rs2 << " rd=" << (int)id_ex_reg_.rd << std::endl;
+//     std::cout << "EX/MEM: ALU_Res=" << ex_mem_reg_.alu_result << " Br_Taken=" << ex_mem_reg_.branch_taken << std::endl;
+//     std::cout << "MEM/WB: ALU_Res=" << mem_wb_reg_.alu_result << " Mem_Data=" << mem_wb_reg_.memory_data << std::endl;
+// }
 
 // void RV5StageVM_H_F::execute_float() {
 //     std::cerr << "Warning: F-Extension instruction passed to placeholder execute_float()." << std::endl;

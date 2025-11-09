@@ -69,6 +69,6 @@ private:
     // Helper function to consolidate hazard checks (now only Load-Use)
     bool check_for_hazard();
 
-    void print_pipeline_registers_debug();
+    //void print_pipeline_registers_debug();
     void handle_syscall() override;
 };

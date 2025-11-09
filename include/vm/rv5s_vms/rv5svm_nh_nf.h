@@ -210,6 +210,7 @@ private:
     StepDelta current_delta_;
 
     void print_pipeline_registers_debug();
+    bool is_pipeline_drained() const;
     // --- Private methods for each pipeline stage ---
     void pipeline_fetch() override;
     void pipeline_decode() override;
