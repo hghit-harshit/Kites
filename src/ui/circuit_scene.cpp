@@ -1,6 +1,6 @@
 #include "ui/circuit_scene.h"
 #include "ui/processor_designs/components/base_component.h"
-#include "ui/processor_designs/components/alu.h"
+#include "ui/processor_designs/components/alu_item.h"
 #include "ui/processor_designs/components/wire_item.h"
 #include "ui/processor_designs/components/rect_item.h"
 #include "ui/processor_designs/components/mux_item.h"
