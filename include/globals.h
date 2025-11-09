@@ -12,6 +12,7 @@ namespace globals {
 extern std::filesystem::path invokation_path;
 extern std::filesystem::path vm_state_directory;
 extern std::filesystem::path config_file_path;
+extern std::filesystem::path temporary_assembly_file_path;
 extern std::filesystem::path disassembly_file_path;
 extern std::filesystem::path errors_dump_file_path;
 extern std::filesystem::path registers_dump_file_path;

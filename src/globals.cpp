@@ -6,6 +6,7 @@ std::filesystem::path globals::invokation_path = std::filesystem::current_path()
 std::filesystem::path globals::vm_state_directory = globals::invokation_path / "vm_state";
 std::filesystem::path globals::config_file_path = (globals::invokation_path / "vm_state" / "config.ini");
 std::filesystem::path globals::disassembly_file_path = (globals::invokation_path / "vm_state" / "disassembly.txt");
+std::filesystem::path globals::temporary_assembly_file_path = (globals::invokation_path / "vm_state" / "temp.asm");
 std::filesystem::path globals::errors_dump_file_path = (globals::invokation_path / "vm_state" / "errors_dump.json");
 std::filesystem::path globals::registers_dump_file_path = (globals::invokation_path / "vm_state" / "registers_dump.json");
 std::filesystem::path globals::memory_dump_file_path = (globals::invokation_path / "vm_state" / "memory_dump.json");
