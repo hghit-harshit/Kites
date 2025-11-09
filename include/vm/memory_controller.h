@@ -9,7 +9,7 @@
 
 #include "../config.h"
 #include "main_memory.h"
-
+#include <QObject>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -18,7 +18,9 @@
 /**
  * @brief The MemoryController class is responsible for managing memory in the VM.
  */
-class MemoryController {
+class MemoryController : public QObject 
+{
+  Q_OBJECT
 private:
     Memory memory_; ///< The main memory object.
 public:
@@ -33,18 +35,22 @@ public:
 
     void WriteByte(uint64_t address, uint8_t value) {
       memory_.WriteByte(address, value);
+      emit memoryUpdated(address);
     }
 
     void WriteHalfWord(uint64_t address, uint16_t value) {
       memory_.WriteHalfWord(address, value);
+      emit memoryUpdated(address);
     }
 
     void WriteWord(uint64_t address, uint32_t value) {
       memory_.WriteWord(address, value);
+      emit memoryUpdated(address);
     }
 
     void WriteDoubleWord(uint64_t address, uint64_t value) {
       memory_.WriteDoubleWord(address, value);
+      emit memoryUpdated(address);
     }
 
     [[nodiscard]] uint8_t ReadByte(uint64_t address) {
@@ -93,8 +99,8 @@ public:
       return memory_.GetMemoryPoint(address);
     }
 
-    // signals:
-    // void memoryUpdated(uint64_t address);
+    signals:
+    void memoryUpdated(uint64_t address);
 
 };
 

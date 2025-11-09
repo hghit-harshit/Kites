@@ -6,7 +6,7 @@ MemoryModel::MemoryModel(QObject* parent, MemoryController* memoryController)
 :QAbstractTableModel(parent)
 {
     m_memoryController = memoryController;
-    //connect(m_memoryController,&MemoryController::memoryUpdated,)
+    connect(m_memoryController,&MemoryController::memoryUpdated,this,&MemoryModel::updateMemory);
 }
 
 int MemoryModel::rowCount(const QModelIndex &parent) const
