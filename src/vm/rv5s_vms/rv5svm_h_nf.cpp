@@ -44,7 +44,7 @@ RV5StageVM_H_NF::RV5StageVM_H_NF() : RV5StageVM_Base()
 void RV5StageVM_H_NF::Run()
 {
     ClearStop();
-    while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != NOP))
+    while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
     {
         Step();
     }
