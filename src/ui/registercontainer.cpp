@@ -15,6 +15,11 @@ RegisterContainer::RegisterContainer(QWidget *parent,RegisterFile* regfile)
     
 }
 
+void RegisterContainer::setRegisterFile(RegisterFile* regfile)
+{
+    m_registerModel->changeRegisterFile(regfile);
+}
+
 // void RegisterContainer::setupRegisterTable()
 // {
 //     ui->registerTable->setRowCount(32);

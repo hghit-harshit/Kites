@@ -35,7 +35,7 @@ uint64_t RegisterFile::ReadGpr(size_t reg) const {
 void RegisterFile::WriteGpr(size_t reg, uint64_t value) {
   if (reg >= NUM_GPR) throw std::out_of_range("Invalid GPR index");
   if (reg==0) return;
-  //emit updateRegister(reg,value);
+  emit updateRegister(reg,value);
   
   gpr_[reg] = value;
 }

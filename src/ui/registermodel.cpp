@@ -1,5 +1,5 @@
 #include "ui/registermodel.h"
-
+#include <QDebug>
 
 namespace Kites
 {
@@ -87,11 +87,14 @@ void RegisterModel::changeRegisterFile(RegisterFile* regfile)
 { 
     beginResetModel();
     m_currentRegisterFile  = regfile;
+    connect(m_currentRegisterFile,&RegisterFile::updateRegister,this,&RegisterModel::updateRegisterValue);
+    //maybe we can directly connect it to 
     endResetModel();
 }
 
 void RegisterModel::updateRegisterValue(size_t regIndex, uint64_t value)
 {
+    qDebug() << "RegisterModel::updateRegisterValue called for regIndex:" << regIndex << " new value:" << value;
     QModelIndex index = this->index(static_cast<int>(regIndex),2);
     emit dataChanged(index,index);
 }
