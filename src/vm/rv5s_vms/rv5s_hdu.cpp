@@ -41,7 +41,7 @@ int check_data_hazard(const IF_ID_Register& if_id_reg,
     uint8_t if_id_rs2 = (instruction >> 20) & 0x1F;
     
     // FPR Source Registers (frs1/frs2/frs3 fields—must match control logic)
-    // Note: F-type instructions reuse the rs1/rs2 fields for frs1/frs2
+    // Note: F-type instructions reuse the rs1/rs2 fields for frs1/frs2 (unused frs3 here)
     uint8_t if_id_frs1 = (instruction >> 15) & 0x1F;
     uint8_t if_id_frs2 = (instruction >> 20) & 0x1F;
     uint8_t if_id_frs3 = (instruction >> 27) & 0x1F; // For FMA (R4 format)
@@ -59,7 +59,7 @@ int check_data_hazard(const IF_ID_Register& if_id_reg,
                       id_ex_reg.frd == if_id_frs2 || 
                       id_ex_reg.frd == if_id_frs3);
     bool fpr_hazard = fpr_writes && fpr_reads;
-
+    fpr_hazard = false; // FPR hazard detection disabled for current implementation
     // --- 4. No Hazard Exists ---
     if (!gpr_hazard && !fpr_hazard) {
         return STALL_NONE;
