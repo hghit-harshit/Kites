@@ -16,9 +16,11 @@
 #include <algorithm>
 #include <fstream>
 
-void setupVmStateDirectory() {
+void setupVmStateDirectory()
+{
   // std::filesystem::path vm_state_dir = std::filesystem::path(".") / "vm_state";
-  if (!std::filesystem::exists(globals::vm_state_directory)) {
+  if (!std::filesystem::exists(globals::vm_state_directory))
+  {
     std::filesystem::create_directories(globals::vm_state_directory);
   }
 
@@ -26,42 +28,49 @@ void setupVmStateDirectory() {
   // std::filesystem::path errors_file = vm_state_dir / "errors_dump.json";
   // std::filesystem::path vm_state_dump_file_path = vm_state_dir / "vm_state_dump.json";
 
-  if (!std::filesystem::exists(globals::registers_dump_file_path)) {
+  if (!std::filesystem::exists(globals::registers_dump_file_path))
+  {
     std::ofstream(globals::registers_dump_file_path).close();
   }
-  if (!std::filesystem::exists(globals::errors_dump_file_path)) {
+  if (!std::filesystem::exists(globals::errors_dump_file_path))
+  {
     std::ofstream(globals::errors_dump_file_path).close();
   }
-  if (!std::filesystem::exists(globals::memory_dump_file_path)) {
+  if (!std::filesystem::exists(globals::memory_dump_file_path))
+  {
     std::ofstream(globals::memory_dump_file_path).close();
   }
-  if (!std::filesystem::exists(globals::cache_dump_file_path)) {
+  if (!std::filesystem::exists(globals::cache_dump_file_path))
+  {
     std::ofstream(globals::cache_dump_file_path).close();
   }
-  if (!std::filesystem::exists(globals::vm_state_dump_file_path)) {
+  if (!std::filesystem::exists(globals::vm_state_dump_file_path))
+  {
     std::ofstream(globals::vm_state_dump_file_path).close();
   }
-  if (!std::filesystem::exists(globals::disassembly_file_path)) {
+  if (!std::filesystem::exists(globals::disassembly_file_path))
+  {
     std::ofstream(globals::disassembly_file_path).close();
   }
 
-  if (!std::filesystem::exists(globals::config_file_path)) {
+  if (!std::filesystem::exists(globals::config_file_path))
+  {
     SetupConfigFile();
   }
-
-  
 }
 
-
-int64_t CountLines(const std::string &filename) {
+int64_t CountLines(const std::string &filename)
+{
   std::ifstream file(filename);
-  if (!file.is_open()) {
+  if (!file.is_open())
+  {
     throw std::ios_base::failure("Could not open the file.");
   }
 
   int64_t lines = 0;
   std::string line;
-  while (std::getline(file, line)) {
+  while (std::getline(file, line))
+  {
     lines++;
   }
 
@@ -69,17 +78,21 @@ int64_t CountLines(const std::string &filename) {
   return lines;
 }
 
-std::string GetLineFromFile(const std::string &fileName, unsigned int lineNumber) {
+std::string GetLineFromFile(const std::string &fileName, unsigned int lineNumber)
+{
   std::ifstream file(fileName);
-  if (!file.is_open()) {
+  if (!file.is_open())
+  {
     throw std::ios_base::failure("Could not open the file.");
   }
 
   std::string line;
   unsigned int currentLine = 0;
 
-  while (std::getline(file, line)) {
-    if (++currentLine==lineNumber) {
+  while (std::getline(file, line))
+  {
+    if (++currentLine == lineNumber)
+    {
       return line;
     }
   }
@@ -87,38 +100,51 @@ std::string GetLineFromFile(const std::string &fileName, unsigned int lineNumber
   throw std::out_of_range("Line number out of range.");
 }
 
-std::string ParseEscapedString(const std::string &input) {
+std::string ParseEscapedString(const std::string &input)
+{
   std::ostringstream oss;
-  for (size_t i = 0; i < input.size(); ++i) {
-    if (input[i]=='\\' && i + 1 < input.size()) {
-      switch (input[i + 1]) {
-        case 'n': oss.put('\n');
-          ++i;
-          break; // Newline
-        case 't': oss.put('\t');
-          ++i;
-          break; // Tab
-        case '\\': oss.put('\\');
-          ++i;
-          break; // Backslash
-        case '"': oss.put('"');
-          ++i;
-          break; // Double quote
-        default: oss.put('\\');
-          oss.put(input[i + 1]);
-          ++i;
-          break; // Unhandled escape
+  for (size_t i = 0; i < input.size(); ++i)
+  {
+    if (input[i] == '\\' && i + 1 < input.size())
+    {
+      switch (input[i + 1])
+      {
+      case 'n':
+        oss.put('\n');
+        ++i;
+        break; // Newline
+      case 't':
+        oss.put('\t');
+        ++i;
+        break; // Tab
+      case '\\':
+        oss.put('\\');
+        ++i;
+        break; // Backslash
+      case '"':
+        oss.put('"');
+        ++i;
+        break; // Double quote
+      default:
+        oss.put('\\');
+        oss.put(input[i + 1]);
+        ++i;
+        break; // Unhandled escape
       }
-    } else {
+    }
+    else
+    {
       oss.put(input[i]);
     }
   }
   return oss.str();
 }
 
-void DumpErrors(const std::filesystem::path &filename, const std::vector<ParseError> &errors) {
+void DumpErrors(const std::filesystem::path &filename, const std::vector<ParseError> &errors)
+{
   std::ofstream file(filename);
-  if (!file.is_open()) {
+  if (!file.is_open())
+  {
     throw std::runtime_error("Unable to open file: " + filename.string());
   }
 
@@ -126,13 +152,15 @@ void DumpErrors(const std::filesystem::path &filename, const std::vector<ParseEr
   file << "    \"errorCode\": 1,\n";
   file << "    \"errors\": [\n";
 
-  for (size_t i = 0; i < errors.size(); ++i) {
+  for (size_t i = 0; i < errors.size(); ++i)
+  {
     const auto &error = errors[i];
     file << "        {\n";
     file << "            \"line\": " << error.line << ",\n";
     file << "            \"message\": \"" << error.message << "\"\n";
     file << "        }";
-    if (i!=errors.size() - 1) {
+    if (i != errors.size() - 1)
+    {
       file << ",";
     }
     file << "\n";
@@ -144,9 +172,11 @@ void DumpErrors(const std::filesystem::path &filename, const std::vector<ParseEr
   file.close();
 }
 
-void DumpNoErrors(const std::filesystem::path &filename) {
+void DumpNoErrors(const std::filesystem::path &filename)
+{
   std::ofstream file(filename);
-  if (!file.is_open()) {
+  if (!file.is_open())
+  {
     throw std::runtime_error("Unable to open file: " + filename.string());
   }
 
@@ -158,24 +188,28 @@ void DumpNoErrors(const std::filesystem::path &filename) {
   file.close();
 }
 
-void DumpRegisters(const std::filesystem::path &filename, RegisterFile &register_file) {
+void DumpRegisters(const std::filesystem::path &filename, RegisterFile &register_file)
+{
 
   std::vector<uint64_t> gp_registers = register_file.GetGprValues();
   std::vector<uint64_t> fp_registers = register_file.GetFprValues();
 
   std::ofstream file(filename);
-  if (!file.is_open()) {
+  if (!file.is_open())
+  {
     throw std::runtime_error("Unable to open file: " + filename.string());
   }
 
   file << "{\n";
 
   file << "    \"control and status registers\": {\n";
-  if (!csr_to_address.empty()) {
+  if (!csr_to_address.empty())
+  {
     auto it = csr_to_address.begin();
     auto end = csr_to_address.end();
 
-    while (true) {
+    while (true)
+    {
       const auto &key = it->first;
       const auto &value = it->second;
 
@@ -184,25 +218,29 @@ void DumpRegisters(const std::filesystem::path &filename, RegisterFile &register
            << std::setw(0) << std::setfill(' ') << std::dec << "\"";
 
       ++it;
-      if (it!=end) {
+      if (it != end)
+      {
         file << ",";
       }
       file << "\n";
 
-      if (it==end) break;
+      if (it == end)
+        break;
     }
   }
   file << "    },\n";
 
   file << "    \"gp_registers\": {\n";
-  for (size_t i = 0; i < gp_registers.size(); ++i) {
+  for (size_t i = 0; i < gp_registers.size(); ++i)
+  {
     file << "        \"x" << i << "\"";
     file << std::string((i >= 10 ? 0 : 1), ' ');
     file << ": \"0x";
     file << std::hex << std::setw(16) << std::setfill('0')
          << gp_registers[i]
          << std::setw(0) << std::setfill(' ') << std::dec << "\"";
-    if (i!=gp_registers.size() - 1) {
+    if (i != gp_registers.size() - 1)
+    {
       file << ",";
     }
     file << "\n";
@@ -210,7 +248,8 @@ void DumpRegisters(const std::filesystem::path &filename, RegisterFile &register
   file << "    },\n";
 
   file << "    \"fp_registers\": {\n";
-  for (size_t i = 0; i < fp_registers.size(); ++i) {
+  for (size_t i = 0; i < fp_registers.size(); ++i)
+  {
     file << "        \"f" << i << "\"";
     file << std::string((i >= 10 ? 0 : 1), ' ');
     file << ": \"0x";
@@ -218,7 +257,8 @@ void DumpRegisters(const std::filesystem::path &filename, RegisterFile &register
          << fp_registers[i]
          << std::setw(0) << std::setfill(' ') << std::dec << "\"";
 
-    if (i!=fp_registers.size() - 1) {
+    if (i != fp_registers.size() - 1)
+    {
       file << ",";
     }
     file << "\n";
@@ -280,20 +320,20 @@ void DumpRegisters(const std::filesystem::path &filename, RegisterFile &register
 //       }
 //       ++line_number;
 //       std::cout << std::setw(16) << std::setfill('0') << std::hex
-//                 << current_address 
-//                 << std::dec << std::setfill(' ') 
+//                 << current_address
+//                 << std::dec << std::setfill(' ')
 //                 << " <" << it->second << ">:" << std::endl;
 //       ++line_number;
 //     }
 //     std::cout << "  "
 //               << std::setw(hex_digits) << std::setfill(' ') << std::right << std::hex
-//               << current_address 
+//               << current_address
 //               << std::dec << std::left << std::setw(0)
 //               << ": ";
 //     if (instruction_index < text_buffer.size()) {
 //       uint32_t raw = text_buffer[instruction_index];
-//       std::cout << std::setfill('0') << std::setw(8) << std::right << std::hex 
-//                 << raw 
+//       std::cout << std::setfill('0') << std::setw(8) << std::right << std::hex
+//                 << raw
 //                 << std::dec << std::setfill(' ') << "          	";
 //     } else {
 //       std::cout << " ????????\t";
@@ -309,26 +349,31 @@ void DumpRegisters(const std::filesystem::path &filename, RegisterFile &register
 //   }
 // }
 
-void DumpDisasssembly(const std::filesystem::path &filename, AssembledProgram &program) {
+void DumpDisasssembly(const std::filesystem::path &filename, AssembledProgram &program)
+{
   std::ofstream out(filename);
-  if (!out) {
+  if (!out)
+  {
     std::cerr << "Failed to open disassembly output file: " << filename << std::endl;
     return;
   }
 
-  const std::map<std::string, SymbolData>& symbol_table = program.symbol_table;
-  const std::vector<std::pair<ICUnit, bool>>& intermediate_code = program.intermediate_code;
-  const std::vector<uint32_t>& text_buffer = program.text_buffer;
+  const std::map<std::string, SymbolData> &symbol_table = program.symbol_table;
+  const std::vector<std::pair<ICUnit, bool>> &intermediate_code = program.intermediate_code;
+  const std::vector<uint32_t> &text_buffer = program.text_buffer;
   std::map<unsigned int, unsigned int> instruction_number_disassembly_mapping;
 
   std::unordered_map<uint64_t, std::string> label_for_address;
-  for (const auto& [name, data] : symbol_table) {
-    if (!data.isData) {
+  for (const auto &[name, data] : symbol_table)
+  {
+    if (!data.isData)
+    {
       label_for_address[data.address] = name;
     }
   }
 
-  if (label_for_address.find(0) == label_for_address.end()) {
+  if (label_for_address.find(0) == label_for_address.end())
+  {
     label_for_address[0] = "start";
   }
 
@@ -338,15 +383,19 @@ void DumpDisasssembly(const std::filesystem::path &filename, AssembledProgram &p
   size_t max_address = intermediate_code.size() * 4;
   int hex_digits = 1;
   size_t temp = max_address;
-  while (temp >>= 4) ++hex_digits;
+  while (temp >>= 4)
+    ++hex_digits;
 
-  while (instruction_index < intermediate_code.size()) {
-    const auto& [ICBlock, isData] = intermediate_code[instruction_index];
+  while (instruction_index < intermediate_code.size())
+  {
+    const auto &[ICBlock, isData] = intermediate_code[instruction_index];
     uint64_t current_address = instruction_index * 4;
 
     auto it = label_for_address.find(current_address);
-    if (it != label_for_address.end()) {
-      if (line_number > 1) {
+    if (it != label_for_address.end())
+    {
+      if (line_number > 1)
+      {
         out << std::endl;
         ++line_number;
       }
@@ -363,16 +412,19 @@ void DumpDisasssembly(const std::filesystem::path &filename, AssembledProgram &p
         << std::dec << std::left << std::setw(0)
         << ": ";
 
-    if (instruction_index < text_buffer.size()) {
+    if (instruction_index < text_buffer.size())
+    {
       uint32_t raw = text_buffer[instruction_index];
       out << std::setfill('0') << std::setw(8) << std::right << std::hex
           << raw
           << std::dec << std::setfill(' ') << "             ";
-    } else {
+    }
+    else
+    {
       out << " ????????             ";
     }
 
-    out << ICBlock << std::endl; 
+    out << ICBlock << std::endl;
     instruction_number_disassembly_mapping[instruction_index] = line_number;
 
     ++line_number;
@@ -382,11 +434,11 @@ void DumpDisasssembly(const std::filesystem::path &filename, AssembledProgram &p
   program.instruction_number_disassembly_mapping = instruction_number_disassembly_mapping;
 }
 
-
-
-void SetupConfigFile() {
+void SetupConfigFile()
+{
   std::ofstream config_file(globals::config_file_path);
-  if (!config_file.is_open()) {
+  if (!config_file.is_open())
+  {
     throw std::runtime_error("Unable to open config file: " + globals::config_file_path.string());
   }
 
