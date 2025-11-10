@@ -20,6 +20,7 @@ CircuitView::CircuitView(QWidget *parent)
     setAcceptDrops(true);
     setDragMode(QGraphicsView::NoDrag);
     setMouseTracking(true);
+    //fitInView(scene()->sceneRect(), Qt::KeepAspectRatio);
 }
 
 
@@ -30,6 +31,16 @@ CircuitView::CircuitView(QGraphicsScene *scene, QWidget *parent)
     setAcceptDrops(true);
     setDragMode(QGraphicsView::NoDrag);
     setMouseTracking(true);
+    
+    centerOn(0, 0);
+    //fitInView(scene->sceneRect(), Qt::KeepAspectRatio);
+}
+
+void CircuitView::showEvent(QShowEvent *event)
+{
+    QGraphicsView::showEvent(event);
+    setTransform(QTransform().scale(0.7, 0.7));
+    //fitInView(scene()->sceneRect(), Qt::KeepAspectRatio);
 }
 
 void CircuitView::drawBackground(QPainter *painter, const QRectF &rect)
