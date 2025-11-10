@@ -26,6 +26,12 @@ void MemoryModel::setRowsVisible(int rows)
     endResetModel();
 }
 
+void MemoryModel::changeMemoryController(MemoryController* memoryController)
+{
+    beginResetModel();
+    m_memoryController = memoryController;
+    endResetModel();
+}
 // bool MemoryModel::isValidAddress(const uint64_t& address, int offset) const
 // {
 //     if(offset < 0)

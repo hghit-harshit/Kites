@@ -6,7 +6,6 @@
 #pragma once
 
 #include "vm/vm_base.h"
-#include "vm/rvss/rvss_vm.h"
 #include "config.h"
 #include "vm_asm_mw.h"
 #include "vm_types.h"
@@ -18,6 +17,10 @@
 
 
 class RVSSVM; // forward declaration
+class RV5StageVM_NH_NF; // forward declaration
+class RV5StageVM_H_NF; // forward declaration
+class RV5StageVM_NH_F; // forward declaration
+class RV5StageVM_H_F; // forward declaration
 
 /**
  * @brief This class is responsible for the management of the VM instance
@@ -44,6 +47,7 @@ class VMManager : public QObject
         void reset();
         void loadProgram(const AssembledProgram &program);
         void run();
+        void step();
         void debugRun();
 
         

@@ -37,6 +37,11 @@ MemoryTab::MemoryTab(QWidget *parent,MemoryController* memoryController)
     });
 }
 
+void MemoryTab::changeMemoryController(MemoryController* memoryController)
+{
+    m_memoryModel->changeMemoryController(memoryController);
+}
+
 MemoryTab::~MemoryTab()
 {
     delete ui;

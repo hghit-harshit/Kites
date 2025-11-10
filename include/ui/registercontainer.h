@@ -16,6 +16,7 @@ class RegisterContainer : public QWidget
 public:
     explicit RegisterContainer(QWidget *parent = nullptr,RegisterFile* regfile = nullptr);
     ~RegisterContainer();
+    void setRegisterFile(RegisterFile* regfile);
 // private slots:
 //     void updateRegisterValue(size_t regIndex, uint64_t value);
 private:

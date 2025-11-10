@@ -1,6 +1,7 @@
 #pragma once 
 #include "vm/vm_base.h"
 #include "vm/pipeline_registers.h"
+#include "vm/vm_manager.h"
 #include "rv5s_control_unit.h"
 
 
