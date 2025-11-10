@@ -7,6 +7,7 @@ namespace Kites
 Editor::Editor(QWidget* parent):QPlainTextEdit(parent)
 {
     setMouseTracking(true);
+    m_syntaxHighlighter = new SyntaxHighlighter(this->document());
 }
 
 void Editor::resetErrors()
@@ -33,27 +34,32 @@ void Editor::resetErrors()
 bool Editor::event(QEvent *event)
 {
     // Check if the event is a tooltip request
-    if (event->type() == QEvent::ToolTip) {
+    if (event->type() == QEvent::ToolTip) 
+    {
         // Cast the event to a QHelpEvent to get mouse coordinates
         QHelpEvent *helpEvent = static_cast<QHelpEvent*>(event);
 
         // Use your existing logic to find the line number
         QTextCursor cursor = cursorForPosition(helpEvent->pos());
         QTextBlock block = cursor.block();
-        int lineNumber = block.blockNumber();
+        int lineNumber = block.firstLineNumber();
 
         // If this line has a tooltip, show it
         // (Using .count() is a common and clean way to check for key existence)
-        if (m_errorMessages.count(lineNumber)) {
+        if (m_errorMessages.find(lineNumber) != m_errorMessages.end()) 
+        {
             // Show our custom error tooltip
             QToolTip::showText(helpEvent->globalPos(), m_errorMessages.at(lineNumber), this);
             return true; // We handled this event!
-        } else {
+        } else 
+        {
             // No error for this line, hide any active tooltip
             QToolTip::hideText();
+            event->ignore();
             // Don't return true, let the base class handle it
             // (e.g., to show the widget's default tooltip if one is set)
         }
+        return true;
     }
     
     // Pass all other events (including mouseMoveEvent) to the base class
