@@ -20,6 +20,7 @@ protected:
     //void dropEvent(QDropEvent *event)override;
     //void mouseMoveEvent(QMouseEvent *mouseEvent) override;
     void drawBackground(QPainter *painter, const QRectF &rect) override;
+    void showEvent(QShowEvent *event) override;
 };
 
 } // namespace Kites
