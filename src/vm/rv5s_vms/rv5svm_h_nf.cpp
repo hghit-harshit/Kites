@@ -12,7 +12,7 @@
 #include "vm/alu.h"
 #include "vm/vm_base.h"
 #include "vm/pipeline_registers.h"
-
+#include "ui/processor_designs/rv5svm_h_nf_circuit_scene.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -38,6 +38,9 @@ RV5StageVM_H_NF::RV5StageVM_H_NF() : RV5StageVM_Base()
     // stall_fetch_and_decode_ = false;
 
     // Reset components and history
+    circuit_scene_ = std::make_unique<Kites::RV5StageVM_H_NF_CircuitScene>();
+    connect(this, &VmBase::updateCircuitState,
+            circuit_scene_.get(), &Kites::RV5StageVM_H_NF_CircuitScene::updateCircuitState);
     Reset();
 }
 

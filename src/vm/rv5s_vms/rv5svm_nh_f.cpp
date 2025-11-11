@@ -12,7 +12,7 @@
 #include "config.h"
 #include "vm/alu.h"
 #include "vm/vm_base.h" // For ImmGenerator, etc.
-
+#include "ui/processor_designs/rv5svm_nh_f_circuit_scene.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -28,6 +28,9 @@ using namespace alu;
 RV5StageVM_NH_F::RV5StageVM_NH_F() : RV5StageVM_Base()
 {
     // Reset components and history
+    circuit_scene_ = std::make_unique<Kites::RV5StageVM_NH_F_CircuitScene>();
+    connect(this, &VmBase::updateCircuitState,
+            circuit_scene_.get(), &Kites::RV5StageVM_NH_F_CircuitScene::updateCircuitState);
     Reset();
 }
 

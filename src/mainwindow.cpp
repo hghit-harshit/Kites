@@ -11,7 +11,9 @@
 #include "ui/processortab.h"
 #include "ui/processor_dialog.h"
 #include "vm/vm_manager.h"
+#include "globals.h"
 #include <QActionGroup>
+#include <QHBoxLayout>
 namespace Kites
 {
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
@@ -23,9 +25,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     setUpPalettes();
     toggleTheme(Theme::Light);
     setupVmStateDirectory();
-    m_vmManager = new VMManager(this);
-    //VMManager::getInstance(); //will initialize the VMManager singleton
+    m_vmManager = std::make_unique<VMManager>(this);
     m_registerContainer = new RegisterContainer(this,m_vmManager->getRegisterFile());
+ 
     QWidget *central = new QWidget(this);
     QHBoxLayout *mainLayout = new QHBoxLayout(central);
     QSplitter *splitter = new QSplitter(Qt::Horizontal,this);
@@ -57,33 +59,15 @@ void MainWindow::setUpToolBar()
     QToolBar *toolbar = addToolBar("Main Toolbar");
     QAction *processorAction = new QAction("Processor",this);
     QAction *runAction = new QAction("Run", this);
+    QAction *stepAction = new QAction("Step", this);
     //toolbar->addAction(preferencesAction);
-    toolbar->addAction(runAction);
     toolbar->addAction(processorAction);
-
-
+    toolbar->addAction(runAction);
+    toolbar->addAction(stepAction);
+    
     connect(runAction,&QAction::triggered,this,&MainWindow::run);
     connect(processorAction,&QAction::triggered,this,&MainWindow::processorChangeDialog);
-    // connect(runAction,&QAction::triggered, this, [=](){
-    //     std::string code = editor->toPlainText().toStdString();
-    //     //std::string asmcode = code.toStdString();
-    //     std::string tempFile = "temp.asm";
-
-    //     std::ofstream out(tempFile);
-    //     out << code;
-    //     out.close();
-
-    //     AssembledProgram asmprog = assemble(tempFile);
-    //     std::vector<uint32_t> disassembledCode = generateMachineCode(asmprog.intermediate_code);
-    //     QString disassemblyText;
-    //     for (const auto& line : disassembledCode) {
-    //         std::ostringstream oss;
-    //         oss << "0x" << std::hex << std::setw(8) << std::setfill('0') << line;
-    //         disassemblyText += oss.str() + "\n";
-    //     }
-    //     disassemblyView->setPlainText(disassemblyText);
-
-    // });
+    //connect(stepAction,&QAction::triggered,this,&MainWindow::step);
 }
 
 void MainWindow::setUpSidebar()
@@ -105,7 +89,7 @@ void MainWindow::setUpMenubar()
     QMenu *preferencesMenu = new QMenu("Preferences",this);
 
     QAction *openAction = new QAction("Open", this);
-    QAction *saveAction = new QAction("Save", this);
+    QAction *saveAction = new QAction("Save", this);    
     QAction *exitAction = new QAction("Exit", this);
     //QAction *preferencesAction = new QAction("Preferences", this);
     QAction *aboutAction = new QAction("About", this);
@@ -142,81 +126,83 @@ void MainWindow::setUpMenubar()
     connect(darkThemeAction, &QAction::triggered, this, [this]() {
         toggleTheme(Theme::Dark);
     });
-   
-    // connect(openAction, &QAction::triggered, this, [=]() {
-    //     QString fileName = QFileDialog::getOpenFileName(this, "Open Assembly File", "", "Assembly Files (*.s *.asm);;All Files (*)");
-    //     if (!fileName.isEmpty()) {
-    //         QFile file(fileName);
-    //         if (file.open(QIODevice::ReadOnly | QIODevice::Text))
-    //             editor->setPlainText(file.readAll());
-    //     }
-    // });
 
-    // connect(saveAction, &QAction::triggered, this, [=]() {
-    //     QString fileName = QFileDialog::getSaveFileName(this, "Save Assembly File", "", "Assembly Files (*.s *.asm);;All Files (*)");
-    //     if (!fileName.isEmpty()) {
-    //         QFile file(fileName);
-    //         if (file.open(QIODevice::WriteOnly | QIODevice::Text))
-    //             file.write(editor->toPlainText().toUtf8());
-    //     }
-    // });
-
-    // connect(exitAction, &QAction::triggered, this, &MainWindow::close);
-
-    // connect(aboutAction, &QAction::triggered, this, [=]() {
-    //     QMessageBox::about(this, "About", "RISC-V Visual Assembler\nBuilt with Qt");
-    // });
 }
 
 void MainWindow::setUpTabs()
 {
     m_tabs[TabIndex::EditorTabIndex] = new EditorTab(this);
     m_tabs[TabIndex::MemoryTabIndex] = new MemoryTab(this,m_vmManager->getMemoryController());
-    m_tabs[TabIndex::ProcessorTabIndex] = new ProcessorTab(this); //will add later
+    m_tabs[TabIndex::ProcessorTabIndex] = new ProcessorTab(this,m_vmManager.get()); //will add later
+
+    //a little experiment 
+    connect(this,&MainWindow::vmChangedSignal,
+            dynamic_cast<ProcessorTab*>(m_tabs[TabIndex::ProcessorTabIndex]),
+            &ProcessorTab::onVMChanged);
 
     m_stackedTabs->addWidget(m_tabs[TabIndex::EditorTabIndex]);
     m_stackedTabs->addWidget(m_tabs[TabIndex::MemoryTabIndex]);
     m_stackedTabs->addWidget(m_tabs[TabIndex::ProcessorTabIndex]);
 }
-void MainWindow::run()
+bool MainWindow::tryParseAndLoadProgram()
 {
-    //will change this later for now we just want to compile
+    auto editor = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
+    editor->resetErrorLines(); // we reset previous error lines
     try
     {
-        m_vmManager->reset();
-        auto editor = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
         std::string rawText = editor->getRawText();
-        std::string tempFile = "temp.asm";
-        std::ofstream out(tempFile);
+        std::ofstream out(globals::temporary_assembly_file_path);
         out << rawText;
         out.close();
-        std::string disassemblyTextFile = "disassembly.txt";
-        AssembledProgram assembledProgram = assemble(tempFile);
-        DumpDisasssembly(disassemblyTextFile,assembledProgram);
-        std::ifstream in(disassemblyTextFile);
+        AssembledProgram assembledProgram = assemble(globals::temporary_assembly_file_path.string());
+        DumpDisasssembly(globals::disassembly_file_path, assembledProgram);
+        std::ifstream in(globals::disassembly_file_path);
         std::stringstream buffer;
         buffer << in.rdbuf();
         editor->updateDisassemblyView(buffer.str());
-
         m_vmManager->loadProgram(assembledProgram);
-        m_vmManager->run();
+        return true;
     }
     catch(const std::exception& e)
     {
+        editor->setErrorLinesFromFile(globals::errors_dump_file_path);
         QMessageBox::critical(this, "Error", e.what());
+        return false;
     }
 }
 
+void MainWindow::run()
+{
+    if (tryParseAndLoadProgram()) 
+    {
+        m_vmManager->run();
+    }
+}
 void MainWindow::processorChangeDialog()
 {
-    ProcessorDialog dialog(this);
+    ProcessorDialog dialog(this,m_vmManager->getVMType());
+    connect(&dialog,&ProcessorDialog::vmSelected,this,&MainWindow::vmChanged);
     dialog.exec();
 }
 
+void MainWindow::vmChanged(const VMType& vmType)
+{
+    //m_vmManager->setVMType(vmType);
+    //m_registerContainer->setRegisterFile(m_vmManager->getRegisterFile());
+    // this looks kinda ugly but well its better than emitting multiple signals
+    qDebug() << "VM Changed to " << static_cast<int>(vmType);
+    m_vmManager->changeVM(vmType);
+    m_registerContainer->setRegisterFile(m_vmManager->getRegisterFile());
+    auto* memtab = dynamic_cast<MemoryTab*>(m_tabs[TabIndex::MemoryTabIndex]);
+    memtab->changeMemoryController(m_vmManager->getMemoryController());
+
+    emit vmChangedSignal();
+
+    //well also have to change the processor desing from here later
+}
 
 void MainWindow::setUpPalettes()
 {
-
     m_palettes[Theme::Light].setColor(QPalette::Window, Qt::white);
     m_palettes[Theme::Light].setColor(QPalette::WindowText, Qt::black);
     m_palettes[Theme::Light].setColor(QPalette::Base, QColor(245, 245, 245));

@@ -12,7 +12,7 @@
 #include "vm/alu.h"
 #include "vm/vm_base.h" 
 #include "vm/pipeline_registers.h" 
-
+#include "ui/processor_designs/rv5svm_h_f_circuit_scene.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -33,15 +33,18 @@ using namespace alu;
 RV5StageVM_H_F::RV5StageVM_H_F() : RV5StageVM_Base()
 {
     // Initialize VmBase members
-    program_counter_ = 0;
-    instructions_retired_ = 0;
-    cycle_s_ = 0;
-    stall_cycles_ = 0; 
+    // program_counter_ = 0;
+    // instructions_retired_ = 0;
+    // cycle_s_ = 0;
+    // stall_cycles_ = 0; 
     
-    // Initialize local members
-    stall_fetch_and_decode_ = false;
+    // // Initialize local members
+    // stall_fetch_and_decode_ = false;
 
     // Reset components and history
+    circuit_scene_ = std::make_unique<Kites::RV5StageVM_H_F_CircuitScene>();
+    connect(this, &VmBase::updateCircuitState,
+            circuit_scene_.get(), &Kites::RV5StageVM_H_F_CircuitScene::updateCircuitState);
     Reset();
 }
 

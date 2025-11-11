@@ -1,17 +1,10 @@
 #pragma once
 #include <QMainWindow>
 #include <QSplitter>
-#include <QTextEdit>
-#include <QTableWidget>
-//#include <QTreeView>
-#include <QVBoxLayout>
-#include <QMenuBar>
-#include <QToolBar>
-#include <QAction>
-#include <QFileDialog>
 #include <QMessageBox>
 #include <QListWidget>
 #include <QStackedWidget>
+#include <QTextCharFormat>
 #include <QWidget>
 #include <map>
 #include "ui/kitestab.h"
@@ -59,6 +52,7 @@ private:
     void setUpTabs();
     void setUpPalettes();
     void toggleTheme(Theme theme);
+    bool tryParseAndLoadProgram();
     void run();
     void processorChangeDialog();
     Ui::MainWindow *ui;
@@ -69,8 +63,12 @@ private:
     RegisterContainer* m_registerContainer = nullptr;
     std::map<TabIndex, KitesTab*> m_tabs;
     TabIndex m_currentTabIndex = TabIndex::EditorTabIndex;
-
-    VMManager *m_vmManager = nullptr;
+    std::unique_ptr<VMManager> m_vmManager = nullptr;
     std::map<Theme,QPalette> m_palettes;
+public slots:
+    void vmChanged(const VMType& vmType); // this will catch the signal from processor dialog
+
+signals:
+    void vmChangedSignal();
 };
 } // namespace Kites

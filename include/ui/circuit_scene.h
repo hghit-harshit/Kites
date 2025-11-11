@@ -4,6 +4,7 @@
 #include <QPointF>
 #include <QGraphicsSceneMouseEvent>
 #include <QPainterPath>
+#include <filesystem>
 #include "ui/processor_designs/components/wire_item.h"
 #include "ui/processor_designs/components/base_component.h"
 
@@ -26,6 +27,7 @@ protected:
     //void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent) override;
 
 private:
+    std::filesystem::path m_sceneFilePath;
     //QPointF getSnappedPos(BaseComponent* component,const QPointF& scenePos);
     //BaseComponent* componentAt(const QPointF& scenePos);
     //WireItem* wireAt(const QPointF& scenePos);
@@ -35,6 +37,8 @@ private:
 
     //QPainterPath m_originalPath; // when we add junction of a part this will store the original path
     //bool m_isBranch; // indicates that the current wire is branch of an existing one
+public slots:
+        void updateCircuitState(const QList<QString>& wireList); 
 
 };
 } // namespace Kites

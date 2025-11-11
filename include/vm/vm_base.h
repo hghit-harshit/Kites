@@ -21,6 +21,7 @@
 #include <queue>
 #include <atomic>
 #include <memory>
+#include <QWidget>
 enum SyscallCode
 {
 	SYSCALL_PRINT_INT = 1,
@@ -58,10 +59,11 @@ struct StepDelta
 /**
  * @brief Base class for the virtual machine.
  */
-class VmBase
+class VmBase : public QWidget
 {
+	Q_OBJECT
 public:
-	VmBase() = default;
+	VmBase();
 	~VmBase() = default;
 
 	AssembledProgram program_;
@@ -94,7 +96,8 @@ public:
 	alu::Alu alu_;
 
 	//todo make every file under kites namespace
-	Kites::CircuitScene circuit_scene_; // Circuit scene for visualization
+	std::unique_ptr<Kites::CircuitScene> circuit_scene_; // Circuit scene for visualization
+	
 	void LoadProgram(const AssembledProgram &program);
 	uint64_t program_size_ = 0;
 
@@ -131,6 +134,9 @@ public:
 		input_queue_.push(input);
 		input_cv_.notify_one();
 	}
+
+	signals:
+	void updateCircuitState(const QList<QString>& wireList);
 };
 
 #endif // VM_BASE_H

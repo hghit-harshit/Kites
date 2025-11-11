@@ -9,6 +9,7 @@
 #include "config.h"
 #include "vm_asm_mw.h"
 #include "vm_types.h"
+#include "ui/circuit_scene.h"
 #include <memory>
 #include <stdexcept>
 #include <sstream>
@@ -53,6 +54,7 @@ class VMManager : public QObject
         
         RegisterFile* getRegisterFile();
         MemoryController* getMemoryController();
+        Kites::CircuitScene* getCircuitScene();
         
     private:
     

@@ -10,7 +10,7 @@
 #include "globals.h"
 #include "common/instructions.h"
 #include "config.h"
-
+#include "ui/processor_designs/rvss_circuit_scene.h"
 #include <cctype>
 #include <cstdint>
 #include <iostream>
@@ -23,9 +23,14 @@
 #include <queue>
 #include <atomic>
 
-RVSSVM::RVSSVM() : VmBase() {
+RVSSVM::RVSSVM() 
+: VmBase()
+{
   DumpRegisters(globals::registers_dump_file_path, registers_);
   DumpState(globals::vm_state_dump_file_path);
+  circuit_scene_ = std::make_unique<Kites::RVSSCircuitScene>();
+  connect(this, &VmBase::updateCircuitState,
+            circuit_scene_.get(), &Kites::RVSSCircuitScene::updateCircuitState);
 }
 
 RVSSVM::~RVSSVM() = default;
