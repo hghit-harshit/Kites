@@ -5,14 +5,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # This works for Harshit
-# set( CMAKE_PREFIX_PATH "D:/QT/6.9.2/mingw_64/lib/cmake")
-# set(MINGW_PATH "D:/Qt/Tools/mingw1310_64")
-# find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets)
+set( CMAKE_PREFIX_PATH "D:/QT/6.9.2/mingw_64/lib/cmake")
+set(MINGW_PATH "D:/Qt/Tools/mingw1310_64")
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets)
 
 # This works for Atharva
-set(CMAKE_PREFIX_PATH "/home/atharv/Qt/6.10.0/gcc_64")
-set(Qt6_DIR "/home/atharv/Qt/6.10.0/gcc_64/lib/cmake/Qt6")
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+# set(CMAKE_PREFIX_PATH "/home/atharv/Qt/6.10.0/gcc_64")
+# set(Qt6_DIR "/home/atharv/Qt/6.10.0/gcc_64/lib/cmake/Qt6")
+# find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
 
 include(FetchContent)
@@ -49,7 +49,11 @@ file(GLOB_RECURSE HEADER_FILES
     "${SRC_DIR}/*.h")
 
 ##############resourecs setup#################
-qt6_add_resources(ICONS_SRC ${CMAKE_SOURCE_DIR}/resources/icons/icons.qrc)
+qt6_add_resources(APP_RESOURCES 
+resources/resources.qrc
+resources/circuit_designs/circuit_designs.qrc
+resources/icons/icons.qrc
+)
 ##############################################
 
 qt_add_executable(RISC_V_Simulator
@@ -61,7 +65,7 @@ qt_add_executable(RISC_V_Simulator
     ${HEADER_FILES}
     ${SRC_FILES}
     ${UI_FILES}
-    ${ICONS_SRC}
+    ${APP_RESOURCES}
 )
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE
@@ -102,6 +106,7 @@ option(ENABLE_TESTS "Build tests" OFF)
 
 if(ENABLE_TESTS)
     #find_package(GTest REQUIRED)
+    enable_testing()
     include_directories(${GTEST_INCLUDE_DIRS})
     #list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/main.cpp")
     add_executable(tests 
@@ -134,5 +139,6 @@ if(ENABLE_TESTS)
         DEPENDS tests
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
+    add_test(NAME AllTests COMMAND test_run)
 endif()
 
