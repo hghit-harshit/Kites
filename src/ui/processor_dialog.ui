@@ -41,6 +41,21 @@
        <string>5 statge Processor w/o hazard detection w/o forwarding</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>5 statge Processor w/ hazard detection w/o forwarding</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>5 statge Processor w/o hazard detection w/ forwarding</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>5 statge Processor w/ hazard detection w/ forwarding</string>
+      </property>
+     </item>
     </widget>
    </item>
   </layout>

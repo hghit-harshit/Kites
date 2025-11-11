@@ -22,6 +22,12 @@ struct IF_ID_Register
         instruction = 0x00000013;
         pc = 0;
     }
+
+    void insertNop()
+    {
+        // Inserts a NOP instruction into the pipeline stage.
+        instruction = 0x00000013;
+    }
 };
 
 // --- Data passed from Decode (ID) to Execute (EX) ---
@@ -34,7 +40,7 @@ struct ID_EX_Register
     uint64_t reg2_data = 0;     // GPR rs2 data
     int32_t imm = 0;
 
-    // --- FPR Data (for F-type instructions) ---
+    // --- FPR Data (for F-type instructions) --- (ignore these not used)
     uint64_t freg1_data = 0;    // FPR frs1 data
     uint64_t freg2_data = 0;    // FPR frs2 data
     uint64_t freg3_data = 0;    // FPR frs3 data (for FMA instructions)
@@ -45,6 +51,7 @@ struct ID_EX_Register
     uint8_t rs2 = 0;            // GPR source 2 index
     uint8_t rd = 0;             // GPR destination index
 
+    //ignore these not used
     uint8_t frs1 = 0;           // FPR source 1 index
     uint8_t frs2 = 0;           // FPR source 2 index
     uint8_t frs3 = 0;           // FPR source 3 index
@@ -53,7 +60,7 @@ struct ID_EX_Register
 
     // --- Control signals generated in Decode stage ---
     bool reg_write = false;     // Write to GPRs (x0-x31)
-    bool freg_write = false;    // Write to FPRs (f0-f31)
+    bool freg_write = false;    // Write to FPRs (f0-f31)(ignore these)
     
     bool mem_to_reg = false;
     bool mem_read = false;
@@ -77,6 +84,7 @@ struct ID_EX_Register
 // --- Data passed from Execute (EX) to Memory (MEM) ---
 struct EX_MEM_Register
 {
+    uint32_t instruction = 0x00000013; // Pass full instruction for reference in MEM
     // --- GPR Results ---
     uint64_t alu_result = 0;    // GPR Write Data (ALU Result, Link Address, etc.)
     uint64_t reg2_data = 0;     // Data from rs2, needed for Store instructions
@@ -111,6 +119,7 @@ struct EX_MEM_Register
 // --- Data passed from Memory (MEM) to Writeback (WB) ---
 struct MEM_WB_Register
 {
+    uint32_t instruction = 0x00000013; // Pass full instruction for reference in WB
     // --- GPR Results ---
     uint64_t memory_data = 0;   // GPR Write Data (Data read from memory in a Load)
     uint64_t alu_result = 0;    // GPR Write Data (ALU result, Link Address, etc.)

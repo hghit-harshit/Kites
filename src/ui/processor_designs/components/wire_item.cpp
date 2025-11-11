@@ -9,6 +9,11 @@ WireItem::WireItem(const QPainterPath &path,QGraphicsItem* parent )
     //setFlag(QGraphicsItem::ItemIsMovable, true);
 }
 
+QString WireItem::getName()
+{
+    return m_name;
+}
+
 void WireItem::setName(const QString& name)
 {
     m_name = name;

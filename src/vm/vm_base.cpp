@@ -17,7 +17,14 @@
 #include <algorithm>
 #include <cstring>
 #include <thread>
-
+    
+VmBase::VmBase()
+{
+    //connecting the circuit scene update signal to the vm base slot
+   /*  connect(circuit_scene_.get(), &Kites::CircuitScene::updateCircuitState,
+            this, &VmBase::updateCircuitState); 
+ */
+}
 
 void VmBase::LoadProgram(const AssembledProgram &program) {
   program_ = program;
