@@ -14,8 +14,8 @@ public:
             QPainterPath path;
             path.moveTo(0, 0);
             path.lineTo(20, 0);
-            path.lineTo(20, 450);
-            path.lineTo(0, 450);
+            path.lineTo(20, 500);
+            path.lineTo(0, 500);
             // aluPath.lineTo(0, 60);
             // aluPath.lineTo(10, 50);
             // aluPath.lineTo(0, 40);
