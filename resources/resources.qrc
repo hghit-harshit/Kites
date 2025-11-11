@@ -1,0 +1,6 @@
+<RCC>
+    <qresource>
+        <file>icons/icons.qrc</file>
+        <file>circuit_designs/circuit_designs.qrc</file>
+    </qresource>
+</RCC>
