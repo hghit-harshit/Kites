@@ -61,6 +61,10 @@ MemoryController* VMManager::getMemoryController()
     return &m_currentVM->memory_controller_;
 }
 
+Kites::CircuitScene* VMManager::getCircuitScene()
+{
+    return m_currentVM->circuit_scene_.get();
+}
 void VMManager::reset()
 {
     m_currentVM->Reset();
