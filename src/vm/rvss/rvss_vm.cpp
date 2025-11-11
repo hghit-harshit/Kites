@@ -767,6 +767,7 @@ void RVSSVM::Run() {
     WriteBack();
     instructions_retired_++;
     cycle_s_++;
+    
   }
   if (program_counter_ >= program_size_) {
     std::cout << "VM_PROGRAM_END" << std::endl;
