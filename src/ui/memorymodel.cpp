@@ -66,7 +66,7 @@ void MemoryModel::offsetCentralAddress(int offset)
 void MemoryModel::setCentralAddress(const uint64_t& address)
 {
     beginResetModel();
-    m_currentCentralAddress = address;
+    m_currentCentralAddress = (address/8)*8; // doing this becuase we want closed multiples of 8
     endResetModel();
 }
 
