@@ -14,6 +14,8 @@
 #include "globals.h"
 #include <QActionGroup>
 #include <QHBoxLayout>
+#include <QSpinBox>
+#include <QWidgetAction>
 namespace Kites
 {
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
@@ -23,11 +25,20 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     setWindowTitle("Kites RISC-V Simulator");
     setWindowIcon(QIcon(":/icons/kite.png"));
     setUpPalettes();
-    toggleTheme(Theme::Light);
+    toggleTheme(Theme::Dark);
     setupVmStateDirectory();
-    m_vmManager = std::make_unique<VMManager>(this);
+
+
+    // well run the vm in a separate thread to keep the ui responsive
+    m_vmManager = new VMManager();
+    m_vmThread = new QThread(this);
+    m_vmManager->moveToThread(m_vmThread);
+    m_vmThread->start();
+    connect(this,&MainWindow::runVMSignal,m_vmManager,&VMManager::runSlot);
+    // well temporarily disable the toolbar buttons when vm is running
+    connect(m_vmManager,&VMManager::runFinishedSignal,this,&MainWindow::enableToolBarButtons);
+
     m_registerContainer = new RegisterContainer(this,m_vmManager->getRegisterFile());
- 
     QWidget *central = new QWidget(this);
     QHBoxLayout *mainLayout = new QHBoxLayout(central);
     QSplitter *splitter = new QSplitter(Qt::Horizontal,this);
@@ -44,12 +55,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     
     splitter->addWidget(m_stackedTabs);
     splitter->addWidget(m_registerContainer);
-    // splitter->setStretchFactor(0, 2);
-    // splitter->setStretchFactor(1, 1);
     splitter->widget(1)->setMaximumWidth(350);
+
     mainLayout->addWidget(splitter);
     mainLayout->setStretchFactor(m_sidebar, 1);
     mainLayout->setStretchFactor(splitter, 4);
+    
     setCentralWidget(central);
     resize(1200, 800);
 }
@@ -60,13 +71,26 @@ void MainWindow::setUpToolBar()
     QAction *processorAction = new QAction("Processor",this);
     QAction *runAction = new QAction("Run", this);
     QAction *stepAction = new QAction("Step", this);
+    
+    QSpinBox *spinbox = new QSpinBox(this);
+    spinbox->setRange(1,10000);
+    spinbox->setValue(1000);
+    spinbox->setSuffix(" ms");
+    spinbox->setToolTip("Set Execution Speed (in milliseconds)");
+    
+    QWidgetAction *spinboxAction = new QWidgetAction(this);
+    spinboxAction->setDefaultWidget(spinbox);
     //toolbar->addAction(preferencesAction);
     toolbar->addAction(processorAction);
     toolbar->addAction(runAction);
     toolbar->addAction(stepAction);
+    toolbar->addAction(spinboxAction);
     
     connect(runAction,&QAction::triggered,this,&MainWindow::run);
     connect(processorAction,&QAction::triggered,this,&MainWindow::processorChangeDialog);
+    connect(spinbox,qOverload<int>(&QSpinBox::valueChanged),this,[this](int value){
+        m_vmManager->setStepDelay(value);
+    });
     //connect(stepAction,&QAction::triggered,this,&MainWindow::step);
 }
 
@@ -133,7 +157,7 @@ void MainWindow::setUpTabs()
 {
     m_tabs[TabIndex::EditorTabIndex] = new EditorTab(this);
     m_tabs[TabIndex::MemoryTabIndex] = new MemoryTab(this,m_vmManager->getMemoryController());
-    m_tabs[TabIndex::ProcessorTabIndex] = new ProcessorTab(this,m_vmManager.get()); //will add later
+    m_tabs[TabIndex::ProcessorTabIndex] = new ProcessorTab(this,m_vmManager); //will add later
 
     //a little experiment 
     connect(this,&MainWindow::vmChangedSignal,
@@ -144,10 +168,13 @@ void MainWindow::setUpTabs()
     m_stackedTabs->addWidget(m_tabs[TabIndex::MemoryTabIndex]);
     m_stackedTabs->addWidget(m_tabs[TabIndex::ProcessorTabIndex]);
 }
+
 bool MainWindow::tryParseAndLoadProgram()
 {
     auto editor = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
     editor->resetErrorLines(); // we reset previous error lines
+    m_vmManager->reset();
+    // reset register container and memory view as well
     try
     {
         std::string rawText = editor->getRawText();
@@ -172,10 +199,21 @@ bool MainWindow::tryParseAndLoadProgram()
 }
 
 void MainWindow::run()
-{
+{   
+    //as soon s as run is clicked we disable the toolbar buttons
+    disableToolBarButtons();
     if (tryParseAndLoadProgram()) 
     {
-        m_vmManager->run();
+        qDebug() << "Starting VM Run";
+        // m_vmManager->run();
+        emit runVMSignal();
+        qDebug() << "VM Run Completed";
+    }
+    else
+    {
+        // if parsing or loading failed we re-enable the buttons
+        //otherwise if the vm start running the buttons will be re-enabled when vm finishes
+        enableToolBarButtons();
     }
 }
 void MainWindow::processorChangeDialog()
@@ -195,10 +233,37 @@ void MainWindow::vmChanged(const VMType& vmType)
     m_registerContainer->setRegisterFile(m_vmManager->getRegisterFile());
     auto* memtab = dynamic_cast<MemoryTab*>(m_tabs[TabIndex::MemoryTabIndex]);
     memtab->changeMemoryController(m_vmManager->getMemoryController());
-
     emit vmChangedSignal();
 
     //well also have to change the processor desing from here later
+}
+
+void MainWindow::disableToolBarButtons()
+{
+    QList<QToolBar*> toolbars = this->findChildren<QToolBar*>();
+    // since we only have one toolbar we can directly access it
+    for (QAction* action : toolbars[0]->actions()) 
+    {
+        if (action->text() == "Run" || action->text() == "Step" 
+        || action->text() == "Processor")
+        {
+            action->setDisabled(true);
+        }
+    }
+}
+
+void MainWindow::enableToolBarButtons()
+{
+    QList<QToolBar*> toolbars = this->findChildren<QToolBar*>();
+    // since we only have one toolbar we can directly access it
+    for (QAction* action : toolbars[0]->actions()) 
+    {
+        if (action->text() == "Run" || action->text() == "Step"
+        || action->text() == "Processor")
+        {
+            action->setEnabled(true);
+        }
+    }
 }
 
 void MainWindow::setUpPalettes()

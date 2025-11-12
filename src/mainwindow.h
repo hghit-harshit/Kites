@@ -14,6 +14,7 @@
 #include <QStyleFactory> // For setting the style
 #include <QPalette>      // For setting the colors
 #include <QColor>
+#include <QThread>
 namespace Kites
 {
 QT_BEGIN_NAMESPACE
@@ -51,6 +52,7 @@ private:
     void setUpMenubar();
     void setUpTabs();
     void setUpPalettes();
+    void disableToolBarButtons();
     void toggleTheme(Theme theme);
     bool tryParseAndLoadProgram();
     void run();
@@ -63,12 +65,14 @@ private:
     RegisterContainer* m_registerContainer = nullptr;
     std::map<TabIndex, KitesTab*> m_tabs;
     TabIndex m_currentTabIndex = TabIndex::EditorTabIndex;
-    std::unique_ptr<VMManager> m_vmManager = nullptr;
+    VMManager* m_vmManager = nullptr;
+    QThread* m_vmThread = nullptr;
     std::map<Theme,QPalette> m_palettes;
 public slots:
     void vmChanged(const VMType& vmType); // this will catch the signal from processor dialog
-
+    void enableToolBarButtons();
 signals:
     void vmChangedSignal();
+    void runVMSignal();
 };
 } // namespace Kites
