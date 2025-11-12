@@ -28,6 +28,7 @@ public:
 
     void Reset() {
         memory_.Reset();
+        emit memoryResetSignal(); // this will notify views to reset themselves
     }
 
     void PrintCacheStatus() const {
@@ -101,6 +102,7 @@ public:
 
     signals:
     void memoryUpdated(uint64_t address);
+    void memoryResetSignal();
 
 };
 

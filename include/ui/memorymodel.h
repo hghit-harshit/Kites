@@ -12,6 +12,12 @@ namespace Kites
 {
 class MemoryModel : public QAbstractTableModel
 {
+    enum class Base
+    {
+        Hexadecimal = 16,
+        Decimal = 10,
+        Binary = 2
+    };
     Q_OBJECT
     public:
         explicit MemoryModel(QObject* parent = nullptr, MemoryController* memoryController = nullptr);
@@ -30,14 +36,16 @@ class MemoryModel : public QAbstractTableModel
 
         //bool isValidAddress(const uint64_t& address, int offset) const;
         bool canOffset(int offset);
-        //std::shared_ptr<MemoryController> m_memoryController;
-        // MemoryBlock m_currentMemoryBlock;
-        int m_rowsVisible = 0;
-        uint64_t m_currentCentralAddress = 1024;
+    
+        int m_rowsVisible = 10; // it does not matter as it will be calculater later anyways
         // well caculate which row to show when user scrolls pass
         // the current window with this 
+        uint64_t m_currentCentralAddress = 64; // please keep this a multiple of 8
+        // other wise  this crashes fuck my life
+        Base m_displayBase = Base::Hexadecimal;        
         MemoryController* m_memoryController;
     public slots:
-       void updateMemory(uint64_t address);
+        void memoryResetSlot();
+        void updateMemory(uint64_t address);
 };
 } // namespace Kites

@@ -27,6 +27,7 @@ class RegisterModel : public QAbstractTableModel
 
     public slots:
         void updateRegisterValue(size_t regIndex, uint64_t value);
+        void registerResetSlot();
 
 };
 

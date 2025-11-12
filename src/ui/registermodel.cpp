@@ -9,6 +9,7 @@ RegisterModel::RegisterModel(QObject *parent,RegisterFile* regfile)
 {
     m_currentRegisterFile = regfile;
     connect(m_currentRegisterFile,&RegisterFile::updateRegister,this,&RegisterModel::updateRegisterValue);
+    connect(m_currentRegisterFile,&RegisterFile::registerResetSignal,this,&RegisterModel::registerResetSlot);
 }
 
 int RegisterModel::rowCount(const QModelIndex &parent) const
@@ -89,6 +90,14 @@ void RegisterModel::changeRegisterFile(RegisterFile* regfile)
     m_currentRegisterFile  = regfile;
     connect(m_currentRegisterFile,&RegisterFile::updateRegister,this,&RegisterModel::updateRegisterValue);
     //maybe we can directly connect it to 
+    connect(m_currentRegisterFile,&RegisterFile::registerResetSignal,this,&RegisterModel::registerResetSlot);
+    endResetModel();
+}
+
+void RegisterModel::registerResetSlot()
+{
+    qDebug() << "RegisterModel::registerResetSlot called";
+    beginResetModel();
     endResetModel();
 }
 

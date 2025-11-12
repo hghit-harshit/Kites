@@ -1,5 +1,6 @@
 #include "ui/memorymodel.h"
 #include "config.h"
+#include <QDebug>
 namespace Kites
 {
 MemoryModel::MemoryModel(QObject* parent, MemoryController* memoryController)
@@ -7,6 +8,7 @@ MemoryModel::MemoryModel(QObject* parent, MemoryController* memoryController)
 {
     m_memoryController = memoryController;
     connect(m_memoryController,&MemoryController::memoryUpdated,this,&MemoryModel::updateMemory);
+    connect(m_memoryController,&MemoryController::memoryResetSignal,this,&MemoryModel::memoryResetSlot);
 }
 
 int MemoryModel::rowCount(const QModelIndex &parent) const
@@ -30,6 +32,10 @@ void MemoryModel::changeMemoryController(MemoryController* memoryController)
 {
     beginResetModel();
     m_memoryController = memoryController;
+    // the previous connection will be invalid now
+    // and since previous vm as destroyed the connection auto disconnects
+    connect(m_memoryController,&MemoryController::memoryUpdated,this,&MemoryModel::updateMemory);
+    connect(m_memoryController,&MemoryController::memoryResetSignal,this,&MemoryModel::memoryResetSlot);
     endResetModel();
 }
 // bool MemoryModel::isValidAddress(const uint64_t& address, int offset) const
@@ -139,47 +145,47 @@ QVariant MemoryModel::data(const QModelIndex &index,int role) const
             case 1: //Double Word
             {
                 uint64_t doubleWord = m_memoryController->ReadDoubleWord(alignedAddress);
-                return QString("0x%1").arg(QString::number(doubleWord,16).toUpper());
+                return QString("0x%1").arg(QString::number(doubleWord,static_cast<int>(m_displayBase)).toUpper());
             }
             case 2: //Byte 0
             {
                 uint8_t byte0 = m_memoryController->ReadByte(alignedAddress);
-                return QString("0x%1").arg(QString::number(byte0,16).toUpper());
+                return QString("0x%1").arg(QString::number(byte0,static_cast<int>(m_displayBase)).toUpper());
             }
-            case 3: //Byte 0
+            case 3: //Byte 1
             {
                 uint8_t byte1 = m_memoryController->ReadByte(alignedAddress + 1);
-                return QString("0x%1").arg(QString::number(byte1,16).toUpper());
+                return QString("0x%1").arg(QString::number(byte1,static_cast<int>(m_displayBase)).toUpper());
             }
-            case 4: //Byte 0
+            case 4: //Byte 1
             {
                 uint8_t byte2 = m_memoryController->ReadByte(alignedAddress + 2);
-                return QString("0x%1").arg(QString::number(byte2,16).toUpper());
+                return QString("0x%1").arg(QString::number(byte2,static_cast<int>(m_displayBase)).toUpper());
             }
-            case 5: //Byte 0
+            case 5: //Byte 3
             {
                 uint8_t byte3 = m_memoryController->ReadByte(alignedAddress + 3);
-                return QString("0x%1").arg(QString::number(byte3,16).toUpper());
+                return QString("0x%1").arg(QString::number(byte3,static_cast<int>(m_displayBase)).toUpper());
             }
-            case 6: //Byte 0
+            case 6: //Byte 4
             {
                 uint8_t byte4 = m_memoryController->ReadByte(alignedAddress + 4);
-                return QString("0x%1").arg(QString::number(byte4,16).toUpper());
+                return QString("0x%1").arg(QString::number(byte4,static_cast<int>(m_displayBase)).toUpper());
             }
-            case 7: //Byte 0
+            case 7: //Byte 5
             {
                 uint8_t byte5 = m_memoryController->ReadByte(alignedAddress + 5);
-                return QString("0x%1").arg(QString::number(byte5,16).toUpper());
+                return QString("0x%1").arg(QString::number(byte5,static_cast<int>(m_displayBase)).toUpper());
             }
-            case 8: //Byte 0
+            case 8: //Byte 6
             {
                 uint8_t byte6 = m_memoryController->ReadByte(alignedAddress + 6);
-                return QString("0x%1").arg(QString::number(byte6,16).toUpper());
+                return QString("0x%1").arg(QString::number(byte6,static_cast<int>(m_displayBase)).toUpper());
             }
-            case 9: //Byte 0
+            case 9: //Byte 7
             {
                 uint8_t byte7 = m_memoryController->ReadByte(alignedAddress + 7);
-                return QString("0x%1").arg(QString::number(byte7,16).toUpper());
+                return QString("0x%1").arg(QString::number(byte7,static_cast<int>(m_displayBase)).toUpper());
             }
             
         }
@@ -198,11 +204,37 @@ QVariant MemoryModel::data(const QModelIndex &index,int role) const
     
 // }
 
-void MemoryModel::updateMemory(uint64_t address)
+void MemoryModel::memoryResetSlot()
 {
-    QModelIndex topleft = this->index(static_cast<int>(address/8),0);
-    QModelIndex bottomright = this->index(static_cast<int>(address/8),9);
-    emit dataChanged(topleft,bottomright);
+    beginResetModel();
+    endResetModel();
 }
 
+void MemoryModel::updateMemory(uint64_t address)
+{
+    /* QModelIndex topleft = this->index(static_cast<int>(address/8),0);
+    QModelIndex bottomright = this->index(static_cast<int>(address/8),9);
+    qDebug() << "Rows count:" << rowCount();
+    qDebug() << "updating memory at address:" << QString::number(address,16).toUpper();
+    qDebug() << "row:" << (address/8) - 1
+         << "cols:" << 0 << "-" << 9
+         << "valid?" << index(address/8, 0).isValid();
+    emit dataChanged(topleft,bottomright,{Qt::DisplayRole,Qt::ToolTipRole}); */
+
+
+    int64_t topAddr = static_cast<int64_t>(m_currentCentralAddress)
+                    + static_cast<int64_t>(m_rowsVisible / 2) * 8;
+    int64_t bytesFromTop = topAddr - static_cast<int64_t>(address);
+
+    // address not in the visible window? nothing to update
+    if (bytesFromTop < 0) return;
+
+    int row = static_cast<int>(bytesFromTop / 8);
+    if (row < 0 || row >= m_rowsVisible) return;
+
+    QModelIndex topLeft = index(row, 0);
+    QModelIndex bottomRight = index(row, columnCount() - 1);
+
+    emit dataChanged(topLeft, bottomRight, {Qt::DisplayRole, Qt::ToolTipRole});
+}
 }//namespace Kitesa
