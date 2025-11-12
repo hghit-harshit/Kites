@@ -63,6 +63,13 @@ void MemoryModel::offsetCentralAddress(int offset)
     endResetModel();
 }
 
+void MemoryModel::setCentralAddress(const uint64_t& address)
+{
+    beginResetModel();
+    m_currentCentralAddress = address;
+    endResetModel();
+}
+
 QVariant MemoryModel::headerData(int section, Qt::Orientation orientation,int role) const
 {
     if(role != Qt::DisplayRole)

@@ -14,6 +14,10 @@ MemoryTab::MemoryTab(QWidget *parent,MemoryController* memoryController)
     ui->memoryTableView->verticalHeader()->setVisible(false);
     ui->memoryTableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
+    QRegularExpression re("0x[0-9a-fA-F]+$");
+    QRegularExpressionValidator* validator = new QRegularExpressionValidator(re, this);
+    ui->searchBar->setValidator(validator);
+
     //connect(m_ui->Me)
     m_memoryModel->setRowsVisible(1);
     connect(ui->memoryTableView, &MemoryTableView::scrolled, m_memoryModel,[this](bool dir)
@@ -34,6 +38,13 @@ MemoryTab::MemoryTab(QWidget *parent,MemoryController* memoryController)
         const auto rows = ui->memoryTableView->height() / rowHeight;
         m_memoryModel->setRowsVisible(rows);
         }
+    });
+
+    connect(ui->searchButton,&QPushButton::clicked,this,[=]
+    {
+        QString searchText = ui->searchBar->text();
+        //int displayType = ui->displayTypeComboBox->currentIndex();
+        m_memoryModel->setCentralAddress(searchText.toULongLong(nullptr,16));
     });
 }
 

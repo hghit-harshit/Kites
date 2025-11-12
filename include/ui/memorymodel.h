@@ -32,6 +32,9 @@ class MemoryModel : public QAbstractTableModel
         void changeMemoryController(MemoryController* memoryController);
         void setRowsVisible(int rows);
         void offsetCentralAddress(int offset);
+        void setCentralAddress(const uint64_t& address);
+        // this will be used to search memory for a specific value 
+
     private:
 
         //bool isValidAddress(const uint64_t& address, int offset) const;
