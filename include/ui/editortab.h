@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <QTextCharFormat>
 #include "editor.h"
+#include "vm/vm_manager.h"
 namespace Kites
 {
 
@@ -16,10 +17,9 @@ class EditorTab;
 }
 class EditorTab : public KitesTab
 {
-
-    
+    Q_OBJECT    
     public:
-        explicit EditorTab(QWidget* parent = nullptr);
+        explicit EditorTab(QWidget* parent = nullptr,VMManager *vmManager = nullptr);
         void updateDisassemblyView(const std::string& disassembledCode);
         void setErrorLinesFromFile(const std::filesystem::path& filepath);
         std::string getRawText();
@@ -29,10 +29,11 @@ class EditorTab : public KitesTab
         Editor* m_editor = nullptr;
         QPlainTextEdit* m_disassemblyView = nullptr;
         QTextCharFormat m_squiggleFormat; // stores how the quiggles will look
+        VMManager* m_vmManager = nullptr;
         //std::map<int, QString> m_errorMessages; // line number (1-based) to error message
         //std::list<int> m_errorLines;
         //RegisterContainer* m_registerContainer = nullptr;
     public slots:
-        void highlightLine(int lineNumber);
+        void highlightLine(int lineNumber){};
 };
 } // namespace Kites
