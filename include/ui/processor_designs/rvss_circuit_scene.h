@@ -11,7 +11,8 @@ class RVSSCircuitScene : public CircuitScene
         :CircuitScene(parent)
         {
             qDebug() << "Loading RVSS Circuit Scene";
-            loadScene(":/circuit_designs/SSE.json");
+            //loadScene(":/circuit_designs/SSE.json");
+            loadScene("D:/RISC_V_Simulator/resources/circuit_designs/single_cycle_draft1.json");
         }
         
 };

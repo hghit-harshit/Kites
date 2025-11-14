@@ -7,6 +7,9 @@ WireItem::WireItem(const QPainterPath &path,QGraphicsItem* parent )
     : QGraphicsPathItem(path,parent)
 {
     //setFlag(QGraphicsItem::ItemIsMovable, true);
+    m_activePen = QPen(Qt::yellow, 2, Qt::SolidLine);
+    m_inactivePen = QPen(Qt::gray, 1, Qt::SolidLine);
+    setPen(m_inactivePen);
 }
 
 QString WireItem::getName()
@@ -19,6 +22,17 @@ void WireItem::setName(const QString& name)
     m_name = name;
 }
 
+void WireItem::setActive(bool isActive)
+{
+    if(isActive)
+    {
+        setPen(m_activePen);
+    }
+    else
+    {
+        setPen(m_inactivePen);
+    }
+}
 QRectF WireItem::boundingRect() const
 {
     //extending the bounding rect otherwise the arrow
@@ -91,7 +105,7 @@ void WireItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     m_currentArrowHead.clear();
     m_currentArrowHead << p2 << arrowP1 << arrowP2;
     painter->setRenderHint(QPainter::Antialiasing, true);
-    painter->setBrush(Qt::white);
+    //painter->setPen(pen());
     painter->drawPolygon( m_currentArrowHead);
 
     for (const QPointF &point : m_junctions)

@@ -23,7 +23,7 @@ public:
     void popJunction();
     void addArrowHead(const QPolygonF& arroHead);
     void saveArrowHead();
-
+    void setActive(bool isActive);
     QJsonObject  toJson();
 private:
     QString m_name;

@@ -20,15 +20,12 @@
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="2" column="0">
-    <widget class="QLabel" name="label">
+   <item row="2" column="2">
+    <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>Display Type:</string>
+      <string> Search Memory</string>
      </property>
     </widget>
-   </item>
-   <item row="0" column="0" colspan="2">
-    <widget class="MemoryTableView" name="memoryTableView"/>
    </item>
    <item row="2" column="1">
     <widget class="QComboBox" name="comboBox">
@@ -48,6 +45,26 @@
       </property>
      </item>
     </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Display Type:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="3">
+    <widget class="QLineEdit" name="searchBar"/>
+   </item>
+   <item row="2" column="4">
+    <widget class="QPushButton" name="searchButton">
+     <property name="text">
+      <string>Search</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0" colspan="5">
+    <widget class="MemoryTableView" name="memoryTableView"/>
    </item>
   </layout>
  </widget>

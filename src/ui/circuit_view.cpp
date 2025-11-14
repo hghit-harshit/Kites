@@ -16,9 +16,9 @@ namespace Kites
 CircuitView::CircuitView(QWidget *parent)
     :QGraphicsView(parent)
 {
-    // this constructor is unuded maybe delete this
-    setAcceptDrops(true);
+    //setAcceptDrops(true);
     setDragMode(QGraphicsView::NoDrag);
+    setRenderHint(QPainter::Antialiasing,true);
     setMouseTracking(true);
     //fitInView(scene()->sceneRect(), Qt::KeepAspectRatio);
 }
@@ -28,11 +28,12 @@ CircuitView::CircuitView(QGraphicsScene *scene, QWidget *parent)
     : QGraphicsView(scene, parent)
 {
     // Crucial: Tell the widget to accept drop events
-    setAcceptDrops(true);
+    //setAcceptDrops(true);
     setDragMode(QGraphicsView::NoDrag);
     setMouseTracking(true);
-    
+    setRenderHint(QPainter::Antialiasing,true);
     centerOn(0, 0);
+    //setBackgroundBrush(Qt::black);
     //fitInView(scene->sceneRect(), Qt::KeepAspectRatio);
 }
 
@@ -42,7 +43,7 @@ void CircuitView::showEvent(QShowEvent *event)
     setTransform(QTransform().scale(0.7, 0.7));
     //fitInView(scene()->sceneRect(), Qt::KeepAspectRatio);
 }
-
+/* 
 void CircuitView::drawBackground(QPainter *painter, const QRectF &rect)
 {
     // 1. First, call the base class method to ensure any
@@ -73,5 +74,5 @@ void CircuitView::drawBackground(QPainter *painter, const QRectF &rect)
             painter->drawEllipse(QPointF(x, y), dotRadius, dotRadius);
         }
     }
-}
+} */
 } // namespace Kites

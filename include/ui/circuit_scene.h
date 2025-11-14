@@ -27,7 +27,9 @@ protected:
     //void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent) override;
 
 private:
-    std::filesystem::path m_sceneFilePath;
+    std::filesystem::path m_sceneFilePath; // unused variable
+
+    QTimer* m_timer; // well use it to make the wire blink
     //QPointF getSnappedPos(BaseComponent* component,const QPointF& scenePos);
     //BaseComponent* componentAt(const QPointF& scenePos);
     //WireItem* wireAt(const QPointF& scenePos);

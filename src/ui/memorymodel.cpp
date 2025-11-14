@@ -59,7 +59,7 @@ void MemoryModel::offsetCentralAddress(int offset)
     m_currentCentralAddress =  m_currentCentralAddress + offset*8;
     // m_currentCentralAddress = (isValidAddress(newCentralAddress)
     // ? newCentralAddress : m_currentCentralAddress);
-    // change it to get the bytes of rom from some kind of config
+    // change it to get the bytes of rom f/lrom some kind of config
     endResetModel();
 }
 

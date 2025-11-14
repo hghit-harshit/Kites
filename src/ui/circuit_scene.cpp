@@ -14,7 +14,7 @@
 #include <QJsonArray>
 #include <QFile>
 #include <QIODevice>
-
+#include <QTimer>
 namespace Kites
 {
 CircuitScene::CircuitScene(QObject *parent)
@@ -22,12 +22,31 @@ CircuitScene::CircuitScene(QObject *parent)
 {
     setSceneRect(-2000, -2000, 4000, 4000);
     //setSceneRect(-1000, -1000, 2000, 2000);
+    setBackgroundBrush(Qt::black);
+    m_timer = new QTimer(this);
+    m_timer->setSingleShot(true);
+    m_timer->setInterval(100); // flash for 100ms
+
+    connect(m_timer, &QTimer::timeout, this, [this]() {
+        // set all wires inactive
+        for (QGraphicsItem* item : items()) {
+            WireItem* wire = dynamic_cast<WireItem*>(item);
+            if (wire)
+                wire->setActive(false);
+        }
+
+        update();
+    });
 }
 
 void CircuitScene::updateCircuitState(const QList<QString>& wireList)
 {
     // Iterate through all items in the scene
     // maybe i can make a different list of wires to optimize this
+
+    // some of the wires will always be active
+    
+
     for (QGraphicsItem* item : items())
     {
         // Check if the item is a WireItem
@@ -48,6 +67,7 @@ void CircuitScene::updateCircuitState(const QList<QString>& wireList)
 
     // Request a redraw of the scene to reflect changes
     update();
+    m_timer->start(); // restart the timer to turn off the wires after interval
 } 
 
 
@@ -178,7 +198,7 @@ void CircuitScene::loadScene(const QString& fileName)
 
             // Create the wire
             WireItem *wire = new WireItem(path);
-            wire->setPen(QPen(Qt::white, 2, Qt::SolidLine));
+            //wire->setPen(QPen(Qt::white, 2, Qt::SolidLine));
 
             // Set the name
             if (wireObj.contains("name")) {

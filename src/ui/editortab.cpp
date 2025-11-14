@@ -9,14 +9,14 @@
 #include <QTextEdit>
 namespace Kites
 {
-EditorTab::EditorTab(QWidget* parent)
+EditorTab::EditorTab(QWidget* parent, VMManager* vmManager)
     : KitesTab(parent)
+    , m_vmManager(vmManager)
 {
     QSplitter* mainsplitter = new QSplitter(Qt::Horizontal, this);
      
     m_editor = new Editor(this);
     m_editor->setPlaceholderText("Enter your code here...");
-    //m_editor->viewport()->setMouseTracking(true); // so that we get tooltip when we hover over errors
     m_squiggleFormat.setUnderlineStyle(QTextCharFormat::WaveUnderline);
     m_squiggleFormat.setUnderlineColor(Qt::red);
     //m_editor->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));

@@ -51,6 +51,11 @@ void VMManager::step()
     m_currentVM->Step();
 }   
 
+void VMManager::setStepDelay(unsigned int delay)
+{
+    m_currentVM->step_delay_ = delay;
+}
+
 RegisterFile* VMManager::getRegisterFile()
 {
     return &m_currentVM->registers_;
@@ -66,7 +71,8 @@ Kites::CircuitScene* VMManager::getCircuitScene()
     return m_currentVM->circuit_scene_.get();
 }
 void VMManager::reset()
-{
+{   
+    qDebug() << "Resetting VM";
     m_currentVM->Reset();
 }
 
