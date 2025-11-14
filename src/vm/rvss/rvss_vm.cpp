@@ -29,11 +29,87 @@ RVSSVM::RVSSVM()
 	DumpRegisters(globals::registers_dump_file_path, registers_);
 	DumpState(globals::vm_state_dump_file_path);
 	circuit_scene_ = std::make_unique<Kites::RVSSCircuitScene>();
-	connect(this, &VmBase::updateCircuitState,
-			circuit_scene_.get(), &Kites::RVSSCircuitScene::updateCircuitState);
+	    connect(this, &VmBase::updateCircuitStateSignal,
+		    circuit_scene_.get(), &Kites::RVSSCircuitScene::updateCircuitState,
+		    Qt::QueuedConnection);
 }
 
 RVSSVM::~RVSSVM() = default;
+
+QList<QString> RVSSVM::GetActiveWireNames() 
+{
+	//first clear the current list
+	//TODO * we dont have to clear wire that will always be active
+	// so make a list of those wires and only clear the rest
+	// for now this will 
+	//active_wires_.clear();
+
+	// Map control signals to canonical wire names used in the scene JSON.
+	// maybe sending integers would be better?
+	// but for now, this is fine.
+	// also the preformace boost well get of that will that really improve the user experience that much?
+
+	// first add the always active wires
+	// this is not ideal but for now it will do
+	active_wires_.append("IM_to_PC_pc");
+	active_wires_.append("PC_to_IM_instruction");
+	active_wires_.append("IM_to_RF_rs1_whole");
+	active_wires_.append("RF_to_ALUMUX");
+	active_wires_.append("PCMux_to_PC");
+	active_wires_.append("Imm_to_ALUMUX");
+	active_wires_.append("BranchALU_to_PCMUX");
+	active_wires_.append("PCALU_to_PCMUX");
+	active_wires_.append("Control_ALUOp");
+	active_wires_.append("PC_to_InstrMem");
+	active_wires_.append("ALUOp_to_ALU_alusignal");
+
+	// if(branch_flag_)
+	// {
+		
+	// }
+
+	if (control_unit_.GetMemWrite())
+	{
+		active_wires_.append("Control_to_MemWrite");
+	}
+	if (control_unit_.GetMemRead())
+	{
+		active_wires_.append("Control_to_MemRead");
+	}
+	if (control_unit_.GetRegWrite())
+	{
+		active_wires_.append("Control_to_Regwrite");
+		active_wires_.append("WBMux_to_RF_lowest");
+	}
+	if (control_unit_.GetBranch())
+	{
+		active_wires_.append("Control_to_BranchAND");
+	}
+	if (control_unit_.GetAluSrc())
+	{
+		active_wires_.append("Control_to_ALUSrc_control");
+	}
+	if(control_unit_.GetMemToReg())
+	{
+		active_wires_.append("Control_to_MemtoRegMux");
+	}
+
+	
+	// static bool test = true;
+	// if(test%2 )
+	// 	active_wires_.append("IM_to_RF_rs1_whole");
+
+	// test = !test;
+	/* // Always include the ALU op wire (scene expects a wire name for ALU operation)
+	// Add a generic ALU op wire and an operation-specific tag so UI can show details.
+	auto aluOp = control_unit_.GetAluSignal(current_instruction_, control_unit_.GetAluOp());
+	Q_UNUSED(aluOp);
+	result.append("ALUOp_to_ALU_alusignal");
+	// also append a numeric/opcode tag like "ALUOp_3" to allow per-op highlighting if desired
+	result.append(QString("ALUOp_%1").arg(static_cast<int>(aluOp))); */
+
+	return active_wires_;
+}
 
 void RVSSVM::Fetch()
 {
@@ -159,6 +235,9 @@ void RVSSVM::Execute()
 	{
 		UpdateProgramCounter(-4);
 		UpdateProgramCounter(imm);
+		//we have jumped so the branch alu wire will send signal to the pc mux
+		active_wires_.append("ALUzero_to_ANDGATElower");
+		active_wires_.append("BranchAND_to_PCMUX");
 	}
 
 	if (opcode == 0b0010111)
@@ -908,6 +987,9 @@ void RVSSVM::Run()
 		WriteBack();
 		instructions_retired_++;
 		cycle_s_++;
+		// emit UI update for circuit highlighting
+		emit updateCircuitStateSignal(GetActiveWireNames());
+		active_wires_.clear(); // clear active wires after emitting signal
 		std::this_thread::sleep_for(std::chrono::milliseconds(step_delay_));
 	}
 	if (program_counter_ >= program_size_)
@@ -956,6 +1038,8 @@ void RVSSVM::DebugRun()
 			}
 			DumpRegisters(globals::registers_dump_file_path, registers_);
 			DumpState(globals::vm_state_dump_file_path);
+			// update circuit UI after the debug step
+			emit updateCircuitStateSignal(GetActiveWireNames());
 
 			unsigned int delay_ms = vm_config::config.getRunStepDelay();
 			std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
@@ -1020,6 +1104,8 @@ void RVSSVM::Step()
 	}
 	DumpRegisters(globals::registers_dump_file_path, registers_);
 	DumpState(globals::vm_state_dump_file_path);
+		// update circuit UI after a single step
+		emit updateCircuitStateSignal(GetActiveWireNames());
 }
 
 void RVSSVM::Undo()

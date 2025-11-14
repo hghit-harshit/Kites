@@ -31,7 +31,7 @@ class VMManager : public QObject
 {
     Q_OBJECT
     public:
-        VMManager(QObject* parent,VMType vmType = VMType::RVSS);
+        VMManager(QObject* parent = nullptr,VMType vmType = VMType::RVSS);
         // only for now later we will make it so that it pull the type from config.ini
         // static VMManager& getInstance(VMType vmType = VMType::RVSS)
         // {
@@ -51,15 +51,25 @@ class VMManager : public QObject
         void step();
         void debugRun();
 
+        void setStepDelay(unsigned int delay);
         
         RegisterFile* getRegisterFile();
         MemoryController* getMemoryController();
         Kites::CircuitScene* getCircuitScene();
-        
+
     private:
-    
     std::unique_ptr<VmBase> m_currentVM;
     VMType m_currentVMType;
+
+    public slots:
+        void runSlot()
+        {
+            run();
+            emit runFinishedSignal();
+        }
+    signals:
+        void runFinishedSignal();
+        void vmClockedSignal(const QMap<QString,QVariant>& vmState);
     //std::unique_ptr<> m_instance;
 
 };

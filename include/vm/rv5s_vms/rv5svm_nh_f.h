@@ -50,7 +50,7 @@ public:
     {
         std::cout << "RV5StageVM_NH_F" << std::endl;
     }
-
+     QList<QString> GetActiveWireNames()  override{};
 private:
     // --- Undo/Redo History (Managed internally) ---
     std::stack<StepDelta> undo_stack_;

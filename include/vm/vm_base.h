@@ -22,6 +22,10 @@
 #include <atomic>
 #include <memory>
 #include <QWidget>
+#include <QMap>
+#include <QList>
+#include <QString>
+
 enum SyscallCode
 {
 	SYSCALL_PRINT_INT = 1,
@@ -59,7 +63,7 @@ struct StepDelta
 /**
  * @brief Base class for the virtual machine.
  */
-class VmBase : public QWidget
+class VmBase : public QObject
 {
 	Q_OBJECT
 public:
@@ -77,6 +81,7 @@ public:
 	uint32_t current_instruction_{};
 	uint64_t program_counter_{};
 
+	unsigned int step_delay_{1000}; //well change it later to get it from config
 	unsigned int cycle_s_{};
 	unsigned int instructions_retired_{};
 	float cpi_{};
@@ -95,7 +100,13 @@ public:
 
 	alu::Alu alu_;
 
+	QList<QString> active_wires_;
+	// the list of wire that will be active in this cycle of vm
+	// well send this to the gui to highlight those wires
+
 	//todo make every file under kites namespace
+	//make just make this a raw pointer later
+	// qt is anyways handling the memory management of widgets
 	std::unique_ptr<Kites::CircuitScene> circuit_scene_; // Circuit scene for visualization
 	
 	void LoadProgram(const AssembledProgram &program);
@@ -110,6 +121,7 @@ public:
 	void RemoveBreakpoint(uint64_t val, bool is_line = true);
 	bool CheckBreakpoint(uint64_t address);
 
+	virtual QList<QString> GetActiveWireNames()  = 0;
 	// void fetchInstruction();
 	// void decodeInstruction();
 	// void executeInstruction();
@@ -131,12 +143,16 @@ public:
 	void PushInput(const std::string &input)
 	{
 		std::lock_guard<std::mutex> lock(input_mutex_);
-		input_queue_.push(input);
+		input_queue_.push(input);	
 		input_cv_.notify_one();
 	}
 
 	signals:
-	void updateCircuitState(const QList<QString>& wireList);
+	// vm state will have all the info like pc,cycles, control signals
+	void vmClockedSignal(const QMap<QString,QVariant>& vmState);
+	//this will send the list of wire that have to 
+	void updateCircuitStateSignal(const QList<QString>& wireList);
+	
 };
 
 #endif // VM_BASE_H

@@ -38,7 +38,7 @@ RV5StageVM_NH_NF::RV5StageVM_NH_NF() : RV5StageVM_Base()
 
     // Reset components and history
     circuit_scene_ = std::make_unique<Kites::RV5StageVM_NH_NF_CircuitScene>();
-    connect(this, &VmBase::updateCircuitState,
+    connect(this, &VmBase::updateCircuitStateSignal,
             circuit_scene_.get(), &Kites::RV5StageVM_NH_NF_CircuitScene::updateCircuitState);
     Reset();
 }
