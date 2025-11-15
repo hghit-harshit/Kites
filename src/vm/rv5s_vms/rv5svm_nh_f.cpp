@@ -28,9 +28,9 @@ using namespace alu;
 RV5StageVM_NH_F::RV5StageVM_NH_F() : RV5StageVM_Base()
 {
     // Reset components and history
-    circuit_scene_ = std::make_unique<Kites::RV5StageVM_NH_F_CircuitScene>();
-    connect(this, &VmBase::updateCircuitStateSignal,
-            circuit_scene_.get(), &Kites::RV5StageVM_NH_F_CircuitScene::updateCircuitState);
+   // circuit_scene_ = std::make_unique<Kites::RV5StageVM_NH_F_CircuitScene>();
+    //connect(this, &VmBase::updateCircuitStateSignal,
+     //       circuit_scene_.get(), &Kites::RV5StageVM_NH_F_CircuitScene::updateCircuitState);
     Reset();
 }
 
@@ -226,14 +226,19 @@ void RV5StageVM_NH_F::pipeline_execute()
 
     // **Priority 1: EX/MEM (Data available from current instruction in MEM)**
     // Covers R->R, R->Branch, R->MemAddr, R->Store (Cases 1, 5, 7, 3)
+     //std::cout << (int)id_ex_reg_.rd<< " " << (int)id_ex_reg_.rs1<< " "<<(int)id_ex_reg_.rs2 <<  std::endl;
     if (ex_mem_reg_.reg_write && (ex_mem_reg_.rd != 0))
     {
+        //std::cout << "Ex/mem rd: " << (int)ex_mem_reg_.rd << " id ex rs1: " << (int)id_ex_reg_.rs1 << " id ex rs2: " << (int)id_ex_reg_.rs2 << std::endl;
+        //std::cout<<"ex mem rd: "<<(int)ex_mem_reg_.rd<<" id ex rs1: "<<(int)id_ex_reg_.rs1<<" id ex rs2: "<<(int)id_ex_reg_.rs2<<std::endl;
         if (ex_mem_reg_.rd == id_ex_reg_.rs1)
         {
+            //std::cout << (int)id_ex_reg_.rd<< " " << (int)id_ex_reg_.rs1<< " "<<(int)id_ex_reg_.rs2 <<  std::endl;
             forward_a = 2; // Forward A from EX/MEM ALU result
         }
         if (ex_mem_reg_.rd == id_ex_reg_.rs2)
         {
+            //std::cout << (int)id_ex_reg_.rd<< " " << (int)id_ex_reg_.rs1<< " "<<(int)id_ex_reg_.rs2 <<  std::endl;
             forward_b = 2; // Forward B from EX/MEM ALU result
         }
     }
@@ -242,14 +247,18 @@ void RV5StageVM_NH_F::pipeline_execute()
     // Used for dependencies two cycles ago, and to forward Load data after the 1 NOP delay.
     if (mem_wb_reg_.reg_write && (mem_wb_reg_.rd != 0))
     {
+        //std::cout << "Mem wb rd: " << (int)mem_wb_reg_.rd << " id ex rs1: " << (int)id_ex_reg_.rs1 << " id ex rs2: " << (int)id_ex_reg_.rs2 << std::endl;
+        //std::cout<<"mem wb rd: "<<(int)mem_wb_reg_.rd<<" id ex rs1: "<<(int)id_ex_reg_.rs1<<" id ex rs2: "<<(int)id_ex_reg_.rs2<<std::endl;
         // Forward A from MEM/WB unless EX/MEM is forwarding to the same register (Priority)
-        if (mem_wb_reg_.rd == id_ex_reg_.rs1 && forward_a != 2)
+        if (mem_wb_reg_.prev_rd == id_ex_reg_.rs1 && forward_a != 2)
         {
+            //std::cout << (int)id_ex_reg_.rd<< " " << (int)id_ex_reg_.rs1<< " "<<(int)id_ex_reg_.rs2 <<  std::endl;
             forward_a = 1; // Forward A from MEM/WB result (ALU or Memory)
         }
         // Forward B from MEM/WB unless EX/MEM is forwarding to the same register (Priority)
-        if (mem_wb_reg_.rd == id_ex_reg_.rs2 && forward_b != 2)
+        if (mem_wb_reg_.prev_rd == id_ex_reg_.rs2 && forward_b != 2)
         {
+            //std::cout << (int)id_ex_reg_.rd<< " " << (int)id_ex_reg_.rs1<< " "<<(int)id_ex_reg_.rs2 <<  std::endl;
             forward_b = 1; // Forward B from MEM/WB result (ALU or Memory)
         }
     }
@@ -263,7 +272,7 @@ void RV5StageVM_NH_F::pipeline_execute()
     }
     else if (forward_a == 1)
     { // Forward from MEM/WB
-        alu_in1 = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
+        alu_in1 = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.prev_alu_result;
     }
 
     // Forwarding Source B
@@ -273,7 +282,7 @@ void RV5StageVM_NH_F::pipeline_execute()
     }
     else if (forward_b == 1)
     { // Forward from MEM/WB
-        alu_in2 = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
+        alu_in2 = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.prev_alu_result;
     }
 
     // Re-apply immediate value check after forwarding for ALU_B if needed
@@ -305,7 +314,7 @@ void RV5StageVM_NH_F::pipeline_execute()
     }
     else if (forward_b == 1)
     { // Forward from MEM/WB
-        store_data = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
+        store_data = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.prev_alu_result;
     }
     ex_mem_reg_.reg2_data = store_data;
     // Pass control signals
@@ -390,12 +399,19 @@ void RV5StageVM_NH_F::pipeline_memory()
         branch_mispredictions_++;
     }
 
+    // since we are running cycle backward
+    // by the time execture check this register forwarding previous results are gone
+    // so we store these seperately
+    mem_wb_reg_.prev_rd = mem_wb_reg_.rd;
+    mem_wb_reg_.prev_alu_result = mem_wb_reg_.alu_result;
     // --- Standard MEM Operations ---
     mem_wb_reg_.instruction = ex_mem_reg_.instruction;
     mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
     mem_wb_reg_.rd = ex_mem_reg_.rd;
     mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
     mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
+
+    
 
     if (ex_mem_reg_.mem_read)
     {
