@@ -125,6 +125,8 @@ struct MEM_WB_Register
     uint64_t alu_result = 0;    // GPR Write Data (ALU result, Link Address, etc.)
     uint8_t rd = 0;             // GPR Destination register index
 
+    uint8_t prev_rd = 0;        // Previous GPR Destination register index 
+    uint64_t prev_alu_result = 0; // Previous ALU result 
     // --- FPR Results ---
     uint64_t f_memory_data = 0; // FPR Write Data (Data read from memory in FLW/FLD)
     uint64_t f_alu_result = 0;  // FPR Write Data (F-ALU result)
