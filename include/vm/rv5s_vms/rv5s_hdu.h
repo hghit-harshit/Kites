@@ -28,4 +28,5 @@ constexpr int STALL_TWO_CYCLES = 2;
  */
 int check_data_hazard(const IF_ID_Register& if_id_reg, 
                       const ID_EX_Register& id_ex_reg, 
+                      const EX_MEM_Register& ex_mem_reg,
                       bool is_forwarding_enabled);

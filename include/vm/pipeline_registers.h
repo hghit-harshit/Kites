@@ -89,6 +89,7 @@ struct EX_MEM_Register
     uint64_t alu_result = 0;    // GPR Write Data (ALU Result, Link Address, etc.)
     uint64_t reg2_data = 0;     // Data from rs2, needed for Store instructions
     uint8_t rd = 0;             // GPR Destination register index
+    uint8_t prev_rd = 0;        // Previous GPR Destination register index (for one cycle delay)
 
     // --- FPR Results ---
     uint64_t f_alu_result = 0;  // FPR Write Data (F-ALU Result, Conversions)
@@ -100,6 +101,7 @@ struct EX_MEM_Register
 
     // Control signals passed through from the previous stage
     bool reg_write = false;     // GPR Write enable
+    bool prev_reg_write = false; // Previous GPR Write enable (for one cycle delay)
     bool freg_write = false;    // FPR Write enable
     bool mem_to_reg = false;
     bool mem_read = false;

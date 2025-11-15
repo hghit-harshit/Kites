@@ -26,6 +26,7 @@ constexpr int STALL_TWO_CYCLES = 2;
  */
 int check_data_hazard(const IF_ID_Register &if_id_reg,
                       const ID_EX_Register &id_ex_reg,
+                      const EX_MEM_Register &ex_mem_reg,
                       bool is_forwarding_enabled)
 {
     // --- 1. Extract Source Register Indices from IF/ID Instruction (Dependent) ---
@@ -37,29 +38,34 @@ int check_data_hazard(const IF_ID_Register &if_id_reg,
 
     // FPR Source Registers (frs1/frs2/frs3 fields—must match control logic)
     // Note: F-type instructions reuse the rs1/rs2 fields for frs1/frs2 (unused frs3 here)
-    uint8_t if_id_frs1 = (instruction >> 15) & 0x1F;
-    uint8_t if_id_frs2 = (instruction >> 20) & 0x1F;
-    uint8_t if_id_frs3 = (instruction >> 27) & 0x1F; // For FMA (R4 format)
+    // uint8_t if_id_frs1 = (instruction >> 15) & 0x1F;
+    // uint8_t if_id_frs2 = (instruction >> 20) & 0x1F;
+    // uint8_t if_id_frs3 = (instruction >> 27) & 0x1F; // For FMA (R4 format)
 
     // --- 2. Check for GPR Hazard (Source writes GPR, Dependent reads GPR) ---
     // Hazard if EX writes GPR (Rd != 0) AND next instruction reads that GPR.
-    bool gpr_writes = id_ex_reg.reg_write && (id_ex_reg.rd != 0);
-    bool gpr_reads = (id_ex_reg.rd == if_id_rs1 || id_ex_reg.rd == if_id_rs2);
-    bool gpr_hazard = gpr_writes && gpr_reads;
+    // bool gpr_writes = id_ex_reg.reg_write && (id_ex_reg.rd != 0);
+    // bool gpr_reads = (id_ex_reg.rd == if_id_rs1 || id_ex_reg.rd == if_id_rs2);
+    // bool gpr_hazard = gpr_writes && gpr_reads;
 
+    // checking for single cycle delay when last to last instrction causes data hazard
+    bool gpr_hazard_two_cycle = (ex_mem_reg.reg_write && (ex_mem_reg.rd != 0))
+    &&((ex_mem_reg.rd == if_id_rs1 || ex_mem_reg.rd == if_id_rs2));
+
+    bool gpr_hazard_one_cycle = (ex_mem_reg.prev_reg_write && (ex_mem_reg.prev_rd != 0))
+    &&((ex_mem_reg.prev_rd == if_id_rs1 || ex_mem_reg.prev_rd == if_id_rs2));
+   
+    //Checking for single cycle delay when rd of ex_mem matches rs1 or rs2 of if_id
+    bool gpr_hazard = gpr_hazard_one_cycle || gpr_hazard_two_cycle;
     // Hazard if EX writes FPR (FRd != 0) AND next instruction reads that FPR.
-    bool fpr_writes = id_ex_reg.freg_write && (id_ex_reg.frd != 0);
-    bool fpr_reads = (id_ex_reg.frd == if_id_frs1 ||
-                      id_ex_reg.frd == if_id_frs2 ||
-                      id_ex_reg.frd == if_id_frs3);
-    bool fpr_hazard = fpr_writes && fpr_reads;
-    fpr_hazard = false; // FPR hazard detection disabled for current implementation
+    // bool fpr_writes = id_ex_reg.freg_write && (id_ex_reg.frd != 0);
+    // bool fpr_reads = (id_ex_reg.frd == if_id_frs1 ||
+    //                   id_ex_reg.frd == if_id_frs2 ||
+    //                   id_ex_reg.frd == if_id_frs3);
+    // bool fpr_hazard = fpr_writes && fpr_reads;
+    // fpr_hazard = false; // FPR hazard detection disabled for current implementation
     // --- 4. No Hazard Exists ---
-    if (!gpr_hazard && !fpr_hazard)
-    {
-        return STALL_NONE;
-    }
-
+    
     // Hazard exists (either GPR or FPR)
     if (is_forwarding_enabled)
     {
@@ -74,12 +80,18 @@ int check_data_hazard(const IF_ID_Register &if_id_reg,
         // All other hazards (R-R, F-F, R-Store, F-Store) are solved by the forwarding unit.
         return STALL_NONE;
     }
-
-    else
+    else if (!gpr_hazard)
     {
-        // --- No Forwarding: Detects ALL producing hazards (2 Stalls) ---
-        // Any instruction producing data needed by the immediate next instruction
-        // requires a full 2-cycle stall.
+        return STALL_NONE;
+    }
+    else if(gpr_hazard_two_cycle)
+    {
         return STALL_TWO_CYCLES;
     }
+    else if(gpr_hazard_one_cycle)
+    {
+        return STALL_ONE_CYCLE;
+    }
+
+    return STALL_NONE;
 }
