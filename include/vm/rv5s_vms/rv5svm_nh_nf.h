@@ -193,7 +193,7 @@ public:
     {
         std::cout << "rv5s_vm" << std::endl;
     }
-     QList<QString> GetActiveWireNames()  override{};
+    void SetActiveWireNames()  override;
 private:
     // Pipeline Registers
     // IF_ID_Register if_id_reg_;

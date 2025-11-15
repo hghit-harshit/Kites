@@ -76,7 +76,7 @@ public:
   void Redo() override;
   void Reset() override;
 
-  QList<QString> GetActiveWireNames() override;
+void SetActiveWireNames() override;
   
   void RequestStop()
   {

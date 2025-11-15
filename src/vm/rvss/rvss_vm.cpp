@@ -32,11 +32,26 @@ RVSSVM::RVSSVM()
 	    connect(this, &VmBase::updateCircuitStateSignal,
 		    circuit_scene_.get(), &Kites::RVSSCircuitScene::updateCircuitState,
 		    Qt::QueuedConnection);
+
+	active_wires_.append("IM_to_PC_pc");
+	active_wires_.append("PC_to_IM_instruction");
+	active_wires_.append("IM_to_RF_rs1_whole");
+	active_wires_.append("RF_to_ALUMUX");
+	active_wires_.append("PCMux_to_PC");
+	active_wires_.append("Imm_to_ALUMUX");
+	active_wires_.append("BranchALU_to_PCMUX");
+	active_wires_.append("PCALU_to_PCMUX");
+	active_wires_.append("Control_ALUOp");
+	active_wires_.append("PC_to_InstrMem");
+	active_wires_.append("ALUOp_to_ALU_alusignal");
+	active_wires_.append("ALU_to_DM");
+
+	always_active_wires_count_ = active_wires_.size();
 }
 
 RVSSVM::~RVSSVM() = default;
 
-QList<QString> RVSSVM::GetActiveWireNames() 
+void RVSSVM::SetActiveWireNames() 
 {
 	//first clear the current list
 	//TODO * we dont have to clear wire that will always be active
@@ -51,18 +66,7 @@ QList<QString> RVSSVM::GetActiveWireNames()
 
 	// first add the always active wires
 	// this is not ideal but for now it will do
-	active_wires_.append("IM_to_PC_pc");
-	active_wires_.append("PC_to_IM_instruction");
-	active_wires_.append("IM_to_RF_rs1_whole");
-	active_wires_.append("RF_to_ALUMUX");
-	active_wires_.append("PCMux_to_PC");
-	active_wires_.append("Imm_to_ALUMUX");
-	active_wires_.append("BranchALU_to_PCMUX");
-	active_wires_.append("PCALU_to_PCMUX");
-	active_wires_.append("Control_ALUOp");
-	active_wires_.append("PC_to_InstrMem");
-	active_wires_.append("ALUOp_to_ALU_alusignal");
-
+	
 	// if(branch_flag_)
 	// {
 		
@@ -108,7 +112,7 @@ QList<QString> RVSSVM::GetActiveWireNames()
 	// also append a numeric/opcode tag like "ALUOp_3" to allow per-op highlighting if desired
 	result.append(QString("ALUOp_%1").arg(static_cast<int>(aluOp))); */
 
-	return active_wires_;
+	//return active_wires_;
 }
 
 void RVSSVM::Fetch()
@@ -988,8 +992,10 @@ void RVSSVM::Run()
 		instructions_retired_++;
 		cycle_s_++;
 		// emit UI update for circuit highlighting
-		emit updateCircuitStateSignal(GetActiveWireNames());
-		active_wires_.clear(); // clear active wires after emitting signal
+		SetActiveWireNames();
+		emit updateCircuitStateSignal(active_wires_);
+		active_wires_.erase(active_wires_.begin() + always_active_wires_count_, active_wires_.end()); 
+		// clear active wires after emitting signal except always active wires
 		std::this_thread::sleep_for(std::chrono::milliseconds(step_delay_));
 	}
 	if (program_counter_ >= program_size_)
@@ -1039,7 +1045,8 @@ void RVSSVM::DebugRun()
 			DumpRegisters(globals::registers_dump_file_path, registers_);
 			DumpState(globals::vm_state_dump_file_path);
 			// update circuit UI after the debug step
-			emit updateCircuitStateSignal(GetActiveWireNames());
+			SetActiveWireNames();
+			emit updateCircuitStateSignal(active_wires_);
 
 			unsigned int delay_ms = vm_config::config.getRunStepDelay();
 			std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
@@ -1105,7 +1112,8 @@ void RVSSVM::Step()
 	DumpRegisters(globals::registers_dump_file_path, registers_);
 	DumpState(globals::vm_state_dump_file_path);
 		// update circuit UI after a single step
-		emit updateCircuitStateSignal(GetActiveWireNames());
+		//SetActiveWireNames();
+		//emit updateCircuitStateSignal(active_wires_);
 }
 
 void RVSSVM::Undo()

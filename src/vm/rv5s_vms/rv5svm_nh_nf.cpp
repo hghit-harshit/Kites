@@ -60,6 +60,14 @@ bool RV5StageVM_NH_NF::is_pipeline_drained() const
     return true;
 }
 
+void RV5StageVM_NH_NF::SetActiveWireNames() 
+{
+    //first we insert always active wires
+    active_wires_.append("IM_to_PC_pc");
+    active_wires_.append("PC_to_IM_instruction");
+    
+}
+
 void RV5StageVM_NH_NF::Run()
 {
     ClearStop();

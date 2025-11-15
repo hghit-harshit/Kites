@@ -311,6 +311,7 @@ void RV5StageVM_H_NF::pipeline_memory()
         branch_mispredictions_++;
     }
 
+    
     mem_wb_reg_.instruction = ex_mem_reg_.instruction;
     mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
     mem_wb_reg_.rd = ex_mem_reg_.rd;

@@ -47,7 +47,7 @@ public:
         std::cout << "RV5StageVM_H_F" << std::endl;
     }
 
-    QList<QString> GetActiveWireNames()  override{};
+    void SetActiveWireNames();  
 private:
     // The Hazard Detection Unit instance
     //RV5SHazardUnit hazard_unit_;

@@ -125,6 +125,7 @@ struct MEM_WB_Register
     uint64_t alu_result = 0;    // GPR Write Data (ALU result, Link Address, etc.)
     uint8_t rd = 0;             // GPR Destination register index
 
+    uint64_t prev_memory_data = 0; // Previous Memory data (for forwarding)
     uint8_t prev_rd = 0;        // Previous GPR Destination register index 
     uint64_t prev_alu_result = 0; // Previous ALU result 
     // --- FPR Results ---
@@ -138,6 +139,8 @@ struct MEM_WB_Register
     bool freg_write = false;    // FPR Write enable
     bool mem_to_reg = false;
 
+    bool prev_mem_to_reg = false; // Previous mem_to_reg signal (for forwarding)
+    bool prev_reg_write = false;  // Previous reg_write signal (for forwarding)
     void reset()
     {
         memory_data = alu_result = rd = 0;

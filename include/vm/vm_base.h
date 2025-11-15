@@ -100,7 +100,8 @@ public:
 
 	alu::Alu alu_;
 
-	QList<QString> active_wires_;
+	QList<QString> active_wires_{};
+	size_t always_active_wires_count_{};
 	// the list of wire that will be active in this cycle of vm
 	// well send this to the gui to highlight those wires
 
@@ -121,7 +122,7 @@ public:
 	void RemoveBreakpoint(uint64_t val, bool is_line = true);
 	bool CheckBreakpoint(uint64_t address);
 
-	virtual QList<QString> GetActiveWireNames()  = 0;
+	virtual void SetActiveWireNames()  = 0;
 	// void fetchInstruction();
 	// void decodeInstruction();
 	// void executeInstruction();
