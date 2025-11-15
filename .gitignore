@@ -1,5 +1,6 @@
 .idea/
 .vscode/
+examples/
 examples/.vscode/
 .VSCodeCounter/
 build/
