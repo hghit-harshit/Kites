@@ -47,7 +47,8 @@ public:
         std::cout << "RV5StageVM_H_F" << std::endl;
     }
 
-    void SetActiveWireNames();  
+    void SetActiveWireNames() override;  
+    void SetVMStateMap()override{};
 private:
     // The Hazard Detection Unit instance
     //RV5SHazardUnit hazard_unit_;

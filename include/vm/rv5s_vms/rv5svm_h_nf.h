@@ -47,6 +47,7 @@ public:
         std::cout << "RV5StageVM_H_NF" << std::endl;
     }
     void SetActiveWireNames()  override{};
+    void SetVMStateMap() override{};
 private:
     // The Hazard Detection Unit instance
     //RV5SHazardUnit hazard_unit_;
@@ -70,6 +71,6 @@ private:
     // Helper function to consolidate hazard checks using the dedicated unit
     bool check_for_hazard();
 
-    void print_pipeline_registers_debug();
+    //void print_pipeline_registers_debug();
     void handle_syscall() override;
 };

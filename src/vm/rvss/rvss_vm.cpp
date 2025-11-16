@@ -115,6 +115,22 @@ void RVSSVM::SetActiveWireNames()
 	//return active_wires_;
 }
 
+void RVSSVM::SetVMStateMap()
+{
+	vm_state_.clear();
+	vm_state_["ProgramCounter"] = static_cast<qulonglong>(program_counter_);
+	vm_state_["CurrentInstruction"] = static_cast<qulonglong>(current_instruction_);
+	vm_state_["Cycles"] = static_cast<qulonglong>(cycle_s_);
+	vm_state_["InstructionsRetired"] = static_cast<qulonglong>(instructions_retired_);
+	vm_state_["CPI"] = static_cast<double>(cpi_);
+	vm_state_["IPC"] = static_cast<double>(ipc_);
+	vm_state_["StallCycles"] = static_cast<qulonglong>(stall_cycles_);
+	vm_state_["BranchMispredictions"] = static_cast<qulonglong>(branch_mispredictions_);
+	vm_state_["EditorLines"] = QVariantList{static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(program_counter_)/ 4])};
+	vm_state_["DisassemblyLines"] = QVariantList{static_cast<qulonglong>(program_.instruction_number_disassembly_mapping[(program_counter_)/ 4])};
+	// Add more VM state variables as needed
+}
+
 void RVSSVM::Fetch()
 {
 	current_instruction_ = memory_controller_.ReadWord(program_counter_);
@@ -993,6 +1009,8 @@ void RVSSVM::Run()
 		cycle_s_++;
 		// emit UI update for circuit highlighting
 		SetActiveWireNames();
+		SetVMStateMap();
+		emit vmStateChangedSignal(vm_state_);
 		emit updateCircuitStateSignal(active_wires_);
 		active_wires_.erase(active_wires_.begin() + always_active_wires_count_, active_wires_.end()); 
 		// clear active wires after emitting signal except always active wires

@@ -24,7 +24,7 @@ class EditorTab : public KitesTab
         void setErrorLinesFromFile(const std::filesystem::path& filepath);
         std::string getRawText();
         void resetErrorLines();
-    
+        void highlightLines(const QVariantList& editorLines, const QVariantList& disassemblyLines);
     private:
         Editor* m_editor = nullptr;
         QPlainTextEdit* m_disassemblyView = nullptr;
@@ -33,7 +33,7 @@ class EditorTab : public KitesTab
         //std::map<int, QString> m_errorMessages; // line number (1-based) to error message
         //std::list<int> m_errorLines;
         //RegisterContainer* m_registerContainer = nullptr;
-    public slots:
-        void highlightLine(int lineNumber){};
+    //public slots:
+        
 };
 } // namespace Kites

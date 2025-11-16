@@ -76,7 +76,9 @@ public:
   void Redo() override;
   void Reset() override;
 
-void SetActiveWireNames() override;
+  void SetActiveWireNames() override;
+  void SetVMStateMap() override;
+
   
   void RequestStop()
   {

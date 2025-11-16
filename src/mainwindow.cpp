@@ -37,6 +37,25 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(this,&MainWindow::runVMSignal,m_vmManager,&VMManager::runSlot);
     // well temporarily disable the toolbar buttons when vm is running
     connect(m_vmManager,&VMManager::runFinishedSignal,this,&MainWindow::enableToolBarButtons);
+    connect(m_vmManager,&VMManager::vmStageChangedSignal,this,[this](const QMap<QString,QVariant>& vmState){
+        // forward the signal to the processor tab and editor tab to highliht pc line
+        /* auto processorTab = dynamic_cast<ProcessorTab*>(m_tabs[TabIndex::ProcessorTabIndex]);
+        if(processorTab)
+        {
+            processorTab->updateVMState(vmState);
+        } */
+        qDebug() << "MainWindow received vm state change signal";
+        auto editorTab = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
+        if(editorTab)
+        {
+            // -1 is default value meaning no line to highlight
+            QVariantList editorLines = vmState.value("EditorLines",{}).toList();
+            QVariantList disassemblyLines = vmState.value("DisassemblyLines",{}).toList();
+            
+
+            editorTab->highlightLines(editorLines,disassemblyLines);
+        }
+    });
 
     m_registerContainer = new RegisterContainer(this,m_vmManager->getRegisterFile());
     QWidget *central = new QWidget(this);
@@ -299,6 +318,6 @@ void MainWindow::toggleTheme(Theme theme)
 
 MainWindow::~MainWindow()
 {
-    delete ui;
+    //delete ui;
 }
 }// namespace Kites

@@ -69,7 +69,7 @@ class VMManager : public QObject
         }
     signals:
         void runFinishedSignal();
-        void vmClockedSignal(const QMap<QString,QVariant>& vmState);
+        void vmStageChangedSignal(const QMap<QString,QVariant>& vmState);
     //std::unique_ptr<> m_instance;
 
 };

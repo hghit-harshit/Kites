@@ -51,6 +51,7 @@ public:
         std::cout << "RV5StageVM_NH_F" << std::endl;
     }
      void SetActiveWireNames()  override{};
+     void SetVMStateMap() override{};
 private:
     // --- Undo/Redo History (Managed internally) ---
     std::stack<StepDelta> undo_stack_;

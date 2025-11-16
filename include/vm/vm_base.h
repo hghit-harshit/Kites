@@ -102,6 +102,7 @@ public:
 
 	QList<QString> active_wires_{};
 	size_t always_active_wires_count_{};
+	QMap<QString,QVariant> vm_state_{};
 	// the list of wire that will be active in this cycle of vm
 	// well send this to the gui to highlight those wires
 
@@ -123,6 +124,7 @@ public:
 	bool CheckBreakpoint(uint64_t address);
 
 	virtual void SetActiveWireNames()  = 0;
+	virtual void SetVMStateMap()  = 0;
 	// void fetchInstruction();
 	// void decodeInstruction();
 	// void executeInstruction();
@@ -150,7 +152,7 @@ public:
 
 	signals:
 	// vm state will have all the info like pc,cycles, control signals
-	void vmClockedSignal(const QMap<QString,QVariant>& vmState);
+	void vmStateChangedSignal(const QMap<QString,QVariant>& vmState);
 	//this will send the list of wire that have to 
 	void updateCircuitStateSignal(const QList<QString>& wireList);
 	
