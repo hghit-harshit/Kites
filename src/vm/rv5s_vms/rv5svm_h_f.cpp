@@ -42,9 +42,9 @@ RV5StageVM_H_F::RV5StageVM_H_F() : RV5StageVM_Base()
     // stall_fetch_and_decode_ = false;
 
     // Reset components and history
-    // circuit_scene_ = std::make_unique<Kites::RV5StageVM_H_F_CircuitScene>();
-    // connect(this, &VmBase::updateCircuitStateSignal,
-    //         circuit_scene_.get(), &Kites::RV5StageVM_H_F_CircuitScene::updateCircuitState);
+    circuit_scene_ = std::make_unique<Kites::RV5StageVM_H_F_CircuitScene>();
+    connect(this, &VmBase::updateCircuitStateSignal,
+            circuit_scene_.get(), &Kites::RV5StageVM_H_F_CircuitScene::updateCircuitState);
     Reset();
 }
 
@@ -129,7 +129,7 @@ void RV5StageVM_H_F::Step()
     } else {
         // Pipeline is free. Check for a NEW hazard using the external HDU function.
         // **CORRECT CALL**: Using the external function with forwarding=true.
-        stalls_needed = check_data_hazard(if_id_reg_, id_ex_reg_, true /* is_forwarding_enabled */);
+        stalls_needed = check_data_hazard(if_id_reg_, id_ex_reg_,ex_mem_reg_, true /* is_forwarding_enabled */);
         
         if (stalls_needed > 0) {
             // Start the stall: stalls_needed cycles total. 1 cycle is handled now.
@@ -383,6 +383,7 @@ void RV5StageVM_H_F::pipeline_execute()
         {
             ex_mem_reg_.branch_taken = true;
             ex_mem_reg_.branch_target_pc = id_ex_reg_.pc + id_ex_reg_.imm;
+            //program_counter_ = ex_mem_reg_.branch_target_pc;
         }
     } 
     // Unconditional Jump Check (JAL/JALR: 1-cycle penalty)
@@ -405,7 +406,7 @@ void RV5StageVM_H_F::pipeline_execute()
 void RV5StageVM_H_F::pipeline_memory()
 {
     // --- B-Type Conditional Branch Resolution (3-Cycle Penalty) ---
-    if (ex_mem_reg_.branch_taken && (id_ex_reg_.instruction & 0b1111111) == 0b1100011) {
+    if (ex_mem_reg_.branch_taken && (ex_mem_reg_.instruction & 0b1111111) == 0b1100011) {
         // B-Type misprediction confirmed in MEM stage. Hardware flushes the pipeline.
         
         program_counter_ = ex_mem_reg_.branch_target_pc;

@@ -28,9 +28,9 @@ using namespace alu;
 RV5StageVM_NH_F::RV5StageVM_NH_F() : RV5StageVM_Base()
 {
     // Reset components and history
-   // circuit_scene_ = std::make_unique<Kites::RV5StageVM_NH_F_CircuitScene>();
-    //connect(this, &VmBase::updateCircuitStateSignal,
-     //       circuit_scene_.get(), &Kites::RV5StageVM_NH_F_CircuitScene::updateCircuitState);
+   circuit_scene_ = std::make_unique<Kites::RV5StageVM_NH_F_CircuitScene>();
+    connect(this, &VmBase::updateCircuitStateSignal,
+           circuit_scene_.get(), &Kites::RV5StageVM_NH_F_CircuitScene::updateCircuitState);
     Reset();
 }
 
@@ -377,7 +377,7 @@ void RV5StageVM_NH_F::pipeline_execute()
 void RV5StageVM_NH_F::pipeline_memory()
 {
     // --- B-Type Conditional Branch Resolution (3-Cycle Penalty) ---
-    if (ex_mem_reg_.branch_taken && (id_ex_reg_.instruction & 0b1111111) == 0b1100011)
+    if (ex_mem_reg_.branch_taken && (ex_mem_reg_.instruction & 0b1111111) == 0b1100011)
     {
         // B-Type misprediction confirmed in MEM stage. Hardware flushes the pipeline.
 

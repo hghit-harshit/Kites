@@ -116,7 +116,7 @@ void RV5StageVM_H_NF::Step()
     }
     else
     {
-        stalls_needed = check_data_hazard(if_id_reg_, id_ex_reg_, false);
+        stalls_needed = check_data_hazard(if_id_reg_, id_ex_reg_, ex_mem_reg_, false);
         if (stalls_needed > 0)
         {
             stall_cycles_ = stalls_needed - 1;
@@ -234,6 +234,8 @@ void RV5StageVM_H_NF::pipeline_execute()
     bool overflow;
     std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
 
+    ex_mem_reg_.prev_reg_write = ex_mem_reg_.reg_write;
+    ex_mem_reg_.prev_rd = ex_mem_reg_.rd; 
     ex_mem_reg_.instruction = id_ex_reg_.instruction;
     ex_mem_reg_.alu_result = alu_result;
     ex_mem_reg_.rd = id_ex_reg_.rd;
@@ -251,12 +253,14 @@ void RV5StageVM_H_NF::pipeline_execute()
 
     if (id_ex_reg_.branch && opcode == 0b1100011)
     {
+        std::cout << "Branch instruction detected in EX stage." << std::endl;
         bool condition_met = false;
         uint8_t funct3 = (instruction >> 12) & 0x7;
 
         switch (funct3)
         {
         case 0b000:
+            std::cout << "BEQ check: " << alu_result << std::endl;
             condition_met = (alu_result == 0);
             break;
         case 0b001:
@@ -280,6 +284,9 @@ void RV5StageVM_H_NF::pipeline_execute()
         {
             ex_mem_reg_.branch_taken = true;
             ex_mem_reg_.branch_target_pc = id_ex_reg_.pc + id_ex_reg_.imm;
+            //program_counter_ = ex_mem_reg_.branch_target_pc;
+            std::cout << "Jump size: " << id_ex_reg_.imm << std::endl;
+            std::cout << "Branch taken to PC: 0x" << std::hex << ex_mem_reg_.branch_target_pc << std::dec << std::endl;
         }
     }
     else if (opcode == 0b1101111 || opcode == 0b1100111)
@@ -303,8 +310,9 @@ void RV5StageVM_H_NF::pipeline_execute()
 
 void RV5StageVM_H_NF::pipeline_memory()
 {
-    if (ex_mem_reg_.branch_taken && (id_ex_reg_.instruction & 0b1111111) == 0b1100011)
+    if (ex_mem_reg_.branch_taken && (ex_mem_reg_.instruction & 0b1111111) == 0b1100011)
     {
+        std::cout <<"branch branch branch branch branch branch branch branch branch\n";
         program_counter_ = ex_mem_reg_.branch_target_pc;
         if_id_reg_.reset();
         id_ex_reg_.reset();
@@ -421,56 +429,56 @@ void RV5StageVM_H_NF::Redo()
     std::cout << "VM_REDO_COMPLETED" << std::endl;
 }
 
-void RV5StageVM_H_NF::print_pipeline_registers_debug()
-{
-    std::cout << "--- Pipeline Debug (Cycle " << cycle_s_ << ") ---" << std::endl;
-    std::cout << "PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
+// void RV5StageVM_H_NF::print_pipeline_registers_debug()
+// {
+//     std::cout << "--- Pipeline Debug (Cycle " << cycle_s_ << ") ---" << std::endl;
+//     std::cout << "PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
 
-    auto inst_to_mnemonic = [](uint32_t inst) -> const char *
-    {
-        if (inst == NOP)
-            return "NOP";
-        uint8_t opc = inst & 0x7F;
-        switch (opc)
-        {
-        case 0b1101111:
-            return "JAL";
-        case 0b1100111:
-            return "JALR";
-        case 0b1100011:
-            return "BR";
-        case 0b0000011:
-            return "LOAD";
-        case 0b0100011:
-            return "STORE";
-        case 0b0010011:
-            return "ALU_IMM";
-        case 0b0110011:
-            return "ALU_REG";
-        case 0b1110011:
-            return "SYSTEM";
-        default:
-            return "OTHER";
-        }
-    };
+//     auto inst_to_mnemonic = [](uint32_t inst) -> const char *
+//     {
+//         if (inst == NOP)
+//             return "NOP";
+//         uint8_t opc = inst & 0x7F;
+//         switch (opc)
+//         {
+//         case 0b1101111:
+//             return "JAL";
+//         case 0b1100111:
+//             return "JALR";
+//         case 0b1100011:
+//             return "BR";
+//         case 0b0000011:
+//             return "LOAD";
+//         case 0b0100011:
+//             return "STORE";
+//         case 0b0010011:
+//             return "ALU_IMM";
+//         case 0b0110011:
+//             return "ALU_REG";
+//         case 0b1110011:
+//             return "SYSTEM";
+//         default:
+//             return "OTHER";
+//         }
+//     };
 
-    // Pretty-print pipeline registers in an ASCII box
-    // Compact table: Stage | Instruction (hex) | Mnemonic
-    auto print_row = [&](const char *stage, uint32_t inst)
-    {
-        std::cout << "| " << stage << " | 0x" << std::hex << inst << std::dec
-                  << " | " << inst_to_mnemonic(inst) << " |\n";
-    };
+//     // Pretty-print pipeline registers in an ASCII box
+//     // Compact table: Stage | Instruction (hex) | Mnemonic
+//     auto print_row = [&](const char *stage, uint32_t inst)
+//     {
+//         std::cout << "| " << stage << " | 0x" << std::hex << inst << std::dec
+//                   << " | " << inst_to_mnemonic(inst) << " |\n";
+//     };
 
-    std::cout << "+-----------------------------------------------+\n";
-    std::cout << "| Stage   | Instruction (hex) | Mnemonic         |\n";
-    std::cout << "+-----------------------------------------------+\n";
-    print_row("IF/ID", if_id_reg_.instruction);
-    print_row("ID/EX", id_ex_reg_.instruction);
-    print_row("EX/MEM", ex_mem_reg_.instruction);
-    print_row("MEM/WB", mem_wb_reg_.instruction);
-    std::cout << "+-----------------------------------------------+\n";
-}
+//     std::cout << "+-----------------------------------------------+\n";
+//     std::cout << "| Stage   | Instruction (hex) | Mnemonic         |\n";
+//     std::cout << "+-----------------------------------------------+\n";
+//     print_row("IF/ID", if_id_reg_.instruction);
+//     print_row("ID/EX", id_ex_reg_.instruction);
+//     print_row("EX/MEM", ex_mem_reg_.instruction);
+//     print_row("MEM/WB", mem_wb_reg_.instruction);
+//     std::cout << "+-----------------------------------------------+\n";
+// }
 
 void RV5StageVM_H_NF::handle_syscall()
 {

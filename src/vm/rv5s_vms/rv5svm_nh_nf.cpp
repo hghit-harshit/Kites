@@ -356,7 +356,7 @@ void RV5StageVM_NH_NF::pipeline_execute()
 void RV5StageVM_NH_NF::pipeline_memory()
 {
     // --- B-Type Conditional Branch Resolution (3-Cycle Penalty) ---
-    if (ex_mem_reg_.branch_taken && (id_ex_reg_.instruction & 0b1111111) == 0b1100011) {
+    if (ex_mem_reg_.branch_taken && (ex_mem_reg_.instruction & 0b1111111) == 0b1100011) {
         // B-Type misprediction confirmed in MEM stage. Hardware flushes the pipeline.
         
         // 1. Redirect the fetch PC
