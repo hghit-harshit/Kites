@@ -14,13 +14,13 @@
 struct IF_ID_Register
 {
     uint32_t instruction = 0x00000013; // A NOP instruction (addi x0, x0, 0)
-    uint64_t pc = 0;
+    uint64_t pc = UINT64_MAX;
 
     void reset()
     {
         // Resetting injects a NOP, used for flushing the pipeline.
         instruction = 0x00000013;
-        pc = 0;
+        pc = UINT64_MAX;
     }
 
     void insertNop()
@@ -34,7 +34,7 @@ struct IF_ID_Register
 struct ID_EX_Register
 {
     // --- GPR Data ---
-    uint64_t pc = 0;
+    uint64_t pc = UINT64_MAX;
     uint32_t instruction = 0x00000013; // Pass full instruction for decoding in EX
     uint64_t reg1_data = 0;     // GPR rs1 data
     uint64_t reg2_data = 0;     // GPR rs2 data
@@ -84,6 +84,7 @@ struct ID_EX_Register
 // --- Data passed from Execute (EX) to Memory (MEM) ---
 struct EX_MEM_Register
 {
+    uint64_t pc = UINT64_MAX; // Passing PC for highlighting purposes
     uint32_t instruction = 0x00000013; // Pass full instruction for reference in MEM
     // --- GPR Results ---
     uint64_t alu_result = 0;    // GPR Write Data (ALU Result, Link Address, etc.)
@@ -97,15 +98,19 @@ struct EX_MEM_Register
 
     // Branching info calculated in EX stage
     bool branch_taken = false;
+    bool prev_branch_taken = false; // we'll use this for hightlighting purposes
     uint64_t branch_target_pc = 0;
 
     // Control signals passed through from the previous stage
     bool reg_write = false;     // GPR Write enable
-    bool prev_reg_write = false; // Previous GPR Write enable (for one cycle delay)
+    bool prev_reg_write = false; // Previous GPR Write enable (used for checking one cycle delay)
     bool freg_write = false;    // FPR Write enable
     bool mem_to_reg = false;
-    bool mem_read = false;
+    bool mem_read = false; // for highlighting purposes
     bool mem_write = false;
+
+    bool prev_mem_read = false; // Previous mem_read signal (for highlighting purposes)
+    bool prev_mem_write = false; // Previous mem_write signal (for highlighting purposes)
 
     void reset()
     {
@@ -121,6 +126,7 @@ struct EX_MEM_Register
 // --- Data passed from Memory (MEM) to Writeback (WB) ---
 struct MEM_WB_Register
 {
+    uint64_t pc = UINT64_MAX; // Passing PC for highlighting purposes
     uint32_t instruction = 0x00000013; // Pass full instruction for reference in WB
     // --- GPR Results ---
     uint64_t memory_data = 0;   // GPR Write Data (Data read from memory in a Load)

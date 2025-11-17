@@ -28,7 +28,7 @@ public:
     {
         std::cout << "rv5s_vm" << std::endl;
     }
-
+void DebugRun() override;
 protected:
 
     // Pipeline Registers
@@ -43,6 +43,9 @@ protected:
     
     void print_pipeline_registers_debug();
     bool is_pipeline_drained() const;
+    void SetVMStateMap() override;
+    void Run() override; // run debug run adn reset are same across all rv5s vms
+    
     // --- Private methods for each pipeline stage ---
     virtual void pipeline_fetch() = 0;
     virtual void pipeline_decode() = 0;

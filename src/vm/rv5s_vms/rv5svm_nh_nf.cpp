@@ -41,6 +41,41 @@ RV5StageVM_NH_NF::RV5StageVM_NH_NF() : RV5StageVM_Base()
     connect(this, &VmBase::updateCircuitStateSignal,
             circuit_scene_.get(), &Kites::RV5StageVM_NH_NF_CircuitScene::updateCircuitState);
     Reset();
+    active_wires_.append("PC_to_IM");
+    active_wires_.append("PCMux_to_PC");
+    active_wires_.append("IM_to_P1");
+    active_wires_.append("P1_to_P2_PCcarry");
+    active_wires_.append("P1_to_Control_RF_andall");
+    active_wires_.append("RF_to_P2_UP");
+    active_wires_.append("RFdown_to_P2");
+    active_wires_.append("P2_to_ALUSRC");
+    active_wires_.append("P2_to_ALUSCRMux");
+    active_wires_.append("P2_to_ALUControl");
+    active_wires_.append("ALUcontrol_to_ALU");
+    active_wires_.append("ALUMux_to_ALU");
+
+
+    active_wires_.append("P2_to_P3_MEMControl");
+    active_wires_.append("P2_to_P3_WBcontrol");
+    active_wires_.append("P2_to_ALUcontrol_Control");
+    //active_wires_.append("P2_to_ALUMux");
+
+    active_wires_.append("Control_to_P3_up");
+    active_wires_.append("Control_to_P3_mid");
+    active_wires_.append("Control_to_P3_down");
+    
+    active_wires_.append("P2_to_P3_WBcontrol");
+    active_wires_.append("P2_to_P3_MEMControl");
+    active_wires_.append("P2_to_ALUcontrol_Control");
+
+    active_wires_.append("P2_to_ALU2");
+
+    active_wires_.append("P3_to_P4_WBcontrol");
+
+    active_wires_.append("rd_P2_to_P3");
+    active_wires_.append("rd_P3_to_P4");
+
+    always_active_wires_count_ = active_wires_.size();
 }
 
 
@@ -62,46 +97,131 @@ bool RV5StageVM_NH_NF::is_pipeline_drained() const
 
 void RV5StageVM_NH_NF::SetActiveWireNames() 
 {
-    //first we insert always active wires
-    active_wires_.append("IM_to_PC_pc");
-    active_wires_.append("PC_to_IM_instruction");
+    // Clear and populate canonical wires for the NH_NF circuit (no forwarding)
+    active_wires_.erase(active_wires_.begin() + always_active_wires_count_, active_wires_.end());
+
+    // Backbone / always-visible wires (scene JSON uses these names)
     
-}
 
-void RV5StageVM_NH_NF::Run()
-{
-    ClearStop();
-    // Continue running until stop is requested OR the pipeline has drained.
-    // while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != NOP))
-    // {
-    //     Step();
-    // }
-
-    while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
+    // Conditional wires based on current pipeline signals
+    if (id_ex_reg_.alu_src)
     {
-        Step();
+        active_wires_.append("Imm_to_P2");
+        active_wires_.append("P2Imm_to_ALU2_down");
+        active_wires_.append("P2_to_ALUMux");
     }
+
+    
+    // Memory stage activity (EX/MEM)
+    // the intruction executed in this cycle was branch/jal/jalr
+    if(ex_mem_reg_.instruction & 0b1111111 == 0b1100011
+    ||ex_mem_reg_.instruction & 0b1111111 == 0b1100111
+    ||ex_mem_reg_.instruction & 0b1111111 == 0b1101111)
+    {
+        active_wires_.append("ALU_zerores_to_P3");
+        active_wires_.append("ALU2_to_P3");
+    }
+    else
+    {
+        active_wires_.append("ALU_to_P3");
+    }
+
+    if(mem_wb_reg_.instruction & 0b11111111 == 0b1100011
+    ||mem_wb_reg_.instruction & 0b11111111 == 0b1100111
+    ||mem_wb_reg_.instruction & 0b11111111 == 0b1101111)
+    {
+        active_wires_.append("ANDGate_lower_entry");
+        active_wires_.append("P3_to_PCMux");
+        //active_wires_.append("ANDGATE_to_PCMUX");
+    }
+    else
+    {
+        active_wires_.append("P3ALUres_to_DMup");
+    }
+
+    if(ex_mem_reg_.prev_branch_taken)
+    {
+        active_wires_.append("ANDGATE_to_PCMUX");
+        active_wires_.append("P3_to_UpperEntryANDGATE");
+    }
+    else
+    {
+        active_wires_.append("ALU1_to_PCMuxUp");
+    }
+
+    if (ex_mem_reg_.prev_mem_read)
+    {
+        active_wires_.append("DM_to_P4");
+        active_wires_.append("P3_to_DM_Memread");
+    }
+    if (ex_mem_reg_.prev_mem_write)
+    {
+        active_wires_.append("P3_TO_DM_control_memwrite");
+        active_wires_.append("P3_rs2_to_DMdown");
+        //active_wires_.append("P3ALUres_to_DMup");
+    }
+
+    if(mem_wb_reg_.prev_reg_write)
+    {
+      active_wires_.append("P4_wbcontrol_to_WBmux");
+      active_wires_.append("P4_to_RF_regwritecontrol");
+      active_wires_.append("WBMux_to_RF");
+    }
+
+    if(mem_wb_reg_.prev_mem_to_reg)
+    {
+        active_wires_.append("P4DM_to_lastMux");
+        //active_wires_.append("WBMux_to_RF");
+    }
+    else if(mem_wb_reg_.prev_reg_write)
+    {
+
+        active_wires_.append("P4_ALUres_to_Mux");
+        active_wires_.append("RdP4_to_RF");
+    }
+    // Branch / PC selection wires
+    
+
+    // The scene reads `active_wires_` when callers emit `updateCircuitStateSignal`.
 }
 
-void RV5StageVM_NH_NF::DebugRun()
-{
-    ClearStop();
-    while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
-    {
-        // if (CheckBreakpoint(program_counter_))
-        // {
-        //     std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
-        //     output_status_ = "VM_BREAKPOINT_HIT";
-        //     break;
-        // }
-        print_pipeline_registers_debug();
-        Step();
+// void RV5StageVM_NH_NF::Run()
+// {
+//     ClearStop();
+//     // Continue running until stop is requested OR the pipeline has drained.
+//     // while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != NOP))
+//     // {
+//     //     Step();
+//     // }
+
+//     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
+//     {
+//         Step();
+//         SetVMStateMap();
+//         emit vmStateChangedSignal(vm_state_);
+//         std::this_thread::sleep_for(std::chrono::milliseconds(step_delay_));
+//     }
+// }
+
+// void RV5StageVM_NH_NF::DebugRun()
+// {
+//     ClearStop();
+//     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
+//     {
+//         // if (CheckBreakpoint(program_counter_))
+//         // {
+//         //     std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
+//         //     output_status_ = "VM_BREAKPOINT_HIT";
+//         //     break;
+//         // }
+//         print_pipeline_registers_debug();
+//         Step();
         
-        std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    }
-    print_pipeline_registers_debug();
-}
+//         std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
+//         std::this_thread::sleep_for(std::chrono::milliseconds(500));
+//     }
+//     print_pipeline_registers_debug();
+// }
 
 void RV5StageVM_NH_NF::Reset()
 {
@@ -121,7 +241,7 @@ void RV5StageVM_NH_NF::Reset()
     id_ex_reg_.reset();
     ex_mem_reg_.reset();
     mem_wb_reg_.reset();
-
+    vm_state_.clear();
     // Clear history for Undo/Redo
     current_delta_ = StepDelta();
     while (!undo_stack_.empty())
@@ -190,8 +310,8 @@ void RV5StageVM_NH_NF::pipeline_fetch()
     else
     {
         // Once past the end of the program, inject NOPs to drain the pipeline.
-        //if_id_reg_.reset();
-        if_id_reg_.insertNop();
+        if_id_reg_.reset();
+        //if_id_reg_.insertNop();
     }
 }
 
@@ -294,14 +414,18 @@ void RV5StageVM_NH_NF::pipeline_execute()
     std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
 
     // Latch data for EX/MEM Register
+    ex_mem_reg_.pc = id_ex_reg_.pc;
     ex_mem_reg_.instruction = id_ex_reg_.instruction;
     ex_mem_reg_.alu_result = alu_result;
     ex_mem_reg_.rd = id_ex_reg_.rd;
     ex_mem_reg_.reg2_data = id_ex_reg_.reg2_data;
     ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
     ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
+    ex_mem_reg_.prev_mem_read = ex_mem_reg_.mem_read;
+    ex_mem_reg_.prev_mem_write = ex_mem_reg_.mem_write;
     ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
     ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
+    ex_mem_reg_.prev_branch_taken = ex_mem_reg_.branch_taken;
     ex_mem_reg_.branch_taken = false;
     ex_mem_reg_.branch_target_pc = 0;
     
@@ -370,9 +494,12 @@ void RV5StageVM_NH_NF::pipeline_memory()
     }
 
     // --- Standard MEM Operations ---
+    mem_wb_reg_.pc = ex_mem_reg_.pc;
     mem_wb_reg_.instruction = ex_mem_reg_.instruction;
     mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
     mem_wb_reg_.rd = ex_mem_reg_.rd;
+    mem_wb_reg_.prev_reg_write = mem_wb_reg_.reg_write;
+    mem_wb_reg_.prev_mem_to_reg = mem_wb_reg_.mem_to_reg;
     mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
     mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
     
@@ -488,47 +615,6 @@ void RV5StageVM_NH_NF::Redo()
 
     undo_stack_.push(next);
     std::cout << "VM_REDO_COMPLETED" << std::endl;
-}
-
-// --- Debug and Specialized Handlers ---
-
-void RV5StageVM_NH_NF::print_pipeline_registers_debug()
-{
-    // A basic implementation for debug visibility
-    std::cout << "--- Pipeline Debug (Cycle " << cycle_s_ << ") ---" << std::endl;
-    std::cout << "PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
-
-    auto inst_to_mnemonic = [](uint32_t inst) -> const char* {
-        if (inst == NOP) return "NOP";
-        uint8_t opc = inst & 0x7F;
-        switch (opc) {
-            case 0b1101111: return "JAL";
-            case 0b1100111: return "JALR";
-            case 0b1100011: return "BR";
-            case 0b0000011: return "LOAD";
-            case 0b0100011: return "STORE";
-            case 0b0010011: return "ALU_IMM";
-            case 0b0110011: return "ALU_REG";
-            case 0b1110011: return "SYSTEM";
-            default: return "OTHER";
-        }
-    };
-
-    // Pretty-print pipeline registers in an ASCII box
-    // Compact table: Stage | Instruction (hex) | Mnemonic
-    auto print_row = [&](const char* stage, uint32_t inst){
-        std::cout << "| " << stage << " | 0x" << std::hex << inst << std::dec
-                  << " | " << inst_to_mnemonic(inst) << " |\n";
-    };
-
-    std::cout << "+-----------------------------------------------+\n";
-    std::cout << "| Stage   | Instruction (hex) | Mnemonic         |\n";
-    std::cout << "+-----------------------------------------------+\n";
-    print_row("IF/ID",  if_id_reg_.instruction);
-    print_row("ID/EX",  id_ex_reg_.instruction);
-    print_row("EX/MEM", ex_mem_reg_.instruction);
-    print_row("MEM/WB", mem_wb_reg_.instruction);
-    std::cout << "+-----------------------------------------------+\n";
 }
 
 // void RV5StageVM_NH_NF::execute_float() {

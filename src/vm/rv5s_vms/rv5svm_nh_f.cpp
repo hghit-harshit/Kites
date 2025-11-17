@@ -32,34 +32,175 @@ RV5StageVM_NH_F::RV5StageVM_NH_F() : RV5StageVM_Base()
     connect(this, &VmBase::updateCircuitStateSignal,
            circuit_scene_.get(), &Kites::RV5StageVM_NH_F_CircuitScene::updateCircuitState);
     Reset();
+
+     // Always-visible / backbone wires in the NH_F circuit
+    active_wires_.append("PC_to_IM");
+    active_wires_.append("IM_to_P1");
+    active_wires_.append("P1_to_P2_PCcarry");
+    active_wires_.append("P1_to_Control_RF_andall");
+    active_wires_.append("RF_to_P2_UP");
+    active_wires_.append("RFdown_to_P2");
+    active_wires_.append("PCMux_to_PC");
+    active_wires_.append("P2_to_ALU2");
+    active_wires_.append("P2_to_P3_MEMControl");
+    active_wires_.append("P2_to_P3_WBcontrol");
+    active_wires_.append("ALU2_to_P3");
+    active_wires_.append("P3_to_P4_WBcontrol");
+    active_wires_.append("P2_to_ALUControl");
+    active_wires_.append("RdP4_to_FU");
+    active_wires_.append("P4EB_to_FWD_unit");
+    active_wires_.append("P2_to_FDU_rs1");
+    active_wires_.append("P2_to_FDU_RS2");
+    active_wires_.append("ALU_to_P3");
+    active_wires_.append("P3ALUres_to_DMup");
+    active_wires_.append("ALUcontrol_to_ALU");
+    active_wires_.append("Fmux1_to_ALU");
+    active_wires_.append("Fmux_to_ALUMux_up");
+  
+
+    // Pipeline/ALU control and data path wires
+    active_wires_.append("P2_to_FMUX");
+    active_wires_.append("P2_to_FMUX2_UP");
+    active_wires_.append("P2_to_ALUMux");
+    active_wires_.append("P2_to_ALUcontrol_Control");
+
+
+    always_active_wires_count_ = active_wires_.size();
 }
 
-void RV5StageVM_NH_F::Run()
-{
-    ClearStop();
-    // Continue running until stop is requested OR the pipeline has drained.
-    while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
-    {
-        Step();
-    }
-}
+// void RV5StageVM_NH_F::Run()
+// {
+//     ClearStop();
+//     // Continue running until stop is requested OR the pipeline has drained.
+//     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
+//     {
+//         Step();
+//         SetVMStateMap();
+//         emit vmStateChangedSignal(vm_state_);
+//         std::this_thread::sleep_for(std::chrono::milliseconds(step_delay_));
+//     }
+// }
 
-void RV5StageVM_NH_F::DebugRun()
+// void RV5StageVM_NH_F::DebugRun()
+// {
+//     ClearStop();
+//     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
+//     {
+//         // if (CheckBreakpoint(program_counter_))
+//         // {
+//         //     std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
+//         //     output_status_ = "VM_BREAKPOINT_HIT";
+//         //     break;
+//         // }
+//         print_pipeline_registers_debug();
+//         Step();
+//         std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
+//     }
+//     print_pipeline_registers_debug();
+// }
+
+void RV5StageVM_NH_F::SetActiveWireNames()
 {
-    ClearStop();
-    while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
+    // Clear current dynamic list and populate canonical always-active wires first
+    active_wires_.clear();
+
+   //Note we are checking the singnals are the execution of these imstructions
+   // so all the signals indicated what happened in this cycle
+   //for example if mem_wb_reg_.prev_reg_write is true that means in this cycle
+   //we executed an instruction that will write to register file in this cycle
+   //so we highlight accordingly
+    // Immediate / ALU source selection
+
+
+    if (id_ex_reg_.alu_src)
     {
-        // if (CheckBreakpoint(program_counter_))
-        // {
-        //     std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
-        //     output_status_ = "VM_BREAKPOINT_HIT";
-        //     break;
-        // }
-        print_pipeline_registers_debug();
-        Step();
-        std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
+        active_wires_.append("Imm_to_P2");
+        active_wires_.append("P2Imm_to_ALU2_down");
     }
-    print_pipeline_registers_debug();
+
+    if(id_ex_reg_.mem_write)
+    {
+        active_wires_.append("Control_to_P2_MEM");
+    }
+    if(id_ex_reg_.reg_write)
+    {
+        active_wires_.append("Control_to_P2_WB");
+    }
+
+    // Memory control / data path (in EX/MEM stage)
+    //mem_read  happened is this cycle
+    if (ex_mem_reg_.prev_mem_read)
+    {
+        active_wires_.append("P3_to_DM_Memread");
+        active_wires_.append("DMMux_to_DM");
+    }
+    if (ex_mem_reg_.mem_write)
+    {
+        active_wires_.append("P3_TO_DM_control_memwrite");
+        active_wires_.append("P3ALUres_to_DMup");
+    }
+    
+    // Register writeback paths (MEM/WB stage)
+    if (mem_wb_reg_.prev_reg_write)
+    {
+        active_wires_.append("P4_wbcontrol_to_WBmux");
+        active_wires_.append("RdP4_to_FU");
+        active_wires_.append("WBMux_to_RF");
+    }
+
+    // Forwarding unit activity: drive FWD unit wires when forwarding is relevant
+    // EX/MEM forwarding (highest priority)
+    if (ex_mem_reg_.reg_write && ex_mem_reg_.rd != 0)
+    {
+        // If EX/MEM destination matches ID/EX sources, show forwarding path
+        if (ex_mem_reg_.rd == id_ex_reg_.rs1)
+        {
+            active_wires_.append("P2_to_FDU_rs1");
+            active_wires_.append("P4EB_to_FWD_unit");
+            active_wires_.append("FDU_to_FMUX1_cntrl");
+            active_wires_.append("FDU_to_fMUX2");
+        }
+        if (ex_mem_reg_.rd == id_ex_reg_.rs2)
+        {
+            active_wires_.append("P2_to_FDU_RS2");
+            active_wires_.append("P4EB_to_FWD_unit");
+            active_wires_.append("FDU_to_FMUX3");
+        }
+    }
+
+    // MEM/WB forwarding (lower priority)
+    if (mem_wb_reg_.prev_reg_write && mem_wb_reg_.prev_rd != 0)
+    {
+        if (mem_wb_reg_.prev_rd == id_ex_reg_.rs1)
+        {
+            active_wires_.append("P4EB_to_FWD_unit");
+            active_wires_.append("FDU_to_FMUX1_cntrl");
+        }
+        if (mem_wb_reg_.prev_rd == id_ex_reg_.rs2)
+        {
+            active_wires_.append("P4EB_to_FWD_unit");
+            active_wires_.append("FDU_to_FMUX3");
+        }
+    }
+
+    // Branch / PC selection wires
+    if (ex_mem_reg_.prev_branch_taken)
+    {
+        active_wires_.append("ALU_zerores_to_P3");
+        active_wires_.append("ANDGate_lower_entry");
+        active_wires_.append("ANDGATE_to_PCMUX");
+        active_wires_.append("P3_to_PCMux");
+        //active_wires_.append("ALU1_to_PCMuxUp");
+    }
+    else
+    {
+        active_wires_.append("ALU1_to_PCMuxUp");
+    }
+    // Ensure uniqueness (avoid duplicate entries) using Qt container helpers
+    //QSet<QString> uniqueSet = QSet<QString>::fromList(active_wires_);
+    //active_wires_ = uniqueSet.values();
+
+    // The scene will read `active_wires_` when `updateCircuitStateSignal` is emitted by callers.
 }
 
 void RV5StageVM_NH_F::Reset()
@@ -314,6 +455,7 @@ void RV5StageVM_NH_F::pipeline_execute()
     ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
     ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
     ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
+    ex_mem_reg_.prev_branch_taken = ex_mem_reg_.branch_taken;
     ex_mem_reg_.branch_taken = false;
     ex_mem_reg_.branch_target_pc = 0;
 

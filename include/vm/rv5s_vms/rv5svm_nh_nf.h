@@ -69,8 +69,8 @@ public:
     ~RV5StageVM_NH_NF() = default;
 
     // Overridden virtual functions from VmBase
-    void Run() override;
-    void DebugRun() override;
+    // void Run() override;
+    // void DebugRun() override;
     void Step() override;
     void Undo() override;
     void Redo() override;
@@ -94,7 +94,7 @@ public:
         std::cout << "rv5s_vm" << std::endl;
     }
     void SetActiveWireNames()  override;
-    void SetVMStateMap() override{};
+    //void SetVMStateMap() override{};
 private:
     // Pipeline Registers
     // IF_ID_Register if_id_reg_;
@@ -110,7 +110,7 @@ private:
     std::stack<StepDelta> redo_stack_;
     StepDelta current_delta_;
 
-    void print_pipeline_registers_debug();
+    //void print_pipeline_registers_debug();
     bool is_pipeline_drained() const;
     // --- Private methods for each pipeline stage ---
     void pipeline_fetch() override;

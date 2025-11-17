@@ -27,14 +27,13 @@ CircuitScene::CircuitScene(QObject *parent)
     m_timer->setSingleShot(true);
     m_timer->setInterval(100); // flash for 100ms
 
-    connect(m_timer, &QTimer::timeout, this, [this]() {
-        // set all wires inactive
+    connect(m_timer, &QTimer::timeout, this, [this]() 
+    {
         for (QGraphicsItem* item : items()) {
             WireItem* wire = dynamic_cast<WireItem*>(item);
             if (wire)
                 wire->setActive(false);
         }
-
         update();
     });
 }

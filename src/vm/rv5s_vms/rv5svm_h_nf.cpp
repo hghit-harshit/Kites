@@ -38,37 +38,45 @@ RV5StageVM_H_NF::RV5StageVM_H_NF() : RV5StageVM_Base()
     // stall_fetch_and_decode_ = false;
 
     // Reset components and history
-    circuit_scene_ = std::make_unique<Kites::RV5StageVM_H_NF_CircuitScene>();
-    connect(this, &VmBase::updateCircuitStateSignal,
-            circuit_scene_.get(), &Kites::RV5StageVM_H_NF_CircuitScene::updateCircuitState);
+    // circuit_scene_ = std::make_unique<Kites::RV5StageVM_H_NF_CircuitScene>();
+    // connect(this, &VmBase::updateCircuitStateSignal,
+    //         circuit_scene_.get(), &Kites::RV5StageVM_H_NF_CircuitScene::updateCircuitState);
     Reset();
 }
 
-void RV5StageVM_H_NF::Run()
-{
-    ClearStop();
-    while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
-    {
-        Step();
-    }
-}
+// void RV5StageVM_H_NF::Run()
+// {
+//     ClearStop();
+//     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
+//     {
+//         Step();
+//         SetVMStateMap();
+//         emit vmStateChangedSignal(vm_state_);
+//         std::this_thread::sleep_for(std::chrono::milliseconds(step_delay_));
+//     }
+// }
 
-void RV5StageVM_H_NF::DebugRun()
+// void RV5StageVM_H_NF::DebugRun()
+// {
+//     ClearStop();
+//     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
+//     {
+//         // if (CheckBreakpoint(program_counter_))
+//         // {
+//         //     std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
+//         //     output_status_ = "VM_BREAKPOINT_HIT";
+//         //     break;
+//         // }
+//         print_pipeline_registers_debug();
+//         Step();
+//         std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
+//     }
+//     print_pipeline_registers_debug();
+// }
+
+void RV5StageVM_H_NF::SetActiveWireNames()
 {
-    ClearStop();
-    while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
-    {
-        // if (CheckBreakpoint(program_counter_))
-        // {
-        //     std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
-        //     output_status_ = "VM_BREAKPOINT_HIT";
-        //     break;
-        // }
-        print_pipeline_registers_debug();
-        Step();
-        std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
-    }
-    print_pipeline_registers_debug();
+    
 }
 
 void RV5StageVM_H_NF::Reset()
@@ -83,7 +91,7 @@ void RV5StageVM_H_NF::Reset()
     registers_.Reset();
     memory_controller_.Reset();
     control_unit_.Reset();
-
+    vm_state_.clear();
     if_id_reg_.reset();
     id_ex_reg_.reset();
     ex_mem_reg_.reset();
@@ -236,6 +244,7 @@ void RV5StageVM_H_NF::pipeline_execute()
 
     ex_mem_reg_.prev_reg_write = ex_mem_reg_.reg_write;
     ex_mem_reg_.prev_rd = ex_mem_reg_.rd; 
+    ex_mem_reg_.pc = id_ex_reg_.pc;
     ex_mem_reg_.instruction = id_ex_reg_.instruction;
     ex_mem_reg_.alu_result = alu_result;
     ex_mem_reg_.rd = id_ex_reg_.rd;
@@ -319,7 +328,7 @@ void RV5StageVM_H_NF::pipeline_memory()
         branch_mispredictions_++;
     }
 
-    
+    mem_wb_reg_.pc = ex_mem_reg_.pc;
     mem_wb_reg_.instruction = ex_mem_reg_.instruction;
     mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
     mem_wb_reg_.rd = ex_mem_reg_.rd;

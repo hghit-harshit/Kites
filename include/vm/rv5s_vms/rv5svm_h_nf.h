@@ -22,8 +22,8 @@ public:
     ~RV5StageVM_H_NF() = default;
 
     // Overridden virtual functions from VmBase
-    void Run() override;
-    void DebugRun() override;
+    // void Run() override;
+    // void DebugRun() override;
     void Step() override;
     void Undo() override;
     void Redo() override;
@@ -46,8 +46,7 @@ public:
     {
         std::cout << "RV5StageVM_H_NF" << std::endl;
     }
-    void SetActiveWireNames()  override{};
-    void SetVMStateMap() override{};
+    void SetActiveWireNames()  override;
 private:
     // The Hazard Detection Unit instance
     //RV5SHazardUnit hazard_unit_;

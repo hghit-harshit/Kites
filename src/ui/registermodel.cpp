@@ -35,6 +35,8 @@ QVariant RegisterModel::headerData(int section, Qt::Orientation orientation,int 
                 return QString("Value");
         }
     }
+
+    return QVariant{};
 }
 
 QVariant RegisterModel::data(const QModelIndex &index, int role) const

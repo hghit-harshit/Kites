@@ -48,32 +48,37 @@ RV5StageVM_H_F::RV5StageVM_H_F() : RV5StageVM_Base()
     Reset();
 }
 
-void RV5StageVM_H_F::Run()
-{
-    ClearStop();
-    while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
-    {
-        Step();
-    }
-}
+// void RV5StageVM_H_F::Run()
+// {
+//     ClearStop();
+//     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
+//     {
+//         Step();
+//         SetVMStateMap();
+//         emit vmStateChangedSignal(vm_state_);
+//         std::this_thread::sleep_for(std::chrono::milliseconds(step_delay_));
+//     }
+//     SetVMStateMap();
+//     emit vmStateChangedSignal(vm_state_);
+// }
 
-void RV5StageVM_H_F::DebugRun()
-{
-    ClearStop();
-    while (!stop_requested_ && (program_counter_ < program_size_ ||!is_pipeline_drained()))
-    {
-        // if (CheckBreakpoint(program_counter_))
-        // {
-        //     std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
-        //     output_status_ = "VM_BREAKPOINT_HIT";
-        //     break;
-        // }
-        print_pipeline_registers_debug();
-        Step();
-        std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
-    }
-    print_pipeline_registers_debug();
-}
+// void RV5StageVM_H_F::DebugRun()
+// {
+//     ClearStop();
+//     while (!stop_requested_ && (program_counter_ < program_size_ ||!is_pipeline_drained()))
+//     {
+//         // if (CheckBreakpoint(program_counter_))
+//         // {
+//         //     std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
+//         //     output_status_ = "VM_BREAKPOINT_HIT";
+//         //     break;
+//         // }
+//         print_pipeline_registers_debug();
+//         Step();
+//         std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
+//     }
+//     print_pipeline_registers_debug();
+// }
 
 void RV5StageVM_H_F::SetActiveWireNames(){}
 

@@ -65,14 +65,15 @@ void EditorTab::highlightLines(const QVariantList& editorLines, const QVariantLi
     QList<QTextEdit::ExtraSelection> DisassemblyExtraSelections;
 
     QTextEdit::ExtraSelection selection;
-    selection.format.setBackground(Qt::red);
+    std::vector<QColor> colors = {Qt::red,Qt::blue,Qt::green,Qt::yellow,Qt::white};
+    int i = 0;
     
 
     for(const QVariant& lineVar : editorLines)
     {
         int line = lineVar.toInt();
         if (line <= 0) continue; // Skip invalid lines
-
+         selection.format.setBackground(colors[i++]);
         QTextBlock block = m_editor->document()->findBlockByNumber(line - 1); // -1 since line is 1 based
         if (!block.isValid()) 
         {
