@@ -24,10 +24,13 @@ class EditorTab : public KitesTab
         void setErrorLinesFromFile(const std::filesystem::path& filepath);
         std::string getRawText();
         void resetErrorLines();
-        void highlightLines(const QVariantList& editorLines, const QVariantList& disassemblyLines);
+        void highlightLines(const QVariantMap& editorLines, const QVariantMap& disassemblyLines);
     private:
         Editor* m_editor = nullptr;
-        QPlainTextEdit* m_disassemblyView = nullptr;
+        Editor* m_disassemblyView = nullptr;
+        // m_disassemblyView is an object of the same class as m_editor
+        // but well make it read only and use it to show disassembled code
+        // were doing this cause of the overriden paint event in Editor class to show hightlights
         QTextCharFormat m_squiggleFormat; // stores how the quiggles will look
         VMManager* m_vmManager = nullptr;
         //std::map<int, QString> m_errorMessages; // line number (1-based) to error message

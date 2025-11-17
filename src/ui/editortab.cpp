@@ -24,9 +24,9 @@ EditorTab::EditorTab(QWidget* parent, VMManager* vmManager)
 
     mainsplitter->addWidget(m_editor);
 
-    m_disassemblyView = new QPlainTextEdit(this);
+    m_disassemblyView = new Editor(this);
     m_disassemblyView->setReadOnly(true);
-    m_disassemblyView->setPlaceholderText("Disassembled code will appear here...");
+    //m_disassemblyView->setPlaceholderText("Disassembled code will appear here...");
     //m_disassemblyView->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     //m_disassemblyView->setStyleSheet("background-color:#0b0f14; color:#b8fbb8;");
     mainsplitter->addWidget(m_disassemblyView);
@@ -59,52 +59,10 @@ void EditorTab::updateDisassemblyView(const std::string& disassembledCode)
     m_disassemblyView->setPlainText(QString::fromStdString(disassembledCode));
 }
 
-void EditorTab::highlightLines(const QVariantList& editorLines, const QVariantList& disassemblyLines)
+void EditorTab::highlightLines(const QVariantMap& editorLines, const QVariantMap& disassemblyLines)
 {
-    QList<QTextEdit::ExtraSelection> EditorExtraSelections;
-    QList<QTextEdit::ExtraSelection> DisassemblyExtraSelections;
-
-    QTextEdit::ExtraSelection selection;
-    std::vector<QColor> colors = {Qt::red,Qt::blue,Qt::green,Qt::yellow,Qt::white};
-    int i = 0;
-    
-
-    for(const QVariant& lineVar : editorLines)
-    {
-        int line = lineVar.toInt();
-        if (line <= 0) continue; // Skip invalid lines
-         selection.format.setBackground(colors[i++]);
-        QTextBlock block = m_editor->document()->findBlockByNumber(line - 1); // -1 since line is 1 based
-        if (!block.isValid()) 
-        {
-            continue; // Line number is out of bounds
-        }
-        QTextCursor cursor(block);
-        cursor.movePosition(QTextCursor::StartOfLine);
-        cursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
-        selection.cursor = cursor;
-        EditorExtraSelections.append(selection);
-    }
-
-    for(const QVariant& lineVar : disassemblyLines)
-    {
-        int line = lineVar.toInt();
-        if (line <= 0) continue; // Skip invalid lines
-
-        QTextBlock block = m_disassemblyView->document()->findBlockByNumber(line - 1); // -1 since line is 1 based
-        if (!block.isValid()) 
-        {
-            continue; // Line number is out of bounds
-        }
-        QTextCursor cursor(block);
-        cursor.movePosition(QTextCursor::StartOfLine);
-        cursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
-        selection.cursor = cursor;
-        DisassemblyExtraSelections.append(selection);
-    }
-
-    m_editor->setExtraSelections(EditorExtraSelections);
-    m_disassemblyView->setExtraSelections(DisassemblyExtraSelections);
+    m_editor->setLinesToHighlight(editorLines);
+    m_disassemblyView->setLinesToHighlight(disassemblyLines);
 }
 
 void EditorTab::setErrorLinesFromFile(const std::filesystem::path& filePath)

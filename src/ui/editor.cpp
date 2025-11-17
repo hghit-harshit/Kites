@@ -2,9 +2,12 @@
 #include <QMouseEvent>
 #include <QTextBlock>
 #include <QToolTip>
+#include <QPainter>
+#include <set>
 namespace Kites
 {
 Editor::Editor(QWidget* parent):QPlainTextEdit(parent)
+//:m_LinesToHighlight({{".",1}})
 {
     setMouseTracking(true);
     m_syntaxHighlighter = new SyntaxHighlighter(this->document());
@@ -15,21 +18,47 @@ void Editor::resetErrors()
     m_errorMessages.clear();
 }
 
-// void Editor::mouseMoveEvent(QMouseEvent* event)
-// {
-//     QTextCursor cursor = cursorForPosition(event->pos());
-//     QTextBlock block = cursor.block();
-//     int lineNumber = block.blockNumber();  // 0-based line index
+void Editor::setLinesToHighlight(const QVariantMap& linesToHighlight)
+{
+    m_LinesToHighlight = linesToHighlight;
+    viewport()->update(); // Trigger a repaint to show the highlights
+}
 
-//     // If this line has a tooltip, show it
-//     if (m_errorMessages.find(lineNumber) != m_errorMessages.en   d()) {
-//         QToolTip::showText(event->globalPos(), m_errorMessages[lineNumber], this);
-//     } else {
-//         QToolTip::hideText();
-//     }
+void Editor::paintEvent(QPaintEvent *event)
+{
+    std::set<int> drawnLines;
+    QPlainTextEdit::paintEvent(event);
 
-//     QPlainTextEdit::mouseMoveEvent(event);
-// }
+    QPainter painter(viewport());
+    
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    for(const auto& key : m_LinesToHighlight.keys())
+    {
+        int lineNumber = m_LinesToHighlight.value(key).toInt();
+        if(lineNumber < 0 || lineNumber >= this->blockCount() || drawnLines.find(lineNumber) != drawnLines.end())
+        { continue; }
+        drawnLines.insert(lineNumber);  
+        QTextBlock block = this->document()->findBlockByNumber(lineNumber-1); // -1 for 0-based index
+
+        if (block.isValid()) 
+        {
+            QRectF blockRect = this->blockBoundingGeometry(block).translated(this->contentOffset());
+            
+            QLinearGradient gradient(blockRect.topLeft(), blockRect.topRight());
+            gradient.setColorAt(0.0, QColor(255, 255, 255,0));  // white
+            gradient.setColorAt(1.0, QColor(255,0,0,100));  // red // Semi-transparent orange
+            painter.fillRect(blockRect, gradient);
+
+            QRectF textRect = blockRect.adjusted(0, 0, 0, -1);
+            textRect.setWidth(viewport()->width()-10);
+
+
+            painter.setPen(Qt::black);
+            painter.drawText(textRect, Qt::AlignRight | Qt::AlignVCenter, key);
+        }
+    }
+}
 
 bool Editor::event(QEvent *event)
 {
