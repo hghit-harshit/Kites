@@ -30,18 +30,6 @@ public:
     void Reset() override;
 
     // --- VM Control Functions ---
-    void RequestStop()
-    {
-        stop_requested_ = true;
-    }
-    bool IsStopRequested() const
-    {
-        return stop_requested_;
-    }
-    void ClearStop()
-    {
-        stop_requested_ = false;
-    }
     void PrintType()
     {
         std::cout << "RV5StageVM_H_NF" << std::endl;

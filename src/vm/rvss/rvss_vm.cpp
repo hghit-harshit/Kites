@@ -126,8 +126,9 @@ void RVSSVM::SetVMStateMap()
 	vm_state_["IPC"] = static_cast<double>(ipc_);
 	vm_state_["StallCycles"] = static_cast<qulonglong>(stall_cycles_);
 	vm_state_["BranchMispredictions"] = static_cast<qulonglong>(branch_mispredictions_);
-	vm_state_["EditorLines"] = QVariantList{static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(program_counter_)/ 4])};
-	vm_state_["DisassemblyLines"] = QVariantList{static_cast<qulonglong>(program_.instruction_number_disassembly_mapping[(program_counter_)/ 4])};
+    vm_state_["EditorLines"] = QVariantMap{{".",static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(program_counter_)/ 4])}};
+	vm_state_["DisassemblyLines"] = QVariantMap{{".",static_cast<qulonglong>(program_.instruction_number_disassembly_mapping[(program_counter_)/ 4])}};
+
 	// Add more VM state variables as needed
 }
 
@@ -1000,6 +1001,17 @@ void RVSSVM::Run()
 	ClearStop();
 	while (!stop_requested_ && program_counter_ < program_size_)
 	{
+		{
+			QMutexLocker locker(&pause_mutex_);
+			while (pause_requested_ && !stop_requested_)
+			{
+				pause_wait_condition_.wait(&pause_mutex_);
+			}
+			if(stop_requested_)
+			{
+				break;
+			}
+		}
 		Fetch();
 		Decode();
 		Execute();
@@ -1014,7 +1026,21 @@ void RVSSVM::Run()
 		emit updateCircuitStateSignal(active_wires_);
 		active_wires_.erase(active_wires_.begin() + always_active_wires_count_, active_wires_.end()); 
 		// clear active wires after emitting signal except always active wires
-		std::this_thread::sleep_for(std::chrono::milliseconds(step_delay_));
+		// handling the delay
+        {
+            QMutexLocker locker(&pause_mutex_);
+            if(stop_requested_ || pause_requested_)
+                continue;
+            pause_wait_condition_.wait(&pause_mutex_, step_delay_);
+            // we wait for step_delay_ milliseconds or until notified to wake up
+            
+        }
+		
+	}
+	if(stop_requested_)
+	{
+		vm_state_.clear();
+		emit vmStateChangedSignal(vm_state_);
 	}
 	if (program_counter_ >= program_size_)
 	{

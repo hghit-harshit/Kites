@@ -25,6 +25,9 @@
 #include <QMap>
 #include <QList>
 #include <QString>
+#include <QMutex>
+#include <QWaitCondition>
+
 
 enum SyscallCode
 {
@@ -72,6 +75,12 @@ public:
 
 	AssembledProgram program_;
 	std::atomic<bool> stop_requested_ = false;
+	std::atomic<bool> pause_requested_ = false;
+	
+	QMutex pause_mutex_;
+	QWaitCondition pause_wait_condition_;
+	
+
 	std::mutex input_mutex_;
 	std::condition_variable input_cv_;
 	std::queue<std::string> input_queue_;
@@ -123,6 +132,12 @@ public:
 	void RemoveBreakpoint(uint64_t val, bool is_line = true);
 	bool CheckBreakpoint(uint64_t address);
 
+	void RequestStop();
+	void RequestPause();
+	void RequestResume();
+
+	bool IsStopRequested() const;
+	void ClearStop();
 	virtual void SetActiveWireNames()  = 0;
 	virtual void SetVMStateMap()  = 0;
 	// void fetchInstruction();

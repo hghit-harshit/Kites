@@ -50,7 +50,9 @@ class VMManager : public QObject
         void run();
         void step();
         void debugRun();
-
+        void stop();
+        void pause();
+        void resume();
         void setStepDelay(unsigned int delay);
         
         RegisterFile* getRegisterFile();
@@ -67,6 +69,7 @@ class VMManager : public QObject
             run();
             emit runFinishedSignal();
         }
+       
     signals:
         void runFinishedSignal();
         void vmStageChangedSignal(const QMap<QString,QVariant>& vmState);

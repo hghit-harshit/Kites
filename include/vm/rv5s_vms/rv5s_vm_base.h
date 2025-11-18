@@ -12,18 +12,7 @@ public:
     ~RV5StageVM_Base() = default;
 
     // --- VM Control Functions ---
-    void RequestStop()
-    {
-        stop_requested_ = true;
-    }
-    bool IsStopRequested() const
-    {
-        return stop_requested_;
-    }
-    void ClearStop()
-    {
-        stop_requested_ = false;
-    }
+ 
     void PrintType()
     {
         std::cout << "rv5s_vm" << std::endl;

@@ -56,6 +56,26 @@ void VMManager::step()
     m_currentVM->Step();
 }   
 
+void VMManager::debugRun()
+{
+
+}
+
+void VMManager::stop()
+{
+    m_currentVM->RequestStop();
+}
+void VMManager::pause()
+{
+    m_currentVM->RequestPause();
+}
+void VMManager::resume()
+{
+    //QMutexLocker locker(&m_currentVM->pause_mutex_);
+    m_currentVM->RequestResume();
+    //m_currentVM->pause_wait_condition_.wakeAll();
+    
+}
 void VMManager::setStepDelay(unsigned int delay)
 {
     m_currentVM->step_delay_ = delay;

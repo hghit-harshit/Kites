@@ -38,9 +38,9 @@ RV5StageVM_H_NF::RV5StageVM_H_NF() : RV5StageVM_Base()
     // stall_fetch_and_decode_ = false;
 
     // Reset components and history
-    // circuit_scene_ = std::make_unique<Kites::RV5StageVM_H_NF_CircuitScene>();
-    // connect(this, &VmBase::updateCircuitStateSignal,
-    //         circuit_scene_.get(), &Kites::RV5StageVM_H_NF_CircuitScene::updateCircuitState);
+    circuit_scene_ = std::make_unique<Kites::RV5StageVM_H_NF_CircuitScene>();
+    connect(this, &VmBase::updateCircuitStateSignal,
+            circuit_scene_.get(), &Kites::RV5StageVM_H_NF_CircuitScene::updateCircuitState);
     Reset();
 }
 
@@ -84,7 +84,7 @@ void RV5StageVM_H_NF::Reset()
     program_counter_ = 0;
     instructions_retired_ = 0;
     cycle_s_ = 0;
-    stop_requested_ = false;
+    //stop_requested_ = false;
     stall_fetch_and_decode_ = false;
     stall_cycles_ = 0; // Initialize stall counter
 

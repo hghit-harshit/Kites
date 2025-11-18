@@ -1,77 +1,45 @@
 #include "vm/rv5s_vms/rv5s_vm_base.h"
 constexpr uint32_t NOP = 0x00000013;
 #include <thread>
-// void RV5StageVM_Base::print_pipeline_registers_debug()
-// {
-//     auto inst_to_mnemonic = [](uint32_t inst) -> const char*
-//     {
-//         if (inst == NOP) return "NOP";
-//         uint8_t opc = inst & 0x7F;
-//         switch (opc)
-//         {
-//             case 0b1101111: return "JAL";
-//             case 0b1100111: return "JALR";
-//             case 0b1100011: return "BR";
-//             case 0b0000011: return "LOAD";
-//             case 0b0100011: return "STORE";
-//             case 0b0010011: return "ALU_IMM";
-//             case 0b0110011: return "ALU_REG";
-//             case 0b1110011: return "SYSTEM";
-//             default: return "OTHER";
-//         }
-//     };
 
-//     auto line = []()
-//     {
-//         std::cout << "\u250C";                 // ┌
-//         for (int i = 0; i < 55; i++) std::cout << "\u2500"; // ────
-//         std::cout << "\u2510\n";              // ┐
-//     };
-
-//     auto separator = []()
-//     {
-//         std::cout << "\u251C";                 // ├
-//         for (int i = 0; i < 55; i++) std::cout << "\u2500";
-//         std::cout << "\u2524\n";              // ┤
-//     };
-
-//     auto bottom = []()
-//     {
-//         std::cout << "\u2514";                 // └
-//         for (int i = 0; i < 55; i++) std::cout << "\u2500";
-//         std::cout << "\u2518\n";              // ┘
-//     };
-
-//     auto print_row = [&](const char *stage, uint32_t inst)
-//     {
-//         std::stringstream ss;
-//         ss << "0x" << std::hex << std::setw(8) << std::setfill('0') << inst << std::dec;
-//         std::cout << "\u2502 " << std::left << std::setw(6) << stage
-//                   << " \u2502 " << std::setw(12) << ss.str()
-//                   << " \u2502 " << std::setw(10) << inst_to_mnemonic(inst)
-//                   << " \u2502\n";
-//     };
-
-//     line();
-//     std::cout << "\u2502 Stage   \u2502 Instruction  \u2502 Mnemonic   \u2502\n";
-//     separator();
-//     print_row("IF/ID", if_id_reg_.instruction);
-//     print_row("ID/EX", id_ex_reg_.instruction);
-//     print_row("EX/MEM", ex_mem_reg_.instruction);
-//     bottom();
-// }
 
 void RV5StageVM_Base::Run()
 {
     ClearStop();
     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
     {
+        //handling pause
+        {
+            QMutexLocker locker(&pause_mutex_);
+            // using while because thie wait can be interrupted by spurious wakeups
+            while(pause_requested_ && !stop_requested_)
+                pause_wait_condition_.wait(&pause_mutex_);
+            
+            if(stop_requested_) // if we were requested to stop while paused
+                break;
+        }
         Step();
         SetVMStateMap();
         SetActiveWireNames();
         emit updateCircuitStateSignal(active_wires_);
         emit vmStateChangedSignal(vm_state_);
-        std::this_thread::sleep_for(std::chrono::milliseconds(step_delay_));
+        
+        // handling the delay
+        {
+            QMutexLocker locker(&pause_mutex_);
+            if(stop_requested_ || pause_requested_)
+                continue;
+            pause_wait_condition_.wait(&pause_mutex_, step_delay_);
+            // we wait for step_delay_ milliseconds or until notified to wake up
+            
+        }
+    }
+    if(stop_requested_)
+    {
+        emit vmStateChangedSignal(vm_state_);
+        // we emit the vm state changed signal once more to update the ui
+        // this will get rid of any highlights as they pause when we stop 
+        // before execution is complete
     }
     //vm_state_["EditorLines"] = {};
    // vm_state_["DisassemblyLines"] = {};
@@ -109,19 +77,19 @@ void RV5StageVM_Base::SetVMStateMap()
 	vm_state_["IPC"] = static_cast<double>(ipc_);
 	vm_state_["StallCycles"] = static_cast<qulonglong>(stall_cycles_);
 	vm_state_["BranchMispredictions"] = static_cast<qulonglong>(branch_mispredictions_);
-    //vm_state_["CurrentInstrctin"]
-	vm_state_["EditorLines"] = QVariantList{
-        static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(program_counter_)/ 4]),
-        (if_id_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(if_id_reg_.pc)/ 4]) : -1),
-        (id_ex_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(id_ex_reg_.pc)/ 4]) : -1),
-        (ex_mem_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(ex_mem_reg_.pc)/ 4]) : -1),
-        (mem_wb_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(mem_wb_reg_.pc)/ 4]) : -1)};   
-	vm_state_["DisassemblyLines"] = QVariantList{
-        static_cast<qulonglong>(program_.instruction_number_disassembly_mapping[(program_counter_)/ 4]),
-        (if_id_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_disassembly_mapping[(if_id_reg_.pc)/ 4]) : -1),
-        (id_ex_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_disassembly_mapping[(id_ex_reg_.pc)/ 4]) : -1),
-        (ex_mem_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_disassembly_mapping[(ex_mem_reg_.pc)/ 4]) : -1),
-        (mem_wb_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_disassembly_mapping[(mem_wb_reg_.pc)/ 4]) : -1)};
+    
+    vm_state_["EditorLines"] = QVariantMap{
+        {"CI", static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(program_counter_)/ 4])},
+        {"IF/ID",(if_id_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(if_id_reg_.pc)/ 4]) : -1)},
+        {"ID/EX",(id_ex_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(id_ex_reg_.pc)/ 4]) : -1)},
+        {"EX/MEM",(ex_mem_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(ex_mem_reg_.pc)/ 4]) : -1)},
+        {"MEM/WB", (mem_wb_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(mem_wb_reg_.pc)/ 4]) : -1)} }; 
+	vm_state_["DisassemblyLines"] = QVariantMap{
+        {"CI",static_cast<qulonglong>(program_.instruction_number_disassembly_mapping[(program_counter_)/ 4])},
+        {"IF/ID",(if_id_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_disassembly_mapping[(if_id_reg_.pc)/ 4]) : -1)},
+        {"ID/EX",(id_ex_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_disassembly_mapping[(id_ex_reg_.pc)/ 4]) : -1)},
+        {"EX/MEM",(ex_mem_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_disassembly_mapping[(ex_mem_reg_.pc)/ 4]) : -1)},
+        {"MEM/WB",(mem_wb_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_disassembly_mapping[(mem_wb_reg_.pc)/ 4]) : -1)}};
 }
 
 

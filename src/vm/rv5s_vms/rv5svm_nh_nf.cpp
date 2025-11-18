@@ -229,7 +229,10 @@ void RV5StageVM_NH_NF::Reset()
     program_counter_ = 0;
     instructions_retired_ = 0;
     cycle_s_ = 0;
-    stop_requested_ = false;
+    //stop_requested_ = false;
+    // stop_request reset is handle by ClearStop
+    // if we reset it here it cause the while loop to restart after 
+    // Resquest Stop is called
 
     // Reset all hardware components
     registers_.Reset();

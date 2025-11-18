@@ -48,37 +48,7 @@ RV5StageVM_H_F::RV5StageVM_H_F() : RV5StageVM_Base()
     Reset();
 }
 
-// void RV5StageVM_H_F::Run()
-// {
-//     ClearStop();
-//     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
-//     {
-//         Step();
-//         SetVMStateMap();
-//         emit vmStateChangedSignal(vm_state_);
-//         std::this_thread::sleep_for(std::chrono::milliseconds(step_delay_));
-//     }
-//     SetVMStateMap();
-//     emit vmStateChangedSignal(vm_state_);
-// }
 
-// void RV5StageVM_H_F::DebugRun()
-// {
-//     ClearStop();
-//     while (!stop_requested_ && (program_counter_ < program_size_ ||!is_pipeline_drained()))
-//     {
-//         // if (CheckBreakpoint(program_counter_))
-//         // {
-//         //     std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
-//         //     output_status_ = "VM_BREAKPOINT_HIT";
-//         //     break;
-//         // }
-//         print_pipeline_registers_debug();
-//         Step();
-//         std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
-//     }
-//     print_pipeline_registers_debug();
-// }
 
 void RV5StageVM_H_F::SetActiveWireNames(){}
 
@@ -87,7 +57,7 @@ void RV5StageVM_H_F::Reset()
     program_counter_ = 0;
     instructions_retired_ = 0;
     cycle_s_ = 0;
-    stop_requested_ = false;
+    //stop_requested_ = false;
     stall_fetch_and_decode_ = false;
     stall_cycles_ = 0; // Initialize stall counter
 
@@ -99,6 +69,7 @@ void RV5StageVM_H_F::Reset()
     id_ex_reg_.reset();
     ex_mem_reg_.reset();
     mem_wb_reg_.reset();
+    vm_state_.clear();
 
     current_delta_ = StepDelta();
     while (!undo_stack_.empty())
@@ -357,6 +328,7 @@ void RV5StageVM_H_F::pipeline_execute()
     ex_mem_reg_.alu_result = alu_result;
     ex_mem_reg_.rd = id_ex_reg_.rd; 
     // Pass control signals...
+    ex_mem_reg_.pc = id_ex_reg_.pc;
     ex_mem_reg_.instruction = instruction;
     ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
     ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
@@ -429,6 +401,7 @@ void RV5StageVM_H_F::pipeline_memory()
     mem_wb_reg_.prev_reg_write = mem_wb_reg_.reg_write;
     mem_wb_reg_.prev_memory_data = mem_wb_reg_.memory_data;
     // --- Standard MEM Operations ---
+    mem_wb_reg_.pc = ex_mem_reg_.pc;
     mem_wb_reg_.instruction = ex_mem_reg_.instruction;
     mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
     mem_wb_reg_.rd = ex_mem_reg_.rd;

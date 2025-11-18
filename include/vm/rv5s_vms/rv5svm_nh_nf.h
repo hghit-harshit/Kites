@@ -25,42 +25,7 @@
 #include <stack>
 #include <vector>
 
-// uselesss well define diffrent classes for each type of vm here
-// Enum to manage the different hazard handling modes for future extension
-// enum class PipelineMode {
-//     NO_HAZARD_NO_FORWARDING,      // Option 1
-//     FORWARDING_NO_HAZARD,         // Option 2
-//     HAZARD_NO_FORWARDING,         // Option 3
-//     HAZARD_AND_FORWARDING,        // Option 4
-//     STATIC_BRANCH_PREDICTION,     // Option 5
-//     DYNAMIC_BRANCH_PREDICTION     // Option 6
-// };
 
-// // --- Data structures for Undo/Redo state tracking ---
-
-// struct RegisterChange
-// {
-//     unsigned int reg_index;
-//     unsigned int reg_type; // 0 for GPR, 1 for CSR, 2 for FPR
-//     uint64_t old_value;
-//     uint64_t new_value;
-// };
-
-// struct MemoryChange
-// {
-//     uint64_t address;
-//     std::vector<uint8_t> old_bytes_vec;
-//     std::vector<uint8_t> new_bytes_vec;
-// };
-
-// // A StepDelta records all architectural state changes that complete in a single clock cycle.
-// struct StepDelta
-// {
-//     uint64_t old_pc;
-//     uint64_t new_pc;
-//     std::vector<RegisterChange> register_changes; // From the WB stage
-//     std::vector<MemoryChange> memory_changes;     // From the MEM stage
-// };
 
 class RV5StageVM_NH_NF : public RV5StageVM_Base
 {
@@ -77,18 +42,6 @@ public:
     void Reset() override;
 
     // --- VM Control Functions ---
-    void RequestStop()
-    {
-        stop_requested_ = true;
-    }
-    bool IsStopRequested() const
-    {
-        return stop_requested_;
-    }
-    void ClearStop()
-    {
-        stop_requested_ = false;
-    }
     void PrintType()
     {
         std::cout << "rv5s_vm" << std::endl;

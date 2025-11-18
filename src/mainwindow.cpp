@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     setWindowTitle("Kites RISC-V Simulator");
     setWindowIcon(QIcon(":/icons/kite.png"));
     setUpPalettes();
-    toggleTheme(Theme::Dark);
+    toggleTheme(Theme::Light);
     setupVmStateDirectory();
 
 
@@ -49,8 +49,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
         if(editorTab)
         {
             // -1 is default value meaning no line to highlight
-            QVariantList editorLines = vmState.value("EditorLines",{}).toList();
-            QVariantList disassemblyLines = vmState.value("DisassemblyLines",{}).toList();
+            QVariantMap editorLines = vmState.value("EditorLines",{}).toMap();
+            QVariantMap disassemblyLines = vmState.value("DisassemblyLines",{}).toMap();
             
 
             editorTab->highlightLines(editorLines,disassemblyLines);
@@ -89,8 +89,16 @@ void MainWindow::setUpToolBar()
     QToolBar *toolbar = addToolBar("Main Toolbar");
     QAction *processorAction = new QAction("Processor",this);
     QAction *runAction = new QAction("Run", this);
+    QAction *stopAction = new QAction("Stop", this);
+    QAction *pauseAction = new QAction("Pause",this);
+    QAction *debugAction = new QAction("Debug",this);
     QAction *stepAction = new QAction("Step", this);
     
+    
+    stepAction->setDisabled(true);
+    stopAction->setDisabled(true);
+    pauseAction->setDisabled(true); 
+
     QSpinBox *spinbox = new QSpinBox(this);
     spinbox->setRange(1,10000);
     spinbox->setValue(1000);
@@ -102,14 +110,40 @@ void MainWindow::setUpToolBar()
     //toolbar->addAction(preferencesAction);
     toolbar->addAction(processorAction);
     toolbar->addAction(runAction);
-    toolbar->addAction(stepAction);
     toolbar->addAction(spinboxAction);
+    toolbar->addAction(pauseAction);
+    toolbar->addAction(stopAction);
+    toolbar->addAction(stepAction);
     
-    connect(runAction,&QAction::triggered,this,&MainWindow::run);
+    connect(runAction,&QAction::triggered,this,[this,processorAction,
+    runAction,stopAction,pauseAction](){
+        processorAction->setDisabled(true);
+        runAction->setDisabled(true);
+        stopAction->setEnabled(true);
+        pauseAction->setEnabled(true);
+        this->run();
+    });
     connect(processorAction,&QAction::triggered,this,&MainWindow::processorChangeDialog);
     connect(spinbox,qOverload<int>(&QSpinBox::valueChanged),this,[this](int value){
         m_vmManager->setStepDelay(value);
     });
+    connect(pauseAction,&QAction::triggered,this,[this,pauseAction](){
+        if(pauseAction->text() == "Pause")
+        {
+            pauseAction->setText("Resume");
+            m_vmManager->pause();
+        }
+        else
+        {
+            pauseAction->setText("Pause");
+            m_vmManager->resume();
+        }
+    });
+    connect(stopAction,&QAction::triggered,this,[this](){
+        //emit stopSignal();
+        m_vmManager->stop();
+    });
+    
     //connect(stepAction,&QAction::triggered,this,&MainWindow::step);
 }
 
@@ -144,8 +178,6 @@ void MainWindow::setUpMenubar()
     fileMenu->addAction(exitAction);
 ////////////Setting Menu////////////////
     settingsMenu->addMenu(preferencesMenu);
-
-    
     QAction *lightThemeAction = new QAction("Light", this);
     lightThemeAction->setCheckable(true); // Make it checkable
     lightThemeAction->setChecked(true);
@@ -158,15 +190,15 @@ void MainWindow::setUpMenubar()
 
     preferencesMenu->addAction(lightThemeAction);
     preferencesMenu->addAction(darkThemeAction);
-
 ///////////Help Menu///////////////////
     helpMenu->addAction(aboutAction);
     
-
-    connect(lightThemeAction, &QAction::triggered, this, [this]() {
+    connect(lightThemeAction, &QAction::triggered, this, [this]()
+    {
         toggleTheme(Theme::Light);
     });
-    connect(darkThemeAction, &QAction::triggered, this, [this]() {
+    connect(darkThemeAction, &QAction::triggered, this, [this]()
+    {
         toggleTheme(Theme::Dark);
     });
 
@@ -220,7 +252,7 @@ bool MainWindow::tryParseAndLoadProgram()
 void MainWindow::run()
 {   
     //as soon s as run is clicked we disable the toolbar buttons
-    disableToolBarButtons();
+    //disableToolBarButtons();
     if (tryParseAndLoadProgram()) 
     {
         qDebug() << "Starting VM Run";
@@ -257,19 +289,19 @@ void MainWindow::vmChanged(const VMType& vmType)
     //well also have to change the processor desing from here later
 }
 
-void MainWindow::disableToolBarButtons()
-{
-    QList<QToolBar*> toolbars = this->findChildren<QToolBar*>();
-    // since we only have one toolbar we can directly access it
-    for (QAction* action : toolbars[0]->actions()) 
-    {
-        if (action->text() == "Run" || action->text() == "Step" 
-        || action->text() == "Processor")
-        {
-            action->setDisabled(true);
-        }
-    }
-}
+// void MainWindow::disableToolBarButtons()
+// {
+//     QList<QToolBar*> toolbars = this->findChildren<QToolBar*>();
+//     // since we only have one toolbar we can directly access it
+//     for (QAction* action : toolbars[0]->actions()) 
+//     {
+//         if (action->text() == "Run" || action->text() == "Step" 
+//         || action->text() == "Processor")
+//         {
+//             action->setDisabled(true);
+//         }
+//     }
+// }
 
 void MainWindow::enableToolBarButtons()
 {
@@ -277,12 +309,19 @@ void MainWindow::enableToolBarButtons()
     // since we only have one toolbar we can directly access it
     for (QAction* action : toolbars[0]->actions()) 
     {
-        if (action->text() == "Run" || action->text() == "Step"
-        || action->text() == "Processor")
+        if (action->text() == "Run" || action->text() == "Processor")
         {
             action->setEnabled(true);
         }
+
+        if(action->text() == "Pause" || action->text() == "Resume"
+        || action->text() == "Stop")
+        {
+            action->setDisabled(true);
+        }
     }
+
+    //we also reset the 
 }
 
 void MainWindow::setUpPalettes()
@@ -318,6 +357,8 @@ void MainWindow::toggleTheme(Theme theme)
 
 MainWindow::~MainWindow()
 {
+    m_vmThread->quit();
+    m_vmThread->wait();
     //delete ui;
 }
 }// namespace Kites

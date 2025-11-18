@@ -26,6 +26,33 @@ VmBase::VmBase()
  */
 }
 
+void VmBase::RequestStop()
+{
+    QMutexLocker locker(&pause_mutex_);
+    stop_requested_ = true;
+    pause_wait_condition_.wakeAll();
+    Reset();
+}
+void VmBase::RequestPause()
+{
+    pause_requested_ = true;
+}
+void VmBase::RequestResume()
+{
+    QMutexLocker locker(&pause_mutex_);
+    pause_requested_ = false;
+    pause_wait_condition_.wakeAll();
+}
+bool VmBase::IsStopRequested() const
+{
+    return stop_requested_;
+}
+void VmBase::ClearStop()
+{
+    stop_requested_ = false;
+    pause_requested_ = false;
+}
+
 void VmBase::LoadProgram(const AssembledProgram &program) {
   program_ = program;
   unsigned int counter = 0;

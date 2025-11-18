@@ -209,7 +209,7 @@ void RV5StageVM_NH_F::Reset()
     program_counter_ = 0;
     instructions_retired_ = 0;
     cycle_s_ = 0;
-    stop_requested_ = false;
+    //stop_requested_ = false;
 
     // Reset all hardware components
     registers_.Reset();
@@ -221,6 +221,7 @@ void RV5StageVM_NH_F::Reset()
     id_ex_reg_.reset();
     ex_mem_reg_.reset();
     mem_wb_reg_.reset();
+    vm_state_.clear();
 
     // Clear history for Undo/Redo
     current_delta_ = StepDelta();
@@ -436,6 +437,7 @@ void RV5StageVM_NH_F::pipeline_execute()
     std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
 
     // Latch data for EX/MEM Register
+    ex_mem_reg_.pc = id_ex_reg_.pc;
     ex_mem_reg_.instruction = instruction;
     ex_mem_reg_.alu_result = alu_result;
     ex_mem_reg_.rd = id_ex_reg_.rd;
@@ -542,6 +544,7 @@ void RV5StageVM_NH_F::pipeline_memory()
     mem_wb_reg_.prev_reg_write = mem_wb_reg_.reg_write;
     mem_wb_reg_.prev_memory_data = mem_wb_reg_.memory_data;
     // --- Standard MEM Operations ---
+    mem_wb_reg_.pc = ex_mem_reg_.pc;
     mem_wb_reg_.instruction = ex_mem_reg_.instruction;
     mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
     mem_wb_reg_.rd = ex_mem_reg_.rd;

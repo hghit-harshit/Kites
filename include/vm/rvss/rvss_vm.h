@@ -23,7 +23,6 @@ class RVSSVM : public VmBase
 {
 public:
   RVSSControlUnit control_unit_;
-  std::atomic<bool> stop_requested_ = false;
 
   // std::stack<StepDelta> undo_stack_;
   // std::stack<StepDelta> redo_stack_;
@@ -80,21 +79,6 @@ public:
   void SetVMStateMap() override;
 
   
-  void RequestStop()
-  {
-    stop_requested_ = true;
-  }
-
-  bool IsStopRequested() const
-  {
-    return stop_requested_;
-  }
-
-  void ClearStop()
-  {
-    stop_requested_ = false;
-  }
-
   void PrintType()
   {
     std::cout << "rvssvm" << std::endl;
