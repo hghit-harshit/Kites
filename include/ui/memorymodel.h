@@ -3,6 +3,7 @@
 #include "vm/memory_block.h"
 #include <QAbstractTableModel>
 #include <memory>
+#include "ui/display_base_types.h"
 /**
  * @brief This claas represent the model for displaying the memory contents
  * from here we will send data to the view to be displayed
@@ -12,12 +13,7 @@ namespace Kites
 {
 class MemoryModel : public QAbstractTableModel
 {
-    enum class Base
-    {
-        Hexadecimal = 16,
-        Decimal = 10,
-        Binary = 2
-    };
+    
     Q_OBJECT
     public:
         explicit MemoryModel(QObject* parent = nullptr, MemoryController* memoryController = nullptr);
@@ -29,6 +25,7 @@ class MemoryModel : public QAbstractTableModel
         // void fetchMore(const QModelIndex &index);
 
         //void changeMemoryController(std::shared_ptr<MemoryController> memoryController);
+        void setDisplayBase(Base base);
         void changeMemoryController(MemoryController* memoryController);
         void setRowsVisible(int rows);
         void offsetCentralAddress(int offset);

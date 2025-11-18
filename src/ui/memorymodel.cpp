@@ -28,6 +28,12 @@ void MemoryModel::setRowsVisible(int rows)
     endResetModel();
 }
 
+void MemoryModel::setDisplayBase(Base base)
+{
+    beginResetModel();
+    m_displayBase = base;
+    endResetModel();
+}   
 void MemoryModel::changeMemoryController(MemoryController* memoryController)
 {
     beginResetModel();
@@ -103,6 +109,7 @@ QVariant MemoryModel::headerData(int section, Qt::Orientation orientation,int ro
                 return QVariant{};
         }
     }
+    return QVariant{};
 }
 
 QVariant MemoryModel::data(const QModelIndex &index,int role) const
@@ -143,6 +150,19 @@ QVariant MemoryModel::data(const QModelIndex &index,int role) const
         // refactor this swithch to dynamically give the byte based on column number
         // so that we have have an arbitrary byte sized block
         // for supporting 32 bit arch in future
+        QString prefix;
+        switch(m_displayBase)
+        {
+            case Base::Hexadecimal:
+                prefix = "0x";
+                break;
+            case Base::Decimal:
+                prefix = "";
+                break;
+            case Base::Binary:
+                prefix = "0b";
+                break;
+        }
         switch(index.column())
         {
             case 0: //Address
@@ -152,64 +172,19 @@ QVariant MemoryModel::data(const QModelIndex &index,int role) const
             case 1: //Double Word
             {
                 uint64_t doubleWord = m_memoryController->ReadDoubleWord(alignedAddress);
-                return QString("0x%1").arg(QString::number(doubleWord,static_cast<int>(m_displayBase)).toUpper());
+                return QString("%1%2").arg(prefix).arg(QString::number(doubleWord,static_cast<int>(m_displayBase)).toUpper());
             }
-            case 2: //Byte 0
+            default:
             {
-                uint8_t byte0 = m_memoryController->ReadByte(alignedAddress);
-                return QString("0x%1").arg(QString::number(byte0,static_cast<int>(m_displayBase)).toUpper());
+                uint8_t byte = m_memoryController->ReadByte(alignedAddress +(index.column()-2));
+                return QString("%1%2").arg(prefix).arg(QString::number(byte,static_cast<int>(m_displayBase)).toUpper());
             }
-            case 3: //Byte 1
-            {
-                uint8_t byte1 = m_memoryController->ReadByte(alignedAddress + 1);
-                return QString("0x%1").arg(QString::number(byte1,static_cast<int>(m_displayBase)).toUpper());
-            }
-            case 4: //Byte 1
-            {
-                uint8_t byte2 = m_memoryController->ReadByte(alignedAddress + 2);
-                return QString("0x%1").arg(QString::number(byte2,static_cast<int>(m_displayBase)).toUpper());
-            }
-            case 5: //Byte 3
-            {
-                uint8_t byte3 = m_memoryController->ReadByte(alignedAddress + 3);
-                return QString("0x%1").arg(QString::number(byte3,static_cast<int>(m_displayBase)).toUpper());
-            }
-            case 6: //Byte 4
-            {
-                uint8_t byte4 = m_memoryController->ReadByte(alignedAddress + 4);
-                return QString("0x%1").arg(QString::number(byte4,static_cast<int>(m_displayBase)).toUpper());
-            }
-            case 7: //Byte 5
-            {
-                uint8_t byte5 = m_memoryController->ReadByte(alignedAddress + 5);
-                return QString("0x%1").arg(QString::number(byte5,static_cast<int>(m_displayBase)).toUpper());
-            }
-            case 8: //Byte 6
-            {
-                uint8_t byte6 = m_memoryController->ReadByte(alignedAddress + 6);
-                return QString("0x%1").arg(QString::number(byte6,static_cast<int>(m_displayBase)).toUpper());
-            }
-            case 9: //Byte 7
-            {
-                uint8_t byte7 = m_memoryController->ReadByte(alignedAddress + 7);
-                return QString("0x%1").arg(QString::number(byte7,static_cast<int>(m_displayBase)).toUpper());
-            }
-            
         }
     }
 
     return QVariant();
 }
 
-// bool MemoryModel::canFetchMore(const QModelIndex& index) const
-// {
-    
-// }
-
-// void MemoryModel::fetchMore(const QModelIndex &index)
-// {
-    
-// }
 
 void MemoryModel::memoryResetSlot()
 {
@@ -219,16 +194,7 @@ void MemoryModel::memoryResetSlot()
 
 void MemoryModel::updateMemory(uint64_t address)
 {
-    /* QModelIndex topleft = this->index(static_cast<int>(address/8),0);
-    QModelIndex bottomright = this->index(static_cast<int>(address/8),9);
-    qDebug() << "Rows count:" << rowCount();
-    qDebug() << "updating memory at address:" << QString::number(address,16).toUpper();
-    qDebug() << "row:" << (address/8) - 1
-         << "cols:" << 0 << "-" << 9
-         << "valid?" << index(address/8, 0).isValid();
-    emit dataChanged(topleft,bottomright,{Qt::DisplayRole,Qt::ToolTipRole}); */
-
-
+   
     int64_t topAddr = static_cast<int64_t>(m_currentCentralAddress)
                     + static_cast<int64_t>(m_rowsVisible / 2) * 8;
     int64_t bytesFromTop = topAddr - static_cast<int64_t>(address);

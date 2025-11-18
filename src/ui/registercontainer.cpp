@@ -12,6 +12,21 @@ RegisterContainer::RegisterContainer(QWidget *parent,RegisterFile* regfile)
     ui->tableView->verticalHeader()->setVisible(false);
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     //setupRegisterTable();
+    connect(ui->displayType,&QComboBox::currentTextChanged,this,[=](const QString& text)
+    {
+        if(text == "Hexadecimal")
+        {
+            m_registerModel->setDisplayBase(Base::Hexadecimal);
+        }
+        else if(text == "Binary")
+        {
+            m_registerModel->setDisplayBase(Base::Binary);
+        }
+        else if(text == "Decimal/Float")
+        {
+            m_registerModel->setDisplayBase(Base::Decimal);
+        }
+    });
     
 }
 
@@ -20,28 +35,7 @@ void RegisterContainer::setRegisterFile(RegisterFile* regfile)
     m_registerModel->changeRegisterFile(regfile);
 }
 
-// void RegisterContainer::setupRegisterTable()
-// {
-//     ui->registerTable->setRowCount(32);
-//     ui->registerTable->setColumnCount(2);
 
-//     QStringList headers;
-//     headers << "Register" << "Value";
-//     ui->registerTable->setHorizontalHeaderLabels(headers);
-//     ui->registerTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-//     ui->registerTable->verticalHeader()->setVisible(false);
-
-//     for(int i = 0;i < 32; ++i)
-//     {
-//         QTableWidgetItem *regName = new QTableWidgetItem(QString("x%1").arg(i));
-//         regName->setTextAlignment(Qt::AlignCenter);
-//         ui->registerTable->setItem(i, 0, regName);
-
-//         QTableWidgetItem *regValue = new QTableWidgetItem("0x00000000");
-//         regValue->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-//         ui->registerTable->setItem(i, 1, regValue);
-//     }
-// }
 RegisterContainer::~RegisterContainer()
 {
     delete ui;

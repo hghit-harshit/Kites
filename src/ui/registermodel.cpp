@@ -13,10 +13,17 @@ RegisterModel::RegisterModel(QObject *parent,RegisterFile* regfile)
 }
 
 int RegisterModel::rowCount(const QModelIndex &parent) const
-{return 64;}
+{ return 64; }
 
 int RegisterModel::columnCount(const QModelIndex &parent) const
 { return 3; }// Register name, alias, value
+
+void RegisterModel::setDisplayBase(Base base)
+{
+    beginResetModel();
+    m_displayBase = base;
+    endResetModel();
+}
 
 QVariant RegisterModel::headerData(int section, Qt::Orientation orientation,int role) const
 {
@@ -48,7 +55,7 @@ QVariant RegisterModel::data(const QModelIndex &index, int role) const
     {
         return Qt::AlignCenter;
     }
-    if(role == Qt::DisplayRole)
+    if(role == Qt::DisplayRole || role == Qt::ToolTipRole)
     {
         size_t row = static_cast<size_t>(index.row());
         switch(index.column())
@@ -74,7 +81,15 @@ QVariant RegisterModel::data(const QModelIndex &index, int role) const
                 if(row < 32)
                 {
                     uint64_t value = m_currentRegisterFile->ReadGpr(row);
-                    return QString("0x%1").arg(QString::number(value,16).toUpper());
+                    switch(m_displayBase)
+                    {
+                        case Base::Binary:
+                            return QString("0b%1").arg(QString::number(value,2));
+                        case Base::Decimal:
+                            return QString::number(static_cast<int64_t>(value));
+                        case Base::Hexadecimal:
+                            return QString("0x%1").arg(QString::number(value,16).toUpper());
+                    }
                 }
                 else
                 { return QString("");} // TODO : add floating point register support

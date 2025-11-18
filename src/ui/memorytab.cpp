@@ -46,6 +46,21 @@ MemoryTab::MemoryTab(QWidget *parent,MemoryController* memoryController)
         //int displayType = ui->displayTypeComboBox->currentIndex();
         m_memoryModel->setCentralAddress(searchText.toULongLong(nullptr,16));
     });
+    connect(ui->comboBox,&QComboBox::currentTextChanged,this,[=](const QString& text)
+    {
+        if(text == "Hex")
+        {
+            m_memoryModel->setDisplayBase(Base::Hexadecimal);
+        }
+        else if(text == "Binary")
+        {
+            m_memoryModel->setDisplayBase(Base::Binary);
+        }
+        else if(text == "Decimal")
+        {
+            m_memoryModel->setDisplayBase(Base::Decimal);
+        }
+    });
 }
 
 void MemoryTab::changeMemoryController(MemoryController* memoryController)
