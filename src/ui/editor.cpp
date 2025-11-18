@@ -68,10 +68,24 @@ bool Editor::event(QEvent *event)
         // Cast the event to a QHelpEvent to get mouse coordinates
         QHelpEvent *helpEvent = static_cast<QHelpEvent*>(event);
 
-        // Use your existing logic to find the line number
         QTextCursor cursor = cursorForPosition(helpEvent->pos());
         QTextBlock block = cursor.block();
-        int lineNumber = block.firstLineNumber();
+        //int textHeight = document()->size().height();
+        QRectF blockRect = blockBoundingGeometry(block);
+        blockRect.translate(contentOffset());
+
+       //Doing this check to see if the mouse is actually over the text line
+       //other wise if error is on last line and mouse is below text it still shows tooltip
+        if (helpEvent->pos().y() < blockRect.top() || helpEvent->pos().y() > blockRect.bottom()) 
+        {
+            // The mouse is below (or above) the actual text line, likely in the empty space.
+            QToolTip::hideText();
+            event->ignore(); 
+            return true; 
+        }
+      
+        
+        int lineNumber = block.blockNumber();
 
         // If this line has a tooltip, show it
         // (Using .count() is a common and clean way to check for key existence)
