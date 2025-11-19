@@ -20,6 +20,7 @@
 #include <QWidgetAction>
 namespace Kites
 
+
 {
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 //ui(new Ui::MainWindow)
@@ -364,7 +365,13 @@ void MainWindow::runFinishedSlot()
             action->setEnabled(true);
         }
 
-        if(action->text() == "Pause" || action->text() == "Resume"
+        if(action->text() == "Resume")
+        {
+            action->setText("Pause");
+            // in case we stop while paused
+        }
+
+        if(action->text() == "Pause" 
         || action->text() == "Stop")
         {
             action->setDisabled(true);
