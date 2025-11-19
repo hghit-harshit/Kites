@@ -23,8 +23,10 @@ class EditorTab : public KitesTab
         void updateDisassemblyView(const std::string& disassembledCode);
         void setErrorLinesFromFile(const std::filesystem::path& filepath);
         std::string getRawText();
+        void setRawText(const QString& text);
         void resetErrorLines();
         void highlightLines(const QVariantMap& editorLines, const QVariantMap& disassemblyLines);
+        void setCanWrite(bool canWrite);
     private:
         Editor* m_editor = nullptr;
         Editor* m_disassemblyView = nullptr;

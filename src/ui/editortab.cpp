@@ -48,6 +48,11 @@ std::string EditorTab::getRawText()
     return m_editor->toPlainText().toStdString();
 }
 
+void EditorTab::setRawText(const QString& text)
+{
+    m_editor->setPlainText(text);
+}
+
 void EditorTab::resetErrorLines()
 {
     m_editor->setExtraSelections({});
@@ -63,6 +68,11 @@ void EditorTab::highlightLines(const QVariantMap& editorLines, const QVariantMap
 {
     m_editor->setLinesToHighlight(editorLines);
     m_disassemblyView->setLinesToHighlight(disassemblyLines);
+}
+
+void EditorTab::setCanWrite(bool canWrite)
+{
+    m_editor->setReadOnly(!canWrite);
 }
 
 void EditorTab::setErrorLinesFromFile(const std::filesystem::path& filePath)

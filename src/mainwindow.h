@@ -70,7 +70,7 @@ private:
     std::map<Theme,QPalette> m_palettes;
 public slots:
     void vmChanged(const VMType& vmType); // this will catch the signal from processor dialog
-    void enableToolBarButtons();
+    void runFinishedSlot();
 signals:
     void vmChangedSignal();
     void runVMSignal();

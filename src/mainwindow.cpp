@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+
 #include "ui_mainwindow.h"
 #include "../include/assembler/assembler.h"
 #include "../include/assembler/assembler.h"
@@ -15,8 +16,10 @@
 #include <QActionGroup>
 #include <QHBoxLayout>
 #include <QSpinBox>
+#include <QFileDialog>
 #include <QWidgetAction>
 namespace Kites
+
 {
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 //ui(new Ui::MainWindow)
@@ -36,7 +39,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_vmThread->start();
     connect(this,&MainWindow::runVMSignal,m_vmManager,&VMManager::runSlot);
     // well temporarily disable the toolbar buttons when vm is running
-    connect(m_vmManager,&VMManager::runFinishedSignal,this,&MainWindow::enableToolBarButtons);
+    connect(m_vmManager,&VMManager::runFinishedSignal,this,&MainWindow::runFinishedSlot);
     connect(m_vmManager,&VMManager::vmStageChangedSignal,this,[this](const QMap<QString,QVariant>& vmState){
         // forward the signal to the processor tab and editor tab to highliht pc line
         /* auto processorTab = dynamic_cast<ProcessorTab*>(m_tabs[TabIndex::ProcessorTabIndex]);
@@ -91,7 +94,7 @@ void MainWindow::setUpToolBar()
     QAction *runAction = new QAction("Run", this);
     QAction *stopAction = new QAction("Stop", this);
     QAction *pauseAction = new QAction("Pause",this);
-    QAction *debugAction = new QAction("Debug",this);
+    QAction *debugAction = new QAction("Debug Run",this);
     QAction *stepAction = new QAction("Step", this);
     
     
@@ -110,13 +113,15 @@ void MainWindow::setUpToolBar()
     //toolbar->addAction(preferencesAction);
     toolbar->addAction(processorAction);
     toolbar->addAction(runAction);
+    toolbar->addAction(debugAction);
     toolbar->addAction(spinboxAction);
     toolbar->addAction(pauseAction);
     toolbar->addAction(stopAction);
     toolbar->addAction(stepAction);
     
     connect(runAction,&QAction::triggered,this,[this,processorAction,
-    runAction,stopAction,pauseAction](){
+    runAction,stopAction,pauseAction,debugAction](){
+        debugAction->setDisabled(true);
         processorAction->setDisabled(true);
         runAction->setDisabled(true);
         stopAction->setEnabled(true);
@@ -202,6 +207,47 @@ void MainWindow::setUpMenubar()
         toggleTheme(Theme::Dark);
     });
 
+    connect(openAction, &QAction::triggered, this, [this]()
+    {
+        QString filename  = QFileDialog::getOpenFileName(this, "Open File", "", "Assembly Files (*.asm *.s);;All Files (*)");
+
+        if(!filename.isEmpty())
+        {
+            QFile file(filename);
+            if(file.open(QIODevice::ReadOnly | QIODevice::Text))
+            {
+                QTextStream in(&file);
+                QString content = in.readAll();
+                auto editorTab = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
+                if(editorTab)
+                {
+                    editorTab->setRawText(content);
+                }
+                file.close();
+            }
+        }
+    });
+
+    connect(saveAction, &QAction::triggered, this, [this]()
+    {
+        QString filename  = QFileDialog::getSaveFileName(this, "Save File", "", "Assembly Files (*.asm *.s);;All Files (*)");
+
+        if(!filename.isEmpty())
+        {
+            QFile file(filename);
+            if(file.open(QIODevice::WriteOnly | QIODevice::Text))
+            {
+                QTextStream out(&file);
+                auto editorTab = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
+                if(editorTab)
+                {
+                    out << editorTab->getRawText().c_str();
+                }
+                file.close();
+            }
+        }
+    });
+
 }
 
 void MainWindow::setUpTabs()
@@ -224,6 +270,7 @@ bool MainWindow::tryParseAndLoadProgram()
 {
     auto editor = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
     editor->resetErrorLines(); // we reset previous error lines
+    editor->setCanWrite(false); // we disable writing in editor while vm is running
     m_vmManager->reset();
     // reset register container and memory view as well
     try
@@ -264,7 +311,7 @@ void MainWindow::run()
     {
         // if parsing or loading failed we re-enable the buttons
         //otherwise if the vm start running the buttons will be re-enabled when vm finishes
-        enableToolBarButtons();
+        runFinishedSlot();
     }
 }
 void MainWindow::processorChangeDialog()
@@ -303,13 +350,16 @@ void MainWindow::vmChanged(const VMType& vmType)
 //     }
 // }
 
-void MainWindow::enableToolBarButtons()
+void MainWindow::runFinishedSlot()
 {
+    auto* editor  = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
+    editor->setCanWrite(true); // re-enable writing in editor when vm stops
     QList<QToolBar*> toolbars = this->findChildren<QToolBar*>();
     // since we only have one toolbar we can directly access it
     for (QAction* action : toolbars[0]->actions()) 
     {
-        if (action->text() == "Run" || action->text() == "Processor")
+        if (action->text() == "Run" || action->text() == "Processor"
+        || action->text() == "Debug Run")
         {
             action->setEnabled(true);
         }
@@ -337,6 +387,12 @@ void MainWindow::setUpPalettes()
     m_palettes[Theme::Light].setColor(QPalette::ButtonText, Qt::black);
     m_palettes[Theme::Light].setColor(QPalette::Highlight, QColor(42, 130, 218));
     m_palettes[Theme::Light].setColor(QPalette::HighlightedText, Qt::white);
+    // Disabled state for Light theme
+    m_palettes[Theme::Light].setColor(QPalette::Disabled, QPalette::Button, QColor(220, 220, 220)); // light grey
+    m_palettes[Theme::Light].setColor(QPalette::Disabled, QPalette::ButtonText, QColor(150, 150, 150)); // dark grey text
+    m_palettes[Theme::Light].setColor(QPalette::Disabled, QPalette::Text, QColor(150, 150, 150));
+    m_palettes[Theme::Light].setColor(QPalette::Disabled, QPalette::WindowText, QColor(150, 150, 150));
+
 
     // --- Define the Dark Palette ---
     m_palettes[Theme::Dark].setColor(QPalette::Window, QColor(53, 53, 53));
@@ -348,6 +404,12 @@ void MainWindow::setUpPalettes()
     m_palettes[Theme::Dark].setColor(QPalette::ButtonText, Qt::white);
     m_palettes[Theme::Dark].setColor(QPalette::Highlight, QColor(42, 130, 218));
     m_palettes[Theme::Dark].setColor(QPalette::HighlightedText, Qt::black);
+    // Disabled state for Dark theme
+    m_palettes[Theme::Dark].setColor(QPalette::Disabled, QPalette::Button, QColor(70, 70, 70)); // subtle grey
+    m_palettes[Theme::Dark].setColor(QPalette::Disabled, QPalette::ButtonText, QColor(120, 120, 120)); // lighter grey
+    m_palettes[Theme::Dark].setColor(QPalette::Disabled, QPalette::Text, QColor(120, 120, 120));
+    m_palettes[Theme::Dark].setColor(QPalette::Disabled, QPalette::WindowText, QColor(120, 120, 120));
+
 }
 
 void MainWindow::toggleTheme(Theme theme)
