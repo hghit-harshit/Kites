@@ -72,7 +72,8 @@ struct ID_EX_Register
     void reset()
     {
         // Resetting injects a "bubble"
-        pc = reg1_data = reg2_data = imm = rs1 = rs2 = rd = 0;
+        pc = UINT64_MAX;
+        reg1_data = reg2_data = imm = rs1 = rs2 = rd = 0;
         freg1_data = freg2_data = freg3_data = frs1 = frs2 = frs3 = frd = 0;
         
         instruction = 0x00000013;
