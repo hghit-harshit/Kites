@@ -24,7 +24,7 @@ EditorTab::EditorTab(QWidget* parent, VMManager* vmManager)
 
     mainsplitter->addWidget(m_editor);
 
-    m_disassemblyView = new Editor(this);
+    m_disassemblyView = new Editor(this,false);
     m_disassemblyView->setReadOnly(true);
     //m_disassemblyView->setPlaceholderText("Disassembled code will appear here...");
     //m_disassemblyView->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
@@ -46,6 +46,11 @@ EditorTab::EditorTab(QWidget* parent, VMManager* vmManager)
 std::string EditorTab::getRawText()
 {
     return m_editor->toPlainText().toStdString();
+}
+
+std::vector<uint64_t> EditorTab::getBreakpoints() const
+{
+    return m_editor->getBreakpoints();
 }
 
 void EditorTab::setRawText(const QString& text)

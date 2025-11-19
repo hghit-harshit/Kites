@@ -120,6 +120,7 @@ void MainWindow::setUpToolBar()
     toolbar->addAction(stopAction);
     toolbar->addAction(stepAction);
     
+
     connect(runAction,&QAction::triggered,this,[this,processorAction,
     runAction,stopAction,pauseAction,debugAction](){
         debugAction->setDisabled(true);
@@ -150,6 +151,11 @@ void MainWindow::setUpToolBar()
         m_vmManager->stop();
     });
     
+    // we also connect the vm paused at breakpoint signal to change the pause button text
+    connect(m_vmManager,&VMManager::vmPausedAtBreakpointSignal,this,[this,pauseAction](){
+        pauseAction->setText("Resume");
+    });
+
     //connect(stepAction,&QAction::triggered,this,&MainWindow::step);
 }
 
@@ -287,6 +293,7 @@ bool MainWindow::tryParseAndLoadProgram()
         buffer << in.rdbuf();
         editor->updateDisassemblyView(buffer.str());
         m_vmManager->loadProgram(assembledProgram);
+        m_vmManager->setBreakpoints(editor->getBreakpoints());
         return true;
     }
     catch(const std::exception& e)
@@ -426,8 +433,7 @@ void MainWindow::toggleTheme(Theme theme)
 
 MainWindow::~MainWindow()
 {
-    m_vmThread->quit();
-    m_vmThread->wait();
+    m_vmManager->stop();
     //delete ui;
 }
 }// namespace Kites

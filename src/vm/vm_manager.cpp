@@ -29,6 +29,7 @@ VMManager::VMManager(QObject* parent,VMType vmType)
     m_currentVMType = vmType;
     m_currentVM = VMFactory::createVM(vmType);
     connect(m_currentVM.get(),&VmBase::vmStateChangedSignal,this,&VMManager::vmStageChangedSignal);
+    connect(m_currentVM.get(),&VmBase::vmPausedAtBreakpointSignal,this,&VMManager::vmPausedAtBreakpointSignal);
     // here we connect the vm state changed signal to the vm manager signal
     // and this will be further connected to the mainwindow slot to update the ui
 }
@@ -38,6 +39,7 @@ void VMManager::changeVM(VMType vmType)
     m_currentVMType = vmType;
     m_currentVM = VMFactory::createVM(vmType);
     connect(m_currentVM.get(),&VmBase::vmStateChangedSignal,this,&VMManager::vmStageChangedSignal);
+    connect(m_currentVM.get(),&VmBase::vmPausedAtBreakpointSignal,this,&VMManager::vmPausedAtBreakpointSignal);
     // create new connections for the new VM
 }
 
@@ -79,6 +81,11 @@ void VMManager::resume()
 void VMManager::setStepDelay(unsigned int delay)
 {
     m_currentVM->step_delay_ = delay;
+}
+
+void VMManager::setBreakpoints(const std::vector<uint64_t>& breakpoints)
+{
+    m_currentVM->breakpoints_ = breakpoints;
 }
 
 RegisterFile* VMManager::getRegisterFile()

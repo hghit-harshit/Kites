@@ -170,6 +170,9 @@ public:
 	void vmStateChangedSignal(const QMap<QString,QVariant>& vmState);
 	//this will send the list of wire that have to 
 	void updateCircuitStateSignal(const QList<QString>& wireList);
+	//we emit this signal when vm is paused at breakpoint
+	// so that gui can chane paued button to resume
+	void vmPausedAtBreakpointSignal();
 	
 };
 

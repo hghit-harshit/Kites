@@ -4,13 +4,43 @@
 #include <QToolTip>
 #include <QPainter>
 #include <set>
+// #include "ui/linenumberarea.h"
 namespace Kites
 {
-Editor::Editor(QWidget* parent):QPlainTextEdit(parent)
+Editor::Editor(QWidget* parent, bool isTextEditor):QPlainTextEdit(parent), m_isTextEditor(isTextEditor)
 //:m_LinesToHighlight({{".",1}})
 {
     setMouseTracking(true);
     m_syntaxHighlighter = new SyntaxHighlighter(this->document());
+
+
+    if(isTextEditor)
+    {
+        connect(this, &QPlainTextEdit::blockCountChanged, this, [this](int /* newBlockCount */) 
+        {
+            setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
+        });
+
+        connect(this, &QPlainTextEdit::updateRequest, this, [this](const QRect &rect, int dy) 
+        {
+            if (dy)
+                m_lineNumberArea->scroll(0, dy);
+            else
+                m_lineNumberArea->update(0, rect.y(), m_lineNumberArea->width(), rect.height());
+
+            if (rect.contains(viewport()->rect()))
+                setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
+        });
+        m_lineNumberArea = new LineNumberArea(this);
+        setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
+    }
+    //m_lineNumberArea->show();
+
+}
+
+std::vector<uint64_t> Editor::getBreakpoints() const
+{
+    return m_breakPoints;
 }
 
 void Editor::resetErrors()
@@ -30,7 +60,7 @@ void Editor::paintEvent(QPaintEvent *event)
     QPlainTextEdit::paintEvent(event);
 
     QPainter painter(viewport());
-    
+
     painter.setRenderHint(QPainter::Antialiasing);
 
     for(const auto& key : m_LinesToHighlight.keys())
@@ -58,7 +88,111 @@ void Editor::paintEvent(QPaintEvent *event)
             painter.drawText(textRect, Qt::AlignRight | Qt::AlignVCenter, key);
         }
     }
+    // Now highlight the specified lines with gradient and draw messages
+    
 }
+
+int Editor::lineNumberAreaWidth()
+{
+    int digits = 1;
+    int max = qMax(1, blockCount());
+    while (max >= 10) 
+    {
+        max /= 10;
+        ++digits;
+    }
+    int space = 15 + fontMetrics().horizontalAdvance(QLatin1Char('1')) * digits;
+    return space; // extra padding
+}
+
+void Editor::resizeEvent(QResizeEvent* event)
+{
+    QPlainTextEdit::resizeEvent(event);
+
+    if(!m_lineNumberArea)
+        return;
+    QRect cr = contentsRect();
+    m_lineNumberArea->setGeometry(
+        QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height())
+    );
+}
+
+void Editor::lineNumberAreapaintEvent(QPaintEvent* event)
+{
+    QPainter painter(m_lineNumberArea);
+    painter.fillRect(event->rect(), Qt::lightGray);
+
+    QTextBlock block = firstVisibleBlock();
+    int blockNumber = block.blockNumber();
+    int top = static_cast<int>(blockBoundingGeometry(block).translated(contentOffset()).top());
+    int bottom = top + static_cast<int>(blockBoundingRect(block).height());
+
+    while (block.isValid() && top <= event->rect().bottom()) 
+    {
+        if (block.isVisible() && bottom >= event->rect().top()) 
+        {
+            QString number = QString::number(blockNumber + 1); // +1 for 1-based line numbers
+            painter.setPen(Qt::black);
+            painter.drawText(0, top, lineNumberAreaWidth() - 5, fontMetrics().height(),
+                             Qt::AlignRight, number);
+
+            // Draw breakpoint indicator if exists
+            if (m_isTextEditor && std::find(m_breakPoints.begin(), m_breakPoints.end(), blockNumber + 1) != m_breakPoints.end()) 
+            {
+                painter.setBrush(Qt::red);
+                painter.setPen(Qt::NoPen);
+                int radius = 8;
+                painter.drawEllipse(2, top + (fontMetrics().height() - radius) / 2, radius, radius);
+            }
+        }
+
+        block = block.next();
+        top = bottom;
+        bottom = top + static_cast<int>(blockBoundingRect(block).height());
+        ++blockNumber;
+    }
+}
+
+void Editor::lineNumberAreaMousePressEvent(QMouseEvent* event)
+{
+
+    if( m_isTextEditor && event->button() == Qt::LeftButton && event->pos().x() < lineNumberAreaWidth())
+    {
+        
+        // mapping as mouse event gives us global position
+        QPoint clickPos = viewport()->mapFromGlobal(event->globalPos());
+        QTextCursor cursor = cursorForPosition(clickPos);  
+
+        QTextBlock block = cursor.block();
+
+        // check if click is within the block's vertical bounds
+        //cause cusorForPosition returns nearest line if clicked below text
+        if(clickPos.y() >= blockBoundingGeometry(block).translated(contentOffset()).top() &&
+           clickPos.y() <= blockBoundingGeometry(block).translated(contentOffset()).bottom())
+        {
+            int lineNumber = block.blockNumber() + 1; // +1 for 1-based line numbers
+
+            auto it = std::find(m_breakPoints.begin(), m_breakPoints.end(), lineNumber);
+            if(it != m_breakPoints.end())
+            {
+                m_breakPoints.erase(it);
+            } else 
+            {
+                m_breakPoints.push_back(lineNumber);
+            }
+            update(); // Trigger a repaint to show/hide the breakpoint indicator
+        }
+        
+    } 
+
+}
+
+void Editor::lineNumberAreaMouseMoveEvent(QMouseEvent* event)
+{
+    // Future implementation for mouse move events in the line number area
+    QPlainTextEdit::mouseMoveEvent(event);
+}
+
 
 bool Editor::event(QEvent *event)
 {

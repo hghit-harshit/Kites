@@ -55,6 +55,8 @@ class VMManager : public QObject
         void resume();
         void setStepDelay(unsigned int delay);
         
+        void setBreakpoints(const std::vector<uint64_t>& breakpoints);
+
         RegisterFile* getRegisterFile();
         MemoryController* getMemoryController();
         Kites::CircuitScene* getCircuitScene();
@@ -73,6 +75,7 @@ class VMManager : public QObject
     signals:
         void runFinishedSignal();
         void vmStageChangedSignal(const QMap<QString,QVariant>& vmState);
+        void vmPausedAtBreakpointSignal();
     //std::unique_ptr<> m_instance;
 
 };

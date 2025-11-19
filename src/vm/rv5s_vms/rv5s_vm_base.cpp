@@ -8,7 +8,13 @@ void RV5StageVM_Base::Run()
     ClearStop();
     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
     {
-        //handling pause
+        // if we hit a break point, we pause execution
+        if(std::find(breakpoints_.begin(), breakpoints_.end(), (program_counter_ /4) + 1 ) != breakpoints_.end())
+		{
+			pause_requested_ = true;
+            emit vmPausedAtBreakpointSignal();
+		}
+
         {
             QMutexLocker locker(&pause_mutex_);
             // using while because thie wait can be interrupted by spurious wakeups

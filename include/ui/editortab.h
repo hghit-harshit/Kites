@@ -27,6 +27,7 @@ class EditorTab : public KitesTab
         void resetErrorLines();
         void highlightLines(const QVariantMap& editorLines, const QVariantMap& disassemblyLines);
         void setCanWrite(bool canWrite);
+        std::vector<uint64_t> getBreakpoints() const;
     private:
         Editor* m_editor = nullptr;
         Editor* m_disassemblyView = nullptr;
