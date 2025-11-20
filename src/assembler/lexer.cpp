@@ -144,7 +144,9 @@ Token Lexer::number() {
           || current_line_[pos_]=='.'
           || current_line_[pos_]=='e'
           || current_line_[pos_]=='E'
-          || current_line_[pos_]=='+')) {
+          || current_line_[pos_]=='+')
+          || (current_line_[pos_] >= 'a' && current_line_[pos_] <= 'f')
+          || (current_line_[pos_] >= 'A' && current_line_[pos_] <= 'F')) {
     ++pos_;
     ++column_number_;
   }
