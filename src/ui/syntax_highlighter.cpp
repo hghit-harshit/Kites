@@ -84,10 +84,8 @@ SyntaxHighlighter::SyntaxHighlighter(QTextDocument *parent)
     "\\bcvt\\.w\\.d\\b", "\\bcvt\\.wu\\.d\\b",
     "\\bcvt\\.d\\.w\\b", "\\bcvt\\.d\\.wu\\b",
     "\\bclass\\.d\\b",
-    "\\beq\\.d\\b", "\\bne\\.d\\b", "\\blt\\.d\\b", "\\bge\\.d\\b"
+    "\\beq\\.d\\b", "\\bne\\.d\\b", "\\blt\\.d\\b", "\\bge\\.d\\b",
 
-    // Single line comment 
-    "#.[^\n]*"
     };
 
     const QStringList riscvRegisterPatterns = {
@@ -133,7 +131,28 @@ SyntaxHighlighter::SyntaxHighlighter(QTextDocument *parent)
         rule.format = registerFormat;
         m_highlightRules.append(rule);
     }
-} 
+
+    // setting rules for comments
+    m_highlightRules.append({
+        QRegularExpression("#[^\n]*"),
+        [](){
+            QTextCharFormat format;
+            format.setForeground(Qt::darkGreen);
+            format.setFontItalic(true);
+            return format;
+        }()
+    });
+
+    //for number literals
+    m_highlightRules.append({
+        QRegularExpression(R"(\b0[xX][0-9a-fA-F]+|\b\d+|\b0[bB][01]+)"),
+        [](){
+            QTextCharFormat format;
+            format.setForeground(Qt::darkRed);
+            return format;
+        }()
+    });
+}
 
 void SyntaxHighlighter::highlightBlock(const QString &text)
 {
