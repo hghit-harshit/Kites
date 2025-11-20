@@ -4,6 +4,7 @@
 #include <QToolTip>
 #include <QPainter>
 #include <set>
+#include <QMenu>
 // #include "ui/linenumberarea.h"
 namespace Kites
 {
@@ -12,7 +13,7 @@ Editor::Editor(QWidget* parent, bool isTextEditor):QPlainTextEdit(parent), m_isT
 {
     setMouseTracking(true);
     m_syntaxHighlighter = new SyntaxHighlighter(this->document());
-
+    setFont(QFont("Monospace",12));
 
     if(isTextEditor)
     {
@@ -155,12 +156,11 @@ void Editor::lineNumberAreapaintEvent(QPaintEvent* event)
 
 void Editor::lineNumberAreaMousePressEvent(QMouseEvent* event)
 {
+    if(!m_isTextEditor)return;
 
-    if( m_isTextEditor && event->button() == Qt::LeftButton && event->pos().x() < lineNumberAreaWidth())
+    auto toggleBreakpointAtLine = [this,event]()
     {
-        
-        // mapping as mouse event gives us global position
-        QPoint clickPos = viewport()->mapFromGlobal(event->globalPos());
+         QPoint clickPos = viewport()->mapFromGlobal(event->globalPos());
         QTextCursor cursor = cursorForPosition(clickPos);  
 
         QTextBlock block = cursor.block();
@@ -182,8 +182,34 @@ void Editor::lineNumberAreaMousePressEvent(QMouseEvent* event)
             }
             update(); // Trigger a repaint to show/hide the breakpoint indicator
         }
+    };
+
+    if( event->button() == Qt::LeftButton && event->pos().x() < lineNumberAreaWidth())
+    {
+        
+        toggleBreakpointAtLine();
         
     } 
+
+    if(event->button() == Qt::RightButton)
+    {
+        QMenu menu(this);
+
+        QAction *action1 = menu.addAction("Toggle Breakpoint");
+        QAction *action2 = menu.addAction("Remove All Breakpoints");
+
+        QAction *selectedAction = menu.exec(event->globalPos());
+        if (selectedAction == action1) 
+        {
+            toggleBreakpointAtLine();
+        }
+        else if (selectedAction == action2) 
+        {
+            m_breakPoints.clear();
+            update(); // Trigger a repaint to remove all breakpoint indicators
+        }
+        return;    // Prevent base class selection
+    }
 
 }
 
