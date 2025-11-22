@@ -80,6 +80,12 @@ void EditorTab::setCanWrite(bool canWrite)
     m_editor->setReadOnly(!canWrite);
 }
 
+void EditorTab::clearHighlights()
+{
+    m_editor->clearHighlights();
+    m_disassemblyView->clearHighlights();
+}
+
 void EditorTab::setErrorLinesFromFile(const std::filesystem::path& filePath)
 {
     // This will hold all the squiggles we want to draw

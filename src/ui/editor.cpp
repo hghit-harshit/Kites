@@ -13,7 +13,13 @@ Editor::Editor(QWidget* parent, bool isTextEditor):QPlainTextEdit(parent), m_isT
 {
     setMouseTracking(true);
     m_syntaxHighlighter = new SyntaxHighlighter(this->document());
-    setFont(QFont("Monospace",12));
+    int id = QFontDatabase::addApplicationFont("D:/RISC_V_Simulator/resources/fonts/Monaco.ttf");
+    QString family = QFontDatabase::applicationFontFamilies(id).at(0);
+
+    QFont font(family);
+    font.setPointSize(11);
+    font.setFixedPitch(true);  // monospaced
+    setFont(font);
 
     if(isTextEditor)
     {
@@ -44,6 +50,12 @@ std::vector<uint64_t> Editor::getBreakpoints() const
     return m_breakPoints;
 }
 
+ void Editor::clearHighlights()
+{
+    m_LinesToHighlight.clear();
+    viewport()->update(); // Trigger a repaint to remove highlights
+}
+
 void Editor::resetErrors()
 {
     m_errorMessages.clear();
@@ -71,6 +83,10 @@ void Editor::paintEvent(QPaintEvent *event)
         { continue; }
         drawnLines.insert(lineNumber);  
         QTextBlock block = this->document()->findBlockByNumber(lineNumber-1); // -1 for 0-based index
+        
+        QTextCursor cursor(block); // keeping the highlighted line in view
+        this->setTextCursor(cursor);
+        this->ensureCursorVisible();
 
         if (block.isValid()) 
         {
@@ -89,6 +105,9 @@ void Editor::paintEvent(QPaintEvent *event)
             painter.drawText(textRect, Qt::AlignRight | Qt::AlignVCenter, key);
         }
     }
+    
+    // we clear the lines to highlight after painting
+    //otherwise the cursor will keep jumping to last highlighted line on every repaint
     // Now highlight the specified lines with gradient and draw messages
     
 }

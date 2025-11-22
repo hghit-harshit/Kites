@@ -24,6 +24,7 @@ class Editor : public QPlainTextEdit
         void lineNumberAreaMouseMoveEvent(QMouseEvent* event);
 
         std::vector<uint64_t> getBreakpoints() const ;
+        void clearHighlights();
     protected:
     //void mouseMoveEvent(QMouseEvent* event) override;
     bool event(QEvent *event) override;

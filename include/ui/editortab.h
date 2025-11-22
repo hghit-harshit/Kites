@@ -28,6 +28,9 @@ class EditorTab : public KitesTab
         void highlightLines(const QVariantMap& editorLines, const QVariantMap& disassemblyLines);
         void setCanWrite(bool canWrite);
         std::vector<uint64_t> getBreakpoints() const;
+        //void saveUserCursorPosition();
+        void clearHighlights();
+        
     private:
         Editor* m_editor = nullptr;
         Editor* m_disassemblyView = nullptr;
@@ -36,9 +39,8 @@ class EditorTab : public KitesTab
         // were doing this cause of the overriden paint event in Editor class to show hightlights
         QTextCharFormat m_squiggleFormat; // stores how the quiggles will look
         VMManager* m_vmManager = nullptr;
-        //std::map<int, QString> m_errorMessages; // line number (1-based) to error message
-        //std::list<int> m_errorLines;
-        //RegisterContainer* m_registerContainer = nullptr;
+        QTextCursor m_userCursorPosition;
+        // to save user cursor position when updating disassembly view
     //public slots:
         
 };

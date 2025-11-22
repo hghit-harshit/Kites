@@ -362,6 +362,9 @@ void MainWindow::runFinishedSlot()
 {
     auto* editor  = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
     editor->setCanWrite(true); // re-enable writing in editor when vm stops
+    editor->clearHighlights(); // we clear any highlights when vm stops
+    //other we are not alble to move the cursor as the paint
+    // keeps jumping to last highlighted line
     QList<QToolBar*> toolbars = this->findChildren<QToolBar*>();
     // since we only have one toolbar we can directly access it
     for (QAction* action : toolbars[0]->actions()) 
