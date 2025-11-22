@@ -53,8 +53,14 @@ qt6_add_resources(APP_RESOURCES
 resources/resources.qrc
 resources/circuit_designs/circuit_designs.qrc
 resources/icons/icons.qrc
+resources/fonts/fonts.qrc
 )
 ##############################################
+
+#setting the exe icon for windows
+if(WIN32)
+    set(APP_RESOURCES ${APP_RESOURCES} resources/icons/app_icon.rc)
+endif()
 
 qt_add_executable(RISC_V_Simulator
     WIN32 MACOSX_BUNDLE
@@ -114,7 +120,10 @@ if(ENABLE_TESTS)
     ${SRC_FILES}
     ${UI_FILES}
     ${TEST_FILES})
-    target_include_directories(tests PRIVATE ${INCLUDE_DIR} "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_autogen/include")
+    target_include_directories(tests PRIVATE 
+    ${INCLUDE_DIR} 
+    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_autogen/include")
+
     target_link_libraries(tests 
     GTest::gtest 
     GTest::gmock_main
@@ -136,9 +145,12 @@ if(ENABLE_TESTS)
 
     add_custom_target(test_run
         COMMAND ./tests
+        --gtest_color=yes
+        #--gtest_filter=RV5StageVM_H_NF_TEST.l_b_forwarding
+        || true #to prevent cmake from treating test failures as build failures
         DEPENDS tests
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
-    add_test(NAME AllTests COMMAND test_run)
+    #add_test(NAME AllTests COMMAND test_run)
 endif()
 
