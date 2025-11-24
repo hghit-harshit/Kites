@@ -13,7 +13,7 @@ Editor::Editor(QWidget* parent, bool isTextEditor):QPlainTextEdit(parent), m_isT
 {
     setMouseTracking(true);
     m_syntaxHighlighter = new SyntaxHighlighter(this->document());
-    int id = QFontDatabase::addApplicationFont("D:/RISC_V_Simulator/resources/fonts/Monaco.ttf");
+    int id = QFontDatabase::addApplicationFont(":/fonts/Monaco.ttf");
     QString family = QFontDatabase::applicationFontFamilies(id).at(0);
 
     QFont font(family);
