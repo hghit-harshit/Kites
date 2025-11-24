@@ -556,7 +556,46 @@ void RV5StageVM_NH_F::pipeline_memory()
     if (ex_mem_reg_.mem_read)
     {
         // Load instruction: Result available at end of this stage (Load-Use still needs 1 NOP)
-        mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+        //mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+        switch ((mem_wb_reg_.instruction >> 12) & 0b111)
+		{
+		case 0b000:
+		{ // LB
+			mem_wb_reg_.memory_data = static_cast<int8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
+			break;
+		}
+		case 0b001:
+		{ // LH
+			mem_wb_reg_.memory_data = static_cast<int16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
+			break;
+		}
+		case 0b010:
+		{ // LW
+			mem_wb_reg_.memory_data = static_cast<int32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+			break;
+		}
+		case 0b011:
+		{ // LD
+			mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+			break;
+		}
+		case 0b100:
+		{ // LBU
+			mem_wb_reg_.memory_data = static_cast<uint8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
+			break;
+		}
+		case 0b101:
+		{ // LHU
+			mem_wb_reg_.memory_data = static_cast<uint16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
+			break;
+		}
+		case 0b110:
+		{ // LWU
+			mem_wb_reg_.memory_data = static_cast<uint32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+			break;
+		}
+		}
+        std::cout << "Data read:" << (int)mem_wb_reg_.memory_data << std::endl;
     }
     else if (ex_mem_reg_.mem_write)
     {
@@ -581,7 +620,60 @@ void RV5StageVM_NH_F::pipeline_memory()
         }
 
         // Store instruction
-        memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, write_data);
+        //memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, write_data);
+        switch ((mem_wb_reg_.instruction >> 12) & 0b111)
+		{
+		case 0b000:
+		{ // SB
+			//addr = execution_result_;
+			//old_bytes_vec.push_back(memory_controller_.ReadByte(addr));
+			memory_controller_.WriteByte(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFF);
+			//new_bytes_vec.push_back(memory_controller_.ReadByte(addr));
+			break;
+		}
+		case 0b001:
+		{ // SH
+			// addr = execution_result_;
+			// for (size_t i = 0; i < 2; ++i)
+			// {
+			// 	old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+			// }
+			memory_controller_.WriteHalfWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFF);
+			// for (size_t i = 0; i < 2; ++i)
+			// {
+			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+			// }
+			break;
+		}
+		case 0b010:
+		{ // SW
+			// addr = execution_result_;
+			// for (size_t i = 0; i < 4; ++i)
+			// {
+			// 	old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+			// }
+			memory_controller_.WriteWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFFFFFF);
+			// for (size_t i = 0; i < 4; ++i)
+			// {
+			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+			// }
+			break;
+		}
+		case 0b011:
+		{ // SD
+			// addr = execution_result_;
+			// for (size_t i = 0; i < 8; ++i)
+			// {
+			// 	//old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+			// }
+			memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFFFFFFFFFFFFFF);
+			// for (size_t i = 0; i < 8; ++i)
+			// {
+			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+			// }
+			break;
+		}
+		}
     }
 }
 
@@ -602,8 +694,36 @@ void RV5StageVM_NH_F::pipeline_writeback()
                                                        write_data});
         }
 
-        registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+        //registers_.WriteGpr(mem_wb_reg_.rd, write_data);
         instructions_retired_++; // Instruction successfully retired
+        switch (mem_wb_reg_.instruction & 0b1111111)
+        {
+        case 0b0110011: // R-Type
+        case 0b0010011: // I-Type
+        case 0b0010111:
+        { // AUIPC
+            registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+            break;
+        }
+        case 0b0000011:
+        { // Load
+            registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+            break;
+        }
+        case 0b1100111: // JALR
+        case 0b1101111:
+        { // JAL
+            registers_.WriteGpr(mem_wb_reg_.rd, mem_wb_reg_.pc + 4);
+            break;
+        }
+        case 0b0110111:
+        { // LUI
+            registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+            break;
+        }
+        default:
+            break;
+        }
     }
 }
 

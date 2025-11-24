@@ -40,6 +40,8 @@ RV5StageVM_NH_NF::RV5StageVM_NH_NF() : RV5StageVM_Base()
     circuit_scene_ = std::make_unique<Kites::RV5StageVM_NH_NF_CircuitScene>();
     connect(this, &VmBase::updateCircuitStateSignal,
             circuit_scene_.get(), &Kites::RV5StageVM_NH_NF_CircuitScene::updateCircuitState);
+    //connect(this, &VmBase::vmStateChangedSignal,
+      //      circuit_scene_.get(), &Kites::RV5StageVM_NH_NF_CircuitScene::vmStateChangedSlot);
     Reset();
     active_wires_.append("PC_to_IM");
     active_wires_.append("PCMux_to_PC");
@@ -79,21 +81,6 @@ RV5StageVM_NH_NF::RV5StageVM_NH_NF() : RV5StageVM_Base()
 }
 
 
-bool RV5StageVM_NH_NF::is_pipeline_drained() const
-{
-    // IF/ID and ID/EX registers directly store the instruction word.
-    if (if_id_reg_.instruction != NOP) return false;
-    if (id_ex_reg_.instruction != NOP) return false;
-    
-    // EX/MEM: Check for architectural side effects (Reg Write, Mem Read, Mem Write).
-    // A NOP will have all these control signals disabled (false).
-    if (ex_mem_reg_.reg_write || ex_mem_reg_.mem_read || ex_mem_reg_.mem_write) return false;
-
-    // MEM/WB: Check for final architectural side effect (Reg Write).
-    if (mem_wb_reg_.reg_write) return false;
-    
-    return true;
-}
 
 void RV5StageVM_NH_NF::SetActiveWireNames() 
 {
@@ -185,43 +172,6 @@ void RV5StageVM_NH_NF::SetActiveWireNames()
     // The scene reads `active_wires_` when callers emit `updateCircuitStateSignal`.
 }
 
-// void RV5StageVM_NH_NF::Run()
-// {
-//     ClearStop();
-//     // Continue running until stop is requested OR the pipeline has drained.
-//     // while (!stop_requested_ && (program_counter_ < program_size_ || id_ex_reg_.instruction != NOP))
-//     // {
-//     //     Step();
-//     // }
-
-//     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
-//     {
-//         Step();
-//         SetVMStateMap();
-//         emit vmStateChangedSignal(vm_state_);
-//         std::this_thread::sleep_for(std::chrono::milliseconds(step_delay_));
-//     }
-// }
-
-// void RV5StageVM_NH_NF::DebugRun()
-// {
-//     ClearStop();
-//     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
-//     {
-//         // if (CheckBreakpoint(program_counter_))
-//         // {
-//         //     std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
-//         //     output_status_ = "VM_BREAKPOINT_HIT";
-//         //     break;
-//         // }
-//         print_pipeline_registers_debug();
-//         Step();
-        
-//         std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
-//         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-//     }
-//     print_pipeline_registers_debug();
-// }
 
 void RV5StageVM_NH_NF::Reset()
 {
@@ -269,7 +219,7 @@ void RV5StageVM_NH_NF::Step()
     pipeline_decode();
     // Fetch the instruction at the committed PC address.
     pipeline_fetch();
-    // 2. Determine the next PC (Redirection logic overrides sequential advance)
+
     uint64_t next_pc = program_counter_; 
     
     // If no redirect happened in EX or MEM, advance sequentially.
@@ -371,36 +321,6 @@ void RV5StageVM_NH_NF::pipeline_decode()
 
 void RV5StageVM_NH_NF::pipeline_execute()
 {
-    // if (if_id_reg_.pc >= program_size_) {
-    //     // Turn everything off — this acts as a bubble
-    //     id_ex_reg_.instruction = NOP;   // purely cosmetic, no effect
-    //     id_ex_reg_.pc = if_id_reg_.pc;
-    //     id_ex_reg_.imm = 0;
-    //     id_ex_reg_.rs1 = id_ex_reg_.rs2 = id_ex_reg_.rd = 0;
-    //     id_ex_reg_.reg1_data = id_ex_reg_.reg2_data = 0;
-    //     id_ex_reg_.reg_write = false;
-    //     id_ex_reg_.branch = false;
-    //     id_ex_reg_.alu_src = false;
-    //     id_ex_reg_.mem_read = false;
-    //     id_ex_reg_.mem_write = false;
-    //     id_ex_reg_.mem_to_reg = false;
-    //     id_ex_reg_.alu_op = 0;
-
-    //     //ex_mem_reg_.alu_result = alu_result;
-    //     ex_mem_reg_.rd = id_ex_reg_.rd;
-    //     ex_mem_reg_.reg2_data = id_ex_reg_.reg2_data;
-    //     ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
-    //     ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
-    //     ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
-    //     ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
-    //     ex_mem_reg_.branch_taken = false;
-    //     ex_mem_reg_.branch_target_pc = 0;
-
-    //     return;
-    // }
-    //  uint32_t instruction = if_id_reg_.instruction;
-    // // --- Bubble for injected NOPs (end-of-program or flushed) ---
-    
 
     // Select ALU inputs
     uint64_t alu_in1 = id_ex_reg_.reg1_data;
@@ -508,12 +428,104 @@ void RV5StageVM_NH_NF::pipeline_memory()
     
     if (ex_mem_reg_.mem_read)
     { 
-        mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+        //mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+        switch ((mem_wb_reg_.instruction >> 12) & 0b111)
+		{
+		case 0b000:
+		{ // LB
+			mem_wb_reg_.memory_data = static_cast<int8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
+			break;
+		}
+		case 0b001:
+		{ // LH
+			mem_wb_reg_.memory_data = static_cast<int16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
+			break;
+		}
+		case 0b010:
+		{ // LW
+			mem_wb_reg_.memory_data = static_cast<int32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+			break;
+		}
+		case 0b011:
+		{ // LD
+			mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+			break;
+		}
+		case 0b100:
+		{ // LBU
+			mem_wb_reg_.memory_data = static_cast<uint8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
+			break;
+		}
+		case 0b101:
+		{ // LHU
+			mem_wb_reg_.memory_data = static_cast<uint16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
+			break;
+		}
+		case 0b110:
+		{ // LWU
+			mem_wb_reg_.memory_data = static_cast<uint32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+			break;
+		}
+		}
+        std::cout << "Data read:" << (int)mem_wb_reg_.memory_data << std::endl;
     }
     else if (ex_mem_reg_.mem_write)
     { 
         // Store instruction (Uses stale data from ID)
-        memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data);
+        //memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data);
+        switch ((mem_wb_reg_.instruction >> 12) & 0b111)
+		{
+		case 0b000:
+		{ // SB
+			//addr = execution_result_;
+			//old_bytes_vec.push_back(memory_controller_.ReadByte(addr));
+			memory_controller_.WriteByte(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFF);
+			//new_bytes_vec.push_back(memory_controller_.ReadByte(addr));
+			break;
+		}
+		case 0b001:
+		{ // SH
+			// addr = execution_result_;
+			// for (size_t i = 0; i < 2; ++i)
+			// {
+			// 	old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+			// }
+			memory_controller_.WriteHalfWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFF);
+			// for (size_t i = 0; i < 2; ++i)
+			// {
+			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+			// }
+			break;
+		}
+		case 0b010:
+		{ // SW
+			// addr = execution_result_;
+			// for (size_t i = 0; i < 4; ++i)
+			// {
+			// 	old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+			// }
+			memory_controller_.WriteWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFFFFFF);
+			// for (size_t i = 0; i < 4; ++i)
+			// {
+			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+			// }
+			break;
+		}
+		case 0b011:
+		{ // SD
+			// addr = execution_result_;
+			// for (size_t i = 0; i < 8; ++i)
+			// {
+			// 	//old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+			// }
+			memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFFFFFFFFFFFFFF);
+			// for (size_t i = 0; i < 8; ++i)
+			// {
+			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+			// }
+			break;
+		}
+		}
     }
 }
 
@@ -533,8 +545,35 @@ void RV5StageVM_NH_NF::pipeline_writeback()
                                                        old_value,
                                                        write_data});
         }
-
-        registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+        switch (mem_wb_reg_.instruction & 0b1111111)
+        {
+        case 0b0110011: // R-Type
+        case 0b0010011: // I-Type
+        case 0b0010111:
+        { // AUIPC
+            registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+            break;
+        }
+        case 0b0000011:
+        { // Load
+            registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+            break;
+        }
+        case 0b1100111: // JALR
+        case 0b1101111:
+        { // JAL
+            registers_.WriteGpr(mem_wb_reg_.rd, mem_wb_reg_.pc + 4);
+            break;
+        }
+        case 0b0110111:
+        { // LUI
+            registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+            break;
+        }
+        default:
+            break;
+        }
+        //registers_.WriteGpr(mem_wb_reg_.rd, write_data);
         std::cout << "Wrote " << write_data << " to x" << mem_wb_reg_.rd << std::endl; // for debugging
         instructions_retired_++; // Instruction successfully retired
     }
