@@ -96,6 +96,7 @@ class RegisterFile : public QObject{
 
   signals:
   void updateRegister(size_t regIndex, uint64_t value);
+  void updateFRegister(size_t regIndex, uint64_t value);
   void registerResetSignal();
 
 };

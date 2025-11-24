@@ -61,17 +61,33 @@ QVariant RegisterModel::data(const QModelIndex &index, int role) const
         switch(index.column())
         {
             case 0: // Register Name
-                return QString("x%1").arg(static_cast<int>(row));
+            if (row < 32) 
+            {
+                return QString("x%1").arg(row);
+            } else 
+            {
+                return QString("f%1").arg(row - 32);
+            }
             case 1: // Register Alias
             {
-                static const char* reg_aliases[32] = {
-                    "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
-                    "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
-                    "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
-                    "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
-                    // TODO : add alias for floating point registers
+                // QString expect char* that why we don use vectoor of string here
+                // or array of string
+                static const char* reg_aliases[64] = {
+                // Integer registers x0–x31
+                "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+                "s0",   "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+                "a6",   "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+                "s8",   "s9", "s10","s11","t3","t4","t5","t6",
+
+                // Floating-point registers f0–f31
+                "ft0", "ft1", "ft2", "ft3", "ft4", "ft5", "ft6", "ft7",
+                "fs0", "fs1",
+                "fa0", "fa1", "fa2", "fa3", "fa4", "fa5", "fa6", "fa7",
+                "fs2", "fs3", "fs4", "fs5", "fs6", "fs7",
+                "fs8", "fs9", "fs10", "fs11",
+                "ft8", "ft9", "ft10", "ft11"
                 };
-                if(row < 32)
+                if(row < 64)
                     return QString(reg_aliases[row]);
                 else
                     return QString("");
@@ -89,6 +105,32 @@ QVariant RegisterModel::data(const QModelIndex &index, int role) const
                             return QString::number(static_cast<int64_t>(value));
                         case Base::Hexadecimal:
                             return QString("0x%1").arg(QString::number(value,16).toUpper());
+                    }
+                }
+                else if (row < 64)
+                {
+                    int fIndex = row - 32;
+
+                    // read raw bits of FP register (you must have this function)
+                    uint64_t raw = m_currentRegisterFile->ReadFpr(fIndex);
+
+                    switch (m_displayBase)
+                    {
+                        case Base::Binary:
+                            return QString("0b%1").arg(QString::number(raw, 2));
+
+                        case Base::Decimal:
+                        {
+                            // Interpret raw 64-bit value as double
+                            double value;
+                            static_assert(sizeof(double) == sizeof(uint64_t), "double not 64-bit!");
+
+                            memcpy(&value, &raw, sizeof(double));
+                            return QString::number(value, 'g', 16); // show decimal double
+                        }
+
+                        case Base::Hexadecimal:
+                            return QString("0x%1").arg(QString::number(raw, 16).toUpper());
                     }
                 }
                 else
@@ -125,4 +167,10 @@ void RegisterModel::updateRegisterValue(size_t regIndex, uint64_t value)
     emit dataChanged(index,index);
 }
 
+void RegisterModel::updateFRegisterValue(size_t regIndex, uint64_t value)
+{
+    qDebug() << "RegisterModel::updateFRegisterValue called for regIndex:" << regIndex << " new value:" << value;
+    QModelIndex index = this->index(static_cast<int>(regIndex + 32),2);
+    emit dataChanged(index,index);
+}
 }// namespaec Kites
