@@ -41,6 +41,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(this,&MainWindow::runVMSignal,m_vmManager,&VMManager::runSlot);
     // well temporarily disable the toolbar buttons when vm is running
     connect(m_vmManager,&VMManager::runFinishedSignal,this,&MainWindow::runFinishedSlot);
+    connect(m_vmManager,&VMManager::runErrorSignal,this,[this](const QString& errorMessage){
+        //first we enable the toolbar buttons
+        runFinishedSlot();
+        QMessageBox::critical(this,"Runtime Error",errorMessage + 
+        "\nIf you are using floating point instruciction with 5 cycle VM please switch to single cycles VM in processor settings." + 
+        "\nWe will include floating point support in multi cycle VM in future releases.");
+    });
     connect(m_vmManager,&VMManager::vmStageChangedSignal,this,[this](const QMap<QString,QVariant>& vmState){
         // forward the signal to the processor tab and editor tab to highliht pc line
         /* auto processorTab = dynamic_cast<ProcessorTab*>(m_tabs[TabIndex::ProcessorTabIndex]);
@@ -175,8 +182,9 @@ void MainWindow::setUpMenubar()
     QMenu *fileMenu = menuBar()->addMenu("&File");
     QMenu *settingsMenu = menuBar()->addMenu("&Settings");
     QMenu *helpMenu = menuBar()->addMenu("&Help");
-    QMenu *preferencesMenu = new QMenu("Preferences",this);
 
+    QMenu *preferencesMenu = new QMenu("Preferences",this);
+    QMenu *processorMenu = new QMenu("Processor",this);
     QAction *openAction = new QAction("Open", this);
     QAction *saveAction = new QAction("Save", this);    
     QAction *exitAction = new QAction("Exit", this);
@@ -202,6 +210,19 @@ void MainWindow::setUpMenubar()
 
     preferencesMenu->addAction(lightThemeAction);
     preferencesMenu->addAction(darkThemeAction);
+
+    settingsMenu->addMenu(processorMenu);
+    QAction *wireStayActiveAction = new QAction("Wires Stay Active", this);
+    wireStayActiveAction->setCheckable(true);
+    wireStayActiveAction->setChecked(false);
+    processorMenu->addAction(wireStayActiveAction);
+    connect(wireStayActiveAction,&QAction::toggled,this,[this](bool checked){
+        auto processorTab = dynamic_cast<ProcessorTab*>(m_tabs[TabIndex::ProcessorTabIndex]);
+        if(processorTab)
+        {
+            processorTab->setWiresStayActive(checked);
+        }
+    });
 ///////////Help Menu///////////////////
     helpMenu->addAction(aboutAction);
     

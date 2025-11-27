@@ -18,20 +18,35 @@ ProcessorTab::ProcessorTab(QWidget *parent,VMManager* vmManager)
     // Create the visualization widget
     //auto* vsrtlWidget = new vsrtl::VSRTLWidget(this);
     //vsrtlWidget->setDesign(design); // Important: builds the visual scen
-    // Add it to your layout
+    // Add it to your layout 
     //QHBoxLayout *design_layout = new QHBoxLayout(ui->design_display);
     //design_layout->addWidget();
     //auto *scene = new CircuitScene(this);
     //scene->loadScene("C:/Users/hghit/Desktop/NH_NF_Processor.json");
+    m_vmStateTableModel = new VMStateTableModel(this,m_vmManager);
     ui->graphicsView->setScene(m_vmManager->getCircuitScene());
+    ui->tableView->setModel(m_vmStateTableModel);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);  
     
+}
+
+void ProcessorTab::setWiresStayActive(bool stayActive)
+{
+    auto scene = m_vmManager->getCircuitScene();
+    if(scene)
+    {
+        scene->setWireStayActive(stayActive);   
+    }
 }
 
 void ProcessorTab::onVMChanged()
 {
     // The vm has been change so we ge the circuit scene of the 
     // current vm and set it to the graphics view
+    bool stayActive = m_vmManager->getCircuitScene()->getWireStayActive();
     ui->graphicsView->setScene(m_vmManager->getCircuitScene());
+    m_vmManager->getCircuitScene()->setWireStayActive(stayActive); 
+    // keep the wire stay active setting
 }
 
 ProcessorTab::~ProcessorTab()
