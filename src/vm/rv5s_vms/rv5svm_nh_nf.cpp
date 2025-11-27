@@ -335,6 +335,10 @@ void RV5StageVM_NH_NF::pipeline_execute()
     // ALU operations for integer, F, and D extensions should be called here based on instruction
     // For simplicity, only integer execute is shown, as per the B-type logic dependency.
     std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
+    if((id_ex_reg_.instruction & 0b1111111) == 0b0110111) //lui
+    {
+        alu_result = static_cast<uint64_t>(id_ex_reg_.imm << 12);
+    }
 
     // Latch data for EX/MEM Register
     ex_mem_reg_.pc = id_ex_reg_.pc;
@@ -472,60 +476,7 @@ void RV5StageVM_NH_NF::pipeline_memory()
     else if (ex_mem_reg_.mem_write)
     { 
         // Store instruction (Uses stale data from ID)
-        //memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data);
-        switch ((mem_wb_reg_.instruction >> 12) & 0b111)
-		{
-		case 0b000:
-		{ // SB
-			//addr = execution_result_;
-			//old_bytes_vec.push_back(memory_controller_.ReadByte(addr));
-			memory_controller_.WriteByte(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFF);
-			//new_bytes_vec.push_back(memory_controller_.ReadByte(addr));
-			break;
-		}
-		case 0b001:
-		{ // SH
-			// addr = execution_result_;
-			// for (size_t i = 0; i < 2; ++i)
-			// {
-			// 	old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			memory_controller_.WriteHalfWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFF);
-			// for (size_t i = 0; i < 2; ++i)
-			// {
-			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			break;
-		}
-		case 0b010:
-		{ // SW
-			// addr = execution_result_;
-			// for (size_t i = 0; i < 4; ++i)
-			// {
-			// 	old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			memory_controller_.WriteWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFFFFFF);
-			// for (size_t i = 0; i < 4; ++i)
-			// {
-			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			break;
-		}
-		case 0b011:
-		{ // SD
-			// addr = execution_result_;
-			// for (size_t i = 0; i < 8; ++i)
-			// {
-			// 	//old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFFFFFFFFFFFFFF);
-			// for (size_t i = 0; i < 8; ++i)
-			// {
-			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			break;
-		}
-		}
+        memory_write_back();
     }
 }
 
@@ -567,7 +518,7 @@ void RV5StageVM_NH_NF::pipeline_writeback()
         }
         case 0b0110111:
         { // LUI
-            registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+            registers_.WriteGpr(mem_wb_reg_.rd, write_data );
             break;
         }
         default:

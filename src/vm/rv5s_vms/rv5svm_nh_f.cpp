@@ -68,41 +68,11 @@ RV5StageVM_NH_F::RV5StageVM_NH_F() : RV5StageVM_Base()
     always_active_wires_count_ = active_wires_.size();
 }
 
-// void RV5StageVM_NH_F::Run()
-// {
-//     ClearStop();
-//     // Continue running until stop is requested OR the pipeline has drained.
-//     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
-//     {
-//         Step();
-//         SetVMStateMap();
-//         emit vmStateChangedSignal(vm_state_);
-//         std::this_thread::sleep_for(std::chrono::milliseconds(step_delay_));
-//     }
-// }
-
-// void RV5StageVM_NH_F::DebugRun()
-// {
-//     ClearStop();
-//     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
-//     {
-//         // if (CheckBreakpoint(program_counter_))
-//         // {
-//         //     std::cout << "VM_BREAKPOINT_HIT " << program_counter_ << std::endl;
-//         //     output_status_ = "VM_BREAKPOINT_HIT";
-//         //     break;
-//         // }
-//         print_pipeline_registers_debug();
-//         Step();
-//         std::cout << "Cycle: " << cycle_s_ << " | PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
-//     }
-//     print_pipeline_registers_debug();
-// }
 
 void RV5StageVM_NH_F::SetActiveWireNames()
 {
     // Clear current dynamic list and populate canonical always-active wires first
-    active_wires_.clear();
+    active_wires_.erase(active_wires_.begin() + always_active_wires_count_, active_wires_.end());
 
    //Note we are checking the singnals are the execution of these imstructions
    // so all the signals indicated what happened in this cycle
@@ -196,11 +166,7 @@ void RV5StageVM_NH_F::SetActiveWireNames()
     {
         active_wires_.append("ALU1_to_PCMuxUp");
     }
-    // Ensure uniqueness (avoid duplicate entries) using Qt container helpers
-    //QSet<QString> uniqueSet = QSet<QString>::fromList(active_wires_);
-    //active_wires_ = uniqueSet.values();
-
-    // The scene will read `active_wires_` when `updateCircuitStateSignal` is emitted by callers.
+ 
 }
 
 void RV5StageVM_NH_F::Reset()
@@ -273,10 +239,7 @@ void RV5StageVM_NH_F::Step()
         }
     }
 
-    // Draining check: if PC is past the program AND ID/EX is a NOP (implying pipeline drain)
-    // if (program_counter_ >= program_size_ && id_ex_reg_.instruction == NOP) {
-    //     RequestStop();
-    // }
+
 }
 
 // --- Pipeline Stage Implementations (Full Proof Control + Forwarding) ---
@@ -435,6 +398,10 @@ void RV5StageVM_NH_F::pipeline_execute()
     bool overflow;
     uint64_t alu_result;
     std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
+    if((id_ex_reg_.instruction & 0b1111111) == 0b0110111) //lui
+    {
+        alu_result = static_cast<uint64_t>(id_ex_reg_.imm << 12);
+    }
 
     // Latch data for EX/MEM Register
     ex_mem_reg_.pc = id_ex_reg_.pc;
@@ -619,61 +586,7 @@ void RV5StageVM_NH_F::pipeline_memory()
             write_data = mem_wb_reg_.memory_data; // Forward the just-loaded value
         }
 
-        // Store instruction
-        //memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, write_data);
-        switch ((mem_wb_reg_.instruction >> 12) & 0b111)
-		{
-		case 0b000:
-		{ // SB
-			//addr = execution_result_;
-			//old_bytes_vec.push_back(memory_controller_.ReadByte(addr));
-			memory_controller_.WriteByte(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFF);
-			//new_bytes_vec.push_back(memory_controller_.ReadByte(addr));
-			break;
-		}
-		case 0b001:
-		{ // SH
-			// addr = execution_result_;
-			// for (size_t i = 0; i < 2; ++i)
-			// {
-			// 	old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			memory_controller_.WriteHalfWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFF);
-			// for (size_t i = 0; i < 2; ++i)
-			// {
-			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			break;
-		}
-		case 0b010:
-		{ // SW
-			// addr = execution_result_;
-			// for (size_t i = 0; i < 4; ++i)
-			// {
-			// 	old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			memory_controller_.WriteWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFFFFFF);
-			// for (size_t i = 0; i < 4; ++i)
-			// {
-			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			break;
-		}
-		case 0b011:
-		{ // SD
-			// addr = execution_result_;
-			// for (size_t i = 0; i < 8; ++i)
-			// {
-			// 	//old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFFFFFFFFFFFFFF);
-			// for (size_t i = 0; i < 8; ++i)
-			// {
-			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			break;
-		}
-		}
+        memory_write_back();
     }
 }
 
@@ -718,7 +631,7 @@ void RV5StageVM_NH_F::pipeline_writeback()
         }
         case 0b0110111:
         { // LUI
-            registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+            registers_.WriteGpr(mem_wb_reg_.rd, write_data );
             break;
         }
         default:

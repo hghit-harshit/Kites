@@ -27,7 +27,7 @@ void RV5SControlUnit::SetControlSignals(uint32_t instruction)
             reg_write_ = true;
             alu_op_ = 1; // ALUOp code '1' for I-type/Branch.
             break;
-        case 0b0000011: // I-type Load (LW, LB, etc.)
+        case 0b0000011: // L Load (LW, LB, etc.)
             alu_src_ = true;
             mem_to_reg_ = true;
             reg_write_ = true;

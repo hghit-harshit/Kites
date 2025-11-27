@@ -71,6 +71,7 @@ private:
 public slots:
     void vmChanged(const VMType& vmType); // this will catch the signal from processor dialog
     void runFinishedSlot();
+    //void runErrorSlot();
 signals:
     void vmChangedSignal();
     void runVMSignal();

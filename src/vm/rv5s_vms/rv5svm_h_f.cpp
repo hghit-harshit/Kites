@@ -244,9 +244,7 @@ void RV5StageVM_H_F::Step()
     else
     {
         // Pipeline is free. Check for a NEW hazard using the external HDU function.
-        // **CORRECT CALL**: Using the external function with forwarding=true.
         stalls_needed = check_data_hazard(if_id_reg_, id_ex_reg_, ex_mem_reg_, true /* is_forwarding_enabled */);
-
         if (stalls_needed > 0)
         {
             // Start the stall: stalls_needed cycles total. 1 cycle is handled now.
@@ -633,60 +631,8 @@ void RV5StageVM_H_F::pipeline_memory()
         // Store instruction (Solved by forwarding store_data from EX)
         std::cout << "AHHAHAHAHAHAHAHAAH\n";
         std::cout << (int)ex_mem_reg_.alu_result << ' ' << (int)ex_mem_reg_.reg2_data << std::endl;
-        //memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data);
-        switch ((mem_wb_reg_.instruction >> 12) & 0b111)
-		{
-		case 0b000:
-		{ // SB
-			//addr = execution_result_;
-			//old_bytes_vec.push_back(memory_controller_.ReadByte(addr));
-			memory_controller_.WriteByte(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFF);
-			//new_bytes_vec.push_back(memory_controller_.ReadByte(addr));
-			break;
-		}
-		case 0b001:
-		{ // SH
-			// addr = execution_result_;
-			// for (size_t i = 0; i < 2; ++i)
-			// {
-			// 	old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			memory_controller_.WriteHalfWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFF);
-			// for (size_t i = 0; i < 2; ++i)
-			// {
-			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			break;
-		}
-		case 0b010:
-		{ // SW
-			// addr = execution_result_;
-			// for (size_t i = 0; i < 4; ++i)
-			// {
-			// 	old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			memory_controller_.WriteWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFFFFFF);
-			// for (size_t i = 0; i < 4; ++i)
-			// {
-			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			break;
-		}
-		case 0b011:
-		{ // SD
-			// addr = execution_result_;
-			// for (size_t i = 0; i < 8; ++i)
-			// {
-			// 	//old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, registers_.ReadGpr(ex_mem_reg_.reg2_data) & 0xFFFFFFFFFFFFFFFF);
-			// for (size_t i = 0; i < 8; ++i)
-			// {
-			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
-			break;
-		}
-		}
+        
+        memory_write_back();
     }
 }
 
@@ -737,7 +683,7 @@ void RV5StageVM_H_F::pipeline_writeback()
         }
         case 0b0110111:
         { // LUI
-            registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+            registers_.WriteGpr(mem_wb_reg_.rd, write_data );
             break;
         }
         default:

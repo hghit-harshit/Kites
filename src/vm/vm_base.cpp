@@ -24,6 +24,15 @@ VmBase::VmBase()
    /*  connect(circuit_scene_.get(), &Kites::CircuitScene::updateCircuitState,
             this, &VmBase::updateCircuitState); 
  */
+    //create the outline of vm state so that gui can show something even before running the vm
+    // vm_state_["ProgramCounter"] = static_cast<qulonglong>(program_counter_);
+	// vm_state_["CurrentInstruction"] = static_cast<qulonglong>(current_instruction_);
+	// vm_state_["Cycles"] = static_cast<qulonglong>(cycle_s_);
+	// vm_state_["InstructionsRetired"] = static_cast<qulonglong>(instructions_retired_);
+	// vm_state_["CPI"] = static_cast<double>(cpi_);
+	// vm_state_["IPC"] = static_cast<double>(ipc_);
+	// vm_state_["StallCycles"] = static_cast<qulonglong>(stall_cycles_);
+	// vm_state_["BranchMispredictions"] = static_cast<qulonglong>(branch_mispredictions_);
 }
 
 void VmBase::RequestStop()

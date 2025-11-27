@@ -16,6 +16,30 @@ SyntaxHighlighter::SyntaxHighlighter(QTextDocument *parent)
     // singleLineCommentRule.format = m_singleLineCommentFormat;
     // m_highlightRules.append(singleLineCommentRule);
 
+    // QColor textColor = palette.text().color();
+    // QColor keywordColor;
+    // QColor labelColor;
+    // QColor commentColor;
+
+    // bool dark = (palette.color(QPalette::Window).lightness() < 128);
+
+    // if (dark) 
+    // {
+    //     keywordColor = QColor("#569CD6");   // VSCode blue
+    //     labelColor   = QColor("#C586C0");   // purple
+    //     commentColor = QColor("#6A9955");   // green
+    // } else 
+    // {
+    //     keywordColor = QColor("#0000AA");
+    //     labelColor   = QColor("#800080");
+    //     commentColor = QColor("#008000");
+    // }
+    setHighlightingRules();
+    
+}
+
+void SyntaxHighlighter::setHighlightingRules()
+{
     HighlightRule rule;
 
     QTextCharFormat instructionKeywordFormat;
@@ -137,18 +161,25 @@ SyntaxHighlighter::SyntaxHighlighter(QTextDocument *parent)
         QRegularExpression("#[^\n]*"),
         [](){
             QTextCharFormat format;
-            format.setForeground(Qt::darkGreen);
-            format.setFontItalic(true);
+            format.setForeground(Qt::gray);
             return format;
         }()
     });
 
+    m_highlightRules.append({
+        QRegularExpression(R"(^[A-Za-z_][A-Za-z0-9_.$]*:$)"),
+        [](){
+            QTextCharFormat format;
+            format.setForeground(QColor(128,0,128));
+            return format;
+        }()
+    });
     //for number literals
     m_highlightRules.append({
         QRegularExpression(R"(\b0[xX][0-9a-fA-F]+|\b\d+|\b0[bB][01]+)"),
         [](){
             QTextCharFormat format;
-            format.setForeground(Qt::darkRed);
+            format.setForeground(Qt::darkGreen);
             return format;
         }()
     });
@@ -166,4 +197,13 @@ void SyntaxHighlighter::highlightBlock(const QString &text)
         }
     }
 }
+
+
+void SyntaxHighlighter::setTheme(bool isDarkMode)
+{
+    // Clear existing rules
+    m_highlightRules.clear();
+
+    
 }// namespace Kites
+}

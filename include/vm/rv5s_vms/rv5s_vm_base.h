@@ -29,7 +29,11 @@ protected:
     // The control unit for the pipeline
     RV5SControlUnit control_unit_;
 
-    
+    void memory_write_back();
+    void register_write_back(const uint64_t& write_data);
+    void memory_read();
+
+
     void print_pipeline_registers_debug();
     bool is_pipeline_drained() const;
     void SetVMStateMap() override;

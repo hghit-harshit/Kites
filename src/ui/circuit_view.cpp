@@ -33,6 +33,10 @@ CircuitView::CircuitView(QGraphicsScene *scene, QWidget *parent)
     setMouseTracking(true);
     setRenderHint(QPainter::Antialiasing,true);
     centerOn(0, 0);
+
+    // the table view that will show the instructions
+    // Ensure the table is on top of other items
+
     //setBackgroundBrush(Qt::black);
     //fitInView(scene->sceneRect(), Qt::KeepAspectRatio);
 }
@@ -43,6 +47,8 @@ void CircuitView::showEvent(QShowEvent *event)
     setTransform(QTransform().scale(0.7, 0.7));
     //fitInView(scene()->sceneRect(), Qt::KeepAspectRatio);
 }
+
+
 /* 
 void CircuitView::drawBackground(QPainter *painter, const QRectF &rect)
 {

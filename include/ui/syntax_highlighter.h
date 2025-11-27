@@ -12,7 +12,9 @@ class SyntaxHighlighter : public QSyntaxHighlighter
         explicit SyntaxHighlighter(QTextDocument *parent = nullptr);
     protected:
         void highlightBlock(const QString &text) override;
+        void setTheme(bool isDarkMode);
     private:
+        void setHighlightingRules();
         struct HighlightRule
         {
             QRegularExpression pattern;
@@ -20,7 +22,7 @@ class SyntaxHighlighter : public QSyntaxHighlighter
         };
 
         QVector<HighlightRule> m_highlightRules;
-        
+    
         //format rules for comments
         // QRegularExpression m_singleLineCommentPattern;
         // QTextCharFormat m_singleLineCommentFormat;
