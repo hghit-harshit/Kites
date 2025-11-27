@@ -127,7 +127,7 @@
             ],
             "junctions": [
             ],
-            "name": "WBMux_to_RF",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -167,7 +167,7 @@
             ],
             "junctions": [
             ],
-            "name": "RdP4_to_FU",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -207,7 +207,7 @@
             ],
             "junctions": [
             ],
-            "name": "ANDGATE_to_PCMUX",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -242,7 +242,7 @@
             ],
             "junctions": [
             ],
-            "name": "ANDGate_lower_entry",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -272,7 +272,7 @@
             ],
             "junctions": [
             ],
-            "name": "ALU_zerores_to_P3",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -292,7 +292,7 @@
             ],
             "junctions": [
             ],
-            "name": "P3_to_UpperEntryANDGATE",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -322,7 +322,7 @@
             ],
             "junctions": [
             ],
-            "name": "P3_to_DM_Memread",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -357,7 +357,7 @@
             ],
             "junctions": [
             ],
-            "name": "P3_TO_DM_control_memwrite",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -382,7 +382,7 @@
             ],
             "junctions": [
             ],
-            "name": "ALUcontrol_to_ALU",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -412,7 +412,7 @@
             ],
             "junctions": [
             ],
-            "name": "P2_to_ALUMux",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -437,7 +437,7 @@
             ],
             "junctions": [
             ],
-            "name": "P2_to_ALUcontrol_Control",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -467,7 +467,7 @@
             ],
             "junctions": [
             ],
-            "name": "P3_to_P4",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -487,7 +487,7 @@
             ],
             "junctions": [
             ],
-            "name": "P2_to_RF",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -507,7 +507,7 @@
             ],
             "junctions": [
             ],
-            "name": "P2_to_P3",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -873,7 +873,7 @@
                     "y": -253
                 }
             ],
-            "name": "RF_to_P2",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -968,7 +968,7 @@
             ],
             "junctions": [
             ],
-            "name": "IM_to_P1",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -988,7 +988,7 @@
             ],
             "junctions": [
             ],
-            "name": "PC_to_IM",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -1028,7 +1028,7 @@
             ],
             "junctions": [
             ],
-            "name": "Control_to_RF",
+            "name": "",
             "path": [
                 {
                     "type": 0,
@@ -1048,7 +1048,7 @@
             ],
             "junctions": [
             ],
-            "name": "PC_to_Adder",
+            "name": "",
             "path": [
                 {
                     "type": 0,
