@@ -50,6 +50,7 @@ uint64_t RegisterFile::ReadFpr(size_t reg) const {
 void RegisterFile::WriteFpr(size_t reg, uint64_t value) {
   if (reg >= NUM_FPR) throw std::out_of_range("Invalid FPR index");
   fpr_[reg] = value;
+  emit updateFRegister(reg,value);
 }
 
 uint64_t RegisterFile::ReadCsr(size_t reg) const {
