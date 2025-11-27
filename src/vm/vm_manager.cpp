@@ -50,7 +50,14 @@ void VMManager::loadProgram(const AssembledProgram &program)
 
 void VMManager::run()
 {
-    m_currentVM->Run();
+    try
+    {
+        m_currentVM->Run();
+    }
+    catch(const std::exception& e)
+    {
+        emit runErrorSignal(QString::fromStdString(e.what()));
+    }
 }
 
 void VMManager::step()
@@ -112,3 +119,44 @@ VMType VMManager::getVMType()
 {
     return m_currentVMType;
 }
+
+QMap<QString,QVariant>& VMManager::getVMStateMap()
+{
+    return m_currentVM->vm_state_;
+} 
+
+uint64_t VMManager::getProgramCounter() const
+{
+    return m_currentVM->program_counter_;
+}
+
+float VMManager::getCPI() const
+{
+    return m_currentVM->cpi_;
+}
+
+float VMManager::getIPC() const
+{
+    return m_currentVM->ipc_;
+}
+
+unsigned int VMManager::getBranchMispredictions() const
+{
+    return m_currentVM->branch_mispredictions_;
+}
+
+unsigned int VMManager::getStallCycles() const
+{
+    return m_currentVM->stall_cycles_;
+}
+
+unsigned int VMManager::getCycles() const
+{
+    return m_currentVM->cycle_s_;
+}
+
+unsigned int VMManager::getInstructionsRetired() const
+{
+    return m_currentVM->instructions_retired_;
+}
+

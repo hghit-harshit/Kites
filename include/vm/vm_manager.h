@@ -60,6 +60,16 @@ class VMManager : public QObject
         RegisterFile* getRegisterFile();
         MemoryController* getMemoryController();
         Kites::CircuitScene* getCircuitScene();
+        QMap<QString,QVariant>& getVMStateMap();
+
+        //these are kinda ununsed for now 
+        uint64_t getProgramCounter() const;
+        float getCPI() const;
+        float getIPC() const;
+        unsigned int getBranchMispredictions() const;
+        unsigned int getStallCycles() const;
+        unsigned int getCycles() const;
+        unsigned int getInstructionsRetired() const;
 
     private:
     std::unique_ptr<VmBase> m_currentVM;
@@ -71,11 +81,13 @@ class VMManager : public QObject
             run();
             emit runFinishedSignal();
         }
+        
        
     signals:
         void runFinishedSignal();
         void vmStageChangedSignal(const QMap<QString,QVariant>& vmState);
         void vmPausedAtBreakpointSignal();
+        void runErrorSignal(const QString& errorMessage);
     //std::unique_ptr<> m_instance;
 
 };
