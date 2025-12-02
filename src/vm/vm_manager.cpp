@@ -92,7 +92,7 @@ void VMManager::setStepDelay(unsigned int delay)
 
 void VMManager::setBreakpoints(const std::vector<uint64_t>& breakpoints)
 {
-    m_currentVM->breakpoints_ = breakpoints;
+    m_currentVM->SetBreakpoints(breakpoints);
 }
 
 RegisterFile* VMManager::getRegisterFile()

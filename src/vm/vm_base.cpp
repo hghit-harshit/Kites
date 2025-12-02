@@ -214,6 +214,18 @@ int32_t VmBase::ImmGenerator(uint32_t instruction) {
 }
 
 
+void VmBase::SetBreakpoints(const std::vector<uint64_t> &breakpoints) 
+{
+    breakpoints_.clear();
+    for (const auto &bp : breakpoints) 
+    {
+        breakpoints_.emplace_back(program_.line_number_instruction_number_mapping[bp] * 4);
+        qDebug() << "Breakpoint set at line: " << bp;
+        qDebug() << "Breakpoint set at instruction number: " << program_.line_number_instruction_number_mapping[bp];   
+        qDebug() << "Breakpoint set at address: " << QString::number(program_.line_number_instruction_number_mapping[bp] * 4, 16);
+    }
+}
+
 void VmBase::AddBreakpoint(uint64_t val, bool is_line) {
     if (is_line) {
         // If the value is a line number, convert it to an instruction address

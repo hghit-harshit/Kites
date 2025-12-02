@@ -9,7 +9,7 @@ void RV5StageVM_Base::Run()
     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
     {
         // if we hit a break point, we pause execution
-        if(std::find(breakpoints_.begin(), breakpoints_.end(), (program_counter_ /4) + 1 ) != breakpoints_.end())
+        if(std::find(breakpoints_.begin(), breakpoints_.end(), program_counter_) != breakpoints_.end())
 		{
 			pause_requested_ = true;
             emit vmPausedAtBreakpointSignal();

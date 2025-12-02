@@ -128,6 +128,9 @@ public:
 
 	int32_t ImmGenerator(uint32_t instruction);
 
+	/**@brief Sets the breakpoints vector
+	 */
+	void SetBreakpoints(const std::vector<uint64_t> &breakpoints);
 	void AddBreakpoint(uint64_t val, bool is_line = true);
 	void RemoveBreakpoint(uint64_t val, bool is_line = true);
 	bool CheckBreakpoint(uint64_t address);
