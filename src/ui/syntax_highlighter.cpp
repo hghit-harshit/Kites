@@ -166,8 +166,9 @@ void SyntaxHighlighter::setHighlightingRules()
         }()
     });
 
+    // setting rules for labels
     m_highlightRules.append({
-        QRegularExpression(R"(^[A-Za-z_][A-Za-z0-9_.$]*:$)"),
+        QRegularExpression(R"(^\s*[A-Za-z_][A-Za-z0-9_.$]*:$)"),
         [](){
             QTextCharFormat format;
             format.setForeground(QColor(128,0,128));
