@@ -100,14 +100,12 @@ void MainWindow::setUpToolBar()
     QToolBar *toolbar = addToolBar("Main Toolbar");
     QAction *processorAction = new QAction("Processor",this);
     QAction *runAction = new QAction("Run", this);
-    QAction *stopAction = new QAction("Stop", this);
     QAction *pauseAction = new QAction("Pause",this);
     QAction *debugAction = new QAction("Debug Run",this);
     QAction *stepAction = new QAction("Step", this);
     
     
     stepAction->setDisabled(true);
-    stopAction->setDisabled(true);
     pauseAction->setDisabled(true); 
 
     QSpinBox *spinbox = new QSpinBox(this);
@@ -118,24 +116,31 @@ void MainWindow::setUpToolBar()
     
     QWidgetAction *spinboxAction = new QWidgetAction(this);
     spinboxAction->setDefaultWidget(spinbox);
-    //toolbar->addAction(preferencesAction);
     toolbar->addAction(processorAction);
     toolbar->addAction(runAction);
     toolbar->addAction(debugAction);
     toolbar->addAction(spinboxAction);
     toolbar->addAction(pauseAction);
-    toolbar->addAction(stopAction);
     toolbar->addAction(stepAction);
     
 
     connect(runAction,&QAction::triggered,this,[this,processorAction,
-    runAction,stopAction,pauseAction,debugAction](){
-        debugAction->setDisabled(true);
-        processorAction->setDisabled(true);
-        runAction->setDisabled(true);
-        stopAction->setEnabled(true);
-        pauseAction->setEnabled(true);
-        this->run();
+    runAction,pauseAction,debugAction](){
+        if(runAction->text() == "Run")
+        {
+            debugAction->setDisabled(true);
+            processorAction->setDisabled(true);
+            pauseAction->setEnabled(true);
+            runAction->setText("Stop");
+            this->run();
+        }
+        else if(runAction->text() == "Stop")
+        {
+            //emit stopSignal();
+            runAction->setText("Run");
+            m_vmManager->stop();
+        }
+        
     });
     connect(processorAction,&QAction::triggered,this,&MainWindow::processorChangeDialog);
     connect(spinbox,qOverload<int>(&QSpinBox::valueChanged),this,[this](int value){
@@ -153,10 +158,7 @@ void MainWindow::setUpToolBar()
             m_vmManager->resume();
         }
     });
-    connect(stopAction,&QAction::triggered,this,[this](){
-        //emit stopSignal();
-        m_vmManager->stop();
-    });
+
     
     // we also connect the vm paused at breakpoint signal to change the pause button text
     connect(m_vmManager,&VMManager::vmPausedAtBreakpointSignal,this,[this,pauseAction](){
@@ -365,19 +367,6 @@ void MainWindow::vmChanged(const VMType& vmType)
     //well also have to change the processor desing from here later
 }
 
-// void MainWindow::disableToolBarButtons()
-// {
-//     QList<QToolBar*> toolbars = this->findChildren<QToolBar*>();
-//     // since we only have one toolbar we can directly access it
-//     for (QAction* action : toolbars[0]->actions()) 
-//     {
-//         if (action->text() == "Run" || action->text() == "Step" 
-//         || action->text() == "Processor")
-//         {
-//             action->setDisabled(true);
-//         }
-//     }
-// }
 
 void MainWindow::runFinishedSlot()
 {
@@ -395,7 +384,11 @@ void MainWindow::runFinishedSlot()
         {
             action->setEnabled(true);
         }
-
+        if(action->text() == "Stop")
+        {
+            action->setText("Run");
+            // when the program finishes we set the run button text back to run
+        }
         if(action->text() == "Resume")
         {
             action->setText("Pause");
