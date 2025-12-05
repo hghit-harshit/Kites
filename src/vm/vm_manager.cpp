@@ -38,6 +38,7 @@ void VMManager::changeVM(VMType vmType)
 {
     m_currentVMType = vmType;
     m_currentVM = VMFactory::createVM(vmType);
+    m_currentVM->step_delay_ = m_stepDelayMs;
     connect(m_currentVM.get(),&VmBase::vmStateChangedSignal,this,&VMManager::vmStageChangedSignal);
     connect(m_currentVM.get(),&VmBase::vmPausedAtBreakpointSignal,this,&VMManager::vmPausedAtBreakpointSignal);
     // create new connections for the new VM
@@ -87,6 +88,7 @@ void VMManager::resume()
 }
 void VMManager::setStepDelay(unsigned int delay)
 {
+    m_stepDelayMs = delay;
     m_currentVM->step_delay_ = delay;
 }
 

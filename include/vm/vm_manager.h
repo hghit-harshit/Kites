@@ -74,7 +74,8 @@ class VMManager : public QObject
     private:
     std::unique_ptr<VmBase> m_currentVM;
     VMType m_currentVMType;
-
+    // we need this as when we chage vm we need preserve the step delay
+    unsigned int m_stepDelayMs{1000};
     public slots:
         void runSlot()
         {
