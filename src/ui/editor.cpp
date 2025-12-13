@@ -21,6 +21,9 @@ Editor::Editor(QWidget* parent, bool isTextEditor):QPlainTextEdit(parent), m_isT
     font.setFixedPitch(true);  // monospaced
     setFont(font);
 
+    const int tapspace = 4;
+    setTabStopDistance(tapspace * fontMetrics().horizontalAdvance(' '));
+
     if(isTextEditor)
     {
         connect(this, &QPlainTextEdit::blockCountChanged, this, [this](int /* newBlockCount */) 
