@@ -10,6 +10,8 @@
 #include "ui/editortab.h"
 #include "ui/memorytab.h"
 #include "ui/processortab.h"
+#include "ui/cachetab.h"
+#include "ui/compilertab.h"
 #include "ui/processor_dialog.h"
 #include "vm/vm_manager.h"
 #include "globals.h"
@@ -38,6 +40,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_vmThread = new QThread(this);
     m_vmManager->moveToThread(m_vmThread);
     m_vmThread->start();
+
     connect(this,&MainWindow::runVMSignal,m_vmManager,&VMManager::runSlot);
     // well temporarily disable the toolbar buttons when vm is running
     connect(m_vmManager,&VMManager::runFinishedSignal,this,&MainWindow::runFinishedSlot);
@@ -108,12 +111,14 @@ void MainWindow::setUpToolBar()
     stepAction->setDisabled(true);
     pauseAction->setDisabled(true); 
 
+    //------------Spinbox for setting execution speed----------------
     QSpinBox *spinbox = new QSpinBox(this);
     spinbox->setRange(1,10000);
     spinbox->setValue(1000);
     spinbox->setSuffix(" ms");
     spinbox->setToolTip("Set Execution Speed (in milliseconds)");
-    
+    //---------------------------------------------------------------
+
     QWidgetAction *spinboxAction = new QWidgetAction(this);
     spinboxAction->setDefaultWidget(spinbox);
     toolbar->addAction(processorAction);
@@ -172,7 +177,9 @@ void MainWindow::setUpSidebar()
 {
     m_sidebar->addItem("Editor");
     m_sidebar->addItem("Memory");
-    m_sidebar->addItem("Processor");
+    m_sidebar->addItem("Processor");    
+    m_sidebar->addItem("Cache");
+    m_sidebar->addItem("Compiler");
     m_sidebar->setFixedWidth(80);
     m_sidebar->setCurrentRow(0);
 
@@ -285,7 +292,8 @@ void MainWindow::setUpTabs()
     m_tabs[TabIndex::EditorTabIndex] = new EditorTab(this);
     m_tabs[TabIndex::MemoryTabIndex] = new MemoryTab(this,m_vmManager->getMemoryController());
     m_tabs[TabIndex::ProcessorTabIndex] = new ProcessorTab(this,m_vmManager); //will add later
-
+    m_tabs[TabIndex::CacheTabIndex] = new CacheTab(this,m_vmManager->getMemoryController());
+    m_tabs[TabIndex::CompilerTabIndex] = new CompilerTab(this);
     //a little experiment 
     connect(this,&MainWindow::vmChangedSignal,
             dynamic_cast<ProcessorTab*>(m_tabs[TabIndex::ProcessorTabIndex]),
@@ -294,6 +302,8 @@ void MainWindow::setUpTabs()
     m_stackedTabs->addWidget(m_tabs[TabIndex::EditorTabIndex]);
     m_stackedTabs->addWidget(m_tabs[TabIndex::MemoryTabIndex]);
     m_stackedTabs->addWidget(m_tabs[TabIndex::ProcessorTabIndex]);
+    m_stackedTabs->addWidget(m_tabs[TabIndex::CacheTabIndex]);
+    m_stackedTabs->addWidget(m_tabs[TabIndex::CompilerTabIndex]);
 }
 
 bool MainWindow::tryParseAndLoadProgram()
@@ -333,21 +343,22 @@ void MainWindow::run()
     //disableToolBarButtons();
     if (tryParseAndLoadProgram()) 
     {
-        qDebug() << "Starting VM Run";
+        // qDebug() << "Starting VM Run";
         // m_vmManager->run();
         emit runVMSignal();
-        qDebug() << "VM Run Completed";
+        // qDebug() << "VM Run Completed";
     }
     else
     {
         // if parsing or loading failed we re-enable the buttons
-        //otherwise if the vm start running the buttons will be re-enabled when vm finishes
+        //otherwise if the vm starts running the buttons will be re-enabled when vm finishes
         runFinishedSlot();
     }
 }
 void MainWindow::processorChangeDialog()
 {
     ProcessorDialog dialog(this,m_vmManager->getVMType());
+    dialog.setWindowTitle("Choose Processor");    
     connect(&dialog,&ProcessorDialog::vmSelected,this,&MainWindow::vmChanged);
     dialog.exec();
 }

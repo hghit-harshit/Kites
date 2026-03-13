@@ -9,6 +9,7 @@
 
 #include "../config.h"
 #include "main_memory.h"
+#include "cache/direct_map_cache.h"
 #include <QObject>
 #include <iostream>
 #include <string>
@@ -23,8 +24,12 @@ class MemoryController : public QObject
   Q_OBJECT
 private:
     Memory memory_; ///< The main memory object.
+    DirectMapCache cache_; ///< The cache object for faster memory access.
+
 public:
-    MemoryController() = default;
+    MemoryController():cache_(memory_)
+    {
+    }
 
     void Reset() {
         memory_.Reset();
@@ -35,39 +40,39 @@ public:
     }
 
     void WriteByte(uint64_t address, uint8_t value) {
-      memory_.WriteByte(address, value);
+      cache_.WriteByte(address, value);
       emit memoryUpdated(address);
     }
 
     void WriteHalfWord(uint64_t address, uint16_t value) {
-      memory_.WriteHalfWord(address, value);
+      cache_.WriteHalfWord(address, value);
       emit memoryUpdated(address);
     }
 
     void WriteWord(uint64_t address, uint32_t value) {
-      memory_.WriteWord(address, value);
+      cache_.WriteWord(address, value);
       emit memoryUpdated(address);
     }
 
     void WriteDoubleWord(uint64_t address, uint64_t value) {
-      memory_.WriteDoubleWord(address, value);
+      cache_.WriteDoubleWord(address, value);
       emit memoryUpdated(address);
     }
 
     [[nodiscard]] uint8_t ReadByte(uint64_t address) {
-        return memory_.ReadByte(address);
+        return cache_.ReadByte(address);
     }
 
     [[nodiscard]] uint16_t ReadHalfWord(uint64_t address) {
-        return memory_.ReadHalfWord(address);
+        return cache_.ReadHalfWord(address);
     }
 
     [[nodiscard]] uint32_t ReadWord(uint64_t address) {
-        return memory_.ReadWord(address);
+        return cache_.ReadWord(address);
     }
 
     [[nodiscard]] uint64_t ReadDoubleWord(uint64_t address) {
-        return memory_.ReadDoubleWord(address);
+        return cache_.ReadDoubleWord(address);
     }
 
     // Functions to read memory directly with cache bypass
@@ -100,6 +105,7 @@ public:
       return memory_.GetMemoryPoint(address);
     }
 
+    DirectMapCache* GetCache() { return &cache_; }
     signals:
     void memoryUpdated(uint64_t address);
     void memoryResetSignal();

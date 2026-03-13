@@ -4,6 +4,7 @@
 #include <QEvent>
 #include <QVariantMap>
 #include "ui/syntax_highlighter.h"
+#include <QCompleter>
 namespace Kites
 {
     
@@ -25,12 +26,19 @@ class Editor : public QPlainTextEdit
 
         std::vector<uint64_t> getBreakpoints() const ;
         void clearHighlights();
+
+        void insertCompletion(const QString& completion);
     protected:
     //void mouseMoveEvent(QMouseEvent* event) override;
     bool event(QEvent *event) override;
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
     private : 
+    QString textUnderCursor();
+
+    QCompleter *m_autoCompleter = nullptr;
+
     std::map<int,QString> m_errorMessages;
     SyntaxHighlighter* m_syntaxHighlighter;
     QVariantMap m_LinesToHighlight;

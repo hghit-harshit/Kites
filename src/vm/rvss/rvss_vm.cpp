@@ -1160,9 +1160,7 @@ void RVSSVM::Step()
 	}
 	DumpRegisters(globals::registers_dump_file_path, registers_);
 	DumpState(globals::vm_state_dump_file_path);
-		// update circuit UI after a single step
-		//SetActiveWireNames();
-		//emit updateCircuitStateSignal(active_wires_);
+
 }
 
 void RVSSVM::Undo()

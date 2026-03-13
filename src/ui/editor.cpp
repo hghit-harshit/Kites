@@ -5,6 +5,8 @@
 #include <QPainter>
 #include <set>
 #include <QMenu>
+#include <QAbstractItemView> // this is needed for the auto completer popup
+#include <QScrollBar>// same reason as above
 // #include "ui/linenumberarea.h"
 namespace Kites
 {
@@ -24,29 +26,37 @@ Editor::Editor(QWidget* parent, bool isTextEditor):QPlainTextEdit(parent), m_isT
     const int tapspace = 4;
     setTabStopDistance(tapspace * fontMetrics().horizontalAdvance(' '));
 
-    if(isTextEditor)
+    if(!m_isTextEditor)return;
+    
+    connect(this, &QPlainTextEdit::blockCountChanged, this, [this](int /* newBlockCount */) 
     {
-        connect(this, &QPlainTextEdit::blockCountChanged, this, [this](int /* newBlockCount */) 
-        {
-            setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
-        });
-
-        connect(this, &QPlainTextEdit::updateRequest, this, [this](const QRect &rect, int dy) 
-        {
-            if (dy)
-                m_lineNumberArea->scroll(0, dy);
-            else
-                m_lineNumberArea->update(0, rect.y(), m_lineNumberArea->width(), rect.height());
-
-            if (rect.contains(viewport()->rect()))
-                setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
-        });
-        m_lineNumberArea = new LineNumberArea(this);
         setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
-    }
-    //m_lineNumberArea->show();
+    });
+
+    connect(this, &QPlainTextEdit::updateRequest, this, [this](const QRect &rect, int dy) 
+    {
+        if (dy)
+            m_lineNumberArea->scroll(0, dy);
+        else
+            m_lineNumberArea->update(0, rect.y(), m_lineNumberArea->width(), rect.height());
+
+        if (rect.contains(viewport()->rect()))
+            setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
+    });
+    m_lineNumberArea = new LineNumberArea(this);
+    setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
+    
+
+    //---------Setting up auto completer---------
+    QStringList words = {"harshit"};
+    m_autoCompleter = new QCompleter(words,this);
+    m_autoCompleter->setWidget(this);
+    
+    connect(m_autoCompleter,QOverload<const QString&>::of(&QCompleter::activated),
+    this,&Editor::insertCompletion);
 
 }
+
 
 std::vector<uint64_t> Editor::getBreakpoints() const
 {
@@ -68,6 +78,63 @@ void Editor::setLinesToHighlight(const QVariantMap& linesToHighlight)
 {
     m_LinesToHighlight = linesToHighlight;
     viewport()->update(); // Trigger a repaint to show the highlights
+}
+
+void Editor::insertCompletion(const QString& completion)
+{
+    QTextCursor tc = textCursor();
+    int extra = completion.length() - m_autoCompleter->completionPrefix().length();
+    tc.movePosition(QTextCursor::Left);
+    tc.movePosition(QTextCursor::EndOfWord);
+    tc.insertText(completion.right(extra));
+    setTextCursor(tc);
+}
+
+QString Editor::textUnderCursor()
+{
+    QTextCursor tc = textCursor();
+    tc.select(QTextCursor::WordUnderCursor);
+    return tc.selectedText();
+}
+
+void Editor::keyPressEvent(QKeyEvent* event)
+{
+    if (m_autoCompleter && m_autoCompleter->popup()->isVisible()) {
+        switch (event->key()) {
+        case Qt::Key_Enter:
+        case Qt::Key_Return:
+        case Qt::Key_Escape:
+        case Qt::Key_Tab:
+        case Qt::Key_Backtab:
+            event->ignore();
+            return;
+        default:
+            break;
+        }
+    }
+
+    QPlainTextEdit::keyPressEvent(event);
+
+    if (!m_autoCompleter)
+        return;
+
+    QString prefix = textUnderCursor();
+    if (prefix.length() < 1) {
+        m_autoCompleter->popup()->hide();
+        return;
+    }
+
+    if (prefix != m_autoCompleter->completionPrefix()) {
+        m_autoCompleter->setCompletionPrefix(prefix);
+        m_autoCompleter->popup()->setCurrentIndex(
+            m_autoCompleter->completionModel()->index(0, 0));
+    }
+
+    QRect cr = cursorRect();
+    cr.setWidth(m_autoCompleter->popup()->sizeHintForColumn(0)
+                + m_autoCompleter->popup()->verticalScrollBar()->sizeHint().width());
+
+    m_autoCompleter->complete(cr);
 }
 
 void Editor::paintEvent(QPaintEvent *event)

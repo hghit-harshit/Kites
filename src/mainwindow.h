@@ -30,7 +30,9 @@ class MainWindow : public QMainWindow
     enum class TabIndex {
         EditorTabIndex = 0,
         MemoryTabIndex,
-        ProcessorTabIndex
+        ProcessorTabIndex,
+        CacheTabIndex,
+        CompilerTabIndex
     };
 
     enum class Theme

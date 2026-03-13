@@ -322,6 +322,7 @@ void RV5StageVM_NH_NF::pipeline_decode()
 void RV5StageVM_NH_NF::pipeline_execute()
 {
 
+    
     // Select ALU inputs
     uint64_t alu_in1 = id_ex_reg_.reg1_data;
     uint64_t alu_in2 = id_ex_reg_.alu_src ? static_cast<uint64_t>(id_ex_reg_.imm) : id_ex_reg_.reg2_data;
@@ -334,7 +335,14 @@ void RV5StageVM_NH_NF::pipeline_execute()
     uint64_t alu_result;
     // ALU operations for integer, F, and D extensions should be called here based on instruction
     // For simplicity, only integer execute is shown, as per the B-type logic dependency.
-    std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
+    if(instruction_set::isFInstruction(id_ex_reg_.instruction) || instruction_set::isDInstruction(id_ex_reg_.instruction))
+    {
+       alu_result = execute_float(); // Handle floating-point instructions in a separate method
+    }
+    else
+    {
+        std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
+    }
     if((id_ex_reg_.instruction & 0b1111111) == 0b0110111) //lui
     {
         alu_result = static_cast<uint64_t>(id_ex_reg_.imm << 12);
@@ -432,6 +440,11 @@ void RV5StageVM_NH_NF::pipeline_memory()
     
     if (ex_mem_reg_.mem_read)
     { 
+        if(instruction_set::isFInstruction(ex_mem_reg_.instruction))
+        {
+            memory_float();
+            return;
+        }
         //mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
         switch ((mem_wb_reg_.instruction >> 12) & 0b111)
 		{
@@ -485,6 +498,12 @@ void RV5StageVM_NH_NF::pipeline_writeback()
     // Write the final result back to the register file
     if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0) 
     {
+        if(instruction_set::isFInstruction(mem_wb_reg_.instruction))
+        {
+           writeback_float();
+            return;
+        }
+
         uint64_t write_data = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
 
         // Record state for Undo/Redo
@@ -610,10 +629,127 @@ void RV5StageVM_NH_NF::Redo()
     std::cout << "VM_REDO_COMPLETED" << std::endl;
 }
 
-// void RV5StageVM_NH_NF::execute_float() {
-//     // Placeholder: In a full implementation, this calls alu::Alu::fpexecute
-//     std::cerr << "Warning: F-Extension instruction passed to placeholder execute_float()." << std::endl;
-// }
+uint64_t RV5StageVM_NH_NF::execute_float() 
+{
+    uint8_t opcode = current_instruction_ & 0b1111111;
+	uint8_t funct3 = (current_instruction_ >> 12) & 0b111;
+	uint8_t funct7 = (current_instruction_ >> 25) & 0b1111111;
+	uint8_t rm = funct3;
+	uint8_t rs1 = (current_instruction_ >> 15) & 0b11111;
+	uint8_t rs2 = (current_instruction_ >> 20) & 0b11111;
+	uint8_t rs3 = (current_instruction_ >> 27) & 0b11111;
+
+	uint8_t fcsr_status = 0;
+    uint64_t alu_result = 0;
+
+	int32_t imm = ImmGenerator(current_instruction_);
+
+	if (rm == 0b111)
+	{
+		rm = registers_.ReadCsr(0x002);
+	}
+
+	uint64_t reg1_value = registers_.ReadFpr(rs1);
+	uint64_t reg2_value = registers_.ReadFpr(rs2);
+	uint64_t reg3_value = registers_.ReadFpr(rs3);
+
+	if (funct7 == 0b1101000 || funct7 == 0b1111000 || opcode == 0b0000111 || opcode == 0b0100111)
+	{
+		reg1_value = registers_.ReadGpr(rs1);
+	}
+
+	if (control_unit_.GetAluSrc())
+	{
+		reg2_value = static_cast<uint64_t>(static_cast<int64_t>(imm));
+	}
+
+	alu::AluOp aluOperation = control_unit_.GetAluSignal(current_instruction_, control_unit_.GetAluOp());
+	std::tie(alu_result, fcsr_status) = alu::Alu::fpexecute(aluOperation, reg1_value, reg2_value, reg3_value, rm);
+
+   
+
+	registers_.WriteCsr(0x003, fcsr_status);
+    return alu_result;
+}
+
+void RV5StageVM_NH_NF::memory_float()
+{
+    uint8_t rs2 = (current_instruction_ >> 20) & 0b11111;
+
+	if (control_unit_.GetMemRead())
+	{ // FLW
+		mem_wb_reg_.memory_data = memory_controller_.ReadWord(mem_wb_reg_.alu_result);
+	}
+
+	uint64_t addr = 0;
+	std::vector<uint8_t> old_bytes_vec;
+	std::vector<uint8_t> new_bytes_vec;
+
+	if (control_unit_.GetMemWrite())
+	{ // FSW
+		addr = mem_wb_reg_.alu_result;
+		for (size_t i = 0; i < 4; ++i)
+		{
+			old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+		}
+		uint32_t val = registers_.ReadFpr(rs2) & 0xFFFFFFFF;
+		memory_controller_.WriteWord(mem_wb_reg_.alu_result, val);
+		// new_bytes_vec.push_back(memory_controller_.ReadByte(addr));
+		for (size_t i = 0; i < 4; ++i)
+		{
+			new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+		}
+	}
+
+	if (old_bytes_vec != new_bytes_vec)
+	{
+		current_delta_.memory_changes.push_back({addr, old_bytes_vec, new_bytes_vec});
+	}
+}
+
+void RV5StageVM_NH_NF::writeback_float()
+{
+    uint8_t opcode = current_instruction_ & 0b1111111;
+	uint8_t funct7 = (current_instruction_ >> 25) & 0b1111111;
+	uint8_t rd = (current_instruction_ >> 7) & 0b11111;
+
+	uint64_t old_reg = 0;
+	unsigned int reg_index = rd;
+	unsigned int reg_type = 2; // 0 for GPR, 1 for CSR, 2 for FPR
+	uint64_t new_reg = 0;
+
+	if (control_unit_.GetRegWrite())
+	{
+		// write to GPR
+		if (funct7 == 0b1010000 || funct7 == 0b1100000 || funct7 == 0b1110000)
+		{ // f(eq|lt|le).s, fcvt.(w|wu|l|lu).s
+			old_reg = registers_.ReadGpr(rd);
+			registers_.WriteGpr(rd, mem_wb_reg_.alu_result);
+			new_reg = mem_wb_reg_.alu_result;
+			reg_type = 0; // GPR
+		}
+		// write to FPR
+		else if (opcode == 0b0000111)
+		{
+			old_reg = registers_.ReadFpr(rd);
+			registers_.WriteFpr(rd, mem_wb_reg_.memory_data);
+			new_reg = mem_wb_reg_.memory_data;
+			reg_type = 2; // FPR
+		}
+		else
+		{
+			old_reg = registers_.ReadFpr(rd);
+			registers_.WriteFpr(rd, mem_wb_reg_.alu_result);
+			new_reg = mem_wb_reg_.alu_result;
+			reg_type = 2; // FPR
+		}
+	}
+
+	if (old_reg != new_reg)
+	{
+		current_delta_.register_changes.push_back({reg_index, reg_type, old_reg, new_reg});
+	}
+}
 
 // void RV5StageVM_NH_NF::execute_double() {
 //     // Placeholder: In a full implementation, this calls alu::Alu::dfpexecute

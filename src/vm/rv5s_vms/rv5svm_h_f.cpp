@@ -386,7 +386,6 @@ void RV5StageVM_H_F::pipeline_execute()
         std::cout << (int)ex_mem_reg_.rd << " " << (int)mem_wb_reg_.prev_rd << std::endl;
         std::cout << (int)alu_in1 << " " << (int)alu_in2 << std::endl;
 
-        // std::cout << (ex_mem_reg_.reg_write ? "reg_write" : "nononon") << std::endl;
         std::cout << "result" << (int)ex_mem_reg_.alu_result << std::endl;
     }
     // --- GPR FORWARDING LOGIC ---
@@ -439,13 +438,13 @@ void RV5StageVM_H_F::pipeline_execute()
         alu_in2 = static_cast<uint64_t>(id_ex_reg_.imm);
     }
 
-    if (id_ex_reg_.mem_write)
+    // --- EXECUTION ---
+    if(instruction_set::isFInstruction(id_ex_reg_.instruction))
     {
-        std::cout << "we have store instruction\n";
-        std::cout << (int)alu_in1 << " " << (int)alu_in2 << std::endl;
+        executeFloat();
+        return;
     }
 
-    // --- EXECUTION ---
     uint32_t instruction = id_ex_reg_.instruction;
     alu::AluOp alu_operation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
     bool overflow;
@@ -458,10 +457,7 @@ void RV5StageVM_H_F::pipeline_execute()
         alu_result = static_cast<uint64_t>(id_ex_reg_.imm << 12);
     }
 
-    if (id_ex_reg_.rd == 3)
-    {
-        std::cout << "ALU result:" << (int)alu_result << std::endl;
-    }
+    
     // Latch data for EX/MEM Register
 
     // Store Data: CRITICAL FORWARDING - Store data must also be forwarded!
@@ -528,7 +524,6 @@ void RV5StageVM_H_F::pipeline_execute()
         {
             ex_mem_reg_.branch_taken = true;
             ex_mem_reg_.branch_target_pc = id_ex_reg_.pc + id_ex_reg_.imm;
-            // program_counter_ = ex_mem_reg_.branch_target_pc;
         }
     }
     // Unconditional Jump Check (JAL/JALR: 1-cycle penalty)
@@ -584,8 +579,6 @@ void RV5StageVM_H_F::pipeline_memory()
     if (ex_mem_reg_.mem_read)
     {
         // Load instruction: Result available at end of this stage (Load-Use still needs 1 NOP stall)
-        std::cout << "Reading memory at address:" << (int)ex_mem_reg_.alu_result << std::endl;
-        //mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
         switch ((mem_wb_reg_.instruction >> 12) & 0b111)
 		{
 		case 0b000:
@@ -658,7 +651,7 @@ void RV5StageVM_H_F::pipeline_writeback()
                                                        write_data});
         }
 
-        //registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+        
         instructions_retired_++; // Instruction successfully retired
 
         switch (mem_wb_reg_.instruction & 0b1111111)
@@ -766,6 +759,11 @@ void RV5StageVM_H_F::Redo()
     std::cout << "VM_REDO_COMPLETED" << std::endl;
 }
 
+
+void RV5StageVM_H_F::executeFloat()
+{
+    
+}
 
 void RV5StageVM_H_F::handle_syscall()
 {

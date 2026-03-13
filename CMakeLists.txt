@@ -5,8 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # This works for Harshit
-set( CMAKE_PREFIX_PATH "D:/QT/6.9.2/mingw_64/lib/cmake")
-set(MINGW_PATH "D:/Qt/Tools/mingw1310_64")
+# set( CMAKE_PREFIX_PATH "D:/QT/6.9.2/mingw_64/lib/cmake")
+# set(MINGW_PATH "D:/Qt/Tools/mingw1310_64")
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets)
 
 # This works for Atharva
@@ -73,7 +73,7 @@ qt_add_executable(RISC_V_Simulator
     ${UI_FILES}
     ${APP_RESOURCES}
 )
-
+set_target_properties(RISC_V_Simulator PROPERTIES OUTPUT_NAME "Kites")
 target_precompile_headers(${PROJECT_NAME} PRIVATE
     <cstdint>
     <string>
@@ -131,16 +131,16 @@ if(ENABLE_TESTS)
     Qt::Widgets
     pthread)
 
-    add_custom_command(TARGET tests POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "$<TARGET_FILE:Qt6::Core>"
-        "$<TARGET_FILE:Qt6::Widgets>"
-        "$<TARGET_FILE:Qt6::Gui>"
-        "${MINGW_PATH}/bin/libstdc++-6.dll"
-        "${MINGW_PATH}/bin/libgcc_s_seh-1.dll"
-        "${MINGW_PATH}/bin/libwinpthread-1.dll"
-        "$<TARGET_FILE_DIR:tests>"
-    )
+    # add_custom_command(TARGET tests POST_BUILD
+    # COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    #     "$<TARGET_FILE:Qt6::Core>"
+    #     "$<TARGET_FILE:Qt6::Widgets>"
+    #     "$<TARGET_FILE:Qt6::Gui>"
+    #     "${MINGW_PATH}/bin/libstdc++-6.dll"
+    #     "${MINGW_PATH}/bin/libgcc_s_seh-1.dll"
+    #     "${MINGW_PATH}/bin/libwinpthread-1.dll"
+    #     "$<TARGET_FILE_DIR:tests>"
+    # )
 
 
     add_custom_target(test_run
