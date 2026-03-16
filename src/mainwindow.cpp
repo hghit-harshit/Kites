@@ -13,6 +13,7 @@
 #include "ui/cachetab.h"
 #include "ui/compilertab.h"
 #include "ui/processor_dialog.h"
+#include "ui/settings_dialog.h"
 #include "vm/vm_manager.h"
 #include "globals.h"
 #include <QActionGroup>
@@ -219,7 +220,7 @@ void MainWindow::setUpMenubar()
 
     preferencesMenu->addAction(lightThemeAction);
     preferencesMenu->addAction(darkThemeAction);
-
+//----------------------------------------------
     settingsMenu->addMenu(processorMenu);
     QAction *wireStayActiveAction = new QAction("Wires Stay Active", this);
     wireStayActiveAction->setCheckable(true);
@@ -232,6 +233,14 @@ void MainWindow::setUpMenubar()
             processorTab->setWiresStayActive(checked);
         }
     });
+//--------------------------------------------------
+    QAction *advancedSettingsAction = new QAction("Advanced Settings", this);
+    connect(advancedSettingsAction,&QAction::triggered,this,[this](){
+        SettingsDialog dialog(this);
+        dialog.setWindowTitle("Advanced Processor Settings");
+        dialog.exec();
+    });
+    settingsMenu->addAction(advancedSettingsAction);
 ///////////Help Menu///////////////////
     helpMenu->addAction(aboutAction);
     
