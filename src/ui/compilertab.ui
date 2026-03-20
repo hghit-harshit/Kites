@@ -28,7 +28,7 @@
      <item>
       <widget class="QPushButton" name="convertToAssemblyButton">
        <property name="text">
-        <string>PushButton</string>
+        <string>Convert to Assembly</string>
        </property>
       </widget>
      </item>
