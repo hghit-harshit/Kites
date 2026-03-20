@@ -1,12 +1,14 @@
 #include "ui/settings_dialog.h"
 #include "ui_settings_dialog.h"
 #include "ui/addpseudo_dialog.h"
+#include "assembler/custom_pseudo_manager.h"
 #include <QTableWidget>
 #include <QPushButton>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QScrollArea>
 #include <QHeaderView>
+#include <QMessageBox>
 namespace Kites
 {
 SettingsDialog::SettingsDialog(QWidget *parent)
@@ -33,6 +35,10 @@ QWidget* SettingsDialog::createCustomPseudoInstPage()
     table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
+    connect(table,&QTableWidget::itemChanged,this,[](QTableWidgetItem* item){
+        item->setToolTip(item->text().trimmed());
+    });
+
     QStringList headerLabels;
     headerLabels << "Pseudo Instruction" << "Expansion";
     table->setHorizontalHeaderLabels(headerLabels);
@@ -47,8 +53,17 @@ QWidget* SettingsDialog::createCustomPseudoInstPage()
         {
             // we will get the new pseudo instruction details from the dialog and add it to the table
             // for now we will just add a dummy row
+            QString errorMessage;
+            if(!CustomPseudoManager::addCustomPseudoInstruction(dialog.getPseudoInstruction(), dialog.getExpansion(), errorMessage))
+            {
+                QMessageBox::critical(nullptr, "Error", errorMessage);
+                return;
+            }
             int rowCount = table->rowCount();
+
             table->insertRow(rowCount);
+            table->setItem(rowCount, 0, new QTableWidgetItem(dialog.getPseudoInstruction()));
+            table->setItem(rowCount, 1, new QTableWidgetItem(dialog.getExpansion()));
         }
     });
 

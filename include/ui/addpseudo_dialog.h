@@ -15,6 +15,8 @@ class AddPseudoDialog : public QDialog
 public:
     explicit AddPseudoDialog(QWidget *parent = nullptr);
     ~AddPseudoDialog();
+    QString getPseudoInstruction() const;
+    QString getExpansion() const;
 
 private:
     void parsePseudoInstruction();

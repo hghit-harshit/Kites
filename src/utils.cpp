@@ -52,7 +52,10 @@ void setupVmStateDirectory()
   {
     std::ofstream(globals::disassembly_file_path).close();
   }
-
+  if (!std::filesystem::exists(globals::custom_pseudo_instructions_file_path))
+  {
+    std::ofstream(globals::custom_pseudo_instructions_file_path).close();
+  }
   if (!std::filesystem::exists(globals::config_file_path))
   {
     SetupConfigFile();

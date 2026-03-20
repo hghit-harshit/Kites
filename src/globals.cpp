@@ -12,6 +12,7 @@ std::filesystem::path globals::registers_dump_file_path = (globals::invokation_p
 std::filesystem::path globals::memory_dump_file_path = (globals::invokation_path / "vm_state" / "memory_dump.json");
 std::filesystem::path globals::cache_dump_file_path = (globals::invokation_path / "vm_state" / "cache_dump.json");
 std::filesystem::path globals::vm_state_dump_file_path = (globals::invokation_path / "vm_state" / "vm_state_dump.json");
+std::filesystem::path globals::custom_pseudo_instructions_file_path = (globals::invokation_path / "vm_state" / "custom_pseudo_instructions.json");
 
 bool globals::verbose_errors_print = false;
 bool globals::verbose_warnings = false;
