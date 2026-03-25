@@ -3,5 +3,6 @@
         <file>icons/icons.qrc</file>
         <file>circuit_designs/circuit_designs.qrc</file>
         <file>fonts/fonts.qrc</file>
+        <file>themes/themes.qrc</file>
     </qresource>
 </RCC>
