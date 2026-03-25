@@ -20,6 +20,7 @@ public:
     void convertToAssemblyClicked();
 private:
     Ui::CompilerTab *ui;
+    QString cleanAssembly(const QString &rawAssembly);
 };
 }
 #endif // COMPILERTAB_H

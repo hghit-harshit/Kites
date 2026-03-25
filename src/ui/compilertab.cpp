@@ -41,7 +41,7 @@ void CompilerTab::convertToAssemblyClicked()
     QString jsonBody = QString(R"({
         "source": "%1",
         "options": {
-            "userArguments": "-O0 -march=rv64gc -mabi=lp64d -fno-exceptions",
+            "userArguments": "-O1 -march=rv64gc -mabi=lp64d -fno-exceptions",
             "filters": {
                 "binary":      false,
                 "directives":  true,
@@ -140,13 +140,84 @@ void CompilerTab::convertToAssemblyClicked()
                            "\n\n";
         finalOutput += asmOutput;
 
-        ui->outputTextEdit->setPlainText(finalOutput);
+        ui->outputTextEdit->setPlainText(cleanAssembly(finalOutput));
 
         reply->deleteLater();
         manager->deleteLater();
     });
 
 
+}
+
+QString CompilerTab::cleanAssembly(const QString &rawAssembly)
+{
+    QStringList result;
+    QStringList lines = rawAssembly.split('\n');
+
+    // Track if we're inside a real code section
+    bool inTextSection = false;
+
+    for (QString line : lines) {
+        QString trimmed = line.trimmed();
+
+        // Skip completely empty lines (keep single blank lines for spacing)
+        if (trimmed.isEmpty()) {
+            if (!result.isEmpty() && !result.last().isEmpty())
+                result << "";
+            continue;
+        }
+
+        // Detect section changes
+        if (trimmed.startsWith(".section")) {
+            inTextSection = trimmed.contains(".text");
+            continue;
+        }
+        if (trimmed == ".text") {
+            inTextSection = true;
+            continue;
+        }
+
+        // Skip all debug sections entirely
+        if (trimmed.startsWith(".debug_") ||
+            trimmed.startsWith(".Ldebug") ||
+            trimmed.startsWith(".Ltext")  ||
+            trimmed.startsWith(".Letext") ||
+            trimmed.startsWith(".LFB")    ||
+            trimmed.startsWith(".LFE")    ||
+            trimmed.startsWith(".LVL"))
+            continue;
+
+        // Skip debug/meta directives
+        if (trimmed.startsWith(".file")       ||
+            trimmed.startsWith(".loc ")        ||
+            trimmed.startsWith(".cfi_")        ||
+            trimmed.startsWith(".option")      ||
+            trimmed.startsWith(".attribute")   ||
+            trimmed.startsWith(".ident")       ||
+            trimmed.startsWith(".size")        ||
+            trimmed.startsWith(".uleb128")     ||
+            trimmed.startsWith(".sleb128")     ||
+            trimmed.startsWith(".4byte")       ||
+            trimmed.startsWith(".2byte")       ||
+            trimmed.startsWith(".byte")        ||
+            trimmed.startsWith(".8byte")       ||
+            trimmed.startsWith(".string")      ||
+            trimmed.startsWith(".LASF")        ||
+            trimmed.startsWith(".note"))
+            continue;
+
+        // Keep .globl, .type, .align — they're useful context
+        // Keep function labels (e.g. "main:")
+        // Keep actual instructions (indented lines)
+
+        result << line;
+    }
+
+    // Remove trailing blank lines
+    while (!result.isEmpty() && result.last().trimmed().isEmpty())
+        result.removeLast();
+
+    return result.join('\n');
 }
 
 CompilerTab::~CompilerTab()
