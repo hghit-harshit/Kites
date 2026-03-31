@@ -37,11 +37,13 @@ private:
     
     static bool parse(ParsedPseudoInstruction &parsedInst, const QString &pseudoInst, const QString &expansion, QString &errorMessage);
     static bool validatePseudoInstruction(const ParsedPseudoInstruction &parsedInst, QString &errorMessage);
+    static bool isValidExpainsionLine(const QString &line, const QStringList& declaredArgs, QString &errorMessage);
     //bool validatePseudoInstructionFormat(const QString &expansion, QString &errorMessage);
     static bool saveToDisk(const QJsonObject &root, QString &errorMessage);
     static QJsonObject loadFromDisk(QString &errorMessage);
     static bool updateCustomPseudoInstruction(const QString &pseudoInst, const QString &newExpansion, QString &errorMessage);
     static bool instructionExists(const QString &pseudoInst);
+    static std::string expandPseudoInstruction(const std::string& source);
 
 
 };
