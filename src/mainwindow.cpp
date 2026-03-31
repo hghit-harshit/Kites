@@ -107,10 +107,14 @@ void MainWindow::setUpToolBar()
     QAction *pauseAction = new QAction("Pause",this);
     QAction *debugAction = new QAction("Debug Run",this);
     QAction *stepAction = new QAction("Step", this);
+    QAction *undoAction = new QAction("Undo", this);
+    QAction *redoAction = new QAction("Redo", this);
     
     
     stepAction->setDisabled(true);
     pauseAction->setDisabled(true); 
+    undoAction->setDisabled(true);
+    redoAction->setDisabled(true);
 
     //------------Spinbox for setting execution speed----------------
     QSpinBox *spinbox = new QSpinBox(this);
@@ -128,6 +132,9 @@ void MainWindow::setUpToolBar()
     toolbar->addAction(spinboxAction);
     toolbar->addAction(pauseAction);
     toolbar->addAction(stepAction);
+    toolbar->addSeparator();
+    toolbar->addAction(undoAction);
+    toolbar->addAction(redoAction);
     
 
     connect(runAction,&QAction::triggered,this,[this,processorAction,
@@ -172,6 +179,8 @@ void MainWindow::setUpToolBar()
     });
 
     //connect(stepAction,&QAction::triggered,this,&MainWindow::step);
+    connect(undoAction,&QAction::triggered,m_vmManager,&VMManager::undo);
+    connect(redoAction,&QAction::triggered,m_vmManager,&VMManager::redo);
 }
 
 void MainWindow::setUpSidebar()
@@ -181,10 +190,19 @@ void MainWindow::setUpSidebar()
     m_sidebar->addItem("Processor");    
     m_sidebar->addItem("Cache");
     m_sidebar->addItem("Compiler");
+    m_sidebar->addItem("Profiler");
     m_sidebar->setFixedWidth(80);
     m_sidebar->setCurrentRow(0);
+    //m_sidebar->setFocusPolicy(Qt::ClickFocus);
 
     connect(m_sidebar, &QListWidget::currentRowChanged, m_stackedTabs, &QStackedWidget::setCurrentIndex);
+
+    QPalette p = m_sidebar->palette();
+
+    p.setColor(QPalette::Highlight, QColor("#2ecc71"));
+    p.setColor(QPalette::HighlightedText, Qt::white);
+
+    m_sidebar->setPalette(p);
 }
 
 void MainWindow::setUpMenubar()
@@ -425,47 +443,121 @@ void MainWindow::runFinishedSlot()
     //we also reset the 
 }
 
+
+
 void MainWindow::setUpPalettes()
 {
-    m_palettes[Theme::Light].setColor(QPalette::Window, Qt::white);
-    m_palettes[Theme::Light].setColor(QPalette::WindowText, Qt::black);
-    m_palettes[Theme::Light].setColor(QPalette::Base, QColor(245, 245, 245));
-    m_palettes[Theme::Light].setColor(QPalette::AlternateBase, Qt::white);
-    m_palettes[Theme::Light].setColor(QPalette::ToolTipBase, Qt::white);
-    m_palettes[Theme::Light].setColor(QPalette::ToolTipText, Qt::black);
-    m_palettes[Theme::Light].setColor(QPalette::Text, Qt::black);
-    m_palettes[Theme::Light].setColor(QPalette::Button, Qt::white);
-    m_palettes[Theme::Light].setColor(QPalette::ButtonText, Qt::black);
-    m_palettes[Theme::Light].setColor(QPalette::Highlight, QColor(42, 130, 218));
-    m_palettes[Theme::Light].setColor(QPalette::HighlightedText, Qt::white);
-    // Disabled state for Light theme
-    m_palettes[Theme::Light].setColor(QPalette::Disabled, QPalette::Button, QColor(220, 220, 220)); // light grey
-    m_palettes[Theme::Light].setColor(QPalette::Disabled, QPalette::ButtonText, QColor(150, 150, 150)); // dark grey text
-    m_palettes[Theme::Light].setColor(QPalette::Disabled, QPalette::Text, QColor(150, 150, 150));
-    m_palettes[Theme::Light].setColor(QPalette::Disabled, QPalette::WindowText, QColor(150, 150, 150));
+    // m_palettes[Theme::Light].setColor(QPalette::Window, Qt::white);
+    // m_palettes[Theme::Light].setColor(QPalette::WindowText, Qt::black);
+    // m_palettes[Theme::Light].setColor(QPalette::Base, QColor(245, 245, 245));
+    // m_palettes[Theme::Light].setColor(QPalette::AlternateBase, Qt::white);
+    // m_palettes[Theme::Light].setColor(QPalette::ToolTipBase, Qt::white);
+    // m_palettes[Theme::Light].setColor(QPalette::ToolTipText, Qt::black);
+    // m_palettes[Theme::Light].setColor(QPalette::Text, Qt::black);
+    // m_palettes[Theme::Light].setColor(QPalette::Button, Qt::white);
+    // m_palettes[Theme::Light].setColor(QPalette::ButtonText, Qt::black);
+    // m_palettes[Theme::Light].setColor(QPalette::Highlight, QColor(42, 130, 218));
+    // m_palettes[Theme::Light].setColor(QPalette::HighlightedText, Qt::white);
+    // // Disabled state for Light theme
+    // m_palettes[Theme::Light].setColor(QPalette::Disabled, QPalette::Button, QColor(220, 220, 220)); // light grey
+    // m_palettes[Theme::Light].setColor(QPalette::Disabled, QPalette::ButtonText, QColor(150, 150, 150)); // dark grey text
+    // m_palettes[Theme::Light].setColor(QPalette::Disabled, QPalette::Text, QColor(150, 150, 150));
+    // m_palettes[Theme::Light].setColor(QPalette::Disabled, QPalette::WindowText, QColor(150, 150, 150));
 
 
-    // --- Define the Dark Palette ---
-    m_palettes[Theme::Dark].setColor(QPalette::Window, QColor(53, 53, 53));
-    m_palettes[Theme::Dark].setColor(QPalette::WindowText, Qt::white);
-    m_palettes[Theme::Dark].setColor(QPalette::Base, QColor(25, 25, 25));
-    m_palettes[Theme::Dark].setColor(QPalette::AlternateBase, QColor(53, 53, 53));
-    m_palettes[Theme::Dark].setColor(QPalette::Text, Qt::white);
-    m_palettes[Theme::Dark].setColor(QPalette::Button, QColor(53, 53, 53));
-    m_palettes[Theme::Dark].setColor(QPalette::ButtonText, Qt::white);
-    m_palettes[Theme::Dark].setColor(QPalette::Highlight, QColor(42, 130, 218));
-    m_palettes[Theme::Dark].setColor(QPalette::HighlightedText, Qt::black);
-    // Disabled state for Dark theme
-    m_palettes[Theme::Dark].setColor(QPalette::Disabled, QPalette::Button, QColor(70, 70, 70)); // subtle grey
-    m_palettes[Theme::Dark].setColor(QPalette::Disabled, QPalette::ButtonText, QColor(120, 120, 120)); // lighter grey
-    m_palettes[Theme::Dark].setColor(QPalette::Disabled, QPalette::Text, QColor(120, 120, 120));
-    m_palettes[Theme::Dark].setColor(QPalette::Disabled, QPalette::WindowText, QColor(120, 120, 120));
+    // // --- Define the Dark Palette ---
+    // m_palettes[Theme::Dark].setColor(QPalette::Window, QColor(53, 53, 53));
+    // m_palettes[Theme::Dark].setColor(QPalette::WindowText, Qt::white);
+    // m_palettes[Theme::Dark].setColor(QPalette::Base, QColor(25, 25, 25));
+    // m_palettes[Theme::Dark].setColor(QPalette::AlternateBase, QColor(53, 53, 53));
+    // m_palettes[Theme::Dark].setColor(QPalette::Text, Qt::white);
+    // m_palettes[Theme::Dark].setColor(QPalette::Button, QColor(53, 53, 53));
+    // m_palettes[Theme::Dark].setColor(QPalette::ButtonText, Qt::white);
+    // m_palettes[Theme::Dark].setColor(QPalette::Highlight, QColor(42, 130, 218));
+    // m_palettes[Theme::Dark].setColor(QPalette::HighlightedText, Qt::black);
 
+    // // Disabled state for Dark theme
+    // m_palettes[Theme::Dark].setColor(QPalette::Disabled, QPalette::Button, QColor(70, 70, 70)); // subtle grey
+    // m_palettes[Theme::Dark].setColor(QPalette::Disabled, QPalette::ButtonText, QColor(120, 120, 120)); // lighter grey
+    // m_palettes[Theme::Dark].setColor(QPalette::Disabled, QPalette::Text, QColor(120, 120, 120));
+    // m_palettes[Theme::Dark].setColor(QPalette::Disabled, QPalette::WindowText, QColor(120, 120, 120));
+
+    {
+        QPalette& p = m_palettes[Theme::Light];
+
+        // Active / normal groups
+        p.setColor(QPalette::Window,          QColor(0xFF, 0xFF, 0xFF));
+        p.setColor(QPalette::WindowText,      QColor(0x1A, 0x1A, 0x1A));
+        p.setColor(QPalette::Base,            QColor(0xF5, 0xF5, 0xF5));
+        p.setColor(QPalette::AlternateBase,   QColor(0xFF, 0xFF, 0xFF));
+        p.setColor(QPalette::ToolTipBase,     QColor(0xFF, 0xFF, 0xFF));
+        p.setColor(QPalette::ToolTipText,     QColor(0x1A, 0x1A, 0x1A));
+        p.setColor(QPalette::Text,            QColor(0x1A, 0x1A, 0x1A));
+        p.setColor(QPalette::Button,          QColor(0xF0, 0xF0, 0xF0));
+        p.setColor(QPalette::ButtonText,      QColor(0x1A, 0x1A, 0x1A));
+        p.setColor(QPalette::Highlight,       QColor(0x2A, 0x82, 0xDA));
+        p.setColor(QPalette::HighlightedText, QColor(0xFF, 0xFF, 0xFF));
+        p.setColor(QPalette::Link,            QColor(0x2A, 0x82, 0xDA));
+
+        // Disabled group
+        p.setColor(QPalette::Disabled, QPalette::Window,     QColor(0xEC, 0xEC, 0xEC));
+        p.setColor(QPalette::Disabled, QPalette::WindowText, QColor(0x96, 0x96, 0x96));
+        p.setColor(QPalette::Disabled, QPalette::Base,       QColor(0xEC, 0xEC, 0xEC));
+        p.setColor(QPalette::Disabled, QPalette::Text,       QColor(0x96, 0x96, 0x96));
+        p.setColor(QPalette::Disabled, QPalette::Button,     QColor(0xDC, 0xDC, 0xDC));
+        p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(0x96, 0x96, 0x96));
+
+        p.setColor(QPalette::Inactive, QPalette::Highlight, Qt::transparent);
+        p.setColor(QPalette::Inactive, QPalette::HighlightedText, Qt::black);
+    }
+
+    // ── Dark ──────────────────────────────────────────────────────────────
+    {
+        QPalette& p = m_palettes[Theme::Dark];
+
+        p.setColor(QPalette::Window,          QColor(0x35, 0x35, 0x35));
+        p.setColor(QPalette::WindowText,      QColor(0xF0, 0xF0, 0xF0));
+        p.setColor(QPalette::Base,            QColor(0x19, 0x19, 0x19));
+        p.setColor(QPalette::AlternateBase,   QColor(0x25, 0x25, 0x25));
+        p.setColor(QPalette::ToolTipBase,     QColor(0x45, 0x45, 0x45));
+        p.setColor(QPalette::ToolTipText,     QColor(0xF0, 0xF0, 0xF0));
+        p.setColor(QPalette::Text,            QColor(0xF0, 0xF0, 0xF0));
+        p.setColor(QPalette::Button,          QColor(0x45, 0x45, 0x45));
+        p.setColor(QPalette::ButtonText,      QColor(0xF0, 0xF0, 0xF0));
+        p.setColor(QPalette::Highlight,       QColor(0x2A, 0x82, 0xDA));
+        p.setColor(QPalette::HighlightedText, QColor(0x00, 0x00, 0x00));
+        p.setColor(QPalette::Link,            QColor(0x2A, 0x82, 0xDA));
+
+        // Disabled group
+        p.setColor(QPalette::Disabled, QPalette::Window,     QColor(0x2A, 0x2A, 0x2A));
+        p.setColor(QPalette::Disabled, QPalette::WindowText, QColor(0x78, 0x78, 0x78));
+        p.setColor(QPalette::Disabled, QPalette::Base,       QColor(0x2A, 0x2A, 0x2A));
+        p.setColor(QPalette::Disabled, QPalette::Text,       QColor(0x78, 0x78, 0x78));
+        p.setColor(QPalette::Disabled, QPalette::Button,     QColor(0x46, 0x46, 0x46));
+        p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(0x78, 0x78, 0x78));
+    }
+
+}
+
+QString loadStyleSheet(const QString& path)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "ThemeManager: failed to load stylesheet:" << path;
+        return {};
+    }
+    return QString::fromUtf8(file.readAll());
 }
 
 void MainWindow::toggleTheme(Theme theme)
 {
     QApplication::setPalette(m_palettes[theme]);
+
+    // const QString path = (theme == Theme::Dark)
+    //                      ? QStringLiteral(":/themes/dark.qss")
+    //                      : QStringLiteral(":/themes/light.qss");
+
+    // qApp->setStyleSheet(loadStyleSheet(path));
 }
 
 MainWindow::~MainWindow()
