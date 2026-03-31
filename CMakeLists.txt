@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # This works for Harshit
 # set( CMAKE_PREFIX_PATH "D:/QT/6.9.2/mingw_64/lib/cmake")
 # set(MINGW_PATH "D:/Qt/Tools/mingw1310_64")
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Network)
 
 # This works for Atharva
 # set(CMAKE_PREFIX_PATH "/home/atharv/Qt/6.10.0/gcc_64")
@@ -54,6 +54,7 @@ resources/resources.qrc
 resources/circuit_designs/circuit_designs.qrc
 resources/icons/icons.qrc
 resources/fonts/fonts.qrc
+resources/themes/themes.qrc
 )
 ##############################################
 
@@ -87,6 +88,7 @@ target_link_libraries(RISC_V_Simulator
     PRIVATE
         Qt::Core
         Qt::Widgets
+        Qt::Network
         #vsrtl::vsrtl
 )
 
