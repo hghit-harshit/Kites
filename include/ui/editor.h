@@ -49,7 +49,14 @@ class Editor : public QPlainTextEdit
     LineNumberArea* m_lineNumberArea = nullptr;
 };
 
-
+class DisassemblyEditor : public Editor
+{
+    public:
+        DisassemblyEditor(QWidget* parent = nullptr) : Editor(parent, false)
+        {
+            setReadOnly(true);
+        }
+};
 
 class LineNumberArea : public QWidget
 {

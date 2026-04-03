@@ -1,46 +1,52 @@
 #include "ui/editortab.h"
-#include <QSplitter>
-#include <QBoxLayout>
+#include "ui_editortab.h"
+#include "assembler/custom_pseudo_manager.h"
 #include <QFile>
 #include <QJsonObject>
-#include <QJsonDocument>
 #include <QJsonArray>
-#include <QTextBlock>
-#include <QTextEdit>
+
 namespace Kites
 {
+
 EditorTab::EditorTab(QWidget* parent, VMManager* vmManager)
     : KitesTab(parent)
     , m_vmManager(vmManager)
+    , ui(new Ui::EditorTab)
 {
-    QSplitter* mainsplitter = new QSplitter(Qt::Horizontal, this);
-     
-    m_editor = new Editor(this);
+    ui->setupUi(this);
+    ui->editorViewButton->setChecked(true); // default to editor view
+    ui->stackedWidget->setCurrentIndex(0); // show editor view by default   
+
+    ui->stackedWidget->layout()->setContentsMargins(0, 0, 0, 0);
+    ui->stackedWidget->layout()->setSpacing(0);
+    ui->stackedWidget->widget(0)->layout()->setContentsMargins(0, 0, 0, 0);
+    ui->stackedWidget->widget(1)->layout()->setContentsMargins(0, 0, 0, 0);
+
+    m_editor = ui->assemblyTextEdit;
+    m_disassemblyView = ui->disassemblyTextEdit;
+    m_expandedView = ui->expandedTextEdit;
+    m_expandedView->setReadOnly(true);
     m_editor->setPlaceholderText("Enter your code here...");
     m_squiggleFormat.setUnderlineStyle(QTextCharFormat::WaveUnderline);
     m_squiggleFormat.setUnderlineColor(Qt::red);
-    //m_editor->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
-    //m_editor->setStyleSheet("background-color:#0b0f14; color:#b8fbb8;");
 
-    mainsplitter->addWidget(m_editor);
+    connect(ui->expandedViewButton, &QRadioButton::toggled, this, [this](bool checked){
+        if(checked)
+        {
+            std::string expandedCode = CustomPseudoManager::expandPseudoInstruction(getRawText());
+            m_expandedView->setPlainText(QString::fromStdString(expandedCode));
+            ui->stackedWidget->setCurrentIndex(1);
+        }
+        else
+        {
+            ui->stackedWidget->setCurrentIndex(0);
+        }
+    });
+}
 
-    m_disassemblyView = new Editor(this,false);
-    m_disassemblyView->setReadOnly(true);
-    //m_disassemblyView->setPlaceholderText("Disassembled code will appear here...");
-    //m_disassemblyView->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
-    //m_disassemblyView->setStyleSheet("background-color:#0b0f14; color:#b8fbb8;");
-    mainsplitter->addWidget(m_disassemblyView);
-
-    // m_registerContainer = new RegisterContainer(this);
-    // mainsplitter->addWidget(m_registerContainer);
-
-    //mainsplitter->setSizes({200, 100});
-    // -----------------------
-
-    // You also need to add the splitter to your tab's layout
-    QHBoxLayout* layout = new QHBoxLayout(this);
-    layout->addWidget(mainsplitter);
-    this->setLayout(layout);
+EditorTab::~EditorTab()
+{
+    delete ui;
 }
 
 std::string EditorTab::getRawText()
