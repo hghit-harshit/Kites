@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 project(RISC_V_Simulator LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # This works for Harshit
@@ -131,6 +131,7 @@ if(ENABLE_TESTS)
     GTest::gmock_main
     Qt::Core
     Qt::Widgets
+    Qt::Network
     pthread)
 
     # add_custom_command(TARGET tests POST_BUILD
