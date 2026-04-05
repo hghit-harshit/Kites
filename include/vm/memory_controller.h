@@ -9,7 +9,7 @@
 
 #include "../config.h"
 #include "main_memory.h"
-#include "cache/direct_map_cache.h"
+#include "cache/cache.h"
 #include <QObject>
 #include <iostream>
 #include <string>
@@ -24,15 +24,19 @@ class MemoryController : public QObject
   Q_OBJECT
 private:
     Memory memory_; ///< The main memory object.
-    DirectMapCache cache_; ///< The cache object for faster memory access.
+    Cache  l1_cache_; ///< The cache object for faster memory access.
+    Cache  l2_cache_; ///< The second level cache object for even faster memory access.
+    //Cache instruction_cache_; ///< The cache object for instructions.
 
 public:
-    MemoryController():cache_(memory_)
+    MemoryController():l2_cache_(memory_), l1_cache_(l2_cache_)
     {
     }
 
     void Reset() {
         memory_.Reset();
+        l1_cache_.Reset();
+        l2_cache_.Reset();
         emit memoryResetSignal(); // this will notify views to reset themselves
     }
 
@@ -40,39 +44,39 @@ public:
     }
 
     void WriteByte(uint64_t address, uint8_t value) {
-      cache_.WriteByte(address, value);
+      l1_cache_.WriteByte(address, value);
       emit memoryUpdated(address);
     }
 
     void WriteHalfWord(uint64_t address, uint16_t value) {
-      cache_.WriteHalfWord(address, value);
+      l1_cache_.WriteHalfWord(address, value);
       emit memoryUpdated(address);
     }
 
     void WriteWord(uint64_t address, uint32_t value) {
-      cache_.WriteWord(address, value);
+      l1_cache_.WriteWord(address, value);
       emit memoryUpdated(address);
     }
 
     void WriteDoubleWord(uint64_t address, uint64_t value) {
-      cache_.WriteDoubleWord(address, value);
+      l1_cache_.WriteDoubleWord(address, value);
       emit memoryUpdated(address);
     }
 
     [[nodiscard]] uint8_t ReadByte(uint64_t address) {
-        return cache_.ReadByte(address);
+        return l1_cache_.ReadByte(address);
     }
 
     [[nodiscard]] uint16_t ReadHalfWord(uint64_t address) {
-        return cache_.ReadHalfWord(address);
+        return l1_cache_.ReadHalfWord(address);
     }
 
     [[nodiscard]] uint32_t ReadWord(uint64_t address) {
-        return cache_.ReadWord(address);
+        return l1_cache_.ReadWord(address);
     }
 
     [[nodiscard]] uint64_t ReadDoubleWord(uint64_t address) {
-        return cache_.ReadDoubleWord(address);
+        return l1_cache_.ReadDoubleWord(address);
     }
 
     // Functions to read memory directly with cache bypass
@@ -105,7 +109,9 @@ public:
       return memory_.GetMemoryPoint(address);
     }
 
-    DirectMapCache* GetCache() { return &cache_; }
+    Cache* GetL1Cache() { return &l1_cache_; }
+    Cache* GetL2Cache() { return &l2_cache_; }
+    //Cache* GetCache() { return &l1_cache_; }
     signals:
     void memoryUpdated(uint64_t address);
     void memoryResetSignal();
