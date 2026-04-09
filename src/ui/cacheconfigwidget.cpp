@@ -20,9 +20,9 @@ CacheConfigWidget::CacheConfigWidget(QWidget *parent)
 CacheConfig CacheConfigWidget::GetConfig() const
 {
     CacheConfig config;
-    config.num_lines = ui->linesSpinBox->value();
-    config.block_size = ui->wordsSpinBox->value();
-    config.num_ways = ui->waysSpinBox->value();
+    config.num_lines  = 1ULL << ui->linesSpinBox->value();
+    config.block_size = 1ULL << ui->wordsSpinBox->value();
+    config.num_ways = 1ULL << ui->waysSpinBox->value();
     config.write_policy = ui->writeHitComboBox->currentIndex() == 0 ? WritePolicy::WriteThrough : WritePolicy::WriteBack;
     config.allocation_policy = ui->writeMissComboBox->currentIndex() == 0 ? AllocationPolicy::WriteAllocate : AllocationPolicy::NoWriteAllocate;
     config.replacement_policy = ui->repPolComboBox->currentIndex() == 0 ? ReplacementPolicy::LRU : ReplacementPolicy::FIFO;
