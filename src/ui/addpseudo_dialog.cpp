@@ -40,6 +40,13 @@ void AddPseudoDialog::parsePseudoInstruction()
         return;
     }
 
+    QString errorMessage;
+    if(!CustomPseudoManager::addCustomPseudoInstruction(getPseudoInstruction(), getExpansion(), errorMessage))
+    {
+        QMessageBox::critical(nullptr, "Error", errorMessage);
+        return;
+    }
+
    
     accept();
 }
