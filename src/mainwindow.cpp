@@ -12,6 +12,7 @@
 #include "ui/processortab.h"
 #include "ui/cachetab.h"
 #include "ui/compilertab.h"
+#include "ui/profilertab.h"
 #include "ui/processor_dialog.h"
 #include "ui/settings_dialog.h"
 #include "vm/vm_manager.h"
@@ -321,6 +322,7 @@ void MainWindow::setUpTabs()
     m_tabs[TabIndex::ProcessorTabIndex] = new ProcessorTab(this,m_vmManager); //will add later
     m_tabs[TabIndex::CacheTabIndex] = new CacheTab(this,m_vmManager->getMemoryController());
     m_tabs[TabIndex::CompilerTabIndex] = new CompilerTab(this);
+    m_tabs[TabIndex::ProfilerTabIndex] = new ProfilerTab(this);
     //a little experiment 
     connect(this,&MainWindow::vmChangedSignal,
             dynamic_cast<ProcessorTab*>(m_tabs[TabIndex::ProcessorTabIndex]),
@@ -331,6 +333,7 @@ void MainWindow::setUpTabs()
     m_stackedTabs->addWidget(m_tabs[TabIndex::ProcessorTabIndex]);
     m_stackedTabs->addWidget(m_tabs[TabIndex::CacheTabIndex]);
     m_stackedTabs->addWidget(m_tabs[TabIndex::CompilerTabIndex]);
+    m_stackedTabs->addWidget(m_tabs[TabIndex::ProfilerTabIndex]);
 }
 
 bool MainWindow::tryParseAndLoadProgram()
