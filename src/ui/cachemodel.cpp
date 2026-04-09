@@ -52,7 +52,7 @@ int CacheModel::rowCount(const QModelIndex &parent) const
 
 int CacheModel::columnCount(const QModelIndex &parent) const
 {
-    return 10;
+    return 4 + NumberOfWordColumns(); // Index, Valid, Dirty, Tag + Data columns
 }
 
 QVariant CacheModel::data(const QModelIndex &index, int role) const
@@ -171,6 +171,15 @@ QVariant CacheModel::headerData(int section, Qt::Orientation orientation, int ro
         }
     }
     return QVariant();
+}
+
+void CacheModel::updateCacheConfig(CacheConfig newConfig)
+{
+    beginResetModel();
+    num_sets_ = newConfig.num_lines;
+    num_ways_ = newConfig.num_ways;
+    block_size_ = newConfig.block_size;
+    endResetModel();
 }
 
 void CacheModel::updateCacheData(uint64_t address)
