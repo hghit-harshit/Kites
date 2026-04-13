@@ -13,7 +13,7 @@ class DirectMapCache;
 
 
 static constexpr size_t LINE_SIZE = 8; // 8 bytes per cache line
-static constexpr size_t CACHE_SIZE = 128; // 128 bytes of cache
+static constexpr size_t CACHE_SIZE = 2; // 128 bytes of cache
 static constexpr size_t NUM_LINES = CACHE_SIZE / LINE_SIZE; // Number of cache lines
 
 struct CacheLine
@@ -23,7 +23,7 @@ struct CacheLine
     uint64_t tag = 0;
     std::vector<uint8_t> data{};
 
-    explicit CacheLine(size_t block_size) : data(block_size, 0) {}
+    explicit CacheLine(size_t block_size) : data(block_size*4, 0) {}
 };
 
 /**
@@ -47,8 +47,8 @@ public:
 
     //When next level is memory
     Cache(Memory& memory, 
-        size_t cache_size                    = CACHE_SIZE, 
-        size_t block_size                    = LINE_SIZE, 
+        size_t num_sets                      = 1, 
+        size_t block_size                    = 4, 
         size_t num_ways                      = 1,
         WritePolicy write_policy             = WritePolicy::WriteThrough, 
         AllocationPolicy allocation_policy   = AllocationPolicy::WriteAllocate,
@@ -56,8 +56,8 @@ public:
         
     //When next level is another cache
     Cache(Cache& next_level_cache, 
-        size_t cache_size                    = CACHE_SIZE, 
-        size_t block_size                    = LINE_SIZE, 
+        size_t num_sets                      = 1, 
+        size_t block_size                    = 4, 
         size_t num_ways                      = 1,
         WritePolicy write_policy             = WritePolicy::WriteThrough, 
         AllocationPolicy allocation_policy   = AllocationPolicy::WriteAllocate,
@@ -85,6 +85,8 @@ public:
     //Statistics
     size_t GetHits() const   { return hits_; }
     size_t GetMisses() const { return misses_; }
+    double GetHitRate() const { size_t total = hits_ + misses_; return total > 0 ? static_cast<double>(hits_) / total : 0.0; }
+    double GetMissRate() const { size_t total = hits_ + misses_; return total > 0 ? static_cast<double>(misses_) / total : 0.0; }
 
     size_t GetNumSets() const { return num_sets_; }
     size_t GetNumWays() const { return num_ways_; }
@@ -140,7 +142,7 @@ private:
     std::vector<SetMetaData> sets_metadata_;   // metadata for each set
     
     size_t             num_ways_;
-    size_t             block_size_;
+    size_t             block_size_; // no of words per cache line
     size_t             num_sets_;
     WritePolicy        write_policy_;
     AllocationPolicy   allocation_policy_;
@@ -159,5 +161,5 @@ private:
     void SetupCache(size_t cache_size, size_t block_size, size_t num_ways); //common setup function for both constructors
     signals:
         void CacheLineUpdatedSignal(uint64_t address);
-        void CacheReconfiguredSignal();
+        void CacheReconfiguredSignal(CacheConfig newConfig);
 };

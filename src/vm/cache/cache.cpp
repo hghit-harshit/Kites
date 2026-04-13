@@ -1,17 +1,17 @@
 #include "vm/cache/cache.h"
 
-void Cache::SetupCache(size_t cache_size, size_t block_size, size_t num_ways)
+void Cache::SetupCache(size_t num_sets, size_t block_size, size_t num_ways)
 {
 
-    assert(cache_size % (block_size * num_ways) == 0 && "Cache size must be divisible by block size times number of ways");
+    //assert(cache_size % (block_size * num_ways) == 0 && "Cache size must be divisible by block size times number of ways");
 
-    num_sets_ = cache_size / (block_size * num_ways);
+    num_sets_ = num_sets;
     block_size_ = block_size;
     num_ways_ = num_ways;
 
-    offset_bits_ = std::countr_zero(block_size);
+    offset_bits_ = std::countr_zero(block_size*4); // number of bytes in a cache line, assuming block_size is in words (4 bytes)
     set_bits_ = std::countr_zero(num_sets_);
-    offset_mask_ = block_size - 1;
+    offset_mask_ = (block_size*4) - 1;
     set_mask_ = num_sets_ - 1;
 
     sets_.clear();
@@ -26,7 +26,7 @@ void Cache::SetupCache(size_t cache_size, size_t block_size, size_t num_ways)
 
 }
 
-Cache::Cache(Memory& memory, size_t cache_size, 
+Cache::Cache(Memory& memory, size_t  num_sets, 
     size_t block_size, size_t num_ways, WritePolicy write_policy, 
     AllocationPolicy allocation_policy, ReplacementPolicy replacement_policy)
     : memory_(&memory), 
@@ -35,10 +35,10 @@ Cache::Cache(Memory& memory, size_t cache_size,
     allocation_policy_(allocation_policy), 
     replacement_policy_(replacement_policy)
 {
-    SetupCache(cache_size, block_size, num_ways);
+    SetupCache(num_sets, block_size, num_ways);
 }
 
-Cache::Cache(Cache& next_level_cache, size_t cache_size, 
+Cache::Cache(Cache& next_level_cache, size_t num_sets, 
     size_t block_size, size_t num_ways, WritePolicy write_policy, 
     AllocationPolicy allocation_policy, ReplacementPolicy replacement_policy)
     : memory_(nullptr), 
@@ -47,7 +47,7 @@ Cache::Cache(Cache& next_level_cache, size_t cache_size,
     allocation_policy_(allocation_policy), 
     replacement_policy_(replacement_policy)
 {
-    SetupCache(cache_size, block_size, num_ways);
+    SetupCache(num_sets, block_size, num_ways);
 }
 
 void Cache::Reconfigure(CacheConfig new_config)
@@ -56,8 +56,8 @@ void Cache::Reconfigure(CacheConfig new_config)
     write_policy_ = new_config.write_policy;
     allocation_policy_ = new_config.allocation_policy;
     replacement_policy_ = new_config.replacement_policy;
-    SetupCache(new_config.num_lines * new_config.block_size * new_config.num_ways, new_config.block_size, new_config.num_ways);
-    emit CacheReconfiguredSignal(); 
+    SetupCache(new_config.num_lines, new_config.block_size, new_config.num_ways);
+    emit CacheReconfiguredSignal(new_config); 
 }
 
 const CacheLine& Cache::GetCacheLine(size_t set_index, size_t way_index) const
@@ -188,7 +188,7 @@ void Cache::WriteBack(size_t set_index, size_t way_index)
     if(line.valid && line.dirty)
     {
         uint64_t block_start_address = (line.tag << (set_bits_ + offset_bits_)) | (set_index << offset_bits_);
-        for(size_t i = 0; i < block_size_; ++i)
+        for(size_t i = 0; i < block_size_*4; ++i)
         {
             WriteByteToNextLevel(block_start_address + i, line.data[i]);
         }
