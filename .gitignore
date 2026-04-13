@@ -13,4 +13,5 @@ cmake-build-debug/
 TODO.md
 *.autosave
 CMakeLists.txt.user
+/vm_state
 .*
