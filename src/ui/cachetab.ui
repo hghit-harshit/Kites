@@ -21,7 +21,7 @@
      </property>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="L1Tab">
        <attribute name="title">
@@ -33,7 +33,7 @@
           <property name="orientation">
            <enum>Qt::Orientation::Horizontal</enum>
           </property>
-          <widget class="QWidget" name="">
+          <widget class="QWidget" name="layoutWidget">
            <layout class="QVBoxLayout" name="verticalLayout_2">
             <item>
              <widget class="CacheConfigWidget" name="L1Config" native="true"/>
@@ -68,7 +68,7 @@
           <property name="orientation">
            <enum>Qt::Orientation::Horizontal</enum>
           </property>
-          <widget class="QWidget" name="">
+          <widget class="QWidget" name="layoutWidget">
            <layout class="QVBoxLayout" name="verticalLayout_3">
             <item>
              <widget class="CacheConfigWidget" name="L2Config" native="true"/>
