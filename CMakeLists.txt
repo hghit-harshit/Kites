@@ -122,6 +122,7 @@ if(ENABLE_TESTS)
     ${SRC_FILES}
     ${UI_FILES}
     ${TEST_FILES})
+
     target_include_directories(tests PRIVATE 
     ${INCLUDE_DIR} 
     "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_autogen/include")
@@ -133,6 +134,10 @@ if(ENABLE_TESTS)
     Qt::Widgets
     Qt::Network
     pthread)
+
+    if(DISABLE_GUI)
+    target_compile_definitions(tests PRIVATE DISABLE_GUI)
+    endif()
 
     # add_custom_command(TARGET tests POST_BUILD
     # COMMAND ${CMAKE_COMMAND} -E copy_if_different
