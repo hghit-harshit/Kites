@@ -19,12 +19,13 @@ class CacheModel : public QAbstractTableModel
         void AttachCache(Cache* cache);
     public slots:
         void updateCacheData(uint64_t address);
+        void updateCacheConfig(CacheConfig newConfig);
 
     private:
 
         size_t RowToSetIndex(int row) const { return row / num_ways_; }
         size_t RowToWayIndex(int row) const { return row % num_ways_; }
-        int NumberOfWordColumns() const { return static_cast<int>(block_size_ / 4); } // number of 4-byte words in a cache line
+        int NumberOfWordColumns()     const { return static_cast<int>(block_size_ ); } // number of 4-byte words in a cache line
 
         static constexpr int COL_INDEX = 0;
         static constexpr int COL_VALID = 1;
@@ -37,8 +38,7 @@ class CacheModel : public QAbstractTableModel
         size_t num_ways_ = 0;
         size_t block_size_ = 0;
     
-    // do not use scoped enum here since we want to use the enum values as integers for column indexing
-    // ohterwise we would have to static_cast every time we want to use the enum values as integers
+    
    
     
 };
