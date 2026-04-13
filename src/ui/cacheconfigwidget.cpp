@@ -1,5 +1,6 @@
 #include "ui/cacheconfigwidget.h"
 #include "ui_cacheconfigwidget.h"
+#include <QSignalBlocker>
 
 namespace Kites
 {
@@ -27,6 +28,59 @@ CacheConfig CacheConfigWidget::GetConfig() const
     config.allocation_policy = ui->writeMissComboBox->currentIndex() == 0 ? AllocationPolicy::WriteAllocate : AllocationPolicy::NoWriteAllocate;
     config.replacement_policy = ui->repPolComboBox->currentIndex() == 0 ? ReplacementPolicy::LRU : ReplacementPolicy::FIFO;
     return config;
+}
+
+int CacheConfigWidget::GetLinesExponent() const
+{
+    return ui->linesSpinBox->value();
+}
+
+int CacheConfigWidget::GetWaysExponent() const
+{
+    return ui->waysSpinBox->value();
+}
+
+int CacheConfigWidget::GetWordsExponent() const
+{
+    return ui->wordsSpinBox->value();
+}
+
+void CacheConfigWidget::SetLinesExponent(int value, bool notify)
+{
+    if (notify)
+    {
+        ui->linesSpinBox->setValue(value);
+        return;
+    }
+
+    //blocking signal as we are changing the value programmatically 
+    //and don't want to trigger configChanged signal
+    QSignalBlocker blocker(ui->linesSpinBox);
+    ui->linesSpinBox->setValue(value);
+}
+
+void CacheConfigWidget::SetWaysExponent(int value, bool notify)
+{
+    if (notify)
+    {
+        ui->waysSpinBox->setValue(value);
+        return;
+    }
+
+    QSignalBlocker blocker(ui->waysSpinBox);
+    ui->waysSpinBox->setValue(value);
+}
+
+void CacheConfigWidget::SetWordsExponent(int value, bool notify)
+{
+    if (notify)
+    {
+        ui->wordsSpinBox->setValue(value);
+        return;
+    }
+
+    QSignalBlocker blocker(ui->wordsSpinBox);
+    ui->wordsSpinBox->setValue(value);
 }
 
 CacheConfigWidget::~CacheConfigWidget()

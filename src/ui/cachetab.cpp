@@ -2,6 +2,7 @@
 #include "ui_cachetab.h"
 #include "ui/cacheconfigwidget.h"
 #include "ui/cache_grid_delegate.h"
+#include <algorithm>
 namespace Kites
 {
 CacheTab::CacheTab(QWidget *parent,MemoryController* memoryController)
@@ -68,11 +69,57 @@ CacheTab::CacheTab(QWidget *parent,MemoryController* memoryController)
 void CacheTab::connectSignals(std::string cacheName, CacheConfigWidget* configWidget)
 {
     auto reconfigure = [this,configWidget,cacheName](){
-        CacheConfig newConfig = configWidget->GetConfig();
-        emit cacheConfigChanged(cacheName, newConfig);
+        if (m_enforcingConstraint)
+        {
+            return;
+        }
+
+        m_enforcingConstraint = true;
+
+        if (cacheName == "L1")
+        {
+            emit cacheConfigChanged("L1", configWidget->GetConfig());
+            if (enforceL2AtLeastL1())
+            {
+                emit cacheConfigChanged("L2", ui->L2Config->GetConfig());
+            }
+        }
+        else
+        {
+            enforceL2AtLeastL1();
+            emit cacheConfigChanged("L2", ui->L2Config->GetConfig());
+        }
+
+        m_enforcingConstraint = false;
     };
 
     connect(configWidget, &CacheConfigWidget::configChanged, this, reconfigure);
+}
+
+bool CacheTab::enforceL2AtLeastL1()
+{
+    const int l1Lines = ui->L1Config->GetLinesExponent();
+    const int l1Ways = ui->L1Config->GetWaysExponent();
+    const int l1Words = ui->L1Config->GetWordsExponent();
+
+    const int l2Lines = ui->L2Config->GetLinesExponent();
+    const int l2Ways = ui->L2Config->GetWaysExponent();
+    const int l2Words = ui->L2Config->GetWordsExponent();
+
+    const int newL2Lines = std::max(l2Lines, l1Lines);
+    const int newL2Ways = std::max(l2Ways, l1Ways);
+    const int newL2Words = std::max(l2Words, l1Words);
+
+    const bool changed = (newL2Lines != l2Lines) || (newL2Ways != l2Ways) || (newL2Words != l2Words);
+    if (!changed)
+    {
+        return false;
+    }
+
+    ui->L2Config->SetLinesExponent(newL2Lines, false);
+    ui->L2Config->SetWaysExponent(newL2Ways, false);
+    ui->L2Config->SetWordsExponent(newL2Words, false);
+    return true;
 }
 
 CacheTab::~CacheTab()

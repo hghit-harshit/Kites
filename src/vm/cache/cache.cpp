@@ -204,7 +204,7 @@ void Cache::BringIn(uint64_t address, size_t set_index, size_t way_index)
     line.valid = true;
     line.dirty = false;
     line.tag = GetTag(address);
-    for(size_t i = 0; i < block_size_; ++i)
+    for(size_t i = 0; i < block_size_ * 4; ++i)
     {
         line.data[i] = ReadFromNextLevel(block_start_address + i);
     }

@@ -21,8 +21,10 @@ public:
 
 private:
     void connectSignals(std::string cacheName, CacheConfigWidget* configWidget);
+    bool enforceL2AtLeastL1();
     CacheModel* m_L1cacheModel = nullptr;
     CacheModel* m_L2cacheModel = nullptr;
+    bool m_enforcingConstraint = false;
     Ui::CacheTab *ui;
 signals:
     void cacheConfigChanged(std::string cacheName, CacheConfig newConfig);

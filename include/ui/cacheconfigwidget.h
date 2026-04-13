@@ -17,6 +17,14 @@ public:
     explicit CacheConfigWidget(QWidget *parent = nullptr);
     ~CacheConfigWidget();
     CacheConfig GetConfig() const;
+
+    int GetLinesExponent() const;
+    int GetWaysExponent() const;
+    int GetWordsExponent() const;
+
+    void SetLinesExponent(int value, bool notify = true);
+    void SetWaysExponent(int value, bool notify = true);
+    void SetWordsExponent(int value, bool notify = true);
 private:
     Ui::CacheConfigWidget *ui;
 signals:

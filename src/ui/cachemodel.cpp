@@ -14,6 +14,10 @@ CacheModel::CacheModel(QObject* parent, Cache* cache)
     m_cache = cache;
     if(m_cache)
     {
+        num_sets_ = m_cache->GetNumSets();
+        num_ways_ = m_cache->GetNumWays();
+        block_size_ = m_cache->GetBlockSize();
+
         connect(m_cache, &Cache::CacheLineUpdatedSignal, this, &CacheModel::updateCacheData);
         connect(m_cache, &Cache::CacheReconfiguredSignal, this, [this](){
             beginResetModel();
@@ -192,6 +196,11 @@ void CacheModel::updateCacheData(uint64_t address)
         m_cache->GetBlockSize() != block_size_)
     {
         AttachCache(m_cache);  
+        return;
+    }
+
+    if (rowCount() == 0 || columnCount() == 0)
+    {
         return;
     }
 
