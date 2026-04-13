@@ -22,11 +22,11 @@
 class CustomPseudoManager
 {
 public:
-    static bool addCustomPseudoInstruction(const QString &pseudoInst, const QString &expansion,QString &errorMessage);
+    static bool addCustomPseudoInstruction(const QString &pseudoInst, const QString &expansion,
+        QString &errorMessage, bool isUpdate = false);
    
     
     
-private:
 
     struct ParsedPseudoInstruction
     {
@@ -40,9 +40,16 @@ private:
     static bool isValidExpainsionLine(const QString &line, const QStringList& declaredArgs, QString &errorMessage);
     //bool validatePseudoInstructionFormat(const QString &expansion, QString &errorMessage);
     static bool saveToDisk(const QJsonObject &root, QString &errorMessage);
-    static QJsonObject loadFromDisk(QString &errorMessage);
+    static QJsonObject loadInstructionsFromDisk(QString &errorMessage);
     static bool updateCustomPseudoInstruction(const QString &pseudoInst, const QString &newExpansion, QString &errorMessage);
     static bool instructionExists(const QString &pseudoInst);
+    /**
+     * @brief Goes through the source code and replaces any occurrences of custom pseudo 
+     * instructions with their corresponding expansions.
+     * 
+     * @param source 
+     * @return std::string 
+     */
     static std::string expandPseudoInstruction(const std::string& source);
 
 

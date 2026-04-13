@@ -42,8 +42,33 @@ QWidget* SettingsDialog::createCustomPseudoInstPage()
     QStringList headerLabels;
     headerLabels << "Pseudo Instruction" << "Expansion";
     table->setHorizontalHeaderLabels(headerLabels);
+    
+    //fill the table with existing custom pseudo instructions
+    QString errorMessage;
+    auto customPseudos = CustomPseudoManager::loadInstructionsFromDisk(errorMessage);
+
+    /*TODO*/
+    /*For now we are just call loadInstructionsFromDisk
+    in future maek a public static function that return psuedo instructions
+    and handle the error message inside custom_pseudo_manager*/
+
+    for(const QString& key : customPseudos.keys())
+    {
+        const QJsonObject instructionObject = customPseudos[key].toObject();
+        const QStringList args = instructionObject["args"].toVariant().toStringList();
+        const QStringList expansion = instructionObject["expansion"].toVariant().toStringList();
+
+        const QString pseudoInst = key + " " + args.join(" ");
+        const QString expansionStr = expansion.join("\n");
+
+        int rowCount = table->rowCount();
+        table->insertRow(rowCount);
+        table->setItem(rowCount, 0, new QTableWidgetItem(pseudoInst));
+        table->setItem(rowCount, 1, new QTableWidgetItem(expansionStr));
+    }
 
     QPushButton* addButton = new QPushButton("Add", this);
+    QPushButton* updateButton = new QPushButton("Update", this);
     QPushButton* removeButton = new QPushButton("Remove", this);
 
     connect(addButton, &QPushButton::clicked, this, [this, table]() {
@@ -53,17 +78,32 @@ QWidget* SettingsDialog::createCustomPseudoInstPage()
         {
             // we will get the new pseudo instruction details from the dialog and add it to the table
             // for now we will just add a dummy row
-            QString errorMessage;
-            if(!CustomPseudoManager::addCustomPseudoInstruction(dialog.getPseudoInstruction(), dialog.getExpansion(), errorMessage))
-            {
-                QMessageBox::critical(nullptr, "Error", errorMessage);
-                return;
-            }
             int rowCount = table->rowCount();
 
             table->insertRow(rowCount);
             table->setItem(rowCount, 0, new QTableWidgetItem(dialog.getPseudoInstruction()));
             table->setItem(rowCount, 1, new QTableWidgetItem(dialog.getExpansion()));
+        }
+    });
+
+    connect(updateButton, &QPushButton::clicked, this, [this, table]() {
+        int row = table->currentRow();
+        if (row >= 0) {
+            QString pseudoInst = table->item(row, 0)->text().trimmed();
+            QString expansion = table->item(row, 1)->text().trimmed();
+
+            bool isUpdate = true;
+            AddPseudoDialog dialog(this,isUpdate);
+            dialog.setWindowTitle("Update Custom Pseudo Instruction");
+            dialog.setPseudoInstruction(pseudoInst);
+            dialog.setExpansion(expansion);
+            if(dialog.exec() == QDialog::Accepted)
+            {
+                
+                table->item(row, 0)->setText(dialog.getPseudoInstruction());
+                table->item(row, 1)->setText(dialog.getExpansion());
+            }
+
         }
     });
 
@@ -76,6 +116,7 @@ QWidget* SettingsDialog::createCustomPseudoInstPage()
 
     QHBoxLayout* buttonLayout = new QHBoxLayout;
     buttonLayout->addWidget(addButton);
+    buttonLayout->addWidget(updateButton);
     buttonLayout->addWidget(removeButton);
 
     QVBoxLayout* mainLayout = new QVBoxLayout;

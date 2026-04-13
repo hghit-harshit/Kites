@@ -3,7 +3,8 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonArray>
-bool CustomPseudoManager::addCustomPseudoInstruction(const QString &pseudoInst, const QString &expansion, QString &errorMessage)
+bool CustomPseudoManager::addCustomPseudoInstruction(const QString &pseudoInst, const QString &expansion, QString &errorMessage,
+bool isUpdate)
 {
     // we will add the new pseudo instruction and its expansion to the custom pseudo instruction list
     // for now we will just return true to indicate that the pseudo instruction was added successfully
@@ -18,12 +19,17 @@ bool CustomPseudoManager::addCustomPseudoInstruction(const QString &pseudoInst, 
         return false;
     }
     
-    QJsonObject root = loadFromDisk(errorMessage);
+    QJsonObject root = loadInstructionsFromDisk(errorMessage);
 
-    if(root.contains(newInstruction.name))
+    if(!isUpdate && root.contains(newInstruction.name))
     {
         errorMessage = QString("Instruction \"%1\" already exists. Use update instead.").arg(newInstruction.name);
         return false;
+    }
+    else if(isUpdate)
+    {
+        // remove the old instruction and add the updated one
+        root.remove(newInstruction.name);
     }
 
     QJsonObject instructionObject;
@@ -96,7 +102,7 @@ bool CustomPseudoManager::validatePseudoInstruction(const ParsedPseudoInstructio
 std::string CustomPseudoManager::expandPseudoInstruction(const std::string& source)
 {
     QString errorMessage; // just a dummy variable
-    QJsonObject pseudoInstrcutions = loadFromDisk(errorMessage);
+    QJsonObject pseudoInstrcutions = loadInstructionsFromDisk(errorMessage);
 
     if(pseudoInstrcutions.isEmpty())
     {
@@ -436,7 +442,7 @@ bool CustomPseudoManager::isValidExpainsionLine(const QString &line, const QStri
 }
 
 
-QJsonObject CustomPseudoManager::loadFromDisk(QString &errorMessage)
+QJsonObject CustomPseudoManager::loadInstructionsFromDisk(QString &errorMessage)
 {
     QFile file(globals::custom_pseudo_instructions_file_path);
     if (!file.open(QIODevice::ReadOnly)) 

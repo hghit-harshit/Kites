@@ -5,9 +5,10 @@
 #include "assembler/custom_pseudo_manager.h"
 namespace Kites
 {
-AddPseudoDialog::AddPseudoDialog(QWidget *parent)
+AddPseudoDialog::AddPseudoDialog(QWidget *parent,bool isUpdate)
     : QDialog(parent)
     , ui(new Ui::AddPseudoDialog)
+    , m_isUpdate(isUpdate)
 {
     ui->setupUi(this);
     connect(ui->saveButton, &QPushButton::clicked, this, &AddPseudoDialog::parsePseudoInstruction);
@@ -27,6 +28,17 @@ QString AddPseudoDialog::getExpansion() const
 {
     return ui->expansionTextEdit->toPlainText().trimmed();
 }
+
+void AddPseudoDialog::setPseudoInstruction(const QString& pseudoInst)
+{
+    ui->pseudoInstructionTextEdit->setPlainText(pseudoInst);
+}
+
+void AddPseudoDialog::setExpansion(const QString& expansion)
+{
+    ui->expansionTextEdit->setPlainText(expansion);
+}
+
 void AddPseudoDialog::parsePseudoInstruction()
 {
     // we will parse the pseudo instruction details entered by the user in the dialog and add it to the custom pseudo instruction list
@@ -41,7 +53,7 @@ void AddPseudoDialog::parsePseudoInstruction()
     }
 
     QString errorMessage;
-    if(!CustomPseudoManager::addCustomPseudoInstruction(getPseudoInstruction(), getExpansion(), errorMessage))
+    if(!CustomPseudoManager::addCustomPseudoInstruction(getPseudoInstruction(), getExpansion(), errorMessage,m_isUpdate))
     {
         QMessageBox::critical(nullptr, "Error", errorMessage);
         return;
