@@ -19,6 +19,8 @@ CompilerTab::CompilerTab(QWidget *parent)
 {
     ui->setupUi(this);
     connect(ui->convertToAssemblyButton, &QPushButton::clicked, this, &CompilerTab::convertToAssemblyClicked);
+    ui->splitter_2->setStretchFactor(0, 3);
+    ui->splitter_2->setStretchFactor(1, 1);
 }
 
 void CompilerTab::convertToAssemblyClicked()
@@ -38,21 +40,44 @@ void CompilerTab::convertToAssemblyClicked()
     escaped.replace("\r", "\\r");
     escaped.replace("\t", "\\t");
 
-    QString jsonBody = QString(R"({
-        "source": "%1",
-        "options": {
-            "userArguments": "-O1 -march=rv64gc -mabi=lp64d -fno-exceptions",
-            "filters": {
-                "binary":      false,
-                "directives":  true,
-                "commentOnly": true,
-                "trim":        true,
-                "labels":      false,
-                "intel":       false
-            },
-            "compilerOptions": {}
-        }
-    })").arg(escaped);
+    // QString jsonBody = QString(R"({
+    //     "source": "%1",
+    //     "options": {
+    //         "userArguments": "-O1 -march=rv64gc -mabi=lp64d -fno-exceptions",
+    //         "filters": {
+    //             "binary":      false,
+    //             "directives":  true,
+    //             "commentOnly": true,
+    //             "trim":        true,
+    //             "labels":      false,
+    //             "intel":       false
+    //         },
+    //         "compilerOptions": {}
+    //     }
+    // })").arg(escaped);
+
+    QJsonObject filters;
+    filters["binary"]      = false;
+    filters["directives"]  = true;
+    filters["commentOnly"] = true;
+    filters["trim"]        = true;
+    filters["labels"]      = true;
+
+    QJsonObject options;
+    options["userArguments"] =
+    "-O2 -march=rv64gc -mabi=lp64d "
+    "-fno-exceptions "
+    "-fno-asynchronous-unwind-tables "
+    "-fno-unwind-tables "
+    "-fno-ident";
+    options["filters"]       = filters;
+
+    QJsonObject payload;
+    payload["source"]  = cppSource;
+    payload["options"] = options;
+
+    QByteArray jsonBody = QJsonDocument(payload).toJson(QJsonDocument::Compact);
+
 
     QUrl url("https://godbolt.org/api/compiler/rv64-gcc1520/compile");
     QNetworkRequest request(url);
@@ -66,7 +91,7 @@ void CompilerTab::convertToAssemblyClicked()
 
     // 5. Send POST request
     QNetworkAccessManager* manager = new QNetworkAccessManager(this);
-    QNetworkReply* reply = manager->post(request, jsonBody.toUtf8());
+    QNetworkReply* reply = manager->post(request, jsonBody);
 
     connect(reply, &QNetworkReply::finished, this, [this, reply, manager]() {
         // Re-enable button
