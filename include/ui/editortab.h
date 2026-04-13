@@ -1,4 +1,6 @@
-#pragma once 
+#ifndef EDITORTAB__H
+#define EDITORTAB__H
+
 #include "kitestab.h"
 #include <QPlainTextEdit>
 #include <QFontDatabase>
@@ -11,15 +13,17 @@
 #include "vm/vm_manager.h"
 namespace Kites
 {
-
-namespace Ui{
+namespace Ui {
 class EditorTab;
 }
+
 class EditorTab : public KitesTab
 {
-    Q_OBJECT    
-    public:
+    Q_OBJECT
+
+ public:
         explicit EditorTab(QWidget* parent = nullptr,VMManager *vmManager = nullptr);
+        ~EditorTab();
         void updateDisassemblyView(const std::string& disassembledCode);
         void setErrorLinesFromFile(const std::filesystem::path& filepath);
         std::string getRawText();
@@ -31,9 +35,13 @@ class EditorTab : public KitesTab
         //void saveUserCursorPosition();
         void clearHighlights();
         
+    public slots:
+        void onExpandButtonClicked(bool checked);
+        void switchToExpandedView();
     private:
         Editor* m_editor = nullptr;
         Editor* m_disassemblyView = nullptr;
+        Editor* m_expandedView = nullptr;
         // m_disassemblyView is an object of the same class as m_editor
         // but well make it read only and use it to show disassembled code
         // were doing this cause of the overriden paint event in Editor class to show hightlights
@@ -42,6 +50,7 @@ class EditorTab : public KitesTab
         QTextCursor m_userCursorPosition;
         // to save user cursor position when updating disassembly view
     //public slots:
-        
+        Ui::EditorTab *ui;
 };
 } // namespace Kites
+#endif // EDITORTAB__H

@@ -30,18 +30,26 @@ EditorTab::EditorTab(QWidget* parent, VMManager* vmManager)
     m_squiggleFormat.setUnderlineStyle(QTextCharFormat::WaveUnderline);
     m_squiggleFormat.setUnderlineColor(Qt::red);
 
-    connect(ui->expandedViewButton, &QRadioButton::toggled, this, [this](bool checked){
-        if(checked)
-        {
-            std::string expandedCode = CustomPseudoManager::expandPseudoInstruction(getRawText());
-            m_expandedView->setPlainText(QString::fromStdString(expandedCode));
-            ui->stackedWidget->setCurrentIndex(1);
-        }
-        else
-        {
-            ui->stackedWidget->setCurrentIndex(0);
-        }
-    });
+    connect(ui->expandedViewButton, &QRadioButton::toggled, this, &EditorTab::onExpandButtonClicked);
+}
+
+void EditorTab::onExpandButtonClicked(bool checked)
+{
+    if(checked)
+    {
+        std::string expandedCode = CustomPseudoManager::expandPseudoInstruction(getRawText());
+        m_expandedView->setPlainText(QString::fromStdString(expandedCode));
+        ui->stackedWidget->setCurrentIndex(1);
+    }
+    else
+    {
+        ui->stackedWidget->setCurrentIndex(0);
+    }
+}
+
+void EditorTab::switchToExpandedView()
+{
+    ui->expandedViewButton->setChecked(true);
 }
 
 EditorTab::~EditorTab()
