@@ -51,8 +51,8 @@ private:
     void pipeline_fetch() override;
     void pipeline_decode() override;
     void pipeline_execute() override;
-    void pipeline_memory() override;
-    void pipeline_writeback() override;
+    //void pipeline_memory() override;
+    // void pipeline_writeback() override;
 
     void executeFloat(); // New method to handle floating-point instructions in EX stage
 

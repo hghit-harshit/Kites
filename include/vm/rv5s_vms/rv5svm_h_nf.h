@@ -52,8 +52,8 @@ private:
     void pipeline_fetch() override;
     void pipeline_decode() override;
     void pipeline_execute() override;
-    void pipeline_memory() override;
-    void pipeline_writeback() override;
+    //void pipeline_memory() override;
+    // void pipeline_writeback() override;
 
     // Helper function to consolidate hazard checks using the dedicated unit
     bool check_for_hazard();

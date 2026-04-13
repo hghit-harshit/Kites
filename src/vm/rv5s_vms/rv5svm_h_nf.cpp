@@ -38,9 +38,11 @@ RV5StageVM_H_NF::RV5StageVM_H_NF() : RV5StageVM_Base()
     // stall_fetch_and_decode_ = false;
 
     // Reset components and history
+        #ifndef DISABLE_GUI
     circuit_scene_ = std::make_unique<Kites::RV5StageVM_H_NF_CircuitScene>();
     connect(this, &VmBase::updateCircuitStateSignal,
             circuit_scene_.get(), &Kites::RV5StageVM_H_NF_CircuitScene::updateCircuitState);
+        #endif
     Reset();
 
     active_wires_.append("PC_to_IM");
@@ -390,123 +392,123 @@ void RV5StageVM_H_NF::pipeline_execute()
     }
 }
 
-void RV5StageVM_H_NF::pipeline_memory()
-{
-    if (ex_mem_reg_.branch_taken && (ex_mem_reg_.instruction & 0b1111111) == 0b1100011)
-    {
-        std::cout <<"branch branch branch branch branch branch branch branch branch\n";
-        program_counter_ = ex_mem_reg_.branch_target_pc;
-        if_id_reg_.reset();
-        id_ex_reg_.reset();
-        branch_mispredictions_++;
-    }
+// void RV5StageVM_H_NF::pipeline_memory()
+// {
+//     if (ex_mem_reg_.branch_taken && (ex_mem_reg_.instruction & 0b1111111) == 0b1100011)
+//     {
+//         std::cout <<"branch branch branch branch branch branch branch branch branch\n";
+//         program_counter_ = ex_mem_reg_.branch_target_pc;
+//         if_id_reg_.reset();
+//         id_ex_reg_.reset();
+//         branch_mispredictions_++;
+//     }
 
-    mem_wb_reg_.pc = ex_mem_reg_.pc;
-    mem_wb_reg_.instruction = ex_mem_reg_.instruction;
-    mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
-    mem_wb_reg_.rd = ex_mem_reg_.rd;
-    mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
-    mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
+//     mem_wb_reg_.pc = ex_mem_reg_.pc;
+//     mem_wb_reg_.instruction = ex_mem_reg_.instruction;
+//     mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
+//     mem_wb_reg_.rd = ex_mem_reg_.rd;
+//     mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
+//     mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
 
-    if (ex_mem_reg_.mem_read)
-    {
-        // uint64_t data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
-        // mem_wb_reg_.memory_data = data;
-        switch ((mem_wb_reg_.instruction >> 12) & 0b111)
-		{
-		case 0b000:
-		{ // LB
-			mem_wb_reg_.memory_data = static_cast<int8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
-			break;
-		}
-		case 0b001:
-		{ // LH
-			mem_wb_reg_.memory_data = static_cast<int16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
-			break;
-		}
-		case 0b010:
-		{ // LW
-			mem_wb_reg_.memory_data = static_cast<int32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
-			break;
-		}
-		case 0b011:
-		{ // LD
-			mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
-			break;
-		}
-		case 0b100:
-		{ // LBU
-			mem_wb_reg_.memory_data = static_cast<uint8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
-			break;
-		}
-		case 0b101:
-		{ // LHU
-			mem_wb_reg_.memory_data = static_cast<uint16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
-			break;
-		}
-		case 0b110:
-		{ // LWU
-			mem_wb_reg_.memory_data = static_cast<uint32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
-			break;
-		}
-		}
-        std::cout << "Data read:" << (int)mem_wb_reg_.memory_data << std::endl;
-    }
-    else if (ex_mem_reg_.mem_write)
-    {
-        //memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data);
+//     if (ex_mem_reg_.mem_read)
+//     {
+//         // uint64_t data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+//         // mem_wb_reg_.memory_data = data;
+//         switch ((mem_wb_reg_.instruction >> 12) & 0b111)
+// 		{
+// 		case 0b000:
+// 		{ // LB
+// 			mem_wb_reg_.memory_data = static_cast<int8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
+// 			break;
+// 		}
+// 		case 0b001:
+// 		{ // LH
+// 			mem_wb_reg_.memory_data = static_cast<int16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
+// 			break;
+// 		}
+// 		case 0b010:
+// 		{ // LW
+// 			mem_wb_reg_.memory_data = static_cast<int32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+// 			break;
+// 		}
+// 		case 0b011:
+// 		{ // LD
+// 			mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+// 			break;
+// 		}
+// 		case 0b100:
+// 		{ // LBU
+// 			mem_wb_reg_.memory_data = static_cast<uint8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
+// 			break;
+// 		}
+// 		case 0b101:
+// 		{ // LHU
+// 			mem_wb_reg_.memory_data = static_cast<uint16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
+// 			break;
+// 		}
+// 		case 0b110:
+// 		{ // LWU
+// 			mem_wb_reg_.memory_data = static_cast<uint32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+// 			break;
+// 		}
+// 		}
+//         std::cout << "Data read:" << (int)mem_wb_reg_.memory_data << std::endl;
+//     }
+//     else if (ex_mem_reg_.mem_write)
+//     {
+//         //memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data);
 
-        memory_write_back();
-    }
-}
+//         memory_write_back();
+//     }
+// }
 
-void RV5StageVM_H_NF::pipeline_writeback()
-{
-    if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0)
-    {
-        uint64_t write_data = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
-
-        uint64_t old_value = registers_.ReadGpr(mem_wb_reg_.rd);
-        if (old_value != write_data)
-        {
-            current_delta_.register_changes.push_back({mem_wb_reg_.rd,
-                                                       0,
-                                                       old_value,
-                                                       write_data});
-        }
-
-        //registers_.WriteGpr(mem_wb_reg_.rd, write_data);
-        switch (mem_wb_reg_.instruction & 0b1111111)
-        {
-        case 0b0110011: // R-Type
-        case 0b0010011: // I-Type
-        case 0b0010111:
-        { // AUIPC
-            registers_.WriteGpr(mem_wb_reg_.rd, write_data);
-            break;
-        }
-        case 0b0000011:
-        { // Load
-            registers_.WriteGpr(mem_wb_reg_.rd, write_data);
-            break;
-        }
-        case 0b1100111: // JALR
-        case 0b1101111:
-        { // JAL
-            registers_.WriteGpr(mem_wb_reg_.rd, mem_wb_reg_.pc + 4);
-            break;
-        }
-        case 0b0110111:
-        { // LUI
-            registers_.WriteGpr(mem_wb_reg_.rd, write_data );
-            break;
-        }
-        default:
-            break;
-        }
-        instructions_retired_++;
-    }
-}
+// void RV5StageVM_H_NF::pipeline_writeback()
+// {
+//     if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0)
+//     {
+//         uint64_t write_data = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
+//
+//         uint64_t old_value = registers_.ReadGpr(mem_wb_reg_.rd);
+//         if (old_value != write_data)
+//         {
+//             current_delta_.register_changes.push_back({mem_wb_reg_.rd,
+//                                                        0,
+//                                                        old_value,
+//                                                        write_data});
+//         }
+//
+//         //registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+//         switch (mem_wb_reg_.instruction & 0b1111111)
+//         {
+//         case 0b0110011: // R-Type
+//         case 0b0010011: // I-Type
+//         case 0b0010111:
+//         { // AUIPC
+//             registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+//             break;
+//         }
+//         case 0b0000011:
+//         { // Load
+//             registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+//             break;
+//         }
+//         case 0b1100111: // JALR
+//         case 0b1101111:
+//         { // JAL
+//             registers_.WriteGpr(mem_wb_reg_.rd, mem_wb_reg_.pc + 4);
+//             break;
+//         }
+//         case 0b0110111:
+//         { // LUI
+//             registers_.WriteGpr(mem_wb_reg_.rd, write_data );
+//             break;
+//         }
+//         default:
+//             break;
+//         }
+//         instructions_retired_++;
+//     }
+// }
 
 void RV5StageVM_H_NF::Undo()
 {

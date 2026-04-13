@@ -28,9 +28,11 @@ using namespace alu;
 RV5StageVM_NH_F::RV5StageVM_NH_F() : RV5StageVM_Base()
 {
     // Reset components and history
-   circuit_scene_ = std::make_unique<Kites::RV5StageVM_NH_F_CircuitScene>();
+    #ifndef DISABLE_GUI
+    circuit_scene_ = std::make_unique<Kites::RV5StageVM_NH_F_CircuitScene>();
     connect(this, &VmBase::updateCircuitStateSignal,
            circuit_scene_.get(), &Kites::RV5StageVM_NH_F_CircuitScene::updateCircuitState);
+    #endif
     Reset();
 
      // Always-visible / backbone wires in the NH_F circuit
@@ -485,160 +487,160 @@ void RV5StageVM_NH_F::pipeline_execute()
     }
 }
 
-void RV5StageVM_NH_F::pipeline_memory()
-{
-    // --- B-Type Conditional Branch Resolution (3-Cycle Penalty) ---
-    if (ex_mem_reg_.branch_taken && (ex_mem_reg_.instruction & 0b1111111) == 0b1100011)
-    {
-        // B-Type misprediction confirmed in MEM stage. Hardware flushes the pipeline.
+// void RV5StageVM_NH_F::pipeline_memory()
+// {
+//     // --- B-Type Conditional Branch Resolution (3-Cycle Penalty) ---
+//     if (ex_mem_reg_.branch_taken && (ex_mem_reg_.instruction & 0b1111111) == 0b1100011)
+//     {
+//         // B-Type misprediction confirmed in MEM stage. Hardware flushes the pipeline.
 
-        // 1. Redirect the fetch PC
-        program_counter_ = ex_mem_reg_.branch_target_pc;
+//         // 1. Redirect the fetch PC
+//         program_counter_ = ex_mem_reg_.branch_target_pc;
 
-        // 2. Kill the two instructions in the front end (IF/ID and ID/EX) to incur the 2-bubble penalty.
-        if_id_reg_.reset();
-        id_ex_reg_.reset();
+//         // 2. Kill the two instructions in the front end (IF/ID and ID/EX) to incur the 2-bubble penalty.
+//         if_id_reg_.reset();
+//         id_ex_reg_.reset();
 
-        branch_mispredictions_++;
-    }
+//         branch_mispredictions_++;
+//     }
 
-    // since we are running cycle backward
-    // by the time execture check this register forwarding previous results are gone
-    // so we store these seperately
-    mem_wb_reg_.prev_rd = mem_wb_reg_.rd;
-    mem_wb_reg_.prev_alu_result = mem_wb_reg_.alu_result;
-    mem_wb_reg_.prev_mem_to_reg = mem_wb_reg_.mem_to_reg;
-    mem_wb_reg_.prev_reg_write = mem_wb_reg_.reg_write;
-    mem_wb_reg_.prev_memory_data = mem_wb_reg_.memory_data;
-    // --- Standard MEM Operations ---
-    mem_wb_reg_.pc = ex_mem_reg_.pc;
-    mem_wb_reg_.instruction = ex_mem_reg_.instruction;
-    mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
-    mem_wb_reg_.rd = ex_mem_reg_.rd;
-    mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
-    mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
+//     // since we are running cycle backward
+//     // by the time execture check this register forwarding previous results are gone
+//     // so we store these seperately
+//     mem_wb_reg_.prev_rd = mem_wb_reg_.rd;
+//     mem_wb_reg_.prev_alu_result = mem_wb_reg_.alu_result;
+//     mem_wb_reg_.prev_mem_to_reg = mem_wb_reg_.mem_to_reg;
+//     mem_wb_reg_.prev_reg_write = mem_wb_reg_.reg_write;
+//     mem_wb_reg_.prev_memory_data = mem_wb_reg_.memory_data;
+//     // --- Standard MEM Operations ---
+//     mem_wb_reg_.pc = ex_mem_reg_.pc;
+//     mem_wb_reg_.instruction = ex_mem_reg_.instruction;
+//     mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
+//     mem_wb_reg_.rd = ex_mem_reg_.rd;
+//     mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
+//     mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
 
     
 
-    if (ex_mem_reg_.mem_read)
-    {
-        // Load instruction: Result available at end of this stage (Load-Use still needs 1 NOP)
-        //mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
-        switch ((mem_wb_reg_.instruction >> 12) & 0b111)
-		{
-		case 0b000:
-		{ // LB
-			mem_wb_reg_.memory_data = static_cast<int8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
-			break;
-		}
-		case 0b001:
-		{ // LH
-			mem_wb_reg_.memory_data = static_cast<int16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
-			break;
-		}
-		case 0b010:
-		{ // LW
-			mem_wb_reg_.memory_data = static_cast<int32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
-			break;
-		}
-		case 0b011:
-		{ // LD
-			mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
-			break;
-		}
-		case 0b100:
-		{ // LBU
-			mem_wb_reg_.memory_data = static_cast<uint8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
-			break;
-		}
-		case 0b101:
-		{ // LHU
-			mem_wb_reg_.memory_data = static_cast<uint16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
-			break;
-		}
-		case 0b110:
-		{ // LWU
-			mem_wb_reg_.memory_data = static_cast<uint32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
-			break;
-		}
-		}
-        std::cout << "Data read:" << (int)mem_wb_reg_.memory_data << std::endl;
-    }
-    else if (ex_mem_reg_.mem_write)
-    {
-        uint64_t write_data = ex_mem_reg_.reg2_data;
+//     if (ex_mem_reg_.mem_read)
+//     {
+//         // Load instruction: Result available at end of this stage (Load-Use still needs 1 NOP)
+//         //mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+//         switch ((mem_wb_reg_.instruction >> 12) & 0b111)
+// 		{
+// 		case 0b000:
+// 		{ // LB
+// 			mem_wb_reg_.memory_data = static_cast<int8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
+// 			break;
+// 		}
+// 		case 0b001:
+// 		{ // LH
+// 			mem_wb_reg_.memory_data = static_cast<int16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
+// 			break;
+// 		}
+// 		case 0b010:
+// 		{ // LW
+// 			mem_wb_reg_.memory_data = static_cast<int32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+// 			break;
+// 		}
+// 		case 0b011:
+// 		{ // LD
+// 			mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+// 			break;
+// 		}
+// 		case 0b100:
+// 		{ // LBU
+// 			mem_wb_reg_.memory_data = static_cast<uint8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
+// 			break;
+// 		}
+// 		case 0b101:
+// 		{ // LHU
+// 			mem_wb_reg_.memory_data = static_cast<uint16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
+// 			break;
+// 		}
+// 		case 0b110:
+// 		{ // LWU
+// 			mem_wb_reg_.memory_data = static_cast<uint32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+// 			break;
+// 		}
+// 		}
+//         std::cout << "Data read:" << (int)mem_wb_reg_.memory_data << std::endl;
+//     }
+//     else if (ex_mem_reg_.mem_write)
+//     {
+//         uint64_t write_data = ex_mem_reg_.reg2_data;
 
-        // --- CRITICAL FIX: MEM/WB -> MEM bypass for 0-stall Load->Store Data (Case 4) ---
-        // This logic ensures Case 4 runs with 0 stalls, leaving only Load->Use/Branch as 1 NOP.
+//         // --- CRITICAL FIX: MEM/WB -> MEM bypass for 0-stall Load->Store Data (Case 4) ---
+//         // This logic ensures Case 4 runs with 0 stalls, leaving only Load->Use/Branch as 1 NOP.
 
-        // We use the rs2 register index of the current Store instruction (from ID/EX) to check the Load result in MEM/WB.
-        uint8_t store_data_rs2 = (id_ex_reg_.instruction >> 20) & 0x1F;
+//         // We use the rs2 register index of the current Store instruction (from ID/EX) to check the Load result in MEM/WB.
+//         uint8_t store_data_rs2 = (id_ex_reg_.instruction >> 20) & 0x1F;
 
-        // Check if the instruction in MEM/WB (the Load) targets the Store's data source (rs2)
-        bool mem_wb_can_forward_to_store =
-            mem_wb_reg_.reg_write &&
-            mem_wb_reg_.mem_to_reg && // Must be a Load result
-            (mem_wb_reg_.rd != 0) &&
-            (mem_wb_reg_.rd == store_data_rs2); // The Load's destination equals the Store's data source
+//         // Check if the instruction in MEM/WB (the Load) targets the Store's data source (rs2)
+//         bool mem_wb_can_forward_to_store =
+//             mem_wb_reg_.reg_write &&
+//             mem_wb_reg_.mem_to_reg && // Must be a Load result
+//             (mem_wb_reg_.rd != 0) &&
+//             (mem_wb_reg_.rd == store_data_rs2); // The Load's destination equals the Store's data source
 
-        if (mem_wb_can_forward_to_store)
-        {
-            write_data = mem_wb_reg_.memory_data; // Forward the just-loaded value
-        }
+//         if (mem_wb_can_forward_to_store)
+//         {
+//             write_data = mem_wb_reg_.memory_data; // Forward the just-loaded value
+//         }
 
-        memory_write_back();
-    }
-}
+//         memory_write_back();
+//     }
+// }
 
-void RV5StageVM_NH_F::pipeline_writeback()
-{
-    // Write the final result back to the register file
-    if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0)
-    {
-        uint64_t write_data = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
-
-        // Record state for Undo/Redo
-        uint64_t old_value = registers_.ReadGpr(mem_wb_reg_.rd);
-        if (old_value != write_data)
-        {
-            current_delta_.register_changes.push_back({mem_wb_reg_.rd,
-                                                       0, // GPR type
-                                                       old_value,
-                                                       write_data});
-        }
-
-        //registers_.WriteGpr(mem_wb_reg_.rd, write_data);
-        instructions_retired_++; // Instruction successfully retired
-        switch (mem_wb_reg_.instruction & 0b1111111)
-        {
-        case 0b0110011: // R-Type
-        case 0b0010011: // I-Type
-        case 0b0010111:
-        { // AUIPC
-            registers_.WriteGpr(mem_wb_reg_.rd, write_data);
-            break;
-        }
-        case 0b0000011:
-        { // Load
-            registers_.WriteGpr(mem_wb_reg_.rd, write_data);
-            break;
-        }
-        case 0b1100111: // JALR
-        case 0b1101111:
-        { // JAL
-            registers_.WriteGpr(mem_wb_reg_.rd, mem_wb_reg_.pc + 4);
-            break;
-        }
-        case 0b0110111:
-        { // LUI
-            registers_.WriteGpr(mem_wb_reg_.rd, write_data );
-            break;
-        }
-        default:
-            break;
-        }
-    }
-}
+// void RV5StageVM_NH_F::pipeline_writeback()
+// {
+//     // Write the final result back to the register file
+//     if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0)
+//     {
+//         uint64_t write_data = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
+//
+//         // Record state for Undo/Redo
+//         uint64_t old_value = registers_.ReadGpr(mem_wb_reg_.rd);
+//         if (old_value != write_data)
+//         {
+//             current_delta_.register_changes.push_back({mem_wb_reg_.rd,
+//                                                        0, // GPR type
+//                                                        old_value,
+//                                                        write_data});
+//         }
+//
+//         //registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+//         instructions_retired_++; // Instruction successfully retired
+//         switch (mem_wb_reg_.instruction & 0b1111111)
+//         {
+//         case 0b0110011: // R-Type
+//         case 0b0010011: // I-Type
+//         case 0b0010111:
+//         { // AUIPC
+//             registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+//             break;
+//         }
+//         case 0b0000011:
+//         { // Load
+//             registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+//             break;
+//         }
+//         case 0b1100111: // JALR
+//         case 0b1101111:
+//         { // JAL
+//             registers_.WriteGpr(mem_wb_reg_.rd, mem_wb_reg_.pc + 4);
+//             break;
+//         }
+//         case 0b0110111:
+//         { // LUI
+//             registers_.WriteGpr(mem_wb_reg_.rd, write_data );
+//             break;
+//         }
+//         default:
+//             break;
+//         }
+//     }
+// }
 
 // --- Auxiliary methods (Undo, Redo, print_pipeline_registers_debug, handle_syscall) ---
 void RV5StageVM_NH_F::Undo()
@@ -699,15 +701,7 @@ void RV5StageVM_NH_F::Redo()
     std::cout << "VM_REDO_COMPLETED" << std::endl;
 }
 
-// void RV5StageVM_NH_F::print_pipeline_registers_debug()
-// {
-//     std::cout << "--- Pipeline Debug (Cycle " << cycle_s_ << ") ---" << std::endl;
-//     std::cout << "PC: 0x" << std::hex << program_counter_ << std::dec << std::endl;
-//     std::cout << "IF/ID: Inst=0x" << std::hex << if_id_reg_.instruction << std::dec << " PC=" << if_id_reg_.pc << std::endl;
-//     std::cout << "ID/EX: rs1=" << (int)id_ex_reg_.rs1 << " rs2=" << (int)id_ex_reg_.rs2 << " rd=" << (int)id_ex_reg_.rd << std::endl;
-//     std::cout << "EX/MEM: ALU_Res=" << ex_mem_reg_.alu_result << " Br_Taken=" << ex_mem_reg_.branch_taken << std::endl;
-//     std::cout << "MEM/WB: ALU_Res=" << mem_wb_reg_.alu_result << " Mem_Data=" << mem_wb_reg_.memory_data << std::endl;
-// }
+
 
 void RV5StageVM_NH_F::handle_syscall()
 {
