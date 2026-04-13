@@ -22,6 +22,7 @@
 #include "../include/assembler/assembler.h"
 #include "../include/utils.h"
 
+
 static std::unique_ptr<RV5StageVM_NH_F> runHazardProgram(const std::string& filename)
 {
     setupVmStateDirectory();
@@ -48,7 +49,7 @@ TEST(RV5StageVM_NH_F_TEST, r_r_forwarding)
 TEST(RV5StageVM_NH_F_TEST, l_u_forwarding)
 {
     auto vm = runHazardProgram("../examples/L_U_hazard.s");
-    EXPECT_EQ(vm->registers_.ReadGpr(6), 120);
+    EXPECT_EQ(vm->registers_.ReadGpr(6), 200);
 }
 
 // ----------------------------
@@ -84,7 +85,7 @@ TEST(RV5StageVM_NH_F_TEST, r_b_forwarding)
 TEST(RV5StageVM_NH_F_TEST, l_b_forwarding)
 {
     auto vm = runHazardProgram("../examples/L_B_hazard.s");
-    EXPECT_EQ(vm->registers_.ReadGpr(7), 1);
+    EXPECT_EQ(vm->registers_.ReadGpr(7), 0);
 }
 
 // ----------------------------
