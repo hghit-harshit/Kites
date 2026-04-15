@@ -38,8 +38,15 @@ set(CMAKE_AUTOUIC ON)
 set(SRC_DIR "src")
 set(INCLUDE_DIR "include")
 set(TEST_DIR "test")
+set(EXTERNAL_DIR "external")
 
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${INCLUDE_DIR} ${SRC_DIR}/ui)
+
+file (GLOB LUA_SRC_FILES CONFIGURE_DEPENDS "${EXTERNAL_DIR}/lua/*.c")
+#Exclude the main files since we don't want to build the standalone interpreter/compiler
+list(FILTER LUA_SRC EXCLUDE REGEX ".*lua\\.c$")
+list(FILTER LUA_SRC EXCLUDE REGEX ".*luac\\.c$")
+
 
 file(GLOB_RECURSE SRC_FILES "${SRC_DIR}/*.cpp")
 file(GLOB_RECURSE TEST_FILES "${TEST_DIR}/*.cpp")
@@ -82,7 +89,13 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE
 )
 
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIR} "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_autogen/include")
+target_include_directories(${PROJECT_NAME} 
+    PRIVATE 
+        ${INCLUDE_DIR} 
+        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_autogen/include"
+        ${EXTERNAL_DIR}/lua
+)
+
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -frounding-math -ffloat-store -g -O3)
 target_link_libraries(RISC_V_Simulator
     PRIVATE
