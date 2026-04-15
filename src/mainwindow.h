@@ -10,6 +10,7 @@
 #include "ui/kitestab.h"
 #include "ui/registercontainer.h"
 #include "vm/vm_manager.h"
+#include "vm/profiler_manager.h"
 #include <memory>
 #include <QStyleFactory> // For setting the style
 #include <QPalette>      // For setting the colors
@@ -32,7 +33,8 @@ class MainWindow : public QMainWindow
         MemoryTabIndex,
         ProcessorTabIndex,
         CacheTabIndex,
-        CompilerTabIndex
+        CompilerTabIndex,
+        ProfilerTabIndex
     };
 
     enum class Theme
@@ -48,7 +50,7 @@ public:
     ~MainWindow();
 
 private:
-
+    void setUpStatusBar();
     void setUpToolBar();
     void setUpSidebar();
     void setUpMenubar();
@@ -68,6 +70,7 @@ private:
     std::map<TabIndex, KitesTab*> m_tabs;
     TabIndex m_currentTabIndex = TabIndex::EditorTabIndex;
     VMManager* m_vmManager = nullptr;
+    ProfilerManager* m_profilerManager = nullptr;
     QThread* m_vmThread = nullptr;
     std::map<Theme,QPalette> m_palettes;
 public slots:

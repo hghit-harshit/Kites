@@ -103,7 +103,20 @@ void ProfilerEditor::resizeEvent(QResizeEvent *event)
 
     QRect cr = contentsRect();
     m_lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
-    m_countArea->setGeometry(QRect(cr.right() - countAreaWidth(), cr.top(), countAreaWidth(), cr.height()));
+    //m_countArea->setGeometry(QRect(cr.right() - countAreaWidth(), cr.top(), countAreaWidth(), cr.height()));
+
+    int scrollbarWidth = verticalScrollBar()->isVisible()
+                     ? verticalScrollBar()->width()
+                     : 0;
+
+    m_countArea->setGeometry(
+        QRect(
+            cr.right() - countAreaWidth() - scrollbarWidth,
+            cr.top(),
+            countAreaWidth(),
+            cr.height()
+        )
+    );
 }
 
 void ProfilerEditor::updateAreas(const QRect &rect, int dy)
@@ -170,20 +183,24 @@ void ProfilerEditor::paintCountArea(QPaintEvent *event)
     {
         if(block.isVisible() && bottom >= event->rect().top())
         {
+            const int lineNumber = blockNumber + 1;
             int hits;
-            hits = m_hitCounts.count(blockNumber) > 0 ? m_hitCounts[blockNumber] : 0;
+            hits = m_hitCounts.count(lineNumber) > 0 ? m_hitCounts[lineNumber] : 0;
             
             if(hits > 0)
             {
                painter.fillRect(0, top, heatStripWidth, fontMetrics().height(), heatColor(hits));
-
+                // int fullWidth = width();   // total widget width
+                // painter.fillRect(0, top, fullWidth, fontMetrics().height(), heatColor(hits));
                double t = (double)hits / m_maxHitCount;
-               painter.setPen(t > 0.5
-                    ? QColor("#993C1D")
-                    : palette().color(QPalette::PlaceholderText));
-                painter.drawText(textX, top, textW, fontMetrics().height(),
-                           Qt::AlignRight | Qt::AlignVCenter,
-                           QString::number(hits));
+               //painter.setPen(heatBackgroundColor(hits));
+               painter.setPen(Qt::black);
+                // painter.drawText(textX, top, textW, fontMetrics().height(),
+                //            Qt::AlignRight | Qt::AlignVCenter,
+                //            QString::number(hits));
+
+                painter.drawText(0, top, countAreaWidth() - 5, fontMetrics().height(),
+                            Qt::AlignRight, QString::number(hits));
             }
         }
 
