@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(RISC_V_Simulator LANGUAGES CXX)
+project(RISC_V_Simulator LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -42,10 +42,10 @@ set(EXTERNAL_DIR "external")
 
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${INCLUDE_DIR} ${SRC_DIR}/ui)
 
-file (GLOB LUA_SRC_FILES CONFIGURE_DEPENDS "${EXTERNAL_DIR}/lua/*.c")
-#Exclude the main files since we don't want to build the standalone interpreter/compiler
-list(FILTER LUA_SRC EXCLUDE REGEX ".*lua\\.c$")
-list(FILTER LUA_SRC EXCLUDE REGEX ".*luac\\.c$")
+file(GLOB LUA_SRC_FILES CONFIGURE_DEPENDS "${EXTERNAL_DIR}/lua-5.5.0/src/*.c")
+# Exclude the standalone interpreter/compiler entry points.
+list(FILTER LUA_SRC_FILES EXCLUDE REGEX ".*[\\/]lua[.]c$")
+list(FILTER LUA_SRC_FILES EXCLUDE REGEX ".*[\\/]luac[.]c$")
 
 
 file(GLOB_RECURSE SRC_FILES "${SRC_DIR}/*.cpp")
@@ -54,6 +54,8 @@ file(GLOB_RECURSE UI_FILES "${SRC_DIR}/*.ui")
 file(GLOB_RECURSE HEADER_FILES
     "${INCLUDE_DIR}/*.h"
     "${SRC_DIR}/*.h")
+
+list(APPEND SRC_FILES ${LUA_SRC_FILES})
 
 ##############resourecs setup#################
 qt6_add_resources(APP_RESOURCES 
@@ -83,9 +85,9 @@ qt_add_executable(RISC_V_Simulator
 )
 set_target_properties(RISC_V_Simulator PROPERTIES OUTPUT_NAME "Kites")
 target_precompile_headers(${PROJECT_NAME} PRIVATE
-    <cstdint>
-    <string>
-    <array>
+    #<cstdint>
+    #<string>
+   # <array>
 )
 
 
@@ -93,7 +95,7 @@ target_include_directories(${PROJECT_NAME}
     PRIVATE 
         ${INCLUDE_DIR} 
         "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_autogen/include"
-        ${EXTERNAL_DIR}/lua
+    ${EXTERNAL_DIR}/lua-5.5.0/src
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -frounding-math -ffloat-store -g -O3)
@@ -113,12 +115,12 @@ install(TARGETS RISC_V_Simulator
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-qt_generate_deploy_app_script(
-    TARGET RISC_V_Simulator
-    OUTPUT_SCRIPT deploy_script
-    NO_UNSUPPORTED_PLATFORM_ERROR
-)
-install(SCRIPT ${deploy_script})
+# qt_generate_deploy_app_script(
+#     TARGET RISC_V_Simulator
+#     OUTPUT_SCRIPT deploy_script
+#     NO_UNSUPPORTED_PLATFORM_ERROR
+# )
+# install(SCRIPT ${deploy_script})
 
 
 
@@ -138,7 +140,8 @@ if(ENABLE_TESTS)
 
     target_include_directories(tests PRIVATE 
     ${INCLUDE_DIR} 
-    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_autogen/include")
+    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_autogen/include"
+    ${EXTERNAL_DIR}/lua-5.5.0/src)
 
     target_link_libraries(tests 
     GTest::gtest 
