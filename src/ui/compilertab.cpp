@@ -10,6 +10,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QClipboard>
 namespace Kites
 {
 
@@ -18,12 +19,40 @@ CompilerTab::CompilerTab(QWidget *parent)
     , ui(new Ui::CompilerTab)
 {
     ui->setupUi(this);
-    connect(ui->convertToAssemblyButton, &QPushButton::clicked, this, &CompilerTab::convertToAssemblyClicked);
+    connect(ui->convertToAssemblyButton, &QPushButton::clicked, this, &CompilerTab::onConvertToAssemblyClicked);
+    connect(ui->copyToMainEditorButton, &QPushButton::clicked, this, &CompilerTab::onCopyToMainEditorClicked);
     ui->splitter_2->setStretchFactor(0, 3);
     ui->splitter_2->setStretchFactor(1, 1);
+    ui->outputTextEdit->setReadOnly(true);
 }
 
-void CompilerTab::convertToAssemblyClicked()
+QString CompilerTab::getUsersCompilerOptions()
+{
+    // we can further check if the options are valid or not before returning
+    // for for now just returning the raw string
+    return ui->compilerOptionslineEdit->text().trimmed();
+}
+
+void CompilerTab::onCopyToMainEditorClicked()
+{
+    QString assemblyCode = ui->outputTextEdit->toPlainText().trimmed();
+    if (assemblyCode.isEmpty()) {
+        // No assembly to copy
+        return;
+    }
+
+    // Emit a signal or directly call a method to send this assembly code to the main editor
+    // For example, if you have a signal:
+    // emit assemblyReadyForMainEditor(assemblyCode);
+    // Or if you have direct access to the main editor instance:
+    // mainEditor->setPlainText(assemblyCode);
+
+    // For demonstration, let's just copy it to the clipboard
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    clipboard->setText(assemblyCode);
+}
+
+void CompilerTab::onConvertToAssemblyClicked()
 {
      // 1. Read C++ from input text edit
     QString cppSource = ui->inputTextEdit->toPlainText();
@@ -65,11 +94,11 @@ void CompilerTab::convertToAssemblyClicked()
 
     QJsonObject options;
     options["userArguments"] =
-    "-O2 -march=rv64gc -mabi=lp64d "
+    "-march=rv64gc -mabi=lp64d "
     "-fno-exceptions "
     "-fno-asynchronous-unwind-tables "
     "-fno-unwind-tables "
-    "-fno-ident";
+    "-fno-ident " + getUsersCompilerOptions();
     options["filters"]       = filters;
 
     QJsonObject payload;

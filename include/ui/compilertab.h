@@ -17,7 +17,10 @@ class CompilerTab : public KitesTab
 public:
     explicit CompilerTab(QWidget *parent = nullptr);
     ~CompilerTab();
-    void convertToAssemblyClicked();
+    QString getUsersCompilerOptions();
+    void onCopyToMainEditorClicked();
+    void onConvertToAssemblyClicked();
+    
 private:
     Ui::CompilerTab *ui;
     QString cleanAssembly(const QString &rawAssembly);
