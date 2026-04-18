@@ -178,7 +178,16 @@ std::string CustomPseudoManager::expandPseudoInstruction(const std::string& sour
                 }
             }
 
-            expandedLines << expansionLineTokens.join(' ');
+            if (expansionLineTokens.size() <= 1)
+            {
+                expandedLines << expansionLineTokens.join(' ');
+            }
+            else
+            {
+                const QString mnemonic = expansionLineTokens.first();
+                const QStringList operands = expansionLineTokens.mid(1);
+                expandedLines << QString("%1 %2").arg(mnemonic, operands.join(", "));
+            }
         }
     }
 
