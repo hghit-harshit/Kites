@@ -4,10 +4,14 @@
 #include <array>
 #include <cstdint>
 #include <deque>
+#include <memory>
+#include <string>
 //#include "vm/memory_controller.h"
 #include "vm/main_memory.h"
 #include <QObject>
 #include "cacheconfig.h"
+#include "policies/cache_replacement_policy.h"
+#include "policies/custom_policy.h"
 
 class DirectMapCache;
 
@@ -18,26 +22,19 @@ static constexpr size_t NUM_LINES = CACHE_SIZE / LINE_SIZE; // Number of cache l
 
 struct CacheLine
 {
-    bool valid   = false;
-    bool dirty   = false;
-    uint64_t tag = 0;
+    bool     valid      = false;
+    bool     dirty      = false;
+    uint64_t tag        = 0;
+
+    //to be used by replacement policies
+    uint64_t age        = 0;        // incremented on each access; used by policies
+    uint64_t insertTime = 0;        // set when line is brought in
+    uint64_t lastAccess = 0;        // updated on every access
+    uint64_t frequency  = 0;        // access frequency counter
+    
     std::vector<uint8_t> data{};
 
     explicit CacheLine(size_t block_size) : data(block_size*4, 0) {}
-};
-
-/**
- * @brief This class stores metadata for each cache set,
- * including LRU counters and FIFO queues for replacement policies.
- * 
- */
-struct SetMetaData
-{
-    std::vector<uint64_t> lru_counter;
-    std::deque<size_t>    fifo_queue;
-    uint64_t              timestamp_counter = 0; // for LRU tracking
-
-    explicit SetMetaData(size_t num_ways) : lru_counter(num_ways, 0) {}
 };
 
 class Cache : public QObject
@@ -64,6 +61,7 @@ public:
         ReplacementPolicy replacement_policy = ReplacementPolicy::LRU);
 
     void Reconfigure(CacheConfig new_config);
+    void LoadCustomPolicyScript(const std::string& path);
     
     //void BringInCache(uint64_t address);
     
@@ -128,6 +126,8 @@ private:
     size_t EvictWay (size_t set_index);
     void   WriteBack(size_t set_index, size_t way_index);
     void   BringIn  (uint64_t address, size_t set_index, size_t way_index);
+    bool   ReadByteAccess(uint64_t address, uint8_t& value, bool count_stats);
+    bool   WriteByteAccess(uint64_t address, uint8_t value, bool count_stats);
     
 
     uint8_t Read(uint64_t address);
@@ -139,14 +139,15 @@ private:
     Cache*  next_level_cache_; // Pointer to the next level cache (if any)
     
     std::vector<std::vector<CacheLine>> sets_; // each set contains num_ways cache lines
-    std::vector<SetMetaData> sets_metadata_;   // metadata for each set
+    uint64_t timestamp_counter_ = 0; // cache-wide clock for replacement metadata
     
-    size_t             num_ways_;
-    size_t             block_size_; // no of words per cache line
-    size_t             num_sets_;
-    WritePolicy        write_policy_;
-    AllocationPolicy   allocation_policy_;
-    ReplacementPolicy  replacement_policy_;
+    size_t num_ways_;
+    size_t block_size_; // no of words per cache line
+    size_t num_sets_;
+    WritePolicy write_policy_;
+    AllocationPolicy allocation_policy_;
+    std::unique_ptr<CacheReplacementPolicy> m_policy;
+    std::string custom_policy_script_path_;
 
     //precomputed bit masks for tag, index and offset
     size_t   offset_bits_ ;
