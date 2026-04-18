@@ -129,6 +129,8 @@ option(ENABLE_TESTS "Build tests" OFF)
 
 if(ENABLE_TESTS)
     #find_package(GTest REQUIRED)
+    option (DISABLE_GUI "Disable GUI components in tests" ON)
+    option (VM_DEBUG_PRINTS "Enable debug prints in VM during tests" OFF)
     enable_testing()
     include_directories(${GTEST_INCLUDE_DIRS})
     #list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/main.cpp")
@@ -153,6 +155,9 @@ if(ENABLE_TESTS)
 
     if(DISABLE_GUI)
     target_compile_definitions(tests PRIVATE DISABLE_GUI)
+    endif()
+    if(VM_DEBUG_PRINTS)
+    target_compile_definitions(tests PRIVATE VM_DEBUG_PRINTS)
     endif()
 
     # add_custom_command(TARGET tests POST_BUILD
