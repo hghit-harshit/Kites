@@ -97,6 +97,25 @@ public:
         return memory_.ReadDoubleWord(address);
     }
 
+    //Functions to write directly to memory with cache bypass
+    void WriteByte_d(uint64_t address, uint8_t value) {
+        memory_.WriteByte(address, value);
+        emit memoryUpdated(address);
+    }
+    void WriteHalfWord_d(uint64_t address, uint16_t value) {
+        memory_.WriteHalfWord(address, value);
+        emit memoryUpdated(address);
+    }
+    void WriteWord_d(uint64_t address, uint32_t value) {
+        memory_.WriteWord(address, value);
+        emit memoryUpdated(address);
+    }
+    void WriteDoubleWord_d(uint64_t address, uint64_t value) {
+        memory_.WriteDoubleWord(address, value);
+        emit memoryUpdated(address);
+    }
+    
+
     void PrintMemory(const uint64_t address, unsigned int rows) {
       memory_.PrintMemory(address, rows);
     }
