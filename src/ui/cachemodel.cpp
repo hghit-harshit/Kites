@@ -112,17 +112,17 @@ QVariant CacheModel::data(const QModelIndex &index, int role) const
                 int word_index = index.column() - COL_DATA_START;
                 size_t byte_offset = static_cast<size_t>(word_index) * 4; // 4 bytes per word
 
-                if (byte_offset < block_size_)
+                if (byte_offset < block_size_*4)
                 {
                     uint32_t word_data = 0;
                     for (int i = 0; i < 4; ++i)
                     {
-                        if (byte_offset + i < block_size_)
+                        if (byte_offset + i < block_size_*4)
                         {
                             word_data |= static_cast<uint32_t>(line.data[byte_offset + i]) << (8 * i);
                         }
                     }
-                    return QString("0x%1").arg(word_data, 8, 16).toUpper();
+                    return QString("0x%1").arg(word_data,0,16).toUpper();
                 }
                 else
                 {
@@ -141,7 +141,7 @@ QVariant CacheModel::data(const QModelIndex &index, int role) const
         {
             tooltip += QString("Tag: 0x%1\n").arg(line.tag, 0, 16).toUpper();
             tooltip += "Data: ";
-            for(size_t i = 0; i < block_size_; ++i)
+            for(size_t i = 0; i < block_size_*4; ++i)
             {
                 tooltip += QString("%1 ").arg(line.data[i], 2, 16, QChar('0')).toUpper();
             }
