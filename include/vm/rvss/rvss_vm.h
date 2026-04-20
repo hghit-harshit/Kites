@@ -17,7 +17,13 @@
 
 // TODO: use a circular buffer instead of a stack for undo/redo
 
-
+struct StepDelta
+{
+	uint64_t old_pc;
+	uint64_t new_pc;
+	std::vector<RegisterChange> register_changes;
+	std::vector<MemoryChange> memory_changes;
+};
 
 class RVSSVM : public VmBase
 {
@@ -45,6 +51,11 @@ public:
   uint64_t csr_old_value_{};
   uint64_t csr_write_val_{};
   uint8_t csr_uimm_{};
+
+  std::stack<StepDelta> undo_stack_;
+	std::stack<StepDelta> redo_stack_;
+
+  StepDelta current_delta_;
 
   void Fetch();
 
