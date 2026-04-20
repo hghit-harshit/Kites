@@ -249,7 +249,7 @@ void RV5StageVM_H_NF::pipeline_fetch()
 
     if (program_counter_ < program_size_)
     {
-        if_id_reg_.instruction = memory_controller_.ReadWord(program_counter_);
+        if_id_reg_.instruction = memory_controller_.ReadWord_d(program_counter_);
         if_id_reg_.pc = program_counter_;
     }
     else
@@ -258,49 +258,49 @@ void RV5StageVM_H_NF::pipeline_fetch()
     }
 }
 
-void RV5StageVM_H_NF::pipeline_decode()
-{
-    uint32_t instruction = if_id_reg_.instruction;
-    if (instruction == NOP) {
-        // Pass through fields as needed
-        id_ex_reg_.pc = if_id_reg_.pc;
-        id_ex_reg_.instruction = instruction;
-        id_ex_reg_.imm = 0;
-        id_ex_reg_.rs1 = id_ex_reg_.rs2 = id_ex_reg_.rd = 0;
-        id_ex_reg_.reg1_data = 0;
-        id_ex_reg_.reg2_data = 0;
+// void RV5StageVM_H_NF::pipeline_decode()
+// {
+    // uint32_t instruction = if_id_reg_.instruction;
+    // if (instruction == NOP) {
+    //     // Pass through fields as needed
+    //     id_ex_reg_.pc = if_id_reg_.pc;
+    //     id_ex_reg_.instruction = instruction;
+    //     id_ex_reg_.imm = 0;
+    //     id_ex_reg_.rs1 = id_ex_reg_.rs2 = id_ex_reg_.rd = 0;
+    //     id_ex_reg_.reg1_data = 0;
+    //     id_ex_reg_.reg2_data = 0;
 
-        // Critically: zero *all* control signals so downstream stages are idle
-        id_ex_reg_.reg_write = false;
-        id_ex_reg_.branch    = false;
-        id_ex_reg_.alu_src   = false;
-        id_ex_reg_.mem_read  = false;
-        id_ex_reg_.mem_write = false;
-        id_ex_reg_.mem_to_reg= false;
-        id_ex_reg_.alu_op    = 0;
-        return;
-    }
-    control_unit_.SetControlSignals(instruction);
+    //     // Critically: zero *all* control signals so downstream stages are idle
+    //     id_ex_reg_.reg_write = false;
+    //     id_ex_reg_.branch    = false;
+    //     id_ex_reg_.alu_src   = false;
+    //     id_ex_reg_.mem_read  = false;
+    //     id_ex_reg_.mem_write = false;
+    //     id_ex_reg_.mem_to_reg= false;
+    //     id_ex_reg_.alu_op    = 0;
+    //     return;
+    // }
+    // control_unit_.SetControlSignals(instruction);
 
-    id_ex_reg_.pc = if_id_reg_.pc;
-    id_ex_reg_.instruction = instruction;
-    id_ex_reg_.imm = ImmGenerator(instruction);
+    // id_ex_reg_.pc = if_id_reg_.pc;
+    // id_ex_reg_.instruction = instruction;
+    // id_ex_reg_.imm = ImmGenerator(instruction);
 
-    id_ex_reg_.rs1 = (instruction >> 15) & 0x1F;
-    id_ex_reg_.rs2 = (instruction >> 20) & 0x1F;
-    id_ex_reg_.rd = (instruction >> 7) & 0x1F;
+    // id_ex_reg_.rs1 = (instruction >> 15) & 0x1F;
+    // id_ex_reg_.rs2 = (instruction >> 20) & 0x1F;
+    // id_ex_reg_.rd = (instruction >> 7) & 0x1F;
 
-    id_ex_reg_.reg1_data = registers_.ReadGpr(id_ex_reg_.rs1);
-    id_ex_reg_.reg2_data = registers_.ReadGpr(id_ex_reg_.rs2);
+    // id_ex_reg_.reg1_data = registers_.ReadGpr(id_ex_reg_.rs1);
+    // id_ex_reg_.reg2_data = registers_.ReadGpr(id_ex_reg_.rs2);
 
-    id_ex_reg_.reg_write = control_unit_.GetRegWrite();
-    id_ex_reg_.branch = control_unit_.GetBranch();
-    id_ex_reg_.alu_src = control_unit_.GetAluSrc();
-    id_ex_reg_.mem_read = control_unit_.GetMemRead();
-    id_ex_reg_.mem_write = control_unit_.GetMemWrite();
-    id_ex_reg_.mem_to_reg = control_unit_.GetMemToReg();
-    id_ex_reg_.alu_op = control_unit_.GetAluOp();
-}
+    // id_ex_reg_.reg_write = control_unit_.GetRegWrite();
+    // id_ex_reg_.branch = control_unit_.GetBranch();
+    // id_ex_reg_.alu_src = control_unit_.GetAluSrc();
+    // id_ex_reg_.mem_read = control_unit_.GetMemRead();
+    // id_ex_reg_.mem_write = control_unit_.GetMemWrite();
+    // id_ex_reg_.mem_to_reg = control_unit_.GetMemToReg();
+    // id_ex_reg_.alu_op = control_unit_.GetAluOp();
+// }
 
 void RV5StageVM_H_NF::pipeline_execute()
 {
@@ -317,19 +317,18 @@ void RV5StageVM_H_NF::pipeline_execute()
         alu_result = static_cast<uint64_t>(id_ex_reg_.imm << 12);
     }
 
-    ex_mem_reg_.prev_reg_write = ex_mem_reg_.reg_write;
-    ex_mem_reg_.prev_rd = ex_mem_reg_.rd; 
-    ex_mem_reg_.pc = id_ex_reg_.pc;
-    ex_mem_reg_.instruction = id_ex_reg_.instruction;
-    ex_mem_reg_.alu_result = alu_result;
-    ex_mem_reg_.rd = id_ex_reg_.rd;
-    ex_mem_reg_.reg2_data = id_ex_reg_.reg2_data;
-
-    ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
-    ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
-    ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
-    ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
-    ex_mem_reg_.branch_taken = false;
+    ex_mem_reg_.prev_reg_write   = ex_mem_reg_.reg_write;
+    ex_mem_reg_.prev_rd          = ex_mem_reg_.rd; 
+    ex_mem_reg_.pc               = id_ex_reg_.pc;
+    ex_mem_reg_.instruction      = id_ex_reg_.instruction;
+    ex_mem_reg_.alu_result       = alu_result;
+    ex_mem_reg_.rd               = id_ex_reg_.rd;
+    ex_mem_reg_.reg2_data        = id_ex_reg_.reg2_data;
+    ex_mem_reg_.reg_write        = id_ex_reg_.reg_write;
+    ex_mem_reg_.mem_to_reg       = id_ex_reg_.mem_to_reg;
+    ex_mem_reg_.mem_read         = id_ex_reg_.mem_read;
+    ex_mem_reg_.mem_write        = id_ex_reg_.mem_write;
+    ex_mem_reg_.branch_taken     = false;
     ex_mem_reg_.branch_target_pc = 0;
 
     uint32_t instruction = id_ex_reg_.instruction;

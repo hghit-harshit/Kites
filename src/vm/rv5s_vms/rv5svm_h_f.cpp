@@ -314,7 +314,7 @@ void RV5StageVM_H_F::pipeline_fetch()
 
     if (program_counter_ < program_size_)
     {
-        if_id_reg_.instruction = memory_controller_.ReadWord(program_counter_);
+        if_id_reg_.instruction = memory_controller_.ReadWord_d(program_counter_);
         if_id_reg_.pc = program_counter_;
     }
     else
@@ -323,57 +323,57 @@ void RV5StageVM_H_F::pipeline_fetch()
     }
 }
 
-void RV5StageVM_H_F::pipeline_decode()
-{
+// void RV5StageVM_H_F::pipeline_decode()
+// {
     // This function only runs if a stall was NOT active in Step().
-    uint32_t instruction = if_id_reg_.instruction;
-    if (instruction == NOP)
-    {
-        // Pass through fields as needed
-        id_ex_reg_.pc = if_id_reg_.pc;
-        id_ex_reg_.instruction = instruction;
-        id_ex_reg_.imm = 0;
-        id_ex_reg_.rs1 = id_ex_reg_.rs2 = id_ex_reg_.rd = 0;
-        id_ex_reg_.reg1_data = 0;
-        id_ex_reg_.reg2_data = 0;
+    // uint32_t instruction = if_id_reg_.instruction;
+    // if (instruction == NOP)
+    // {
+    //     // Pass through fields as needed
+    //     id_ex_reg_.pc = if_id_reg_.pc;
+    //     id_ex_reg_.instruction = instruction;
+    //     id_ex_reg_.imm = 0;
+    //     id_ex_reg_.rs1 = id_ex_reg_.rs2 = id_ex_reg_.rd = 0;
+    //     id_ex_reg_.reg1_data = 0;
+    //     id_ex_reg_.reg2_data = 0;
 
-        // Critically: zero *all* control signals so downstream stages are idle
-        id_ex_reg_.reg_write = false;
-        id_ex_reg_.branch = false;
-        id_ex_reg_.alu_src = false;
-        id_ex_reg_.mem_read = false;
-        id_ex_reg_.mem_write = false;
-        id_ex_reg_.mem_to_reg = false;
-        id_ex_reg_.alu_op = 0;
-        return;
-    }
-    control_unit_.SetControlSignals(instruction);
+    //     // Critically: zero *all* control signals so downstream stages are idle
+    //     id_ex_reg_.reg_write = false;
+    //     id_ex_reg_.branch = false;
+    //     id_ex_reg_.alu_src = false;
+    //     id_ex_reg_.mem_read = false;
+    //     id_ex_reg_.mem_write = false;
+    //     id_ex_reg_.mem_to_reg = false;
+    //     id_ex_reg_.alu_op = 0;
+    //     return;
+    // }
+    // control_unit_.SetControlSignals(instruction);
 
-    // Latch data for the ID/EX register
-    id_ex_reg_.pc = if_id_reg_.pc;
-    id_ex_reg_.instruction = instruction;
-    id_ex_reg_.imm = ImmGenerator(instruction);
+    // // Latch data for the ID/EX register
+    // id_ex_reg_.pc = if_id_reg_.pc;
+    // id_ex_reg_.instruction = instruction;
+    // id_ex_reg_.imm = ImmGenerator(instruction);
 
-    // Extract GPR register numbers
-    id_ex_reg_.rs1 = (instruction >> 15) & 0x1F;
-    id_ex_reg_.rs2 = (instruction >> 20) & 0x1F;
-    id_ex_reg_.rd = (instruction >> 7) & 0x1F;
+    // // Extract GPR register numbers
+    // id_ex_reg_.rs1 = (instruction >> 15) & 0x1F;
+    // id_ex_reg_.rs2 = (instruction >> 20) & 0x1F;
+    // id_ex_reg_.rd = (instruction >> 7) & 0x1F;
 
-    // Read GPR register data naively (Data will be overwritten by forwarding logic)
-    id_ex_reg_.reg1_data = registers_.ReadGpr(id_ex_reg_.rs1);
-    id_ex_reg_.reg2_data = registers_.ReadGpr(id_ex_reg_.rs2);
+    // // Read GPR register data naively (Data will be overwritten by forwarding logic)
+    // id_ex_reg_.reg1_data = registers_.ReadGpr(id_ex_reg_.rs1);
+    // id_ex_reg_.reg2_data = registers_.ReadGpr(id_ex_reg_.rs2);
 
-    // Pass all control signals to the next stage
-    id_ex_reg_.reg_write = control_unit_.GetRegWrite();
-    // FPR control signals are omitted for pure integer
+    // // Pass all control signals to the next stage
+    // id_ex_reg_.reg_write = control_unit_.GetRegWrite();
+    // // FPR control signals are omitted for pure integer
 
-    id_ex_reg_.branch = control_unit_.GetBranch();
-    id_ex_reg_.alu_src = control_unit_.GetAluSrc();
-    id_ex_reg_.mem_read = control_unit_.GetMemRead();
-    id_ex_reg_.mem_write = control_unit_.GetMemWrite();
-    id_ex_reg_.mem_to_reg = control_unit_.GetMemToReg();
-    id_ex_reg_.alu_op = control_unit_.GetAluOp();
-}
+    // id_ex_reg_.branch = control_unit_.GetBranch();
+    // id_ex_reg_.alu_src = control_unit_.GetAluSrc();
+    // id_ex_reg_.mem_read = control_unit_.GetMemRead();
+    // id_ex_reg_.mem_write = control_unit_.GetMemWrite();
+    // id_ex_reg_.mem_to_reg = control_unit_.GetMemToReg();
+    // id_ex_reg_.alu_op = control_unit_.GetAluOp();
+// }
 
 void RV5StageVM_H_F::pipeline_execute()
 {
