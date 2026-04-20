@@ -26,10 +26,11 @@ private:
     Memory memory_; ///< The main memory object.
     Cache  l1_cache_; ///< The cache object for faster memory access.
     Cache  l2_cache_; ///< The second level cache object for even faster memory access.
-    //Cache instruction_cache_; ///< The cache object for instructions.
+    Cache  instruction_cache_; ///< The cache object for instructions.
+
 
 public:
-    MemoryController():l2_cache_(memory_), l1_cache_(l2_cache_)
+    MemoryController():l2_cache_(memory_), l1_cache_(l2_cache_), instruction_cache_(l2_cache_)
     {
     }
 
@@ -37,6 +38,7 @@ public:
         memory_.Reset();
         l1_cache_.Reset();
         l2_cache_.Reset();
+        instruction_cache_.Reset();
         emit memoryResetSignal(); // this will notify views to reset themselves
     }
 
@@ -97,6 +99,11 @@ public:
         return memory_.ReadDoubleWord(address);
     }
 
+    //function to read from instruction cache
+    [[nodiscard]] uint32_t ReadInstruction(uint64_t address) {
+        return instruction_cache_.ReadWord(address);
+    }
+
     //Functions to write directly to memory with cache bypass
     void WriteByte_d(uint64_t address, uint8_t value) {
         memory_.WriteByte(address, value);
@@ -130,6 +137,7 @@ public:
 
     Cache* GetL1Cache() { return &l1_cache_; }
     Cache* GetL2Cache() { return &l2_cache_; }
+    Cache* GetInstructionCache() { return &instruction_cache_; }
     //Cache* GetCache() { return &l1_cache_; }
     signals:
     void memoryUpdated(uint64_t address);
