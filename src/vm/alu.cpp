@@ -219,6 +219,10 @@ namespace alu {
   std::memcpy(&b, &inb, sizeof(float));
   std::memcpy(&c, &inc, sizeof(float));
   float result = 0.0;
+  uint64_t int_result  = 0;
+  bool is_int_result = false;
+  // int_result is used for instructions like feq flt
+  // where the result is either 0 or 1
 
   uint8_t fcsr = 0;
 
@@ -416,26 +420,29 @@ namespace alu {
       break;
     }
     case AluOp::FEQ_S: {
+      is_int_result = true;
       if (std::isnan(a) || std::isnan(b)) {
-        result = 0.0f;
+        int_result = 0;
       } else {
-        result = (a==b) ? 1.0f : 0.0f;
+        int_result = (a==b) ? 1 : 0;
       }
       break;
     }
     case AluOp::FLT_S: {
+      is_int_result = true;
       if (std::isnan(a) || std::isnan(b)) {
-        result = 0.0f;
+        int_result = 0;
       } else {
-        result = (a < b) ? 1.0f : 0.0f;
+        int_result = (a < b) ? 1 : 0;
       }
       break;
     }
     case AluOp::FLE_S: {
+      is_int_result = true;
       if (std::isnan(a) || std::isnan(b)) {
-        result = 0.0f;
+        int_result = 0;
       } else {
-        result = (a <= b) ? 1.0f : 0.0f;
+        int_result = (a <= b) ? 1 : 0;
       }
       break;
     }
@@ -481,7 +488,9 @@ namespace alu {
   if (raised & FE_INEXACT) fcsr |= FCSR_INEXACT;
 
   std::fesetround(original_rm);
-
+  if(is_int_result) {
+    return {int_result, fcsr};
+  }
   uint32_t result_bits = 0;
   std::memcpy(&result_bits, &result, sizeof(result));
   return {static_cast<uint64_t>(result_bits), fcsr};
@@ -497,6 +506,10 @@ namespace alu {
   std::memcpy(&b, &inb, sizeof(double));
   std::memcpy(&c, &inc, sizeof(double));
   double result = 0.0;
+  uint64_t int_result = 0;
+  bool is_int_result = false;
+  // int_result is used for instructions like feq flt
+  // where the result is either 0 or 1
 
   uint8_t fcsr = 0;
 
@@ -695,26 +708,29 @@ namespace alu {
       break;
     }
     case AluOp::FEQ_D: {
+      is_int_result = true;
       if (std::isnan(a) || std::isnan(b)) {
-        result = 0.0;
+        int_result = 0;
       } else {
-        result = (a==b) ? 1.0 : 0.0;
+        int_result = (a==b) ? 1 : 0;
       }
       break;
     }
     case AluOp::FLT_D: {
+      is_int_result = true;
       if (std::isnan(a) || std::isnan(b)) {
-        result = 0.0;
+        int_result = 0;
       } else {
-        result = (a < b) ? 1.0 : 0.0;
+        int_result = (a < b) ? 1 : 0;
       }
       break;
     }
     case AluOp::FLE_D: {
+      is_int_result = true;
       if (std::isnan(a) || std::isnan(b)) {
-        result = 0.0;
+        int_result = 0;
       } else {
-        result = (a <= b) ? 1.0 : 0.0;
+        int_result = (a <= b) ? 1 : 0;
       }
       break;
     }
@@ -771,6 +787,9 @@ namespace alu {
   if (raised & FE_INEXACT) fcsr |= FCSR_INEXACT;
 
   std::fesetround(original_rm);
+  if (is_int_result) {
+    return {int_result, fcsr};
+  }
 
   uint64_t result_bits = 0;
   std::memcpy(&result_bits, &result, sizeof(result));
