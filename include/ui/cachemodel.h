@@ -1,6 +1,7 @@
 #pragma once
 #include <QAbstractTableModel>
 #include "vm/cache/cache.h"
+#include <cstdint>
 
 namespace Kites
 {
@@ -20,12 +21,14 @@ class CacheModel : public QAbstractTableModel
     public slots:
         void updateCacheData(uint64_t address);
         void updateCacheConfig(CacheConfig newConfig);
+        void onCacheMiss(uint64_t address);
 
     private:
 
         size_t RowToSetIndex(int row) const { return row / num_ways_; }
         size_t RowToWayIndex(int row) const { return row % num_ways_; }
         int NumberOfWordColumns()     const { return static_cast<int>(block_size_ ); } // number of 4-byte words in a cache line
+        int AddressToRow(uint64_t address) const;
 
         static constexpr int COL_INDEX = 0;
         static constexpr int COL_VALID = 1;
@@ -37,6 +40,8 @@ class CacheModel : public QAbstractTableModel
         size_t num_sets_ = 0;
         size_t num_ways_ = 0;
         size_t block_size_ = 0;
+        int last_miss_row_ = -1;
+        bool miss_highlight_pending_ = false;
     
     
    

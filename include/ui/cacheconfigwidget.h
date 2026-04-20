@@ -27,8 +27,17 @@ public:
     void SetWordsExponent(int value, bool notify = true);
 private:
     Ui::CacheConfigWidget *ui;
+    void OnCustomPolicyClicked();
+    ReplacementPolicy m_lastSelectedPolicy; // to be used when loading custom script fails
+    
+public slots:
+    void CacheStatsUpdated(CacheStats newStats);
+    void CustomPolicyScriptLoaded(bool success, const std::string& message);
+    
 signals:
     void configChanged();
+    void customPolicyScriptSelected(const std::string& scriptPath);
+    
     
 };
 } // namespace Kites

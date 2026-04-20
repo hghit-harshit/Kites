@@ -61,7 +61,7 @@ public:
         ReplacementPolicy replacement_policy = ReplacementPolicy::LRU);
 
     void Reconfigure(CacheConfig new_config);
-    void LoadCustomPolicyScript(const std::string& path);
+    
     
     //void BringInCache(uint64_t address);
     
@@ -85,28 +85,16 @@ public:
     size_t GetMisses() const { return misses_; }
     double GetHitRate() const { size_t total = hits_ + misses_; return total > 0 ? static_cast<double>(hits_) / total : 0.0; }
     double GetMissRate() const { size_t total = hits_ + misses_; return total > 0 ? static_cast<double>(misses_) / total : 0.0; }
+    void UpdateStats();
 
     size_t GetNumSets() const { return num_sets_; }
     size_t GetNumWays() const { return num_ways_; }
     size_t GetBlockSize() const { return block_size_; }
 
     const CacheLine& GetCacheLine(size_t set_index, size_t way_index) const;
+public slots:
+    void LoadCustomPolicyScript(const std::string& path);
     
-
-    // inline CacheLine GetCacheLineByAddress(uint64_t address) const
-    // {
-    //     size_t index = GetIndex(address);
-    //     return cache_lines_[index];
-    // }
-    
-    // inline CacheLine GetCacheLineByIndex(size_t index) const
-    // {
-    //     if(index >= NUM_LINES)
-    //     {
-    //         throw std::out_of_range(std::string("Cache line index out of range: ") + std::to_string(index));
-    //     }
-    //     return cache_lines_[index];
-    // }
 private:
     // Next Level Helper Functions
     uint8_t  ReadFromNextLevel(uint64_t address);
@@ -137,6 +125,7 @@ private:
     //Data Members
     Memory* memory_; // Reference to the main memory
     Cache*  next_level_cache_; // Pointer to the next level cache (if any)
+
     
     std::vector<std::vector<CacheLine>> sets_; // each set contains num_ways cache lines
     uint64_t timestamp_counter_ = 0; // cache-wide clock for replacement metadata
@@ -161,6 +150,9 @@ private:
 
     void SetupCache(size_t cache_size, size_t block_size, size_t num_ways); //common setup function for both constructors
     signals:
+        void CacheMissSignal(uint64_t address);
         void CacheLineUpdatedSignal(uint64_t address);
         void CacheReconfiguredSignal(CacheConfig newConfig);
+        void CacheStatsUpdatedSignal(CacheStats newStats);
+        void CustomPolicyScriptLoadedSignal(bool success, const std::string&errorMessage = "");
 };
