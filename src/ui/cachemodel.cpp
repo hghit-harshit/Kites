@@ -26,6 +26,7 @@ CacheModel::CacheModel(QObject* parent, Cache* cache)
             block_size_ = m_cache->GetBlockSize();
             endResetModel();
         });
+        connect(m_cache, &Cache::CacheMissSignal, this, &CacheModel::onCacheMiss);
     }
 }
 
@@ -177,13 +178,18 @@ QVariant CacheModel::headerData(int section, Qt::Orientation orientation, int ro
     return QVariant();
 }
 
-void CacheModel::updateCacheConfig(CacheConfig newConfig)
+int CacheModel::AddressToRow(uint64_t address) const
 {
-    beginResetModel();
-    num_sets_ = newConfig.num_lines;
-    num_ways_ = newConfig.num_ways;
-    block_size_ = newConfig.block_size;
-    endResetModel();
+    if (block_size_ == 0 || num_ways_ == 0)
+        return -1;
+
+    size_t block_offset_bits = static_cast<size_t>(std::log2(block_size_ * 4)); // block size in bytes
+    size_t set_index_bits = static_cast<size_t>(std::log2(num_sets_));
+    
+    size_t set_index = (address >> block_offset_bits) & ((1 << set_index_bits) - 1);
+    
+    // We will highlight the first way of the set on a miss for simplicity
+    return static_cast<int>(set_index * num_ways_);
 }
 
 void CacheModel::updateCacheData(uint64_t address)
@@ -205,5 +211,28 @@ void CacheModel::updateCacheData(uint64_t address)
     }
 
     emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
+}
+
+void CacheModel::updateCacheConfig(CacheConfig newConfig)
+{
+    beginResetModel();
+    num_sets_ = newConfig.num_lines;
+    num_ways_ = newConfig.num_ways;
+    block_size_ = newConfig.block_size;
+    endResetModel();
+}
+
+void CacheModel::onCacheMiss(uint64_t address)
+{
+    if (!m_cache)
+        return;
+ 
+    int miss_row = AddressToRow(address);
+    if (miss_row >= 0 && miss_row < rowCount())
+    {
+        last_miss_row_ = miss_row;
+        miss_highlight_pending_ = true;
+        emit dataChanged(index(miss_row, 0), index(miss_row, columnCount() - 1), {Qt::BackgroundRole});
+    }
 }
 }// namespace Kites
