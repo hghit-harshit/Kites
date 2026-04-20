@@ -29,9 +29,14 @@ protected:
     // The control unit for the pipeline
     RV5SControlUnit control_unit_;
 
-    void memory_write_back();
+    void memory_writeback();
+    void memory_writeback_float();
+    void memory_writeback_double();
+
     void register_write_back(const uint64_t& write_data);
     void memory_read();
+    void memory_read_float();
+    void memory_read_double();
 
 
     void print_pipeline_registers_debug();
@@ -41,10 +46,22 @@ protected:
     
     // --- Private methods for each pipeline stage ---
     virtual void pipeline_fetch() = 0;
-    virtual void pipeline_decode() = 0;
+    void pipeline_decode();
     virtual void pipeline_execute() = 0;
+    virtual void pipeline_execute_float(){};
+    virtual void pipeline_execute_double() {};
+
+    void execute_csr(){};
+    // therse function are same across all rv5s vms so we can define them here
+    // and implement them in the .cpp file
     void pipeline_memory();
+    //void pipeline_memory_float();
+    //void pipeline_memory_double();
+
+
     void pipeline_writeback();
+    void pipeline_writeback_float();
+    void pipeline_writeback_double();
 
     // --- Specialized handler functions (called from pipeline stages) ---
     virtual void handle_syscall() = 0;

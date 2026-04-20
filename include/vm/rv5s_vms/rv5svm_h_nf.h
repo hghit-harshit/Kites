@@ -50,7 +50,7 @@ private:
 
     // --- Private methods for each pipeline stage ---
     void pipeline_fetch() override;
-    void pipeline_decode() override;
+    // void pipeline_decode() override;
     void pipeline_execute() override;
     //void pipeline_memory() override;
     // void pipeline_writeback() override;

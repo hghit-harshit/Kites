@@ -56,7 +56,7 @@ private:
     // MEM_WB_Register mem_wb_reg_;
 
     // The control unit for the pipeline
-    RV5SControlUnit control_unit_;
+    //RV5SControlUnit control_unit_;
 
     // --- Undo/Redo History ---
     std::stack<StepDelta> undo_stack_;
@@ -67,14 +67,18 @@ private:
     bool is_pipeline_drained() const;
     // --- Private methods for each pipeline stage ---
     void pipeline_fetch() override;
-    void pipeline_decode() override;
+    //void pipeline_decode() override;
     void pipeline_execute() override;
+
+    void pipeline_execute_float() override;
+    void pipeline_execute_double() override;
     //void pipeline_memory() override;
     // void pipeline_writeback() override;
 
-    uint64_t execute_float(); // New method to handle floating-point instructions in EX stage
-    void memory_float();
-    void writeback_float();
+    uint64_t execute_float();
+   uint64_t execute_double();
+    //void memory_float();
+
 
     // --- Specialized handler functions (called from pipeline stages) ---
     
