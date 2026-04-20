@@ -26,6 +26,8 @@ public:
 
     std::string_view name() const override;
 
+    ReplacementPolicy type() const override;
+
 private:
         //std::vector<std::queue<size_t>> fifo_queues; // Queue to maintain the order of lines for FIFO eviction
 };

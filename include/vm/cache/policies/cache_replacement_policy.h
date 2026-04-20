@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <span>
 #include <string_view>
-
+#include "vm/cache/cacheconfig.h"
 /**
  * @brief This scructure provides a read-only view of a cache line for replacement policies.
  * 
@@ -85,4 +85,6 @@ public:
                          const CacheContextView& context) = 0;
 
     virtual std::string_view name() const = 0;
+
+    virtual ReplacementPolicy type() const = 0;
 };

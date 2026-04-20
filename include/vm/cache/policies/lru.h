@@ -25,4 +25,6 @@ public:
 
     std::string_view name() const override;
 
+    ReplacementPolicy type() const override;
+
 };

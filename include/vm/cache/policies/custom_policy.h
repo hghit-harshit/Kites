@@ -35,8 +35,13 @@ public:
 
 	std::string_view name() const override;
 
+	ReplacementPolicy type() const override;
+
 	void loadScript(const std::string& scriptPath);
+
+	std::string getScriptPath() const ;
 
 private:
 	std::unique_ptr<CustomPolicyEngine> m_engine_;
+	std::string custom_policy_script_path_;
 };
