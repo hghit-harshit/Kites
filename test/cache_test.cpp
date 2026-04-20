@@ -229,6 +229,29 @@ TEST_F(CacheTest, FlushThenInvalidates)
             EXPECT_FALSE(cache->GetCacheLine(s, w).valid);
 }
 
+TEST_F(CacheTest, CrossLineWriteDoesNotCorruptUnrelatedMemory)
+{
+    // 1-word lines force a word store at +2 to span two cache lines.
+    Memory ram2;
+    Cache dm_cache(ram2, 4, 1, 1,
+                   WritePolicy::WriteBack,
+                   AllocationPolicy::WriteAllocate,
+                   ReplacementPolicy::LRU);
+
+    dm_cache.WriteWord(0x02, 0xA1B2C3D4);
+    dm_cache.Flush();
+
+    EXPECT_EQ(ram2.ReadByte(0x02), 0xD4);
+    EXPECT_EQ(ram2.ReadByte(0x03), 0xC3);
+    EXPECT_EQ(ram2.ReadByte(0x04), 0xB2);
+    EXPECT_EQ(ram2.ReadByte(0x05), 0xA1);
+
+    // Nearby bytes outside write span should remain untouched.
+    EXPECT_EQ(ram2.ReadByte(0x01), 0x00);
+    EXPECT_EQ(ram2.ReadByte(0x06), 0x00);
+    EXPECT_EQ(ram2.ReadByte(0x80), 0x00);
+}
+
 // ── Replacement policies ──────────────────────────────────────────────────────
 class ReplacementPolicyTest : public ::testing::Test
 {

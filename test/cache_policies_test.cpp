@@ -25,16 +25,16 @@ TEST_F(FIFOTest, BasicEvictionOrder)
     // evict A (first inserted)
     cache.ReadWord(0x0C);
 
-    // A should be evicted — miss
-    size_t misses_before = cache.GetMisses();
-    cache.ReadWord(0x00);
-    EXPECT_EQ(cache.GetMisses(), misses_before + 1);
-
     // B and C still in cache — hits
     size_t hits_before = cache.GetHits();
     cache.ReadWord(0x04);
     cache.ReadWord(0x08);
     EXPECT_EQ(cache.GetHits(), hits_before + 2);
+
+    // A should be evicted — miss
+    size_t misses_before = cache.GetMisses();
+    cache.ReadWord(0x00);
+    EXPECT_EQ(cache.GetMisses(), misses_before + 1);
 }
 
 TEST_F(FIFOTest, HitsDoNotAffectEvictionOrder)
@@ -55,15 +55,15 @@ TEST_F(FIFOTest, HitsDoNotAffectEvictionOrder)
     // bring in C — evicts A despite recent hits
     cache.ReadWord(0x08);
 
-    // A should be evicted — miss
-    size_t misses_before = cache.GetMisses();
-    cache.ReadWord(0x00);
-    EXPECT_EQ(cache.GetMisses(), misses_before + 1);
-
     // B still in cache — hit
     size_t hits_before = cache.GetHits();
     cache.ReadWord(0x04);
     EXPECT_EQ(cache.GetHits(), hits_before + 1);
+
+    // A should be evicted — miss
+    size_t misses_before = cache.GetMisses();
+    cache.ReadWord(0x00);
+    EXPECT_EQ(cache.GetMisses(), misses_before + 1);
 }
 
 TEST_F(FIFOTest, CircularEvictionOrder)
