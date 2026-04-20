@@ -17,7 +17,8 @@ KitesEditor::KitesEditor(QWidget *parent)
     QString family = QFontDatabase::applicationFontFamilies(id).at(0);
     setFont(QFont(family, 11));
 
-    setTabStopDistance(4);
+    const int tapspace = 4;
+    setTabStopDistance(tapspace * fontMetrics().horizontalAdvance(' '));
     updateLineNumberAreaWidth(0);
     highlightCurrentLine();
 }
