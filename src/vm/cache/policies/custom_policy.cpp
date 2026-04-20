@@ -13,6 +13,7 @@ CustomReplacementPolicy::CustomReplacementPolicy(std::string scriptPath)
 {
     if (!scriptPath.empty())
     {
+        custom_policy_script_path_ = scriptPath;
         loadScript(scriptPath);
     }
 }
@@ -80,4 +81,14 @@ void CustomReplacementPolicy::onEvict(const CacheLineView& line,
 std::string_view CustomReplacementPolicy::name() const
 {
     return "CUSTOM";
+}
+
+ReplacementPolicy CustomReplacementPolicy::type() const
+{
+    return ReplacementPolicy::Custom;
+}
+
+std::string CustomReplacementPolicy::getScriptPath() const
+{
+    return custom_policy_script_path_;
 }

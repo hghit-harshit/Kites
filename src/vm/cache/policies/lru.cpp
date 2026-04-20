@@ -5,7 +5,10 @@ std::string_view LRUReplacementPolicy::name() const
 {
     return "LRU";
 }
-
+ReplacementPolicy LRUReplacementPolicy::type() const
+{
+    return ReplacementPolicy::LRU;
+}
 size_t LRUReplacementPolicy::chooseVictim(std::span<const CacheLineView> lines,
                                          const CacheRequestView& request,
                                          const CacheContextView& context)

@@ -5,6 +5,11 @@ std::string_view FIFOReplacementPolicy::name() const
     return "FIFO";
 }
 
+ReplacementPolicy FIFOReplacementPolicy::type() const
+{
+    return ReplacementPolicy::FIFO;
+}
+
 size_t FIFOReplacementPolicy::chooseVictim(std::span<const CacheLineView> lines,
                  const CacheRequestView& request,
                  const CacheContextView& context) 
