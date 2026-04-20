@@ -70,7 +70,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton_2">
+           <widget class="QPushButton" name="copyToMainEditorButton">
             <property name="text">
              <string>CopyToMainEditor</string>
             </property>
@@ -79,7 +79,7 @@
          </layout>
         </item>
         <item>
-         <widget class="QPlainTextEdit" name="outputTextEdit"/>
+         <widget class="Editor" name="outputTextEdit"/>
         </item>
        </layout>
       </widget>
@@ -94,6 +94,11 @@
    <class>CompilerEditor</class>
    <extends>QPlainTextEdit</extends>
    <header location="global">ui/compiler_editor.h</header>
+  </customwidget>
+  <customwidget>
+   <class>Editor</class>
+   <extends>QPlainTextEdit</extends>
+   <header location="global">ui/editor.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
