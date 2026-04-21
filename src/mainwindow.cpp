@@ -35,7 +35,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     setWindowTitle("Kites RISC-V Simulator");
     setWindowIcon(QIcon(":/icons/kite.png"));
     setUpPalettes();
-    toggleTheme(Theme::Light);
+    toggleTheme(Theme::Dark);
     setupVmStateDirectory();
 
 
@@ -171,19 +171,37 @@ void MainWindow::setUpToolBar()
         }
         
     });
+
+    connect(debugAction,&QAction::triggered,this,[this,processorAction,
+    runAction,pauseAction,stepAction,undoAction,redoAction,debugAction](){
+        debugAction->setDisabled(true);
+        processorAction->setDisabled(true);
+        pauseAction->setEnabled(true);
+        stepAction->setEnabled(true);
+        undoAction->setEnabled(true);
+        redoAction->setEnabled(true);
+        m_vmManager->debugRun();
+    });
+
     connect(processorAction,&QAction::triggered,this,&MainWindow::processorChangeDialog);
+
     connect(spinbox,qOverload<int>(&QSpinBox::valueChanged),this,[this](int value){
         m_vmManager->setStepDelay(value);
     });
-    connect(pauseAction,&QAction::triggered,this,[this,pauseAction](){
+
+    connect(pauseAction,&QAction::triggered,this,[this,pauseAction,undoAction,redoAction](){
         if(pauseAction->text() == "Pause")
         {
             pauseAction->setText("Resume");
+            undoAction->setEnabled(true);
+            redoAction->setEnabled(true);
             m_vmManager->pause();
         }
         else
         {
             pauseAction->setText("Pause");
+            undoAction->setDisabled(true);
+            redoAction->setDisabled(true);
             m_vmManager->resume();
         }
     });
