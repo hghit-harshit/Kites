@@ -3,7 +3,6 @@
 #include "vm/cache/policies/fifo.h"
 #include "vm/cache/policies/custom_policy.h"
 #include <span>
-
 static std::unique_ptr<CacheReplacementPolicy> CreatePolicy(ReplacementPolicy policy_type,
                                                             const std::string& custom_policy_script_path)
 {
@@ -13,7 +12,7 @@ static std::unique_ptr<CacheReplacementPolicy> CreatePolicy(ReplacementPolicy po
             return std::make_unique<LRUReplacementPolicy>();
         case ReplacementPolicy::FIFO:
             return std::make_unique<FIFOReplacementPolicy>();
-        case ReplacementPolicy::CUSTOM:
+        case ReplacementPolicy::Custom:
             return std::make_unique<CustomReplacementPolicy>(custom_policy_script_path);
         default:
             return std::make_unique<LRUReplacementPolicy>();  // default fallback
@@ -78,18 +77,7 @@ void Cache::Reconfigure(CacheConfig new_config)
     emit CacheReconfiguredSignal(new_config); 
 }
 
-void Cache::LoadCustomPolicyScript(const std::string& path)
-{
-    custom_policy_script_path_ = path;
 
-    auto* customPolicy = dynamic_cast<CustomReplacementPolicy*>(m_policy.get());
-    if (!customPolicy)
-    {
-        throw std::runtime_error("Current cache replacement policy is not CUSTOM");
-    }
-
-    customPolicy->loadScript(path);
-}
 
 const CacheLine& Cache::GetCacheLine(size_t set_index, size_t way_index) const
 {
@@ -417,48 +405,103 @@ void Cache::WriteCacheGeneric(uint64_t address, T value)
 
 uint8_t Cache::ReadByte(uint64_t address)
 {
-    return ReadGeneric<uint8_t>(address);
+    const size_t misses_before = misses_;
+    const uint8_t value = ReadGeneric<uint8_t>(address);
+    if (misses_ > misses_before)
+    {
+        emit CacheMissSignal(address);
+    }
+    emit CacheLineUpdatedSignal(address);
+    UpdateStats();
+    return value;
 }
 
 uint16_t Cache::ReadHalfWord(uint64_t address)
 {
-    return ReadGeneric<uint16_t>(address);
+    const size_t misses_before = misses_;
+    const uint16_t value = ReadGeneric<uint16_t>(address);
+    if (misses_ > misses_before)
+    {
+        emit CacheMissSignal(address);
+    }
+    emit CacheLineUpdatedSignal(address);
+    UpdateStats();
+    return value;
 }
 
 uint32_t Cache::ReadWord(uint64_t address)
 {
-    return ReadGeneric<uint32_t>(address);
+    const size_t misses_before = misses_;
+    const uint32_t value = ReadGeneric<uint32_t>(address);
+    if (misses_ > misses_before)
+    {
+        emit CacheMissSignal(address);
+    }
+    emit CacheLineUpdatedSignal(address);
+    UpdateStats(); 
+    return value;
 }  
 
 uint64_t Cache::ReadDoubleWord(uint64_t address)
 {
-    return ReadGeneric<uint64_t>(address);
+    const size_t misses_before = misses_;
+    const uint64_t value = ReadGeneric<uint64_t>(address);
+    if (misses_ > misses_before)
+    {
+        emit CacheMissSignal(address);
+    }
+    emit CacheLineUpdatedSignal(address);
+    UpdateStats();
+    return value;
 }
 
 void Cache::WriteByte(uint64_t address, uint8_t value)
 {
-    
+    const size_t misses_before = misses_;
     WriteCacheGeneric<uint8_t>(address, value);
+    if (misses_ > misses_before)
+    {
+        emit CacheMissSignal(address);
+    }
     emit CacheLineUpdatedSignal(address);
+    UpdateStats();
 }
 
 void Cache::WriteHalfWord(uint64_t address, uint16_t value)
 {
+    const size_t misses_before = misses_;
     WriteCacheGeneric<uint16_t>(address, value);
+    if (misses_ > misses_before)
+    {
+        emit CacheMissSignal(address);
+    }
     emit CacheLineUpdatedSignal(address);
+    UpdateStats();
 }
 
 void Cache::WriteWord(uint64_t address, uint32_t value)
 {
+    const size_t misses_before = misses_;
     WriteCacheGeneric<uint32_t>(address, value);
+    if (misses_ > misses_before)
+    {
+        emit CacheMissSignal(address);
+    }
     emit CacheLineUpdatedSignal(address);
+    UpdateStats();
 
 }
 
 void Cache::WriteDoubleWord(uint64_t address, uint64_t value)
 {
+    const size_t misses_before = misses_;
     WriteCacheGeneric<uint64_t>(address, value);
+    if (misses_ > misses_before)
+    {
+        emit CacheMissSignal(address);
+    }
     emit CacheLineUpdatedSignal(address);
+    UpdateStats();
 
 }
 
@@ -495,6 +538,37 @@ void Cache::Flush()
         }
     }
     Reset();
+}
+
+void Cache::UpdateStats()
+{
+    CacheStats stats;
+    stats.hits = hits_;
+    stats.misses = misses_;
+    // For write-backs, we would need to track them in the WriteBack function
+    // stats.writeBacks = write_backs_;
+    emit CacheStatsUpdatedSignal(stats);
+}
+
+void Cache::LoadCustomPolicyScript(const std::string& path)
+{
+    custom_policy_script_path_ = path;
+    ReplacementPolicy old_replacement_policy = m_policy->type();
+    std::string old_script_path;
+    if(old_replacement_policy == ReplacementPolicy::Custom)
+    {
+       old_script_path = dynamic_cast<CustomReplacementPolicy*>(m_policy.get())->getScriptPath();
+    }
+    try
+    {
+        m_policy = CreatePolicy(ReplacementPolicy::Custom, custom_policy_script_path_);
+        emit CustomPolicyScriptLoadedSignal(true,custom_policy_script_path_);
+    }
+    catch (const std::exception& e)
+    {
+        emit CustomPolicyScriptLoadedSignal(false, e.what());
+        m_policy = CreatePolicy(old_replacement_policy, old_script_path); // revert to old policy on failure
+    }
 }
 
 // uint8_t Cache::Read(uint64_t address)

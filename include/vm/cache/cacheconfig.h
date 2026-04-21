@@ -12,10 +12,11 @@ enum class AllocationPolicy
     NoWriteAllocate
 };
 
-enum class ReplacementPolicy
+enum class ReplacementPolicy : size_t
 {
-    LRU,
-    FIFO
+    LRU = 0,
+    FIFO,
+    Custom
 };
 
 struct CacheConfig
@@ -26,4 +27,12 @@ struct CacheConfig
     WritePolicy write_policy;
     AllocationPolicy allocation_policy;
     ReplacementPolicy replacement_policy;
+};
+
+struct CacheStats
+{
+    size_t hits = 0;
+    size_t misses = 0;
+    size_t writeBacks = 0;
+
 };
