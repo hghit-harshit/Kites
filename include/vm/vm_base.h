@@ -55,13 +55,7 @@ struct MemoryChange
 	std::vector<uint8_t> new_bytes_vec;
 };
 
-struct StepDelta
-{
-	uint64_t old_pc;
-	uint64_t new_pc;
-	std::vector<RegisterChange> register_changes;
-	std::vector<MemoryChange> memory_changes;
-};
+
 
 /**
  * @brief Base class for the virtual machine.
@@ -98,10 +92,9 @@ public:
 	unsigned int stall_cycles_{};
 	unsigned int branch_mispredictions_{};
 
-	std::stack<StepDelta> undo_stack_;
-	std::stack<StepDelta> redo_stack_;
+	
 
-	StepDelta current_delta_;
+	
 	std::string output_status_;
 
 	MemoryController memory_controller_;

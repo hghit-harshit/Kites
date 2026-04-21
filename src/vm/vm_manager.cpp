@@ -84,7 +84,15 @@ void VMManager::resume()
     //QMutexLocker locker(&m_currentVM->pause_mutex_);
     m_currentVM->RequestResume();
     //m_currentVM->pause_wait_condition_.wakeAll();
-    
+
+}
+void VMManager::undo()
+{
+    m_currentVM->Undo();
+}
+void VMManager::redo()
+{
+    m_currentVM->Redo();
 }
 void VMManager::setStepDelay(unsigned int delay)
 {

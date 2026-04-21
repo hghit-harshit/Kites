@@ -152,35 +152,15 @@ void RV5StageVM_H_NF::SetActiveWireNames()
 
 void RV5StageVM_H_NF::Reset()
 {
-    program_counter_ = 0;
-    instructions_retired_ = 0;
-    cycle_s_ = 0;
-    //stop_requested_ = false;
+    RV5StageVM_Base::Reset();
     stall_fetch_and_decode_ = false;
-    stall_cycles_ = 0; // Initialize stall counter
-
-    registers_.Reset();
-    memory_controller_.Reset();
-    control_unit_.Reset();
-    vm_state_.clear();
-    if_id_reg_.reset();
-    id_ex_reg_.reset();
-    ex_mem_reg_.reset();
-    mem_wb_reg_.reset();
-
-    current_delta_ = StepDelta();
-    while (!undo_stack_.empty())
-        undo_stack_.pop();
-    while (!redo_stack_.empty())
-        redo_stack_.pop();
 }
 
 void RV5StageVM_H_NF::Step()
 {
     uint64_t old_pc_before_redirect = program_counter_;
 
-    current_delta_ = StepDelta();
-    current_delta_.old_pc = program_counter_;
+    begin_step_delta();
 
     pipeline_writeback();
     pipeline_memory();
@@ -223,16 +203,7 @@ void RV5StageVM_H_NF::Step()
     program_counter_ = next_pc;
     cycle_s_++;
 
-    current_delta_.new_pc = program_counter_;
-
-    if (!current_delta_.register_changes.empty() || !current_delta_.memory_changes.empty())
-    {
-        undo_stack_.push(current_delta_);
-        while (!redo_stack_.empty())
-        {
-            redo_stack_.pop();
-        }
-    }
+    finalize_step_delta();
 
     // if (program_counter_ >= program_size_ && id_ex_reg_.instruction == NOP)
     // {
@@ -249,7 +220,7 @@ void RV5StageVM_H_NF::pipeline_fetch()
 
     if (program_counter_ < program_size_)
     {
-        if_id_reg_.instruction = memory_controller_.ReadWord_d(program_counter_);
+        if_id_reg_.instruction = memory_controller_.ReadInstruction(program_counter_);
         if_id_reg_.pc = program_counter_;
     }
     else
@@ -508,80 +479,6 @@ void RV5StageVM_H_NF::pipeline_execute()
 //         instructions_retired_++;
 //     }
 // }
-
-void RV5StageVM_H_NF::Undo()
-{
-    if (undo_stack_.empty())
-    {
-        std::cout << "VM_NO_MORE_UNDO" << std::endl;
-        return;
-    }
-
-    StepDelta last = undo_stack_.top();
-    undo_stack_.pop();
-
-    for (const auto &change : last.register_changes)
-    {
-        if (change.reg_type == 0)
-            registers_.WriteGpr(change.reg_index, change.old_value);
-    }
-
-    for (const auto &change : last.memory_changes)
-    {
-        for (size_t i = 0; i < change.old_bytes_vec.size(); ++i)
-        {
-            memory_controller_.WriteByte(change.address + i, change.old_bytes_vec[i]);
-        }
-    }
-
-    program_counter_ = last.old_pc;
-
-    if_id_reg_.reset();
-    id_ex_reg_.reset();
-    ex_mem_reg_.reset();
-    mem_wb_reg_.reset();
-
-    redo_stack_.push(last);
-    std::cout << "VM_UNDO_COMPLETED" << std::endl;
-}
-
-void RV5StageVM_H_NF::Redo()
-{
-    if (redo_stack_.empty())
-    {
-        std::cout << "VM_NO_MORE_REDO" << std::endl;
-        return;
-    }
-
-    StepDelta next = redo_stack_.top();
-    redo_stack_.pop();
-
-    for (const auto &change : next.register_changes)
-    {
-        if (change.reg_type == 0)
-            registers_.WriteGpr(change.reg_index, change.new_value);
-    }
-
-    for (const auto &change : next.memory_changes)
-    {
-        for (size_t i = 0; i < change.new_bytes_vec.size(); ++i)
-        {
-            memory_controller_.WriteByte(change.address + i, change.new_bytes_vec[i]);
-        }
-    }
-
-    program_counter_ = next.new_pc;
-
-    if_id_reg_.reset();
-    id_ex_reg_.reset();
-    ex_mem_reg_.reset();
-    mem_wb_reg_.reset();
-
-    undo_stack_.push(next);
-    std::cout << "VM_REDO_COMPLETED" << std::endl;
-}
-
-
 
 void RV5StageVM_H_NF::handle_syscall()
 {

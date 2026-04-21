@@ -37,8 +37,6 @@ public:
     // void Run() override;
     // void DebugRun() override;
     void Step() override;
-    void Undo() override;
-    void Redo() override;
     void Reset() override;
 
     // --- VM Control Functions ---
@@ -57,11 +55,6 @@ private:
 
     // The control unit for the pipeline
     //RV5SControlUnit control_unit_;
-
-    // --- Undo/Redo History ---
-    std::stack<StepDelta> undo_stack_;
-    std::stack<StepDelta> redo_stack_;
-    StepDelta current_delta_;
 
     //void print_pipeline_registers_debug();
     bool is_pipeline_drained() const;

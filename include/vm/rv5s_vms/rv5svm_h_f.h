@@ -25,8 +25,6 @@ public:
     // void Run() override;
     // void DebugRun() override;
     void Step() override;
-    void Undo() override;
-    void Redo() override;
     void Reset() override;
     
     void PrintType()
@@ -41,11 +39,6 @@ private:
 
     // This flag controls freezing the front-end (IF/ID registers and PC)
     bool stall_fetch_and_decode_ = false; 
-
-    // --- Undo/Redo History (Managed internally) ---
-    std::stack<StepDelta> undo_stack_;
-    std::stack<StepDelta> redo_stack_;
-    StepDelta current_delta_;
 
     // --- Private methods for each pipeline stage ---
     void pipeline_fetch() override;

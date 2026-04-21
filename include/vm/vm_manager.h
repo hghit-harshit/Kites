@@ -53,6 +53,8 @@ class VMManager : public QObject
         void stop();
         void pause();
         void resume();
+        void undo();
+        void redo();
         void setStepDelay(unsigned int delay);
         
         void setBreakpoints(const std::vector<uint64_t>& breakpoints);

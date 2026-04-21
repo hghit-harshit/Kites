@@ -170,39 +170,15 @@ void RV5StageVM_NH_NF::SetActiveWireNames()
 
 void RV5StageVM_NH_NF::Reset()
 {
-    // Reset base class architectural state members
-    program_counter_ = 0;
-    instructions_retired_ = 0;
-    cycle_s_ = 0;
-
-
-    // Reset all hardware components
-    registers_.Reset();
-    memory_controller_.Reset();
-    control_unit_.Reset();
-
-    // Reset all pipeline registers to a known-safe (NOP) state
-    if_id_reg_.reset();
-    id_ex_reg_.reset();
-    ex_mem_reg_.reset();
-    mem_wb_reg_.reset();
-    vm_state_.clear();
-    // Clear history for Undo/Redo
-    current_delta_ = StepDelta();
-    while (!undo_stack_.empty())
-        undo_stack_.pop();
-    while (!redo_stack_.empty())
-        redo_stack_.pop();
+    RV5StageVM_Base::Reset();
 }
 
 void RV5StageVM_NH_NF::Step()
 {
     // Capture PC before potential redirection in EX/MEM stages
     uint64_t old_pc_before_redirect = program_counter_;
-    
-    // Prepare a new delta for recording state changes for Undo/Redo.
-    current_delta_ = StepDelta();
-    current_delta_.old_pc = program_counter_;
+
+    begin_step_delta();
 
     pipeline_writeback();
     pipeline_memory(); 
@@ -221,17 +197,7 @@ void RV5StageVM_NH_NF::Step()
     program_counter_ = next_pc;
     cycle_s_++; 
 
-    current_delta_.new_pc = program_counter_; 
-
-    // Check if any architectural state changed (registers or memory)
-    if (!current_delta_.register_changes.empty() || !current_delta_.memory_changes.empty())
-    {
-        undo_stack_.push(current_delta_);
-        while (!redo_stack_.empty())
-        {
-            redo_stack_.pop();
-        }
-    }
+    finalize_step_delta();
     
 }
 
@@ -241,7 +207,7 @@ void RV5StageVM_NH_NF::pipeline_fetch()
     if (program_counter_ < program_size_)
     {
         // Latch the instruction and PC for the next stage (IF/ID register)
-        if_id_reg_.instruction = memory_controller_.ReadWord_d(program_counter_);
+        if_id_reg_.instruction = memory_controller_.ReadInstruction(program_counter_);
         if_id_reg_.pc = program_counter_;
     }
     else
@@ -538,85 +504,6 @@ void RV5StageVM_NH_NF::pipeline_execute_double()
 {
     (void)execute_double();
 }
-
-void RV5StageVM_NH_NF::Undo()
-{
-    if (undo_stack_.empty())
-    {
-        std::cout << "VM_NO_MORE_UNDO" << std::endl;
-        return;
-    }
-
-    StepDelta last = undo_stack_.top();
-    undo_stack_.pop();
-
-    // Revert register changes
-    for (const auto &change : last.register_changes)
-    {
-        registers_.WriteGpr(change.reg_index, change.old_value);
-    }
-
-    // Revert memory changes
-    for (const auto &change : last.memory_changes)
-    {
-        for (size_t i = 0; i < change.old_bytes_vec.size(); ++i)
-        {
-            memory_controller_.WriteByte(change.address + i, change.old_bytes_vec[i]);
-        }
-    }
-
-    // Restore the PC to the state *before* the undone cycle
-    program_counter_ = last.old_pc;
-    
-    // Reset pipeline registers to NOPs for a clean step
-    if_id_reg_.reset();
-    id_ex_reg_.reset();
-    ex_mem_reg_.reset();
-    mem_wb_reg_.reset();
-
-    redo_stack_.push(last);
-    std::cout << "VM_UNDO_COMPLETED" << std::endl;
-}
-
-void RV5StageVM_NH_NF::Redo()
-{
-    if (redo_stack_.empty())
-    {
-        std::cout << "VM_NO_MORE_REDO" << std::endl;
-        return;
-    }
-
-    StepDelta next = redo_stack_.top();
-    redo_stack_.pop();
-
-    // Reapply register changes
-    for (const auto &change : next.register_changes)
-    {
-        registers_.WriteGpr(change.reg_index, change.new_value);
-    }
-
-    // Reapply memory changes
-    for (const auto &change : next.memory_changes)
-    {
-        for (size_t i = 0; i < change.new_bytes_vec.size(); ++i)
-        {
-            memory_controller_.WriteByte(change.address + i, change.new_bytes_vec[i]);
-        }
-    }
-
-    // Restore the PC to the state *after* the redone cycle
-    program_counter_ = next.new_pc;
-    
-    // Reset pipeline registers for a clean step
-    if_id_reg_.reset();
-    id_ex_reg_.reset();
-    ex_mem_reg_.reset();
-    mem_wb_reg_.reset();
-
-    undo_stack_.push(next);
-    std::cout << "VM_REDO_COMPLETED" << std::endl;
-}
-
 
 // void RV5StageVM_NH_NF::memory_float()
 // {

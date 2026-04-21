@@ -68,6 +68,62 @@ void RV5StageVM_Base::DebugRun()
     #endif
 }
 
+void RV5StageVM_Base::Reset()
+{
+    program_counter_ = 0;
+    instructions_retired_ = 0;
+    cycle_s_ = 0;
+    stall_cycles_ = 0;
+
+    registers_.Reset();
+    memory_controller_.Reset();
+    control_unit_.Reset();
+
+    if_id_reg_.reset();
+    id_ex_reg_.reset();
+    ex_mem_reg_.reset();
+    mem_wb_reg_.reset();
+    current_delta_ = RV5StageStepDelta{};
+    undo_stack_ = std::stack<RV5StageStepDelta>();
+    redo_stack_ = std::stack<RV5StageStepDelta>();
+    vm_state_.clear();
+}
+
+void RV5StageVM_Base::begin_step_delta()
+{
+    current_delta_ = RV5StageStepDelta{};
+    current_delta_.old_pc = program_counter_;
+    current_delta_.old_cycle = cycle_s_;
+    current_delta_.old_instructions_retired = instructions_retired_;
+    current_delta_.old_stall_cycles = stall_cycles_;
+    current_delta_.old_branch_mispredictions = branch_mispredictions_;
+
+    current_delta_.pipeline_register_change.old_if_id_reg = if_id_reg_;
+    current_delta_.pipeline_register_change.old_id_ex_reg = id_ex_reg_;
+    current_delta_.pipeline_register_change.old_ex_mem_reg = ex_mem_reg_;
+    current_delta_.pipeline_register_change.old_mem_wb_reg = mem_wb_reg_;
+}
+
+void RV5StageVM_Base::finalize_step_delta()
+{
+    current_delta_.new_pc = program_counter_;
+    current_delta_.new_cycle = cycle_s_;
+    current_delta_.new_instructions_retired = instructions_retired_;
+    current_delta_.new_stall_cycles = stall_cycles_;
+    current_delta_.new_branch_mispredictions = branch_mispredictions_;
+
+    current_delta_.pipeline_register_change.new_if_id_reg = if_id_reg_;
+    current_delta_.pipeline_register_change.new_id_ex_reg = id_ex_reg_;
+    current_delta_.pipeline_register_change.new_ex_mem_reg = ex_mem_reg_;
+    current_delta_.pipeline_register_change.new_mem_wb_reg = mem_wb_reg_;
+
+    undo_stack_.push(current_delta_);
+    while (!redo_stack_.empty())
+    {
+        redo_stack_.pop();
+    }
+}
+
 void RV5StageVM_Base::SetVMStateMap()
 {
     vm_state_.clear();
@@ -173,58 +229,63 @@ void RV5StageVM_Base::pipeline_decode()
 
 void RV5StageVM_Base::memory_writeback()
 {
+    auto read_bytes = [&](uint64_t addr, size_t byte_count)
+    {
+        std::vector<uint8_t> bytes;
+        bytes.reserve(byte_count);
+        for (size_t i = 0; i < byte_count; ++i)
+        {
+            bytes.push_back(memory_controller_.ReadByte(addr + i));
+        }
+        return bytes;
+    };
+
     switch ((mem_wb_reg_.instruction >> 12) & 0b111)
 		{
 		case 0b000:
 		{ // SB
-			//addr = execution_result_;
-			//old_bytes_vec.push_back(memory_controller_.ReadByte(addr));
+            auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 1);
 			memory_controller_.WriteByte(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data & 0xFF);
-			//new_bytes_vec.push_back(memory_controller_.ReadByte(addr));
+            auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 1);
+            if (old_bytes_vec != new_bytes_vec)
+            {
+                current_delta_.memory_changes.push_back({ex_mem_reg_.alu_result, old_bytes_vec, new_bytes_vec});
+            }
 			break;
 		}
 		case 0b001:
 		{ // SH
-			// addr = execution_result_;
-			// for (size_t i = 0; i < 2; ++i)
-			// {
-			// 	old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
+            auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 2);
 			memory_controller_.WriteHalfWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data & 0xFFFF);
-			// for (size_t i = 0; i < 2; ++i)
-			// {
-			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
+            auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 2);
+            if (old_bytes_vec != new_bytes_vec)
+            {
+                current_delta_.memory_changes.push_back({ex_mem_reg_.alu_result, old_bytes_vec, new_bytes_vec});
+            }
 			break;
 		}
 		case 0b010:
 		{ // SW
-			// addr = execution_result_;
-			// for (size_t i = 0; i < 4; ++i)
-			// {
-			// 	old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
+            auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
 			memory_controller_.WriteWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data & 0xFFFFFFFF);
-			// for (size_t i = 0; i < 4; ++i)
-			// {
-			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
+            auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
+            if (old_bytes_vec != new_bytes_vec)
+            {
+                current_delta_.memory_changes.push_back({ex_mem_reg_.alu_result, old_bytes_vec, new_bytes_vec});
+            }
 			break;
 		}
 		case 0b011:
 		{ // SD
-			// addr = execution_result_;
-			// for (size_t i = 0; i < 8; ++i)
-			// {
-			// 	//old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
+            auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 8);
             std::cout << "Storing double word at address:" << (int)ex_mem_reg_.alu_result << std::endl;
-            std::cout << "Data to store:" << (int)registers_.ReadGpr(ex_mem_reg_.reg2_data) << std::endl;
+            std::cout << "Data to store:" << (int)ex_mem_reg_.reg2_data << std::endl;
 			memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data & 0xFFFFFFFFFFFFFFFF);
-			// for (size_t i = 0; i < 8; ++i)
-			// {
-			// 	new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-			// }
+            auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 8);
+            if (old_bytes_vec != new_bytes_vec)
+            {
+                current_delta_.memory_changes.push_back({ex_mem_reg_.alu_result, old_bytes_vec, new_bytes_vec});
+            }
 			break;
 		}
 	}
@@ -399,19 +460,41 @@ void RV5StageVM_Base::pipeline_memory()
     }
     else if (ex_mem_reg_.mem_write)
     {
+        auto read_bytes = [&](uint64_t addr, size_t byte_count)
+        {
+            std::vector<uint8_t> bytes;
+            bytes.reserve(byte_count);
+            for (size_t i = 0; i < byte_count; ++i)
+            {
+                bytes.push_back(memory_controller_.ReadByte(addr + i));
+            }
+            return bytes;
+        };
 
         std::cout << (int)ex_mem_reg_.alu_result << ' ' << (int)ex_mem_reg_.reg2_data << std::endl;
         if(is_F_Instruction)
         {//FSW
+            auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
             std::cout << RED
             << "For float store we are writing:" << (int)ex_mem_reg_.freg2_data << std::endl
             << "To address:" << (int)ex_mem_reg_.alu_result << std::endl
             << RESET;
             memory_controller_.WriteWord(ex_mem_reg_.alu_result, ex_mem_reg_.freg2_data & 0xFFFFFFFF);
+            auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
+            if (old_bytes_vec != new_bytes_vec)
+            {
+                current_delta_.memory_changes.push_back({ex_mem_reg_.alu_result, old_bytes_vec, new_bytes_vec});
+            }
         }
         else if(is_D_Instruction)
         {//FSD
+            auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 8);
             memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, ex_mem_reg_.freg2_data & 0xFFFFFFFFFFFFFFFF);
+            auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 8);
+            if (old_bytes_vec != new_bytes_vec)
+            {
+                current_delta_.memory_changes.push_back({ex_mem_reg_.alu_result, old_bytes_vec, new_bytes_vec});
+            }
         }
         else
         {
@@ -596,6 +679,125 @@ bool RV5StageVM_Base::is_pipeline_drained() const
     return true;
 }
 
+void RV5StageVM_Base::Undo()
+{
+    if (undo_stack_.empty())
+    {
+        output_status_ = "VM_NO_MORE_UNDO";
+        return;
+    }
+
+    RV5StageStepDelta last = undo_stack_.top();
+    undo_stack_.pop();
+
+    for (auto it = last.register_changes.rbegin(); it != last.register_changes.rend(); ++it)
+    {
+        const auto &change = *it;
+        switch (change.reg_type)
+        {
+        case 0:
+            registers_.WriteGpr(change.reg_index, change.old_value);
+            break;
+        case 1:
+            registers_.WriteCsr(change.reg_index, change.old_value);
+            break;
+        case 2:
+            registers_.WriteFpr(change.reg_index, change.old_value);
+            break;
+        default:
+            break;
+        }
+    }
+
+    for (auto it = last.memory_changes.rbegin(); it != last.memory_changes.rend(); ++it)
+    {
+        const auto &change = *it;
+        for (size_t i = 0; i < change.old_bytes_vec.size(); ++i)
+        {
+            memory_controller_.WriteByte(change.address + i, change.old_bytes_vec[i]);
+        }
+    }
+
+    program_counter_ = last.old_pc;
+    cycle_s_ = last.old_cycle;
+    instructions_retired_ = last.old_instructions_retired;
+    stall_cycles_ = last.old_stall_cycles;
+    branch_mispredictions_ = last.old_branch_mispredictions;
+
+    if_id_reg_ = last.pipeline_register_change.old_if_id_reg;
+    id_ex_reg_ = last.pipeline_register_change.old_id_ex_reg;
+    ex_mem_reg_ = last.pipeline_register_change.old_ex_mem_reg;
+    mem_wb_reg_ = last.pipeline_register_change.old_mem_wb_reg;
+
+    redo_stack_.push(last);
+    output_status_ = "VM_UNDO_COMPLETED";
+
+    cpi_ = instructions_retired_ ? static_cast<float>(cycle_s_) / static_cast<float>(instructions_retired_) : 0.0f;
+    ipc_ = cycle_s_ ? static_cast<float>(instructions_retired_) / static_cast<float>(cycle_s_) : 0.0f;
+    SetVMStateMap();
+    SetActiveWireNames();
+    emit updateCircuitStateSignal(active_wires_);
+    emit vmStateChangedSignal(vm_state_);
+}
+
+void RV5StageVM_Base::Redo()
+{
+    if (redo_stack_.empty())
+    {
+        output_status_ = "VM_NO_MORE_REDO";
+        return;
+    }
+
+    RV5StageStepDelta next = redo_stack_.top();
+    redo_stack_.pop();
+
+    for (const auto &change : next.register_changes)
+    {
+        switch (change.reg_type)
+        {
+        case 0:
+            registers_.WriteGpr(change.reg_index, change.new_value);
+            break;
+        case 1:
+            registers_.WriteCsr(change.reg_index, change.new_value);
+            break;
+        case 2:
+            registers_.WriteFpr(change.reg_index, change.new_value);
+            break;
+        default:
+            break;
+        }
+    }
+
+    for (const auto &change : next.memory_changes)
+    {
+        for (size_t i = 0; i < change.new_bytes_vec.size(); ++i)
+        {
+            memory_controller_.WriteByte(change.address + i, change.new_bytes_vec[i]);
+        }
+    }
+
+    program_counter_ = next.new_pc;
+    cycle_s_ = next.new_cycle;
+    instructions_retired_ = next.new_instructions_retired;
+    stall_cycles_ = next.new_stall_cycles;
+    branch_mispredictions_ = next.new_branch_mispredictions;
+
+    if_id_reg_ = next.pipeline_register_change.new_if_id_reg;
+    id_ex_reg_ = next.pipeline_register_change.new_id_ex_reg;
+    ex_mem_reg_ = next.pipeline_register_change.new_ex_mem_reg;
+    mem_wb_reg_ = next.pipeline_register_change.new_mem_wb_reg;
+
+    undo_stack_.push(next);
+    output_status_ = "VM_REDO_COMPLETED";
+
+    cpi_ = instructions_retired_ ? static_cast<float>(cycle_s_) / static_cast<float>(instructions_retired_) : 0.0f;
+    ipc_ = cycle_s_ ? static_cast<float>(instructions_retired_) / static_cast<float>(cycle_s_) : 0.0f;
+    SetVMStateMap();
+    SetActiveWireNames();
+    emit updateCircuitStateSignal(active_wires_);
+    emit vmStateChangedSignal(vm_state_);
+}
 
 void RV5StageVM_Base::print_pipeline_registers_debug()
 {

@@ -136,7 +136,7 @@ void RVSSVM::SetVMStateMap()
 
 void RVSSVM::Fetch()
 {
-	current_instruction_ = memory_controller_.ReadWord(program_counter_);
+	current_instruction_ = memory_controller_.ReadInstruction(program_counter_);
 	UpdateProgramCounter(4);
 }
 
