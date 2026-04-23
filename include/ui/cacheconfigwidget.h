@@ -33,6 +33,7 @@ private:
 public slots:
     void CacheStatsUpdated(CacheStats newStats);
     void CustomPolicyScriptLoaded(bool success, const std::string& message);
+    void UpdateSize(); // to update size from ui changes
     
 signals:
     void configChanged();

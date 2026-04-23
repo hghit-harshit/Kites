@@ -176,20 +176,6 @@
         <item>
          <widget class="QLineEdit" name="customPolicyScriptlineEdit"/>
         </item>
-        <item>
-         <widget class="QPushButton" name="browsePushButton">
-          <property name="text">
-           <string>Browse</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="applyPushButton">
-          <property name="text">
-           <string>Apply</string>
-          </property>
-         </widget>
-        </item>
        </layout>
       </item>
      </layout>

@@ -22,6 +22,11 @@ CacheConfigWidget::CacheConfigWidget(QWidget *parent)
     connect(ui->linesSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &CacheConfigWidget::configChanged);
     connect(ui->waysSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &CacheConfigWidget::configChanged);
     connect(ui->wordsSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &CacheConfigWidget::configChanged);
+
+    connect(ui->linesSpinBox,QOverload<int>::of(&QSpinBox::valueChanged), this, &CacheConfigWidget::UpdateSize);
+    connect(ui->waysSpinBox,QOverload<int>::of(&QSpinBox::valueChanged), this, &CacheConfigWidget::UpdateSize);
+    connect(ui->wordsSpinBox,QOverload<int>::of(&QSpinBox::valueChanged), this, &CacheConfigWidget::UpdateSize);
+
     connect(ui->writeHitComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &CacheConfigWidget::configChanged);
     connect(ui->writeMissComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &CacheConfigWidget::configChanged);
     connect(ui->repPolComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]{
@@ -31,12 +36,14 @@ CacheConfigWidget::CacheConfigWidget(QWidget *parent)
         }
         else
         {
+            ui->customPolicyScriptlineEdit->clear();
             m_lastSelectedPolicy = static_cast<ReplacementPolicy>(ui->repPolComboBox->currentIndex());
             emit CacheConfigWidget::configChanged();
         }
     });
     //connect(ui->browsePushButton, &QPushButton::clicked, this, &CacheConfigWidget::OnBrowseClicked);
     //connect(ui->applyPushButton, &QPushButton::clicked, this, &CacheConfigWidget::onApplyClicked);
+    UpdateSize();
 
 }
 
@@ -54,6 +61,7 @@ void CacheConfigWidget::OnCustomPolicyClicked()
         // If no file was selected, reset the combo box to a default value (e.g., LRU)
         QSignalBlocker blocker(ui->repPolComboBox);
         ui->repPolComboBox->setCurrentIndex(static_cast<int>(ReplacementPolicy::LRU));
+        ui->customPolicyScriptlineEdit->clear();
         QMessageBox::warning(this, tr("No Script Selected"), tr("No custom policy script was selected. Reverting to LRU."));
     }
 }
@@ -150,6 +158,12 @@ void CacheConfigWidget::CustomPolicyScriptLoaded(bool success, const std::string
         QSignalBlocker blocker(ui->repPolComboBox);
         ui->repPolComboBox->setCurrentIndex(static_cast<int>(m_lastSelectedPolicy)); // revert to last selected policy on failure
     }
+}
+
+void CacheConfigWidget::UpdateSize()
+{
+    const size_t size = (size_t(1) << ui->linesSpinBox->value()) * (size_t(1) << ui->wordsSpinBox->value()) * (size_t(1) << ui->waysSpinBox->value());
+    ui->sizeLineEdit->setText(QString::number(size) + " bytes");
 }
 
 CacheConfigWidget::~CacheConfigWidget()

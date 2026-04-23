@@ -11,6 +11,17 @@ CacheModel::CacheModel(QObject* parent, Cache* cache)
         qWarning() << "CacheModel: cache is null!";
     }
 
+    //m_cache = cache;
+    AttachCache(cache);
+}
+
+void CacheModel::AttachCache(Cache* cache)
+{
+    beginResetModel();
+    if (m_cache)
+    {
+        disconnect(m_cache, &Cache::CacheLineUpdatedSignal, this, &CacheModel::updateCacheData);
+    }
     m_cache = cache;
     if(m_cache)
     {
@@ -27,23 +38,6 @@ CacheModel::CacheModel(QObject* parent, Cache* cache)
             endResetModel();
         });
         connect(m_cache, &Cache::CacheMissSignal, this, &CacheModel::onCacheMiss);
-    }
-}
-
-void CacheModel::AttachCache(Cache* cache)
-{
-    beginResetModel();
-    if (m_cache)
-    {
-        disconnect(m_cache, &Cache::CacheLineUpdatedSignal, this, &CacheModel::updateCacheData);
-    }
-    m_cache = cache;
-    if(m_cache)
-    {
-        connect(m_cache, &Cache::CacheLineUpdatedSignal, this, &CacheModel::updateCacheData);
-        num_sets_ = m_cache->GetNumSets();
-        num_ways_ = m_cache->GetNumWays();
-        block_size_ = m_cache->GetBlockSize();
     }
     
     endResetModel();

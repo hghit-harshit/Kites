@@ -2,6 +2,7 @@
 #include "ui/kitestab.h"
 #include "ui/cachemodel.h"
 #include "ui/cacheconfigwidget.h"
+#include "ui/cache_grid_delegate.h"
 #include "vm/memory_controller.h"
 #include <QWidget>
 
@@ -18,6 +19,7 @@ class CacheTab : public KitesTab
 public:
     explicit CacheTab(QWidget *parent = nullptr,MemoryController* memoryController = nullptr );
     ~CacheTab();
+    void changeMemoryController(MemoryController* memoryController);
 
 private:
 
@@ -32,6 +34,10 @@ private:
     bool enforceL2AtLeastL1();
 
     std::vector<CacheModel*> m_cacheModels{};
+    MemoryController* m_memoryController = nullptr;
+    CacheGridDelegate* m_l1Delegate = nullptr;
+    CacheGridDelegate* m_l2Delegate = nullptr;
+    CacheGridDelegate* m_instructionDelegate = nullptr;
     
 
     bool m_enforcingConstraint = false;
