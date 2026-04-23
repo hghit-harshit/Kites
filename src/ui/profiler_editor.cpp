@@ -5,12 +5,15 @@
 #include <QFontDatabase>
 #include <QScrollBar>
 #include <QTextBlock>
+#include <QTextEdit>
 
 namespace Kites 
 {
 
 ProfilerEditor::ProfilerEditor(QWidget* parent) : QPlainTextEdit(parent)
 {
+    m_syntaxHighlighter = new SyntaxHighlighter(this->document());
+
     int id = QFontDatabase::addApplicationFont(":/fonts/Monaco.ttf");
     QString family;
 
@@ -33,27 +36,8 @@ ProfilerEditor::ProfilerEditor(QWidget* parent) : QPlainTextEdit(parent)
 
     m_lineNumberArea = new ProfilerEditorHelpers::LineNumberArea(this);
     m_countArea = new ProfilerEditorHelpers::CountArea(this);
+    m_typeArea = new ProfilerEditorHelpers::TypeArea(this);
 
-    // connect(this, &QPlainTextEdit::blockCountChanged, this, [this](int /* newBlockCount */) 
-    // {
-    //     setViewportMargins(LineNumberAreaWidth() + CountAreaWidth(), 0, 0, 0);
-    // });
-    // connect(this, &QPlainTextEdit::updateRequest, this, [this](const QRect &rect, int dy) 
-    // {
-    //     if (dy)
-    //     {
-    //         m_lineNumberArea->scroll(0, dy);
-    //         m_countArea->scroll(0, dy);
-    //     }
-    //     else
-    //     {
-    //         m_lineNumberArea->update(0, rect.y(), m_lineNumberArea->width(), rect.height());
-    //         m_countArea->update(0, rect.y(), m_countArea->width(), rect.height());
-    //     }
-
-    //     if (rect.contains(viewport()->rect()))
-    //         setViewportMargins(LineNumberAreaWidth() + CountAreaWidth(), 0, 0, 0);
-    // });
 
     connect(this, &QPlainTextEdit::blockCountChanged,this, &ProfilerEditor::updateAreaWidths);
     connect(this, &QPlainTextEdit::updateRequest,this, &ProfilerEditor::updateAreas);
@@ -68,16 +52,51 @@ void ProfilerEditor::setHitCount(const std::map<int,int>& hitCounts)
     {
         m_maxHitCount = std::max(m_maxHitCount, pair.second);
     }
+
+    QList<QTextEdit::ExtraSelection> selections;
+    for (const auto& pair : m_hitCounts)
+    {
+        const int lineNumber = pair.first;
+        const int hits = pair.second;
+        if (hits <= 0 || lineNumber <= 0)
+        {
+            continue;
+        }
+
+        QTextBlock block = document()->findBlockByNumber(lineNumber - 1);
+        if (!block.isValid())
+        {
+            continue;
+        }
+
+        QTextEdit::ExtraSelection selection;
+        selection.cursor = QTextCursor(block);
+        selection.cursor.clearSelection();
+        selection.format.setBackground(heatBackgroundColor(hits));
+        selection.format.setProperty(QTextFormat::FullWidthSelection, true);
+        selections.append(selection);
+    }
+    setExtraSelections(selections);
+
     m_lineNumberArea->update();
     m_countArea->update();
+    m_typeArea->update();
+}
+
+void ProfilerEditor::setInstructionTypes(const std::map<int, std::string>& instructionTypes)
+{
+    m_instructionTypes = instructionTypes;
+    m_typeArea->update();
 }
 
 void ProfilerEditor::clearHitCount()
 {
     m_hitCounts.clear();
     m_maxHitCount = 0;
+    setExtraSelections({});
     m_lineNumberArea->update();
     m_countArea->update();
+    m_typeArea->update();
 }
 
 int ProfilerEditor::lineNumberAreaWidth() const
@@ -88,13 +107,19 @@ int ProfilerEditor::lineNumberAreaWidth() const
 
 int ProfilerEditor::countAreaWidth() const
 {
-    int digits = m_maxHitCount > 0 ? QString::number(m_maxHitCount).length() : 4;
-    return fontMetrics().horizontalAdvance(QLatin1Char('9')) * (digits + 1) + 16;
+    int digits = m_maxHitCount > 0 ? QString::number(m_maxHitCount).length() : 1;
+    return fontMetrics().horizontalAdvance(QLatin1Char('9')) * (digits+1) + 10;
+}
+
+int ProfilerEditor::typeAreaWidth() const
+{
+    // Estimate width for instruction type display (e.g., "R-Type", "Pseudo", "F/D-R4")
+    return fontMetrics().horizontalAdvance(QLatin1String("F/D-R4")) + 10;
 }
 
 void ProfilerEditor::updateAreaWidths()
 {
-    setViewportMargins(lineNumberAreaWidth(),0, countAreaWidth(), 0);
+    setViewportMargins(lineNumberAreaWidth(), 0, countAreaWidth() + typeAreaWidth(), 0);
 }
 
 void ProfilerEditor::resizeEvent(QResizeEvent *event)
@@ -103,17 +128,27 @@ void ProfilerEditor::resizeEvent(QResizeEvent *event)
 
     QRect cr = contentsRect();
     m_lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
-    //m_countArea->setGeometry(QRect(cr.right() - countAreaWidth(), cr.top(), countAreaWidth(), cr.height()));
 
     int scrollbarWidth = verticalScrollBar()->isVisible()
                      ? verticalScrollBar()->width()
                      : 0;
 
+    // Position count area
     m_countArea->setGeometry(
         QRect(
-            cr.right() - countAreaWidth() - scrollbarWidth,
+            cr.right() - countAreaWidth() - typeAreaWidth() - scrollbarWidth,
             cr.top(),
             countAreaWidth(),
+            cr.height()
+        )
+    );
+
+    // Position type area
+    m_typeArea->setGeometry(
+        QRect(
+            cr.right() - typeAreaWidth() - scrollbarWidth,
+            cr.top(),
+            typeAreaWidth(),
             cr.height()
         )
     );
@@ -125,11 +160,13 @@ void ProfilerEditor::updateAreas(const QRect &rect, int dy)
     {
         m_lineNumberArea->scroll(0, dy);
         m_countArea->scroll(0, dy);
+        m_typeArea->scroll(0, dy);
     }
     else
     {
         m_lineNumberArea->update(0, rect.y(), m_lineNumberArea->width(), rect.height());
         m_countArea->update(0, rect.y(), m_countArea->width(), rect.height());
+        m_typeArea->update(0, rect.y(), m_typeArea->width(), rect.height());
     }
 
     if(rect.contains(viewport()->rect()))
@@ -170,10 +207,6 @@ void ProfilerEditor::paintCountArea(QPaintEvent *event)
     QPainter painter(m_countArea);
     painter.fillRect(event->rect(), palette().color(QPalette::AlternateBase));
 
-    constexpr int heatStripWidth = 4;
-    const int textX = heatStripWidth + 4;
-    const int textW = m_countArea->width() - textX - 6;
-
     QTextBlock block = firstVisibleBlock();
     int blockNumber = block.blockNumber();
     int top = static_cast<int>(blockBoundingGeometry(block).translated(contentOffset()).top());
@@ -189,18 +222,41 @@ void ProfilerEditor::paintCountArea(QPaintEvent *event)
             
             if(hits > 0)
             {
-               painter.fillRect(0, top, heatStripWidth, fontMetrics().height(), heatColor(hits));
-                // int fullWidth = width();   // total widget width
-                // painter.fillRect(0, top, fullWidth, fontMetrics().height(), heatColor(hits));
-               double t = (double)hits / m_maxHitCount;
-               //painter.setPen(heatBackgroundColor(hits));
-               painter.setPen(Qt::black);
-                // painter.drawText(textX, top, textW, fontMetrics().height(),
-                //            Qt::AlignRight | Qt::AlignVCenter,
-                //            QString::number(hits));
-
+                painter.setPen(Qt::black);
                 painter.drawText(0, top, countAreaWidth() - 5, fontMetrics().height(),
-                            Qt::AlignRight, QString::number(hits));
+                            Qt::AlignLeft, QString::number(hits));
+            }
+        }
+
+        block = block.next();
+        top = bottom;
+        bottom = top + static_cast<int>(blockBoundingRect(block).height());
+        ++blockNumber;
+    }
+}
+
+void ProfilerEditor::paintTypeArea(QPaintEvent *event)
+{
+    QPainter painter(m_typeArea);
+    painter.fillRect(event->rect(), palette().color(QPalette::AlternateBase));
+    const QColor textColor = palette().color(QPalette::Text);
+
+    QTextBlock block = firstVisibleBlock();
+    int blockNumber = block.blockNumber();
+    int top = static_cast<int>(blockBoundingGeometry(block).translated(contentOffset()).top());
+    int bottom = top + static_cast<int>(blockBoundingRect(block).height());
+
+    while(block.isValid() && top <= event->rect().bottom())
+    {
+        if(block.isVisible() && bottom >= event->rect().top())
+        {
+            const int lineNumber = blockNumber + 1;
+            if (m_instructionTypes.count(lineNumber) > 0)
+            {
+                const std::string& instrType = m_instructionTypes.at(lineNumber);
+                painter.setPen(textColor);
+                painter.drawText(5, top, typeAreaWidth() - 10, fontMetrics().height(),
+                            Qt::AlignLeft, QString::fromStdString(instrType));
             }
         }
 
@@ -227,12 +283,6 @@ QColor ProfilerEditor::heatBackgroundColor(int hitCount) const
 {
     if(m_maxHitCount == 0 || hitCount == 0)
         return Qt::transparent;
-
-    // double t = (double)hitCount / m_maxHitCount;
-    // if (t > 0.80) return QColor("#D85A30").lighter(150);
-    // if (t > 0.50) return QColor("#EF9F27").lighter(150);
-    // if (t > 0.20) return QColor("#FAC775").lighter(150);
-    // return QColor("#FAEEDA").lighter(150);
 
     if (m_maxHitCount == 0 || hitCount == 0) return Qt::transparent;
     double t    = (double)hitCount / m_maxHitCount;

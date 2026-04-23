@@ -1,4 +1,5 @@
 #include "vm/profiler_manager.h"
+#include "common/instructions.h"
 
 ProfilerManager::ProfilerManager(QObject* parent)
     : QObject(parent)
@@ -7,15 +8,34 @@ ProfilerManager::ProfilerManager(QObject* parent)
 
 void ProfilerManager::Reset()
 {
-    line_execution_counts_.clear();
+    line_to_execution_counts_.clear();
     emit profilerReset();
 }
 
 void ProfilerManager::SetInstructionLineMapping(const std::map<unsigned int, unsigned int>& instructionToLineMapping)
 {
     instruction_to_line_mapping_ = instructionToLineMapping;
-    line_execution_counts_.clear();
+    line_to_execution_counts_.clear();
     emit profilerReset();
+}
+
+void ProfilerManager::SetInstructionInfo(const std::map<unsigned int, std::string>& instructionMnemonics)
+{
+    instruction_index_to_mnemonics_ = instructionMnemonics;
+    
+    // Build the line -> instruction type mapping
+    line_to_instruction_types_mapping_.clear();
+    for (const auto& [instrIdx, mnemonic] : instruction_index_to_mnemonics_) 
+    {
+        // Find the line number for this instruction
+        const auto mappingIt = instruction_to_line_mapping_.find(instrIdx);
+        if (mappingIt != instruction_to_line_mapping_.end()) 
+        {
+            int lineNumber = static_cast<int>(mappingIt->second);
+            std::string instrType = instruction_set::getInstructionType(mnemonic);
+            line_to_instruction_types_mapping_[lineNumber] = instrType;
+        }
+    }
 }
 
 void ProfilerManager::OnVMStateChanged(const QMap<QString, QVariant>& vmState)
@@ -26,8 +46,8 @@ void ProfilerManager::OnVMStateChanged(const QMap<QString, QVariant>& vmState)
         return;
     }
 
-    ++line_execution_counts_[sourceLine];
-    emit lineExecutionCountsUpdated(line_execution_counts_);
+    ++line_to_execution_counts_[sourceLine];
+    emit lineExecutionCountsUpdated(line_to_execution_counts_);
 }
 
 int ProfilerManager::ResolveSourceLineFromState(const QMap<QString, QVariant>& vmState) const
@@ -68,4 +88,13 @@ int ProfilerManager::ResolveSourceLineFromState(const QMap<QString, QVariant>& v
     }
 
     return -1;
+}
+
+std::string ProfilerManager::GetInstructionTypeForLine(int lineNumber) const
+{
+    const auto it = line_to_instruction_types_mapping_.find(lineNumber);
+    if (it != line_to_instruction_types_mapping_.end()) {
+        return it->second;
+    }
+    return "";
 }

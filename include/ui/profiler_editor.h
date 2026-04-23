@@ -3,6 +3,8 @@
 #include <QPlainTextEdit>
 #include <map>
 #include <QColor>
+#include <string>
+#include "ui/syntax_highlighter.h"
 namespace Kites
 {
 
@@ -10,6 +12,7 @@ namespace ProfilerEditorHelpers
 {
     class LineNumberArea;
     class CountArea;
+    class TypeArea;
 }// namespace ProfilerEdiorHelpers
 
     class ProfilerEditor : public QPlainTextEdit
@@ -21,13 +24,16 @@ namespace ProfilerEditorHelpers
 
         //called everytime profiler data is updated
         void setHitCount(const std::map<int, int>& hitCounts); // line number to hit count mapping
+        void setInstructionTypes(const std::map<int, std::string>& instructionTypes); // line number to instruction type mapping
         void clearHitCount();
 
         int lineNumberAreaWidth() const;
         int countAreaWidth() const;
+        int typeAreaWidth() const;
 
         void paintLineNumberArea(QPaintEvent *event);
         void paintCountArea(QPaintEvent *event);
+        void paintTypeArea(QPaintEvent *event);
 
     protected:
         void resizeEvent(QResizeEvent *event) override;
@@ -38,7 +44,10 @@ namespace ProfilerEditorHelpers
     private:
         ProfilerEditorHelpers::LineNumberArea *m_lineNumberArea;
         ProfilerEditorHelpers::CountArea *m_countArea;
+        ProfilerEditorHelpers::TypeArea *m_typeArea;
+        SyntaxHighlighter* m_syntaxHighlighter = nullptr;
         std::map<int, int> m_hitCounts; // line number to hit count mapping
+        std::map<int, std::string> m_instructionTypes; // line number to instruction type mapping
         int m_maxHitCount = 0;          // to determine the color intensity for heatmap
 
         QColor heatColor(int hitCount) const;           // Helper function to determine color based on hit count
@@ -80,6 +89,26 @@ namespace ProfilerEditorHelpers
         void paintEvent(QPaintEvent *event) override
         {
             m_profilerEditor->paintCountArea(event);
+        }
+
+    private:
+        ProfilerEditor *m_profilerEditor;
+    };
+
+    class ProfilerEditorHelpers::TypeArea : public QWidget
+    {
+    public:
+        TypeArea(ProfilerEditor *editor) : QWidget(editor), m_profilerEditor(editor) {}
+
+        QSize sizeHint() const override
+        {
+            return QSize(m_profilerEditor->typeAreaWidth(), 0);
+        }
+
+    protected:
+        void paintEvent(QPaintEvent *event) override
+        {
+            m_profilerEditor->paintTypeArea(event);
         }
 
     private:

@@ -5,6 +5,7 @@
 #include <QString>
 #include "kitestab.h"
 #include <map>
+#include <string>
 
 class ProfilerManager;
 
@@ -25,6 +26,8 @@ public:
 public slots:
     void setSourceText(const QString& sourceText);
     void updateLineExecutionCounts(const std::map<int, int>& lineExecutionCounts);
+    void updateInstructionTypes(const std::map<int, std::string>& instructionTypes);
+    void updateStatistics(const std::map<std::string, int>& statistics);
     void resetProfilerView();
 
 private:
