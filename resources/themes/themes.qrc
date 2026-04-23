@@ -2,6 +2,8 @@
     <qresource prefix="/themes">
         <file>light.qss</file>
         <file>dark.qss</file>
+        <file>material_dark.qss</file>
+        <file>elegant_dark.qss</file>
+        <file>aqua_light.qss</file>
     </qresource>
-
 </RCC>
