@@ -22,13 +22,15 @@ class CacheModel : public QAbstractTableModel
         void updateCacheData(uint64_t address);
         void updateCacheConfig(CacheConfig newConfig);
         void onCacheMiss(uint64_t address);
+        void onCacheHit(uint64_t address);
 
     private:
 
-        size_t RowToSetIndex(int row) const { return row / num_ways_; }
-        size_t RowToWayIndex(int row) const { return row % num_ways_; }
-        int NumberOfWordColumns()     const { return static_cast<int>(block_size_ ); } // number of 4-byte words in a cache line
+        size_t RowToSetIndex(int row) const { return row / m_num_ways; }
+        size_t RowToWayIndex(int row) const { return row % m_num_ways; }
+        int NumberOfWordColumns()     const { return static_cast<int>(m_block_size); } // number of 4-byte words in a cache line
         int AddressToRow(uint64_t address) const;
+        int AddressToHitRow(uint64_t address) const;
 
         static constexpr int COL_INDEX = 0;
         static constexpr int COL_VALID = 1;
@@ -36,12 +38,14 @@ class CacheModel : public QAbstractTableModel
         static constexpr int COL_TAG = 3;
         static constexpr int COL_DATA_START = 4; // starting column index for data bytes
 
-        Cache* m_cache; 
-        size_t num_sets_ = 0;
-        size_t num_ways_ = 0;
-        size_t block_size_ = 0;
-        int last_miss_row_ = -1;
-        bool miss_highlight_pending_ = false;
+        Cache* m_cache = nullptr;
+        size_t m_num_sets = 0;
+        size_t m_num_ways = 0;
+        size_t m_block_size = 0;
+        int m_last_miss_row = -1;
+        bool m_miss_highlight_pending = false;
+        int m_last_hit_row = -1;
+        bool m_hit_highlight_pending = false;
     
     
    

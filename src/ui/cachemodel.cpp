@@ -25,19 +25,20 @@ void CacheModel::AttachCache(Cache* cache)
     m_cache = cache;
     if(m_cache)
     {
-        num_sets_ = m_cache->GetNumSets();
-        num_ways_ = m_cache->GetNumWays();
-        block_size_ = m_cache->GetBlockSize();
+        m_num_sets = m_cache->GetNumSets();
+        m_num_ways = m_cache->GetNumWays();
+        m_block_size = m_cache->GetBlockSize();
 
         connect(m_cache, &Cache::CacheLineUpdatedSignal, this, &CacheModel::updateCacheData);
         connect(m_cache, &Cache::CacheReconfiguredSignal, this, [this](){
             beginResetModel();
-            num_sets_ = m_cache->GetNumSets();
-            num_ways_ = m_cache->GetNumWays();
-            block_size_ = m_cache->GetBlockSize();
+            m_num_sets = m_cache->GetNumSets();
+            m_num_ways = m_cache->GetNumWays();
+            m_block_size = m_cache->GetBlockSize();
             endResetModel();
         });
         connect(m_cache, &Cache::CacheMissSignal, this, &CacheModel::onCacheMiss);
+        connect(m_cache, &Cache::CacheHitSignal, this, &CacheModel::onCacheHit);
     }
     
     endResetModel();
@@ -46,7 +47,7 @@ void CacheModel::AttachCache(Cache* cache)
 
 int CacheModel::rowCount(const QModelIndex &parent) const
 {
-    return static_cast<int>(num_sets_ * num_ways_);
+    return static_cast<int>(m_num_sets * m_num_ways);
 }
 
 int CacheModel::columnCount(const QModelIndex &parent) const
@@ -66,6 +67,16 @@ QVariant CacheModel::data(const QModelIndex &index, int role) const
 
     if(role == Qt::BackgroundRole)
     {
+        if(m_hit_highlight_pending && index.row() == m_last_hit_row)
+        {
+            return QColor(120, 220, 120, 90); // green for cache hit
+        }
+
+        if(m_miss_highlight_pending && index.row() == m_last_miss_row)
+        {
+            return QColor(255, 180, 180, 90); // red for cache miss
+        }
+
         if(!line.valid)
         {
             return QVariant(); // default background
@@ -74,7 +85,6 @@ QVariant CacheModel::data(const QModelIndex &index, int role) const
         {
             return QColor(255, 200, 100,80); // light red for dirty lines
         }
-        return QColor(200, 255, 200,80); // light green for valid but clean lines
     }
 
     if(role == Qt::TextAlignmentRole)
@@ -107,12 +117,12 @@ QVariant CacheModel::data(const QModelIndex &index, int role) const
                 int word_index = index.column() - COL_DATA_START;
                 size_t byte_offset = static_cast<size_t>(word_index) * 4; // 4 bytes per word
 
-                if (byte_offset < block_size_*4)
+                if (byte_offset < m_block_size*4)
                 {
                     uint32_t word_data = 0;
                     for (int i = 0; i < 4; ++i)
                     {
-                        if (byte_offset + i < block_size_*4)
+                        if (byte_offset + i < m_block_size*4)
                         {
                             word_data |= static_cast<uint32_t>(line.data[byte_offset + i]) << (8 * i);
                         }
@@ -136,7 +146,7 @@ QVariant CacheModel::data(const QModelIndex &index, int role) const
         {
             tooltip += QString("Tag: 0x%1\n").arg(line.tag, 0, 16).toUpper();
             tooltip += "Data: ";
-            for(size_t i = 0; i < block_size_*4; ++i)
+            for(size_t i = 0; i < m_block_size*4; ++i)
             {
                 tooltip += QString("%1 ").arg(line.data[i], 2, 16, QChar('0')).toUpper();
             }
@@ -174,16 +184,39 @@ QVariant CacheModel::headerData(int section, Qt::Orientation orientation, int ro
 
 int CacheModel::AddressToRow(uint64_t address) const
 {
-    if (block_size_ == 0 || num_ways_ == 0)
+    if (m_block_size == 0 || m_num_ways == 0)
         return -1;
 
-    size_t block_offset_bits = static_cast<size_t>(std::log2(block_size_ * 4)); // block size in bytes
-    size_t set_index_bits = static_cast<size_t>(std::log2(num_sets_));
+    size_t block_offset_bits = static_cast<size_t>(std::log2(m_block_size * 4)); // block size in bytes
+    size_t set_index_bits = static_cast<size_t>(std::log2(m_num_sets));
     
     size_t set_index = (address >> block_offset_bits) & ((1 << set_index_bits) - 1);
     
     // We will highlight the first way of the set on a miss for simplicity
-    return static_cast<int>(set_index * num_ways_);
+    return static_cast<int>(set_index * m_num_ways);
+}
+
+int CacheModel::AddressToHitRow(uint64_t address) const
+{
+    if (!m_cache || m_block_size == 0 || m_num_ways == 0 || m_num_sets == 0)
+        return -1;
+
+    size_t block_offset_bits = static_cast<size_t>(std::log2(m_block_size * 4));
+    size_t set_index_bits = static_cast<size_t>(std::log2(m_num_sets));
+
+    size_t set_index = (address >> block_offset_bits) & ((1ULL << set_index_bits) - 1);
+    uint64_t tag = address >> (block_offset_bits + set_index_bits);
+
+    for (size_t way_index = 0; way_index < m_num_ways; ++way_index)
+    {
+        const CacheLine& line = m_cache->GetCacheLine(set_index, way_index);
+        if (line.valid && line.tag == tag)
+        {
+            return static_cast<int>(set_index * m_num_ways + way_index);
+        }
+    }
+
+    return static_cast<int>(set_index * m_num_ways);
 }
 
 void CacheModel::updateCacheData(uint64_t address)
@@ -191,9 +224,9 @@ void CacheModel::updateCacheData(uint64_t address)
     // For now, we will just emit dataChanged for the entire model.
     // In a real implementation, you might want to be more specific about which rows/columns changed.
     if (!m_cache ||
-        m_cache->GetNumSets()   != num_sets_  ||
-        m_cache->GetNumWays()   != num_ways_  ||
-        m_cache->GetBlockSize() != block_size_)
+        m_cache->GetNumSets()   != m_num_sets  ||
+        m_cache->GetNumWays()   != m_num_ways  ||
+        m_cache->GetBlockSize() != m_block_size)
     {
         AttachCache(m_cache);  
         return;
@@ -204,15 +237,24 @@ void CacheModel::updateCacheData(uint64_t address)
         return;
     }
 
+    if (m_hit_highlight_pending)
+    {
+        m_hit_highlight_pending = false;
+    }
+    if (m_miss_highlight_pending)
+    {
+        m_miss_highlight_pending = false;
+    }
+
     emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
 }
 
 void CacheModel::updateCacheConfig(CacheConfig newConfig)
 {
     beginResetModel();
-    num_sets_ = newConfig.num_lines;
-    num_ways_ = newConfig.num_ways;
-    block_size_ = newConfig.block_size;
+    m_num_sets = newConfig.num_lines;
+    m_num_ways = newConfig.num_ways;
+    m_block_size = newConfig.block_size;
     endResetModel();
 }
 
@@ -224,9 +266,25 @@ void CacheModel::onCacheMiss(uint64_t address)
     int miss_row = AddressToRow(address);
     if (miss_row >= 0 && miss_row < rowCount())
     {
-        last_miss_row_ = miss_row;
-        miss_highlight_pending_ = true;
+        m_hit_highlight_pending = false;
+        m_last_miss_row = miss_row;
+        m_miss_highlight_pending = true;
         emit dataChanged(index(miss_row, 0), index(miss_row, columnCount() - 1), {Qt::BackgroundRole});
+    }
+}
+
+void CacheModel::onCacheHit(uint64_t address)
+{
+    if (!m_cache)
+        return;
+
+    int hit_row = AddressToHitRow(address);
+    if (hit_row >= 0 && hit_row < rowCount())
+    {
+        m_miss_highlight_pending = false;
+        m_last_hit_row = hit_row;
+        m_hit_highlight_pending = true;
+        emit dataChanged(index(hit_row, 0), index(hit_row, columnCount() - 1), {Qt::BackgroundRole});
     }
 }
 }// namespace Kites
