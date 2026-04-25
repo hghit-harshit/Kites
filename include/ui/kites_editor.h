@@ -20,7 +20,7 @@ protected:
 class LineNumberArea : public QWidget
 {
 public:
-    LineNumberArea(KitesEditor *editor):m_editor(editor){};
+    LineNumberArea(KitesEditor *editor) : QWidget(editor), m_editor(editor) {};
     QSize sizeHint() const override
     {
         return QSize(m_editor->lineNumberAreaWidth(), 0);
