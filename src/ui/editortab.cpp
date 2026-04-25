@@ -35,6 +35,12 @@ EditorTab::EditorTab(QWidget* parent, VMManager* vmManager)
 
 void EditorTab::onExpandButtonClicked(bool checked)
 {
+    if (m_expandedLocked && !checked)
+    {
+        ui->expandedViewButton->setChecked(true);
+        return;
+    }
+
     if(checked)
     {
         std::string expandedCode = CustomPseudoManager::expandPseudoInstruction(getRawText());
@@ -50,6 +56,18 @@ void EditorTab::onExpandButtonClicked(bool checked)
 void EditorTab::switchToExpandedView()
 {
     ui->expandedViewButton->setChecked(true);
+}
+
+void EditorTab::setExpandedLocked(bool locked)
+{
+    m_expandedLocked = locked;
+    ui->editorViewButton->setEnabled(!locked);
+
+    if (locked)
+    {
+        ui->expandedViewButton->setChecked(true);
+        ui->stackedWidget->setCurrentIndex(1);
+    }
 }
 
 EditorTab::~EditorTab()
@@ -87,6 +105,7 @@ void EditorTab::highlightLines(const QVariantMap& editorLines, const QVariantMap
 {
     m_editor->setLinesToHighlight(editorLines);
     m_disassemblyView->setLinesToHighlight(disassemblyLines);
+    m_expandedView->setLinesToHighlight(editorLines); // we want the expanded view to have the same highlights as the editor
 }
 
 void EditorTab::setCanWrite(bool canWrite)
@@ -155,5 +174,6 @@ void EditorTab::setErrorLinesFromFile(const std::filesystem::path& filePath)
 
     // --- 4. Apply all squiggles at once ---
     m_editor->setExtraSelections(extraSelections);
+    m_expandedView->setExtraSelections(extraSelections);
 }
 } // namespace Kites
