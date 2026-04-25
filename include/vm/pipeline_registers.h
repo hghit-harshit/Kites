@@ -90,13 +90,15 @@ struct EX_MEM_Register
     // --- GPR Results ---
     uint64_t alu_result = 0;    // GPR Write Data (ALU Result, Link Address, etc.)
     uint64_t reg2_data = 0;     // Data from rs2, needed for Store instructions
+    
     uint8_t rd = 0;             // GPR Destination register index
     uint8_t prev_rd = 0;        // Previous GPR Destination register index (for one cycle delay)
 
     // --- FPR Results ---
     uint64_t f_alu_result = 0;  // FPR Write Data (F-ALU Result, Conversions)
+    uint64_t freg2_data = 0;    // Data from frs2, needed for Store instructions
     uint8_t frd = 0;            // FPR Destination register index
-
+    uint8_t prev_frd = 0;       // Previous FPR Destination register index (for one cycle delay)
     // Branching info calculated in EX stage
     bool branch_taken = false;
     bool prev_branch_taken = false; // we'll use this for hightlighting purposes
@@ -106,6 +108,7 @@ struct EX_MEM_Register
     bool reg_write = false;     // GPR Write enable
     bool prev_reg_write = false; // Previous GPR Write enable (used for checking one cycle delay)
     bool freg_write = false;    // FPR Write enable
+    bool prev_freg_write = false; // Previous FPR Write enable (used for checking one cycle delay)
     bool mem_to_reg = false;
     bool mem_read = false; // for highlighting purposes
     bool mem_write = false;
@@ -142,7 +145,9 @@ struct MEM_WB_Register
     uint64_t f_alu_result = 0;  // FPR Write Data (F-ALU result)
     uint8_t frd = 0;            // FPR Destination register index
 
-
+    uint64_t prev_f_memory_data = 0; // Previous FPR Memory data (for forwarding)
+    uint64_t prev_f_alu_result = 0; // Previous FPR ALU
+    uint8_t prev_frd = 0;       // Previous FPR Destination register index
     // Control signals passed through
     bool reg_write = false;     // GPR Write enable
     bool freg_write = false;    // FPR Write enable
