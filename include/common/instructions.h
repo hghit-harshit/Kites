@@ -59,6 +59,7 @@ enum class Instruction {
 // TODO: use enum class for instruction encoding
 
 
+
 struct InstructionEncoding {
   int opcode;
   int funct2;
@@ -314,6 +315,14 @@ bool isFInstruction(const uint32_t &instruction);
 bool isDInstruction(const uint32_t &instruction);
 
 std::string getExpectedSyntaxes(const std::string &opcode);
+
+/**
+ * @brief Determines the type of instruction from its mnemonic.
+ * 
+ * @param instruction The instruction mnemonic (e.g., "add", "addi", "sw", "beq")
+ * @return A string describing the instruction type (e.g., "R-Type", "I-Type", "S-Type", "Pseudo")
+ */
+std::string getInstructionType(const std::string &instruction);
 
 } // namespace instruction_set
 
