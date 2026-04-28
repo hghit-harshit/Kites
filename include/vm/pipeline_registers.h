@@ -49,25 +49,25 @@ struct ID_EX_Register
     // --- Register Indices (for GPR and FPR) ---
     uint8_t rs1 = 0;            // GPR source 1 index
     uint8_t rs2 = 0;            // GPR source 2 index
-    uint8_t rd = 0;             // GPR destination index
+    uint8_t rd  = 0;             // GPR destination index
 
     //ignore these not used
     uint8_t frs1 = 0;           // FPR source 1 index
     uint8_t frs2 = 0;           // FPR source 2 index
     uint8_t frs3 = 0;           // FPR source 3 index
-    uint8_t frd = 0;            // FPR destination index
+    uint8_t frd  = 0;            // FPR destination index
 
 
     // --- Control signals generated in Decode stage ---
-    bool reg_write = false;     // Write to GPRs (x0-x31)
+    bool reg_write  = false;     // Write to GPRs (x0-x31)
     bool freg_write = false;    // Write to FPRs (f0-f31)(ignore these)
     
     bool mem_to_reg = false;
-    bool mem_read = false;
-    bool mem_write = false;
-    bool branch = false;
-    bool alu_src = false;
-    uint8_t alu_op = 0;         // Hint for the ALU Control Unit
+    bool mem_read   = false;
+    bool mem_write  = false;
+    bool branch     = false;
+    bool alu_src    = false;
+    uint8_t alu_op  = 0;         // Hint for the ALU Control Unit
 
     void reset()
     {
@@ -96,34 +96,54 @@ struct EX_MEM_Register
 
     // --- FPR Results ---
     uint64_t f_alu_result = 0;  // FPR Write Data (F-ALU Result, Conversions)
-    uint64_t freg2_data = 0;    // Data from frs2, needed for Store instructions
-    uint8_t frd = 0;            // FPR Destination register index
-    uint8_t prev_frd = 0;       // Previous FPR Destination register index (for one cycle delay)
+    uint64_t freg2_data   = 0;  // Data from frs2, needed for Store instructions
+    uint8_t  frd          = 0;  // FPR Destination register index
+    uint8_t  prev_frd     = 0;  // Previous FPR Destination register index (for one cycle delay)
     // Branching info calculated in EX stage
-    bool branch_taken = false;
-    bool prev_branch_taken = false; // we'll use this for hightlighting purposes
-    uint64_t branch_target_pc = 0;
+    bool     branch_taken      = false;
+    bool     prev_branch_taken = false;  // we'll use this for hightlighting purposes
+    uint64_t branch_target_pc  = 0;
 
     // Control signals passed through from the previous stage
-    bool reg_write = false;     // GPR Write enable
-    bool prev_reg_write = false; // Previous GPR Write enable (used for checking one cycle delay)
-    bool freg_write = false;    // FPR Write enable
-    bool prev_freg_write = false; // Previous FPR Write enable (used for checking one cycle delay)
-    bool mem_to_reg = false;
-    bool mem_read = false; // for highlighting purposes
-    bool mem_write = false;
+    bool reg_write       = false;  // GPR Write enable
+    bool prev_reg_write  = false;  // Previous GPR Write enable (used for checking one cycle delay)
+    bool freg_write      = false;  // FPR Write enable
+    bool prev_freg_write = false;  // Previous FPR Write enable (used for checking one cycle delay)
+    bool mem_to_reg      = false;
+    bool mem_read        = false;  // for highlighting purposes
+    bool mem_write       = false;
 
-    bool prev_mem_read = false; // Previous mem_read signal (for highlighting purposes)
-    bool prev_mem_write = false; // Previous mem_write signal (for highlighting purposes)
+    bool prev_mem_read  = false;  // Previous mem_read signal (for highlighting purposes)
+    bool prev_mem_write = false;  // Previous mem_write signal (for highlighting purposes)
 
     void reset()
     {
-        alu_result = reg2_data = rd = 0;
-        f_alu_result = frd = 0;
+        pc = UINT64_MAX;
+        instruction = 0x00000013;
 
-        branch_taken = false;
-        branch_target_pc = 0;
-        reg_write = freg_write = mem_to_reg = mem_read = mem_write = false;
+        alu_result = 0;
+        reg2_data  = 0;
+        rd         = 0;
+        prev_rd    = 0;
+
+        f_alu_result = 0;
+        freg2_data   = 0;
+        frd          = 0;
+        prev_frd     = 0;
+
+        branch_taken      = false;
+        prev_branch_taken = false;
+        branch_target_pc  = 0;
+
+        reg_write       = false;
+        prev_reg_write  = false;
+        freg_write      = false;
+        prev_freg_write = false;
+        mem_to_reg      = false;
+        mem_read        = false;
+        mem_write       = false;
+        prev_mem_read   = false;
+        prev_mem_write  = false;
     }
 };
 
@@ -133,32 +153,53 @@ struct MEM_WB_Register
     uint64_t pc = UINT64_MAX; // Passing PC for highlighting purposes
     uint32_t instruction = 0x00000013; // Pass full instruction for reference in WB
     // --- GPR Results ---
-    uint64_t memory_data = 0;   // GPR Write Data (Data read from memory in a Load)
-    uint64_t alu_result = 0;    // GPR Write Data (ALU result, Link Address, etc.)
-    uint8_t rd = 0;             // GPR Destination register index
+    uint64_t memory_data = 0;  // GPR Write Data (Data read from memory in a Load)
+    uint64_t alu_result  = 0;  // GPR Write Data (ALU result, Link Address, etc.)
+    uint8_t  rd          = 0;  // GPR Destination register index
 
-    uint64_t prev_memory_data = 0; // Previous Memory data (for forwarding)
-    uint8_t prev_rd = 0;        // Previous GPR Destination register index 
-    uint64_t prev_alu_result = 0; // Previous ALU result 
+    uint64_t prev_memory_data = 0;  // Previous Memory data (for forwarding)
+    uint8_t  prev_rd          = 0;  // Previous GPR Destination register index 
+    uint64_t prev_alu_result  = 0;  // Previous ALU result 
     // --- FPR Results ---
-    uint64_t f_memory_data = 0; // FPR Write Data (Data read from memory in FLW/FLD)
-    uint64_t f_alu_result = 0;  // FPR Write Data (F-ALU result)
-    uint8_t frd = 0;            // FPR Destination register index
+    uint64_t f_memory_data = 0;  // FPR Write Data (Data read from memory in FLW/FLD)
+    uint64_t f_alu_result  = 0;  // FPR Write Data (F-ALU result)
+    uint8_t  frd           = 0;  // FPR Destination register index
 
-    uint64_t prev_f_memory_data = 0; // Previous FPR Memory data (for forwarding)
-    uint64_t prev_f_alu_result = 0; // Previous FPR ALU
-    uint8_t prev_frd = 0;       // Previous FPR Destination register index
+    uint64_t prev_f_memory_data = 0;  // Previous FPR Memory data (for forwarding)
+    uint64_t prev_f_alu_result  = 0;  // Previous FPR ALU
+    uint8_t  prev_frd           = 0;  // Previous FPR Destination register index
     // Control signals passed through
-    bool reg_write = false;     // GPR Write enable
-    bool freg_write = false;    // FPR Write enable
+    bool reg_write  = false;  // GPR Write enable
+    bool freg_write = false;  // FPR Write enable
     bool mem_to_reg = false;
 
-    bool prev_mem_to_reg = false; // Previous mem_to_reg signal (for forwarding)
-    bool prev_reg_write = false;  // Previous reg_write signal (for forwarding)
+    bool prev_mem_to_reg = false;  // Previous mem_to_reg signal (for forwarding)
+    bool prev_reg_write  = false;  // Previous reg_write signal (for forwarding)
     void reset()
     {
-        memory_data = alu_result = rd = 0;
-        f_memory_data = f_alu_result = frd = 0;
-        reg_write = freg_write = mem_to_reg = false;
+        pc = UINT64_MAX;
+        instruction = 0x00000013;
+
+        memory_data = 0;
+        alu_result  = 0;
+        rd          = 0;
+
+        prev_memory_data = 0;
+        prev_rd          = 0;
+        prev_alu_result  = 0;
+
+        f_memory_data = 0;
+        f_alu_result  = 0;
+        frd           = 0;
+
+        prev_f_memory_data = 0;
+        prev_f_alu_result  = 0;
+        prev_frd           = 0;
+
+        reg_write       = false;
+        freg_write      = false;
+        mem_to_reg      = false;
+        prev_mem_to_reg = false;
+        prev_reg_write  = false;
     }
 };
