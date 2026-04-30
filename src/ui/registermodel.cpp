@@ -9,6 +9,7 @@ RegisterModel::RegisterModel(QObject *parent,RegisterFile* regfile)
 {
     m_currentRegisterFile = regfile;
     connect(m_currentRegisterFile,&RegisterFile::updateRegister,this,&RegisterModel::updateRegisterValue);
+    connect(m_currentRegisterFile,&RegisterFile::updateFRegister,this,&RegisterModel::updateFRegisterValue);
     connect(m_currentRegisterFile,&RegisterFile::registerResetSignal,this,&RegisterModel::registerResetSlot);
 }
 
@@ -121,12 +122,22 @@ QVariant RegisterModel::data(const QModelIndex &index, int role) const
 
                         case Base::Decimal:
                         {
-                            // Interpret raw 64-bit value as double
-                            double value;
-                            static_assert(sizeof(double) == sizeof(uint64_t), "double not 64-bit!");
-
-                            memcpy(&value, &raw, sizeof(double));
-                            return QString::number(value, 'g', 16); // show decimal double
+                            uint32_t upper32 = static_cast<uint32_t>(raw >> 32);
+                            if (upper32 == 0)
+                            {
+                                // Single-precision float (F-extension): value in lower 32 bits
+                                uint32_t lower32 = static_cast<uint32_t>(raw & 0xFFFFFFFF);
+                                float fval;
+                                memcpy(&fval, &lower32, sizeof(float));
+                                return QString::number(static_cast<double>(fval), 'g', 8);
+                            }
+                            else
+                            {
+                                // Double-precision (D-extension): full 64 bits
+                                double dval;
+                                memcpy(&dval, &raw, sizeof(double));
+                                return QString::number(dval, 'g', 16);
+                            }
                         }
 
                         case Base::Hexadecimal:
@@ -148,6 +159,7 @@ void RegisterModel::changeRegisterFile(RegisterFile* regfile)
     beginResetModel();
     m_currentRegisterFile  = regfile;
     connect(m_currentRegisterFile,&RegisterFile::updateRegister,this,&RegisterModel::updateRegisterValue);
+    connect(m_currentRegisterFile,&RegisterFile::updateFRegister,this,&RegisterModel::updateFRegisterValue);
     //maybe we can directly connect it to 
     connect(m_currentRegisterFile,&RegisterFile::registerResetSignal,this,&RegisterModel::registerResetSlot);
     endResetModel();
