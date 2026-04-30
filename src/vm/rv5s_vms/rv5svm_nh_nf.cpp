@@ -217,75 +217,7 @@ void RV5StageVM_NH_NF::pipeline_fetch()
     }
 }
 
-// void RV5StageVM_NH_NF::pipeline_decode()
-// {
-//     //Get instruction from the IF/ID register
-//     uint32_t instruction = if_id_reg_.instruction;
-//     if (instruction == NOP) {
-//         // Pass through fields as needed
-//         id_ex_reg_.pc = if_id_reg_.pc;
-//         id_ex_reg_.instruction = instruction;
-//         id_ex_reg_.imm = 0;
-//         id_ex_reg_.rs1 = id_ex_reg_.rs2 = id_ex_reg_.rd = 0;
-//         id_ex_reg_.reg1_data = 0;
-//         id_ex_reg_.reg2_data = 0;
 
-//         // Critically: zero *all* control signals so downstream stages are idle
-//         id_ex_reg_.reg_write = false;
-//         id_ex_reg_.branch    = false;
-//         id_ex_reg_.alu_src   = false;
-//         id_ex_reg_.mem_read  = false;
-//         id_ex_reg_.mem_write = false;
-//         id_ex_reg_.mem_to_reg= false;
-//         id_ex_reg_.alu_op    = 0;
-//         return;
-//     }
-//     // Control Unit: Generate signals based on the instruction
-//     control_unit_.SetControlSignals(instruction);
-
-//     // Latch data for the ID/EX register
-//     id_ex_reg_.pc = if_id_reg_.pc;
-//     id_ex_reg_.instruction = instruction;
-//     id_ex_reg_.imm = ImmGenerator(instruction);
-
-//     // Extract register numbers
-//     id_ex_reg_.rs1 = (instruction >> 15) & 0x1F;
-//     id_ex_reg_.rs2 = (instruction >> 20) & 0x1F;
-//     id_ex_reg_.rd = (instruction >> 7) & 0x1F;
-
-//     // Extract FP register indices for F/D instructions
-//     if(instruction_set::isFInstruction(instruction) || instruction_set::isDInstruction(instruction))
-//     {
-//         id_ex_reg_.frs1 = (instruction >> 15) & 0x1F;
-//         id_ex_reg_.frs2 = (instruction >> 20) & 0x1F;
-//         id_ex_reg_.frs3 = (instruction >> 27) & 0x1F;
-//         id_ex_reg_.frd  = (instruction >> 7) & 0x1F;
-
-//         id_ex_reg_.freg1_data = registers_.ReadFpr(id_ex_reg_.frs1);
-//         id_ex_reg_.freg2_data = registers_.ReadFpr(id_ex_reg_.frs2);
-//         id_ex_reg_.freg3_data = registers_.ReadFpr(id_ex_reg_.frs3);
-//         uint8_t opcode = instruction & 0b1111111;
-//         uint8_t funct7 = (instruction >> 25) & 0b1111111;
-
-//         // For load instructions, rs1 is a GPR base address.
-//         // For integer-to-float conversions / moves, rs1 is also a GPR source.
-//     }
-//     else
-//     {
-//         id_ex_reg_.reg1_data = registers_.ReadGpr(id_ex_reg_.rs1);
-//         id_ex_reg_.reg2_data = registers_.ReadGpr(id_ex_reg_.rs2);
-//     }
-
-//     // Pass all control signals to the next stage
-//     id_ex_reg_.reg_write  = control_unit_.GetRegWrite();
-//     id_ex_reg_.freg_write = instruction_set::isFInstruction(instruction) || instruction_set::isDInstruction(instruction);
-//     id_ex_reg_.branch     = control_unit_.GetBranch();
-//     id_ex_reg_.alu_src    = control_unit_.GetAluSrc();
-//     id_ex_reg_.mem_read   = control_unit_.GetMemRead();
-//     id_ex_reg_.mem_write  = control_unit_.GetMemWrite();
-//     id_ex_reg_.mem_to_reg = control_unit_.GetMemToReg();
-//     id_ex_reg_.alu_op     = control_unit_.GetAluOp();
-// }
 
 void RV5StageVM_NH_NF::pipeline_execute()
 {
@@ -319,11 +251,11 @@ void RV5StageVM_NH_NF::pipeline_execute()
     const bool is_d_instruction = instruction_set::isDInstruction(instruction);
     if (is_f_instruction)
     {
-        alu_result = execute_float();
+        alu_result = pipeline_execute_float();
     }
     else if (is_d_instruction)
     {
-        alu_result = execute_double();
+        alu_result = pipeline_execute_double();
     }
     else
     {
@@ -401,53 +333,54 @@ void RV5StageVM_NH_NF::pipeline_execute()
 
 // --- Undo/Redo Implementations ---
 
+void RV5StageVM_NH_NF::handle_syscall() { 
+    if ((id_ex_reg_.instruction & 0x7F) == 0b1110011 && ((id_ex_reg_.instruction >> 12) & 0x7) == 0b000) {
+        RequestStop();
+        output_status_ = "ECALL_EXIT";
+        DumpState("vm_state.json");
+    }
+}
 
+// --- FP Execute Handlers ---
 
-uint64_t RV5StageVM_NH_NF::execute_float() 
+uint64_t RV5StageVM_NH_NF::pipeline_execute_float()
 {
     uint32_t instruction = id_ex_reg_.instruction;
     uint8_t opcode = instruction & 0b1111111;
     uint8_t funct3 = (instruction >> 12) & 0b111;
     uint8_t funct7 = (instruction >> 25) & 0b1111111;
-	uint8_t rm = funct3;
+    uint8_t rm = funct3;
 
-	uint8_t fcsr_status = 0;
+    uint8_t fcsr_status = 0;
     uint64_t alu_result = 0;
 
-	if (rm == 0b111)
-	{
-		rm = registers_.ReadCsr(0x002);
-	}
+    if (rm == 0b111)
+    {
+        rm = registers_.ReadCsr(0x002);
+    }
 
     uint64_t reg1_value = id_ex_reg_.freg1_data;
     uint64_t reg2_value = id_ex_reg_.freg2_data;
     uint64_t reg3_value = id_ex_reg_.freg3_data;
 
-	if (funct7 == 0b1101000 || funct7 == 0b1111000 || opcode == 0b0000111 || opcode == 0b0100111)
-	{
+    if (funct7 == 0b1101000 || funct7 == 0b1111000 || opcode == 0b0000111 || opcode == 0b0100111)
+    {
         reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
-	}
+    }
 
     if (id_ex_reg_.alu_src)
-	{
-        std::cout << GREEN << "Is the alu src set correctly?" << RESET << std::endl;
+    {
         reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
-        std::cout << BLUE << "Immediate value used in ALU: " << reg2_value << RESET << std::endl;
-	}
+    }
 
     alu::AluOp aluOperation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
-    std::cout << "The registers values:\n";
-    std::cout << reg1_value << ' ' << reg2_value << ' ' << reg3_value << std::endl;
-	std::tie(alu_result, fcsr_status) = alu::Alu::fpexecute(aluOperation, reg1_value, reg2_value, reg3_value, rm);
+    std::tie(alu_result, fcsr_status) = alu::Alu::fpexecute(aluOperation, reg1_value, reg2_value, reg3_value, rm);
 
-    std::cout << "The floating point result : \n";
-    std::cout << alu_result << std::endl;
-
-	registers_.WriteCsr(0x003, fcsr_status);
+    registers_.WriteCsr(0x003, fcsr_status);
     return alu_result;
 }
 
-uint64_t RV5StageVM_NH_NF::execute_double()
+uint64_t RV5StageVM_NH_NF::pipeline_execute_double()
 {
     uint32_t instruction = id_ex_reg_.instruction;
     uint8_t opcode = instruction & 0b1111111;
@@ -483,103 +416,3 @@ uint64_t RV5StageVM_NH_NF::execute_double()
     registers_.WriteCsr(0x003, fcsr_status);
     return alu_result;
 }
-
-
-void RV5StageVM_NH_NF::handle_syscall() { 
-    if ((id_ex_reg_.instruction & 0x7F) == 0b1110011 && ((id_ex_reg_.instruction >> 12) & 0x7) == 0b000) {
-        RequestStop();
-        output_status_ = "ECALL_EXIT";
-        DumpState("vm_state.json");
-    }
-}
-
-// --- FP Execute Handlers ---
-
-void RV5StageVM_NH_NF::pipeline_execute_float()
-{
-    (void)execute_float();
-}
-
-void RV5StageVM_NH_NF::pipeline_execute_double()
-{
-    (void)execute_double();
-}
-
-// void RV5StageVM_NH_NF::memory_float()
-// {
-//     uint8_t rs2 = (current_instruction_ >> 20) & 0b11111;
-
-// 	if (control_unit_.GetMemRead())
-// 	{ // FLW
-// 		mem_wb_reg_.memory_data = memory_controller_.ReadWord(mem_wb_reg_.alu_result);
-// 	}
-
-// 	uint64_t addr = 0;
-// 	std::vector<uint8_t> old_bytes_vec;
-// 	std::vector<uint8_t> new_bytes_vec;
-
-// 	if (control_unit_.GetMemWrite())
-// 	{ // FSW
-// 		addr = mem_wb_reg_.alu_result;
-// 		for (size_t i = 0; i < 4; ++i)
-// 		{
-// 			old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-// 		}
-// 		uint32_t val = registers_.ReadFpr(rs2) & 0xFFFFFFFF;
-// 		memory_controller_.WriteWord(mem_wb_reg_.alu_result, val);
-// 		// new_bytes_vec.push_back(memory_controller_.ReadByte(addr));
-// 		for (size_t i = 0; i < 4; ++i)
-// 		{
-// 			new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
-// 		}
-// 	}
-
-// 	if (old_bytes_vec != new_bytes_vec)
-// 	{
-// 		current_delta_.memory_changes.push_back({addr, old_bytes_vec, new_bytes_vec});
-// 	}
-// }
-
-// void RV5StageVM_NH_NF::writeback_float()
-// {
-//     uint8_t opcode = current_instruction_ & 0b1111111;
-// 	uint8_t funct7 = (current_instruction_ >> 25) & 0b1111111;
-// 	uint8_t rd = (current_instruction_ >> 7) & 0b11111;
-
-// 	uint64_t old_reg = 0;
-// 	unsigned int reg_index = rd;
-// 	unsigned int reg_type = 2; // 0 for GPR, 1 for CSR, 2 for FPR
-// 	uint64_t new_reg = 0;
-
-// 	if (control_unit_.GetRegWrite())
-// 	{
-// 		// write to GPR
-// 		if (funct7 == 0b1010000 || funct7 == 0b1100000 || funct7 == 0b1110000)
-// 		{ // f(eq|lt|le).s, fcvt.(w|wu|l|lu).s
-// 			old_reg = registers_.ReadGpr(rd);
-// 			registers_.WriteGpr(rd, mem_wb_reg_.alu_result);
-// 			new_reg = mem_wb_reg_.alu_result;
-// 			reg_type = 0; // GPR
-// 		}
-// 		// write to FPR
-// 		else if (opcode == 0b0000111)
-// 		{
-// 			old_reg = registers_.ReadFpr(rd);
-// 			registers_.WriteFpr(rd, mem_wb_reg_.memory_data);
-// 			new_reg = mem_wb_reg_.memory_data;
-// 			reg_type = 2; // FPR
-// 		}
-// 		else
-// 		{
-// 			old_reg = registers_.ReadFpr(rd);
-// 			registers_.WriteFpr(rd, mem_wb_reg_.alu_result);
-// 			new_reg = mem_wb_reg_.alu_result;
-// 			reg_type = 2; // FPR
-// 		}
-// 	}
-
-// 	if (old_reg != new_reg)
-// 	{
-// 		current_delta_.register_changes.push_back({reg_index, reg_type, old_reg, new_reg});
-// 	}
-// }

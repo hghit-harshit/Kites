@@ -45,11 +45,13 @@ private:
     void pipeline_fetch() override;
     // void pipeline_decode() override;
     void pipeline_execute() override;
+
+    uint64_t pipeline_execute_float() override;
+    uint64_t pipeline_execute_double() override;
     //void pipeline_memory() override;
     // void pipeline_writeback() override;
 
     // Helper function to consolidate hazard checks using the dedicated unit
-    bool check_for_hazard();
 
     //void print_pipeline_registers_debug();
     void handle_syscall() override;

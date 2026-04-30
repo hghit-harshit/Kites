@@ -57,19 +57,19 @@ private:
     //RV5SControlUnit control_unit_;
 
     //void print_pipeline_registers_debug();
-    bool is_pipeline_drained() const;
+    //bool is_pipeline_drained() const;
     // --- Private methods for each pipeline stage ---
     void pipeline_fetch() override;
     //void pipeline_decode() override;
     void pipeline_execute() override;
 
-    void pipeline_execute_float() override;
-    void pipeline_execute_double() override;
+    uint64_t pipeline_execute_float() override;
+    uint64_t pipeline_execute_double() override;
     //void pipeline_memory() override;
     // void pipeline_writeback() override;
 
-    uint64_t execute_float();
-   uint64_t execute_double();
+   // uint64_t execute_float();
+  // uint64_t execute_double();
     //void memory_float();
 
 

@@ -229,73 +229,52 @@ void RV5StageVM_H_NF::pipeline_fetch()
     }
 }
 
-// void RV5StageVM_H_NF::pipeline_decode()
-// {
-    // uint32_t instruction = if_id_reg_.instruction;
-    // if (instruction == NOP) {
-    //     // Pass through fields as needed
-    //     id_ex_reg_.pc = if_id_reg_.pc;
-    //     id_ex_reg_.instruction = instruction;
-    //     id_ex_reg_.imm = 0;
-    //     id_ex_reg_.rs1 = id_ex_reg_.rs2 = id_ex_reg_.rd = 0;
-    //     id_ex_reg_.reg1_data = 0;
-    //     id_ex_reg_.reg2_data = 0;
 
-    //     // Critically: zero *all* control signals so downstream stages are idle
-    //     id_ex_reg_.reg_write = false;
-    //     id_ex_reg_.branch    = false;
-    //     id_ex_reg_.alu_src   = false;
-    //     id_ex_reg_.mem_read  = false;
-    //     id_ex_reg_.mem_write = false;
-    //     id_ex_reg_.mem_to_reg= false;
-    //     id_ex_reg_.alu_op    = 0;
-    //     return;
-    // }
-    // control_unit_.SetControlSignals(instruction);
-
-    // id_ex_reg_.pc = if_id_reg_.pc;
-    // id_ex_reg_.instruction = instruction;
-    // id_ex_reg_.imm = ImmGenerator(instruction);
-
-    // id_ex_reg_.rs1 = (instruction >> 15) & 0x1F;
-    // id_ex_reg_.rs2 = (instruction >> 20) & 0x1F;
-    // id_ex_reg_.rd = (instruction >> 7) & 0x1F;
-
-    // id_ex_reg_.reg1_data = registers_.ReadGpr(id_ex_reg_.rs1);
-    // id_ex_reg_.reg2_data = registers_.ReadGpr(id_ex_reg_.rs2);
-
-    // id_ex_reg_.reg_write = control_unit_.GetRegWrite();
-    // id_ex_reg_.branch = control_unit_.GetBranch();
-    // id_ex_reg_.alu_src = control_unit_.GetAluSrc();
-    // id_ex_reg_.mem_read = control_unit_.GetMemRead();
-    // id_ex_reg_.mem_write = control_unit_.GetMemWrite();
-    // id_ex_reg_.mem_to_reg = control_unit_.GetMemToReg();
-    // id_ex_reg_.alu_op = control_unit_.GetAluOp();
-// }
 
 void RV5StageVM_H_NF::pipeline_execute()
 {
+    uint32_t cur_instruction = id_ex_reg_.instruction;
+    const bool is_f_instruction = instruction_set::isFInstruction(cur_instruction);
+    const bool is_d_instruction = instruction_set::isDInstruction(cur_instruction);
+
     uint64_t alu_in1 = id_ex_reg_.reg1_data;
     uint64_t alu_in2 = id_ex_reg_.alu_src ? static_cast<uint64_t>(id_ex_reg_.imm) : id_ex_reg_.reg2_data;
 
-    alu::AluOp alu_operation = control_unit_.GetAluSignal(id_ex_reg_.instruction, id_ex_reg_.alu_op > 0);
+    alu::AluOp alu_operation = control_unit_.GetAluSignal(cur_instruction, id_ex_reg_.alu_op > 0);
     uint64_t alu_result = 0;
 
     bool overflow;
-    std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
-    if((id_ex_reg_.instruction & 0b1111111) == 0b0110111) //lui
+    if (is_f_instruction)
+    {
+        alu_result = pipeline_execute_float();
+    }
+    else if (is_d_instruction)
+    {
+        alu_result = pipeline_execute_double();
+    }
+    else
+    {
+        std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
+    }
+    if((cur_instruction & 0b1111111) == 0b0110111) //lui
     {
         alu_result = static_cast<uint64_t>(id_ex_reg_.imm << 12);
     }
 
     ex_mem_reg_.prev_reg_write   = ex_mem_reg_.reg_write;
     ex_mem_reg_.prev_rd          = ex_mem_reg_.rd; 
+    ex_mem_reg_.prev_freg_write  = ex_mem_reg_.freg_write;
+    ex_mem_reg_.prev_frd         = ex_mem_reg_.frd;
     ex_mem_reg_.pc               = id_ex_reg_.pc;
     ex_mem_reg_.instruction      = id_ex_reg_.instruction;
     ex_mem_reg_.alu_result       = alu_result;
+    ex_mem_reg_.f_alu_result     = (is_f_instruction || is_d_instruction) ? alu_result : 0;
     ex_mem_reg_.rd               = id_ex_reg_.rd;
+    ex_mem_reg_.frd              = id_ex_reg_.frd;
     ex_mem_reg_.reg2_data        = id_ex_reg_.reg2_data;
+    ex_mem_reg_.freg2_data       = id_ex_reg_.freg2_data;
     ex_mem_reg_.reg_write        = id_ex_reg_.reg_write;
+    ex_mem_reg_.freg_write       = id_ex_reg_.freg_write;
     ex_mem_reg_.mem_to_reg       = id_ex_reg_.mem_to_reg;
     ex_mem_reg_.mem_read         = id_ex_reg_.mem_read;
     ex_mem_reg_.mem_write        = id_ex_reg_.mem_write;
@@ -362,123 +341,7 @@ void RV5StageVM_H_NF::pipeline_execute()
     }
 }
 
-// void RV5StageVM_H_NF::pipeline_memory()
-// {
-//     if (ex_mem_reg_.branch_taken && (ex_mem_reg_.instruction & 0b1111111) == 0b1100011)
-//     {
-//         std::cout <<"branch branch branch branch branch branch branch branch branch\n";
-//         program_counter_ = ex_mem_reg_.branch_target_pc;
-//         if_id_reg_.reset();
-//         id_ex_reg_.reset();
-//         branch_mispredictions_++;
-//     }
 
-//     mem_wb_reg_.pc = ex_mem_reg_.pc;
-//     mem_wb_reg_.instruction = ex_mem_reg_.instruction;
-//     mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
-//     mem_wb_reg_.rd = ex_mem_reg_.rd;
-//     mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
-//     mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
-
-//     if (ex_mem_reg_.mem_read)
-//     {
-//         // uint64_t data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
-//         // mem_wb_reg_.memory_data = data;
-//         switch ((mem_wb_reg_.instruction >> 12) & 0b111)
-// 		{
-// 		case 0b000:
-// 		{ // LB
-// 			mem_wb_reg_.memory_data = static_cast<int8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
-// 			break;
-// 		}
-// 		case 0b001:
-// 		{ // LH
-// 			mem_wb_reg_.memory_data = static_cast<int16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
-// 			break;
-// 		}
-// 		case 0b010:
-// 		{ // LW
-// 			mem_wb_reg_.memory_data = static_cast<int32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
-// 			break;
-// 		}
-// 		case 0b011:
-// 		{ // LD
-// 			mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
-// 			break;
-// 		}
-// 		case 0b100:
-// 		{ // LBU
-// 			mem_wb_reg_.memory_data = static_cast<uint8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
-// 			break;
-// 		}
-// 		case 0b101:
-// 		{ // LHU
-// 			mem_wb_reg_.memory_data = static_cast<uint16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
-// 			break;
-// 		}
-// 		case 0b110:
-// 		{ // LWU
-// 			mem_wb_reg_.memory_data = static_cast<uint32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
-// 			break;
-// 		}
-// 		}
-//         std::cout << "Data read:" << (int)mem_wb_reg_.memory_data << std::endl;
-//     }
-//     else if (ex_mem_reg_.mem_write)
-//     {
-//         //memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data);
-
-//         memory_write_back();
-//     }
-// }
-
-// void RV5StageVM_H_NF::pipeline_writeback()
-// {
-//     if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0)
-//     {
-//         uint64_t write_data = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
-//
-//         uint64_t old_value = registers_.ReadGpr(mem_wb_reg_.rd);
-//         if (old_value != write_data)
-//         {
-//             current_delta_.register_changes.push_back({mem_wb_reg_.rd,
-//                                                        0,
-//                                                        old_value,
-//                                                        write_data});
-//         }
-//
-//         //registers_.WriteGpr(mem_wb_reg_.rd, write_data);
-//         switch (mem_wb_reg_.instruction & 0b1111111)
-//         {
-//         case 0b0110011: // R-Type
-//         case 0b0010011: // I-Type
-//         case 0b0010111:
-//         { // AUIPC
-//             registers_.WriteGpr(mem_wb_reg_.rd, write_data);
-//             break;
-//         }
-//         case 0b0000011:
-//         { // Load
-//             registers_.WriteGpr(mem_wb_reg_.rd, write_data);
-//             break;
-//         }
-//         case 0b1100111: // JALR
-//         case 0b1101111:
-//         { // JAL
-//             registers_.WriteGpr(mem_wb_reg_.rd, mem_wb_reg_.pc + 4);
-//             break;
-//         }
-//         case 0b0110111:
-//         { // LUI
-//             registers_.WriteGpr(mem_wb_reg_.rd, write_data );
-//             break;
-//         }
-//         default:
-//             break;
-//         }
-//         instructions_retired_++;
-//     }
-// }
 
 void RV5StageVM_H_NF::handle_syscall()
 {
@@ -487,4 +350,79 @@ void RV5StageVM_H_NF::handle_syscall()
         RequestStop();
         output_status_ = "ECALL_EXIT";
     }
+}
+
+
+uint64_t RV5StageVM_H_NF::pipeline_execute_float()
+{
+    uint32_t instruction = id_ex_reg_.instruction;
+    uint8_t opcode = instruction & 0b1111111;
+    uint8_t funct3 = (instruction >> 12) & 0b111;
+    uint8_t funct7 = (instruction >> 25) & 0b1111111;
+    uint8_t rm = funct3;
+
+    uint8_t fcsr_status = 0;
+    uint64_t alu_result = 0;
+
+    if (rm == 0b111)
+    {
+        rm = registers_.ReadCsr(0x002);
+    }
+
+    uint64_t reg1_value = id_ex_reg_.freg1_data;
+    uint64_t reg2_value = id_ex_reg_.freg2_data;
+    uint64_t reg3_value = id_ex_reg_.freg3_data;
+
+    if (funct7 == 0b1101000 || funct7 == 0b1111000 || opcode == 0b0000111 || opcode == 0b0100111)
+    {
+        reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
+    }
+
+    if (id_ex_reg_.alu_src)
+    {
+        reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
+    }
+
+    alu::AluOp aluOperation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
+    std::tie(alu_result, fcsr_status) = alu::Alu::fpexecute(aluOperation, reg1_value, reg2_value, reg3_value, rm);
+
+    registers_.WriteCsr(0x003, fcsr_status);
+    return alu_result;
+}
+
+uint64_t RV5StageVM_H_NF::pipeline_execute_double()
+{
+    uint32_t instruction = id_ex_reg_.instruction;
+    uint8_t opcode = instruction & 0b1111111;
+    uint8_t funct3 = (instruction >> 12) & 0b111;
+    uint8_t funct7 = (instruction >> 25) & 0b1111111;
+    uint8_t rm = funct3;
+
+    uint8_t fcsr_status = 0;
+    uint64_t alu_result = 0;
+
+    if (rm == 0b111)
+    {
+        rm = registers_.ReadCsr(0x002);
+    }
+
+    uint64_t reg1_value = id_ex_reg_.freg1_data;
+    uint64_t reg2_value = id_ex_reg_.freg2_data;
+    uint64_t reg3_value = id_ex_reg_.freg3_data;
+
+    if (funct7 == 0b1101001 || funct7 == 0b1111001 || opcode == 0b0000111 || opcode == 0b0100111)
+    {
+        reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
+    }
+
+    if (id_ex_reg_.alu_src)
+    {
+        reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
+    }
+
+    alu::AluOp alu_operation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
+    std::tie(alu_result, fcsr_status) = alu::Alu::dfpexecute(alu_operation, reg1_value, reg2_value, reg3_value, rm);
+    
+    registers_.WriteCsr(0x003, fcsr_status);
+    return alu_result;
 }

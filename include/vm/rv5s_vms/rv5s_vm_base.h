@@ -91,10 +91,15 @@ protected:
     
     // --- Private methods for each pipeline stage ---
     virtual void pipeline_fetch() = 0;
+
     void pipeline_decode();
+
     virtual void pipeline_execute() = 0;
-    virtual void pipeline_execute_float(){};
-    virtual void pipeline_execute_double() {};
+    virtual uint64_t pipeline_execute_float() = 0;
+    virtual uint64_t pipeline_execute_double() = 0;
+
+    uint64_t execute_float();
+    uint64_t execute_double();
 
     void execute_csr(){};
     // therse function are same across all rv5s vms so we can define them here

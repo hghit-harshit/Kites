@@ -91,15 +91,15 @@ void RV5StageVM_Base::Reset()
 
 void RV5StageVM_Base::begin_step_delta()
 {
-    current_delta_ = RV5StageStepDelta{};
-    current_delta_.old_pc = program_counter_;
-    current_delta_.old_cycle = cycle_s_;
-    current_delta_.old_instructions_retired = instructions_retired_;
-    current_delta_.old_stall_cycles = stall_cycles_;
+    current_delta_                           = RV5StageStepDelta{};
+    current_delta_.old_pc                    = program_counter_;
+    current_delta_.old_cycle                 = cycle_s_;
+    current_delta_.old_instructions_retired  = instructions_retired_;
+    current_delta_.old_stall_cycles          = stall_cycles_;
     current_delta_.old_branch_mispredictions = branch_mispredictions_;
 
-    current_delta_.pipeline_register_change.old_if_id_reg = if_id_reg_;
-    current_delta_.pipeline_register_change.old_id_ex_reg = id_ex_reg_;
+    current_delta_.pipeline_register_change.old_if_id_reg  = if_id_reg_;
+    current_delta_.pipeline_register_change.old_id_ex_reg  = id_ex_reg_;
     current_delta_.pipeline_register_change.old_ex_mem_reg = ex_mem_reg_;
     current_delta_.pipeline_register_change.old_mem_wb_reg = mem_wb_reg_;
 }
@@ -169,8 +169,15 @@ void RV5StageVM_Base::pipeline_decode()
         id_ex_reg_.reg1_data = 0;
         id_ex_reg_.reg2_data = 0;
 
+        // Clear FPR fields so stale values don't poison forwarding
+        id_ex_reg_.frs1 = id_ex_reg_.frs2 = id_ex_reg_.frs3 = id_ex_reg_.frd = 0;
+        id_ex_reg_.freg1_data = 0;
+        id_ex_reg_.freg2_data = 0;
+        id_ex_reg_.freg3_data = 0;
+
         // Critically: zero *all* control signals so downstream stages are idle
-        id_ex_reg_.reg_write = false;
+        id_ex_reg_.reg_write  = false;
+        id_ex_reg_.freg_write = false;
         id_ex_reg_.branch    = false;
         id_ex_reg_.alu_src   = false;
         id_ex_reg_.mem_read  = false;
@@ -391,6 +398,11 @@ void RV5StageVM_Base::pipeline_memory()
     mem_wb_reg_.prev_mem_to_reg = mem_wb_reg_.mem_to_reg;
     mem_wb_reg_.prev_reg_write = mem_wb_reg_.reg_write;
     mem_wb_reg_.prev_memory_data = mem_wb_reg_.memory_data;
+    // Save FPR prev fields for forwarding (mirrors GPR prev fields above)
+    mem_wb_reg_.prev_frd           = mem_wb_reg_.frd;
+    mem_wb_reg_.prev_f_alu_result  = mem_wb_reg_.f_alu_result;
+    mem_wb_reg_.prev_f_memory_data = mem_wb_reg_.f_memory_data;
+    mem_wb_reg_.prev_freg_write    = mem_wb_reg_.freg_write;
     // --- Standard MEM Operations ---
     mem_wb_reg_.pc = ex_mem_reg_.pc;
     mem_wb_reg_.instruction = ex_mem_reg_.instruction;
@@ -398,6 +410,10 @@ void RV5StageVM_Base::pipeline_memory()
     mem_wb_reg_.rd = ex_mem_reg_.rd;
     mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
     mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
+    // Latch FPR fields from EX/MEM
+    mem_wb_reg_.frd         = ex_mem_reg_.frd;
+    mem_wb_reg_.f_alu_result = ex_mem_reg_.f_alu_result;
+    mem_wb_reg_.freg_write  = ex_mem_reg_.freg_write;
 
     bool is_F_Instruction = instruction_set::isFInstruction(mem_wb_reg_.instruction);
     bool is_D_Instruction = instruction_set::isDInstruction(mem_wb_reg_.instruction);
@@ -410,10 +426,12 @@ void RV5StageVM_Base::pipeline_memory()
         {//FLW
             
             mem_wb_reg_.memory_data = static_cast<int32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+            mem_wb_reg_.f_memory_data = mem_wb_reg_.memory_data;
         }
         else if(is_D_Instruction)
         {//FLD
             mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+            mem_wb_reg_.f_memory_data = mem_wb_reg_.memory_data;
         }
         else
         {
@@ -661,6 +679,88 @@ void RV5StageVM_Base::pipeline_writeback_double()
 		current_delta_.register_changes.push_back({reg_index, reg_type, old_reg, new_reg});
 	}
 }
+
+uint64_t RV5StageVM_Base::execute_float() 
+{
+    uint32_t instruction = id_ex_reg_.instruction;
+    uint8_t opcode = instruction & 0b1111111;
+    uint8_t funct3 = (instruction >> 12) & 0b111;
+    uint8_t funct7 = (instruction >> 25) & 0b1111111;
+	uint8_t rm = funct3;
+
+	uint8_t fcsr_status = 0;
+    uint64_t alu_result = 0;
+
+	if (rm == 0b111)
+	{
+		rm = registers_.ReadCsr(0x002);
+	}
+
+    uint64_t reg1_value = id_ex_reg_.freg1_data;
+    uint64_t reg2_value = id_ex_reg_.freg2_data;
+    uint64_t reg3_value = id_ex_reg_.freg3_data;
+
+	if (funct7 == 0b1101000 || funct7 == 0b1111000 || opcode == 0b0000111 || opcode == 0b0100111)
+	{
+        reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
+	}
+
+    if (id_ex_reg_.alu_src)
+	{
+        //std::cout << GREEN << "Is the alu src set correctly?" << RESET << std::endl;
+        reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
+        //std::cout << BLUE << "Immediate value used in ALU: " << reg2_value << RESET << std::endl;
+	}
+
+    alu::AluOp aluOperation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
+    std::cout << "The registers values:\n";
+    std::cout << reg1_value << ' ' << reg2_value << ' ' << reg3_value << std::endl;
+	std::tie(alu_result, fcsr_status) = alu::Alu::fpexecute(aluOperation, reg1_value, reg2_value, reg3_value, rm);
+
+    std::cout << "The floating point result : \n";
+    std::cout << alu_result << std::endl;
+
+	registers_.WriteCsr(0x003, fcsr_status);
+    return alu_result;
+}
+
+uint64_t RV5StageVM_Base::execute_double()
+{
+    uint32_t instruction = id_ex_reg_.instruction;
+    uint8_t opcode = instruction & 0b1111111;
+    uint8_t funct3 = (instruction >> 12) & 0b111;
+    uint8_t funct7 = (instruction >> 25) & 0b1111111;
+    uint8_t rm = funct3;
+
+    uint8_t fcsr_status = 0;
+    uint64_t alu_result = 0;
+
+    if (rm == 0b111)
+    {
+        rm = registers_.ReadCsr(0x002);
+    }
+
+    uint64_t reg1_value = id_ex_reg_.freg1_data;
+    uint64_t reg2_value = id_ex_reg_.freg2_data;
+    uint64_t reg3_value = id_ex_reg_.freg3_data;
+
+    if (funct7 == 0b1101001 || funct7 == 0b1111001 || opcode == 0b0000111 || opcode == 0b0100111)
+    {
+        reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
+    }
+
+    if (id_ex_reg_.alu_src)
+    {
+        reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
+    }
+
+    alu::AluOp alu_operation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
+    std::tie(alu_result, fcsr_status) = alu::Alu::dfpexecute(alu_operation, reg1_value, reg2_value, reg3_value, rm);
+    
+    registers_.WriteCsr(0x003, fcsr_status);
+    return alu_result;
+}
+
 
 bool RV5StageVM_Base::is_pipeline_drained() const
 {

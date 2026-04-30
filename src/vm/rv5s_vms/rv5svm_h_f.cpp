@@ -290,57 +290,6 @@ void RV5StageVM_H_F::pipeline_fetch()
     }
 }
 
-// void RV5StageVM_H_F::pipeline_decode()
-// {
-    // This function only runs if a stall was NOT active in Step().
-    // uint32_t instruction = if_id_reg_.instruction;
-    // if (instruction == NOP)
-    // {
-    //     // Pass through fields as needed
-    //     id_ex_reg_.pc = if_id_reg_.pc;
-    //     id_ex_reg_.instruction = instruction;
-    //     id_ex_reg_.imm = 0;
-    //     id_ex_reg_.rs1 = id_ex_reg_.rs2 = id_ex_reg_.rd = 0;
-    //     id_ex_reg_.reg1_data = 0;
-    //     id_ex_reg_.reg2_data = 0;
-
-    //     // Critically: zero *all* control signals so downstream stages are idle
-    //     id_ex_reg_.reg_write = false;
-    //     id_ex_reg_.branch = false;
-    //     id_ex_reg_.alu_src = false;
-    //     id_ex_reg_.mem_read = false;
-    //     id_ex_reg_.mem_write = false;
-    //     id_ex_reg_.mem_to_reg = false;
-    //     id_ex_reg_.alu_op = 0;
-    //     return;
-    // }
-    // control_unit_.SetControlSignals(instruction);
-
-    // // Latch data for the ID/EX register
-    // id_ex_reg_.pc = if_id_reg_.pc;
-    // id_ex_reg_.instruction = instruction;
-    // id_ex_reg_.imm = ImmGenerator(instruction);
-
-    // // Extract GPR register numbers
-    // id_ex_reg_.rs1 = (instruction >> 15) & 0x1F;
-    // id_ex_reg_.rs2 = (instruction >> 20) & 0x1F;
-    // id_ex_reg_.rd = (instruction >> 7) & 0x1F;
-
-    // // Read GPR register data naively (Data will be overwritten by forwarding logic)
-    // id_ex_reg_.reg1_data = registers_.ReadGpr(id_ex_reg_.rs1);
-    // id_ex_reg_.reg2_data = registers_.ReadGpr(id_ex_reg_.rs2);
-
-    // // Pass all control signals to the next stage
-    // id_ex_reg_.reg_write = control_unit_.GetRegWrite();
-    // // FPR control signals are omitted for pure integer
-
-    // id_ex_reg_.branch = control_unit_.GetBranch();
-    // id_ex_reg_.alu_src = control_unit_.GetAluSrc();
-    // id_ex_reg_.mem_read = control_unit_.GetMemRead();
-    // id_ex_reg_.mem_write = control_unit_.GetMemWrite();
-    // id_ex_reg_.mem_to_reg = control_unit_.GetMemToReg();
-    // id_ex_reg_.alu_op = control_unit_.GetAluOp();
-// }
 
 void RV5StageVM_H_F::pipeline_execute()
 {
@@ -410,7 +359,31 @@ void RV5StageVM_H_F::pipeline_execute()
     // --- EXECUTION ---
     if(instruction_set::isFInstruction(id_ex_reg_.instruction))
     {
-        executeFloat();
+        uint64_t alu_result = pipeline_execute_float();
+
+        // Propagate previous-cycle signals for hazard detection
+        ex_mem_reg_.prev_reg_write   = ex_mem_reg_.reg_write;
+        ex_mem_reg_.prev_rd          = ex_mem_reg_.rd;
+        ex_mem_reg_.prev_freg_write  = ex_mem_reg_.freg_write;
+        ex_mem_reg_.prev_frd         = ex_mem_reg_.frd;
+        // Latch FP result into EX/MEM and preserve control signals
+        ex_mem_reg_.pc = id_ex_reg_.pc;
+        ex_mem_reg_.instruction = id_ex_reg_.instruction;
+        ex_mem_reg_.alu_result = alu_result;
+        ex_mem_reg_.f_alu_result = alu_result;
+        ex_mem_reg_.rd = id_ex_reg_.rd;
+        ex_mem_reg_.frd = id_ex_reg_.frd;
+        // pipeline_execute_float() may already have set forwarded store data into ex_mem_reg_.freg2_data
+        ex_mem_reg_.reg2_data = id_ex_reg_.reg2_data;
+        ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
+        ex_mem_reg_.freg_write = id_ex_reg_.freg_write;
+        ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
+        ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
+        ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
+        ex_mem_reg_.prev_branch_taken = ex_mem_reg_.branch_taken;
+        ex_mem_reg_.branch_taken = false;
+        ex_mem_reg_.branch_target_pc = 0;
+
         return;
     }
 
@@ -444,13 +417,21 @@ void RV5StageVM_H_F::pipeline_execute()
     {
         std::cout << "Store data:" << (int)store_data << std::endl;
     }
+    // Propagate previous-cycle signals for hazard detection
+    ex_mem_reg_.prev_reg_write   = ex_mem_reg_.reg_write;
+    ex_mem_reg_.prev_rd          = ex_mem_reg_.rd;
+    ex_mem_reg_.prev_freg_write  = ex_mem_reg_.freg_write;
+    ex_mem_reg_.prev_frd         = ex_mem_reg_.frd;
+
     ex_mem_reg_.reg2_data = store_data;
     ex_mem_reg_.alu_result = alu_result;
     ex_mem_reg_.rd = id_ex_reg_.rd;
+    ex_mem_reg_.frd = id_ex_reg_.frd;
     // Pass control signals...
     ex_mem_reg_.pc = id_ex_reg_.pc;
     ex_mem_reg_.instruction = instruction;
     ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
+    ex_mem_reg_.freg_write = id_ex_reg_.freg_write;
     ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
     ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
     ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
@@ -653,10 +634,7 @@ void RV5StageVM_H_F::pipeline_execute()
 //     }
 // }
 
-void RV5StageVM_H_F::executeFloat()
-{
-    
-}
+
 
 void RV5StageVM_H_F::handle_syscall()
 {
@@ -666,4 +644,194 @@ void RV5StageVM_H_F::handle_syscall()
         output_status_ = "ECALL_EXIT";
         // DumpState("vm_state.json");
     }
+}
+
+
+uint64_t RV5StageVM_H_F::pipeline_execute_float()
+{
+    uint32_t instruction = id_ex_reg_.instruction;
+    uint8_t opcode = instruction & 0b1111111;
+    uint8_t funct3 = (instruction >> 12) & 0b111;
+    uint8_t funct7 = (instruction >> 25) & 0b1111111;
+    uint8_t rm = funct3;
+
+    uint8_t fcsr_status = 0;
+    uint64_t alu_result = 0;
+
+    if (rm == 0b111)
+    {
+        rm = registers_.ReadCsr(0x002);
+    }
+
+    uint64_t reg1_value = id_ex_reg_.freg1_data;
+    uint64_t reg2_value = id_ex_reg_.freg2_data;
+    uint64_t reg3_value = id_ex_reg_.freg3_data;
+
+    if (funct7 == 0b1101000 || funct7 == 0b1111000 || opcode == 0b0000111 || opcode == 0b0100111)
+    {
+        reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
+    }
+
+    if (id_ex_reg_.alu_src)
+    {
+        reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
+    }
+
+    // --- FORWARDING for FPR sources (frs1/frs2/frs3) ---
+    uint8_t fwd_a = 0; // 2 = EX/MEM, 1 = MEM/WB
+    uint8_t fwd_b = 0;
+    uint8_t fwd_c = 0;
+
+    // EX/MEM forwarding (highest priority)
+    if (ex_mem_reg_.freg_write && (ex_mem_reg_.frd != 0))
+    {
+        if (ex_mem_reg_.frd == id_ex_reg_.frs1) fwd_a = 2;
+        if (ex_mem_reg_.frd == id_ex_reg_.frs2) fwd_b = 2;
+        if (ex_mem_reg_.frd == id_ex_reg_.frs3) fwd_c = 2;
+    }
+
+    // MEM/WB forwarding (lower priority)
+    if (mem_wb_reg_.prev_freg_write && (mem_wb_reg_.prev_frd != 0))
+    {
+        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs1 && fwd_a != 2) fwd_a = 1;
+        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs2 && fwd_b != 2) fwd_b = 1;
+        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs3 && fwd_c != 2) fwd_c = 1;
+    }
+
+    // Apply forwarding to source values
+    if (fwd_a == 2)
+        reg1_value = ex_mem_reg_.f_alu_result;
+    else if (fwd_a == 1)
+        reg1_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+
+    if (fwd_b == 2)
+        reg2_value = ex_mem_reg_.f_alu_result;
+    else if (fwd_b == 1)
+        reg2_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+
+    if (fwd_c == 2)
+        reg3_value = ex_mem_reg_.f_alu_result;
+    else if (fwd_c == 1)
+        reg3_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+
+    // Re-apply GPR-read override (for conversion ops) after forwarding decision: if instruction requires GPR, use it.
+    if (funct7 == 0b1101000 || funct7 == 0b1111000 || opcode == 0b0000111 || opcode == 0b0100111)
+    {
+        reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
+    }
+
+    // Re-apply immediate if ALUSrc was set (immediates take precedence for reg2)
+    if (id_ex_reg_.alu_src)
+    {
+        reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
+    }
+
+    // Forward store data for FPR stores (frs2)
+    uint64_t fstore_data = id_ex_reg_.freg2_data;
+    if (fwd_b == 2)
+        fstore_data = ex_mem_reg_.f_alu_result;
+    else if (fwd_b == 1)
+        fstore_data = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+
+    ex_mem_reg_.freg2_data = fstore_data;
+    // Execute FP operation
+    alu::AluOp aluOperation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
+    std::tie(alu_result, fcsr_status) = alu::Alu::fpexecute(aluOperation, reg1_value, reg2_value, reg3_value, rm);
+
+    registers_.WriteCsr(0x003, fcsr_status);
+
+    return alu_result;
+}
+
+uint64_t RV5StageVM_H_F::pipeline_execute_double()
+{
+    uint32_t instruction = id_ex_reg_.instruction;
+    uint8_t opcode = instruction & 0b1111111;
+    uint8_t funct3 = (instruction >> 12) & 0b111;
+    uint8_t funct7 = (instruction >> 25) & 0b1111111;
+    uint8_t rm = funct3;
+
+    uint8_t fcsr_status = 0;
+    uint64_t alu_result = 0;
+
+    if (rm == 0b111)
+    {
+        rm = registers_.ReadCsr(0x002);
+    }
+
+    uint64_t reg1_value = id_ex_reg_.freg1_data;
+    uint64_t reg2_value = id_ex_reg_.freg2_data;
+    uint64_t reg3_value = id_ex_reg_.freg3_data;
+
+    if (funct7 == 0b1101001 || funct7 == 0b1111001 || opcode == 0b0000111 || opcode == 0b0100111)
+    {
+        reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
+    }
+
+    if (id_ex_reg_.alu_src)
+    {
+        reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
+    }
+
+    // --- FORWARDING for FPR sources (frs1/frs2/frs3) ---
+    uint8_t fwd_a = 0; // 2 = EX/MEM, 1 = MEM/WB
+    uint8_t fwd_b = 0;
+    uint8_t fwd_c = 0;
+
+    if (ex_mem_reg_.freg_write && (ex_mem_reg_.frd != 0))
+    {
+        if (ex_mem_reg_.frd == id_ex_reg_.frs1) fwd_a = 2;
+        if (ex_mem_reg_.frd == id_ex_reg_.frs2) fwd_b = 2;
+        if (ex_mem_reg_.frd == id_ex_reg_.frs3) fwd_c = 2;
+    }
+
+    if (mem_wb_reg_.freg_write && (mem_wb_reg_.prev_frd != 0))
+    {
+        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs1 && fwd_a != 2) fwd_a = 1;
+        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs2 && fwd_b != 2) fwd_b = 1;
+        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs3 && fwd_c != 2) fwd_c = 1;
+    }
+
+    if (fwd_a == 2)
+        reg1_value = ex_mem_reg_.f_alu_result;
+    else if (fwd_a == 1)
+        reg1_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+
+    if (fwd_b == 2)
+        reg2_value = ex_mem_reg_.f_alu_result;
+    else if (fwd_b == 1)
+        reg2_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+
+    if (fwd_c == 2)
+        reg3_value = ex_mem_reg_.f_alu_result;
+    else if (fwd_c == 1)
+        reg3_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+
+    // Re-apply GPR-read override for specific instructions
+    if (funct7 == 0b1101001 || funct7 == 0b1111001 || opcode == 0b0000111 || opcode == 0b0100111)
+    {
+        reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
+    }
+
+    // Re-apply immediate for reg2
+    if (id_ex_reg_.alu_src)
+    {
+        reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
+    }
+
+    // Forward store data for FPR stores
+    uint64_t fstore_data = id_ex_reg_.freg2_data;
+    if (fwd_b == 2)
+        fstore_data = ex_mem_reg_.f_alu_result;
+    else if (fwd_b == 1)
+        fstore_data = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+
+    ex_mem_reg_.freg2_data = fstore_data;
+
+    alu::AluOp alu_operation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
+    std::tie(alu_result, fcsr_status) = alu::Alu::dfpexecute(alu_operation, reg1_value, reg2_value, reg3_value, rm);
+    
+    registers_.WriteCsr(0x003, fcsr_status);
+
+    return alu_result;
 }

@@ -173,8 +173,9 @@ struct MEM_WB_Register
     bool freg_write = false;  // FPR Write enable
     bool mem_to_reg = false;
 
-    bool prev_mem_to_reg = false;  // Previous mem_to_reg signal (for forwarding)
-    bool prev_reg_write  = false;  // Previous reg_write signal (for forwarding)
+    bool prev_mem_to_reg  = false;  // Previous mem_to_reg signal (for forwarding)
+    bool prev_reg_write   = false;  // Previous reg_write signal (for forwarding)
+    bool prev_freg_write  = false;  // Previous FPR write enable (for forwarding)
     void reset()
     {
         pc = UINT64_MAX;
@@ -199,7 +200,8 @@ struct MEM_WB_Register
         reg_write       = false;
         freg_write      = false;
         mem_to_reg      = false;
-        prev_mem_to_reg = false;
-        prev_reg_write  = false;
+        prev_mem_to_reg  = false;
+        prev_reg_write   = false;
+        prev_freg_write  = false;
     }
 };
