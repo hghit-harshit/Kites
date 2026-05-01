@@ -276,8 +276,11 @@ void RV5StageVM_H_NF::pipeline_execute()
     ex_mem_reg_.reg_write        = id_ex_reg_.reg_write;
     ex_mem_reg_.freg_write       = id_ex_reg_.freg_write;
     ex_mem_reg_.mem_to_reg       = id_ex_reg_.mem_to_reg;
+    ex_mem_reg_.prev_mem_read    = ex_mem_reg_.mem_read;
+    ex_mem_reg_.prev_mem_write   = ex_mem_reg_.mem_write;
     ex_mem_reg_.mem_read         = id_ex_reg_.mem_read;
     ex_mem_reg_.mem_write        = id_ex_reg_.mem_write;
+    ex_mem_reg_.prev_branch_taken = ex_mem_reg_.branch_taken;
     ex_mem_reg_.branch_taken     = false;
     ex_mem_reg_.branch_target_pc = 0;
 

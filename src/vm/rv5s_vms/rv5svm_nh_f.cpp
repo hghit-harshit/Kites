@@ -235,130 +235,145 @@ void RV5StageVM_NH_F::pipeline_execute()
     bool overflow;
     uint64_t alu_result;
 
-    // Initial ALU inputs are the stale values read from the register file (ID_EX)
-    uint64_t alu_in1 = id_ex_reg_.reg1_data;
-    uint64_t alu_in2 = id_ex_reg_.reg2_data;
+    bool is_f_instruction = instruction_set::isFInstruction(instruction);
+    bool is_d_instruction = instruction_set::isDInstruction(instruction);
 
-    // If AluSrc is true (I-type ALU, Load, Store), override reg2_data with the immediate
-    if (id_ex_reg_.alu_src)
+    if(is_f_instruction)
     {
-        alu_in2 = static_cast<uint64_t>(id_ex_reg_.imm);
+        alu_result = pipeline_execute_float();
     }
-
-    // Forwarding values (Source = 00 means no forwarding, use ID_EX value)
-    uint8_t forward_a = 0; // 2 = EX/MEM, 1 = MEM/WB
-    uint8_t forward_b = 0;
-
-    // --- FORWARDING LOGIC (All non-Load-Use/Branch cases solved here) ---
-
-    // **Priority 1: EX/MEM (Data available from current instruction in MEM)**
-    // Covers R->R, R->Branch, R->MemAddr, R->Store (Cases 1, 5, 7, 3)
-     //std::cout << (int)id_ex_reg_.rd<< " " << (int)id_ex_reg_.rs1<< " "<<(int)id_ex_reg_.rs2 <<  std::endl;
-    if (ex_mem_reg_.reg_write && (ex_mem_reg_.rd != 0))
+    else if(is_d_instruction)
     {
-        if (ex_mem_reg_.rd == id_ex_reg_.rs1)
-        {
-            forward_a = 2; // Forward A from EX/MEM ALU result
-        }
-        if (ex_mem_reg_.rd == id_ex_reg_.rs2)
-        {
-            forward_b = 2; // Forward B from EX/MEM ALU result
-        }
-    }
-
-    // **Priority 2: MEM/WB (Data available from current instruction in WB)**
-    // Used for dependencies two cycles ago, and to forward Load data after the 1 NOP delay.
-    if (mem_wb_reg_.prev_reg_write && (mem_wb_reg_.prev_rd != 0))
-    {
-        // Forward A from MEM/WB unless EX/MEM is forwarding to the same register (Priority)
-        if (mem_wb_reg_.prev_rd == id_ex_reg_.rs1 && forward_a != 2)
-        {
-            forward_a = 1; // Forward A from MEM/WB result (ALU or Memory)
-        }
-        // Forward B from MEM/WB unless EX/MEM is forwarding to the same register (Priority)
-        if (mem_wb_reg_.prev_rd == id_ex_reg_.rs2 && forward_b != 2)
-        {
-            forward_b = 1; // Forward B from MEM/WB result (ALU or Memory)
-        }
-    }
-
-    // --- FORWARDING APPLICATION (EX Inputs) ---
-
-    // Forwarding Source A
-    if (forward_a == 2)
-    { // Forward from EX/MEM
-        alu_in1 = ex_mem_reg_.alu_result;
-    }
-    else if (forward_a == 1)
-    { // Forward from MEM/WB
-        alu_in1 = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
-    }
-
-    // Forwarding Source B
-    if (forward_b == 2)
-    { // Forward from EX/MEM
-        alu_in2 = ex_mem_reg_.alu_result;
-    }
-    else if (forward_b == 1)
-    { // Forward from MEM/WB
-        alu_in2 = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
-    }
-
-    // Re-apply immediate value check after forwarding for ALU_B if needed
-    if (id_ex_reg_.alu_src && id_ex_reg_.alu_op != 0)
-    {
-        alu_in2 = static_cast<uint64_t>(id_ex_reg_.imm);
-    }
-    else if (id_ex_reg_.alu_src && (id_ex_reg_.mem_read || id_ex_reg_.mem_write))
-    {
-        alu_in2 = id_ex_reg_.alu_src ? static_cast<uint64_t>(id_ex_reg_.imm) : alu_in2;
-    }
-
-    // --- EXECUTION ---
-    
-    if(instruction_set::isFInstruction(instruction))
-    {
-        std::tie(alu_result, overflow) = alu::Alu::fpexecute(alu_operation, alu_in1, alu_in2, 0, 0);
-    }
-    else if(instruction_set::isDInstruction(instruction))
-    {
-        std::tie(alu_result, overflow) = alu::Alu::dfpexecute(alu_operation, alu_in1, alu_in2, 0, 0);
+        alu_result = pipeline_execute_double();
     }
     else
     {
+        // ALU execution with forwarding
+        
+        // Initial ALU inputs are the stale values read from the register file (ID_EX)
+        uint64_t alu_in1 = id_ex_reg_.reg1_data;
+        uint64_t alu_in2 = id_ex_reg_.reg2_data;
+
+        // If AluSrc is true (I-type ALU, Load, Store), override reg2_data with the immediate
+        if (id_ex_reg_.alu_src)
+        {
+            alu_in2 = static_cast<uint64_t>(id_ex_reg_.imm);
+        }
+
+        // Forwarding values (Source = 00 means no forwarding, use ID_EX value)
+        uint8_t forward_a = 0; // 2 = EX/MEM, 1 = MEM/WB
+        uint8_t forward_b = 0;
+
+        // --- FORWARDING LOGIC (All non-Load-Use/Branch cases solved here) ---
+
+        // **Priority 1: EX/MEM (Data available from current instruction in MEM)**
+        // Covers R->R, R->Branch, R->MemAddr, R->Store (Cases 1, 5, 7, 3)
+        //std::cout << (int)id_ex_reg_.rd<< " " << (int)id_ex_reg_.rs1<< " "<<(int)id_ex_reg_.rs2 <<  std::endl;
+        if (ex_mem_reg_.reg_write && (ex_mem_reg_.rd != 0))
+        {
+            if (ex_mem_reg_.rd == id_ex_reg_.rs1)
+            {
+                forward_a = 2; // Forward A from EX/MEM ALU result
+            }
+            if (ex_mem_reg_.rd == id_ex_reg_.rs2)
+            {
+                forward_b = 2; // Forward B from EX/MEM ALU result
+            }
+        }
+
+        // **Priority 2: MEM/WB (Data available from current instruction in WB)**
+        // Used for dependencies two cycles ago, and to forward Load data after the 1 NOP delay.
+        if (mem_wb_reg_.prev_reg_write && (mem_wb_reg_.prev_rd != 0))
+        {
+            // Forward A from MEM/WB unless EX/MEM is forwarding to the same register (Priority)
+            if (mem_wb_reg_.prev_rd == id_ex_reg_.rs1 && forward_a != 2)
+            {
+                forward_a = 1; // Forward A from MEM/WB result (ALU or Memory)
+            }
+            // Forward B from MEM/WB unless EX/MEM is forwarding to the same register (Priority)
+            if (mem_wb_reg_.prev_rd == id_ex_reg_.rs2 && forward_b != 2)
+            {
+                forward_b = 1; // Forward B from MEM/WB result (ALU or Memory)
+            }
+        }
+
+        // Forwarding Source A
+        if (forward_a == 2)
+        { // Forward from EX/MEM
+            alu_in1 = ex_mem_reg_.alu_result;
+        }
+        else if (forward_a == 1)
+        { // Forward from MEM/WB
+            alu_in1 = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
+        }
+
+        // Forwarding Source B
+        if (forward_b == 2)
+        { // Forward from EX/MEM
+            alu_in2 = ex_mem_reg_.alu_result;
+        }
+        else if (forward_b == 1)
+        { // Forward from MEM/WB
+            alu_in2 = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
+        }
+
+        // Re-apply immediate value check after forwarding for ALU_B if needed
+        if (id_ex_reg_.alu_src && id_ex_reg_.alu_op != 0)
+        {
+            alu_in2 = static_cast<uint64_t>(id_ex_reg_.imm);
+        }
+        else if (id_ex_reg_.alu_src && (id_ex_reg_.mem_read || id_ex_reg_.mem_write))
+        {
+            alu_in2 = id_ex_reg_.alu_src ? static_cast<uint64_t>(id_ex_reg_.imm) : alu_in2;
+        }
+
+        // --- EXECUTION ---
         std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
-    }
-    
-    if((id_ex_reg_.instruction & 0b1111111) == 0b0110111) //lui
-    {
-        alu_result = static_cast<uint64_t>(id_ex_reg_.imm << 12);
+        
+        
+        if((id_ex_reg_.instruction & 0b1111111) == 0b0110111) //lui
+        {
+            alu_result = static_cast<uint64_t>(id_ex_reg_.imm << 12);
+        }
+
+        // Latch data for EX/MEM Register
+        
+        // CRITICAL: The data to be stored (reg2_data for Store) must ALSO be forwarded!
+        uint64_t store_data = id_ex_reg_.reg2_data;
+        if (forward_b == 2)
+        { // Forward from EX/MEM
+            store_data = ex_mem_reg_.alu_result;
+        }
+        else if (forward_b == 1)
+        { // Forward from MEM/WB
+            store_data = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
+        }
+        ex_mem_reg_.reg2_data         = store_data;
     }
 
-    // Latch data for EX/MEM Register
     
-    // CRITICAL: The data to be stored (reg2_data for Store) must ALSO be forwarded!
-    uint64_t store_data = id_ex_reg_.reg2_data;
-    if (forward_b == 2)
-    { // Forward from EX/MEM
-        store_data = ex_mem_reg_.alu_result;
-    }
-    else if (forward_b == 1)
-    { // Forward from MEM/WB
-        store_data = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
-    }
-
-    ex_mem_reg_.pc                = id_ex_reg_.pc;
-    ex_mem_reg_.instruction       = instruction;
-    ex_mem_reg_.alu_result        = alu_result;
+    ex_mem_reg_.prev_reg_write   = ex_mem_reg_.reg_write;
+    ex_mem_reg_.prev_rd          = ex_mem_reg_.rd; 
+    ex_mem_reg_.prev_freg_write  = ex_mem_reg_.freg_write;
+    ex_mem_reg_.prev_frd         = ex_mem_reg_.frd;
+    ex_mem_reg_.pc               = id_ex_reg_.pc;
+    ex_mem_reg_.instruction      = id_ex_reg_.instruction;
+    ex_mem_reg_.alu_result       = alu_result;
+    ex_mem_reg_.f_alu_result     = (is_f_instruction || is_d_instruction) ? alu_result : 0;
     ex_mem_reg_.rd                = id_ex_reg_.rd;
-    ex_mem_reg_.reg2_data         = store_data;
+    ex_mem_reg_.frd               = id_ex_reg_.frd;
+    // NOTE: reg2_data and freg2_data are set inside the integer/FP execute
+    // branches above with proper forwarding applied — do NOT overwrite here.
     ex_mem_reg_.reg_write         = id_ex_reg_.reg_write;
-    ex_mem_reg_.mem_to_reg        = id_ex_reg_.mem_to_reg;
-    ex_mem_reg_.mem_read          = id_ex_reg_.mem_read;
-    ex_mem_reg_.mem_write         = id_ex_reg_.mem_write;
+    ex_mem_reg_.freg_write       = id_ex_reg_.freg_write;
+    ex_mem_reg_.mem_to_reg       = id_ex_reg_.mem_to_reg;
+    ex_mem_reg_.prev_mem_read    = ex_mem_reg_.mem_read;
+    ex_mem_reg_.prev_mem_write   = ex_mem_reg_.mem_write;
+    ex_mem_reg_.mem_read         = id_ex_reg_.mem_read;
+    ex_mem_reg_.mem_write        = id_ex_reg_.mem_write;
     ex_mem_reg_.prev_branch_taken = ex_mem_reg_.branch_taken;
-    ex_mem_reg_.branch_taken      = false;
-    ex_mem_reg_.branch_target_pc  = 0;
+    ex_mem_reg_.branch_taken     = false;
+    ex_mem_reg_.branch_target_pc = 0;
 
     uint8_t opcode = instruction & 0b1111111;
 
@@ -544,6 +559,8 @@ uint64_t RV5StageVM_NH_F::pipeline_execute_double()
 
     if (id_ex_reg_.alu_src)
     {
+        //two casts are necessary here the inner one extends the sign
+        // and then we cast it back to uint64_t
         reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
     }
 

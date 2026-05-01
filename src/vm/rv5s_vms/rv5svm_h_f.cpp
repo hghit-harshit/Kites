@@ -293,151 +293,126 @@ void RV5StageVM_H_F::pipeline_fetch()
 
 void RV5StageVM_H_F::pipeline_execute()
 {
-    // Initial ALU inputs are the stale values read from the register file (ID_EX)
-    uint64_t alu_in1 = id_ex_reg_.reg1_data;
-    uint64_t alu_in2 = id_ex_reg_.reg2_data;
-
-    if (id_ex_reg_.mem_write)
-    {
-        // std::cout << "we have store instruction\n";
-        std::cout << (int)id_ex_reg_.rs1 << " " << (int)id_ex_reg_.rs2 << std::endl;
-        std::cout << (int)ex_mem_reg_.rd << " " << (int)mem_wb_reg_.prev_rd << std::endl;
-        std::cout << (int)alu_in1 << " " << (int)alu_in2 << std::endl;
-
-        std::cout << "result" << (int)ex_mem_reg_.alu_result << std::endl;
-    }
-    // --- GPR FORWARDING LOGIC ---
-    uint8_t forward_a = 0; // 10 = EX/MEM, 01 = MEM/WB
-    uint8_t forward_b = 0;
-
-    // **Priority 1: EX/MEM Forward** (R-R, R-Store hazard solved)
-    if (ex_mem_reg_.reg_write && (ex_mem_reg_.rd != 0))
-    {
-        if (ex_mem_reg_.rd == id_ex_reg_.rs1)
-            forward_a = 2;
-        if (ex_mem_reg_.rd == id_ex_reg_.rs2)
-            forward_b = 2;
-    }
-
-    // **Priority 2: MEM/WB Forward** (R-R, L-Store hazard solved)
-    if (mem_wb_reg_.prev_reg_write && (mem_wb_reg_.prev_rd != 0))
-    {
-        // Forward A from MEM/WB unless EX/MEM is already forwarding
-        if (mem_wb_reg_.prev_rd == id_ex_reg_.rs1 && forward_a != 2)
-            forward_a = 1;
-        // Forward B from MEM/WB unless EX/MEM is already forwarding
-        if (mem_wb_reg_.prev_rd == id_ex_reg_.rs2 && forward_b != 2)
-            forward_b = 1;
-    }
-
-    // --- FORWARDING APPLICATION ---
-
-    if (forward_a == 2)
-    {
-        alu_in1 = ex_mem_reg_.alu_result;
-    }
-    else if (forward_a == 1)
-    {
-        alu_in1 = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
-    }
-
-    if (forward_b == 2)
-    {
-        alu_in2 = ex_mem_reg_.alu_result;
-    }
-    else if (forward_b == 1)
-    {
-        alu_in2 = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
-    }
-
-    // Re-apply immediate value check (must happen AFTER forwarding application)
-    if (id_ex_reg_.alu_src)
-    {
-        alu_in2 = static_cast<uint64_t>(id_ex_reg_.imm);
-    }
-
-    // --- EXECUTION ---
-    if(instruction_set::isFInstruction(id_ex_reg_.instruction))
-    {
-        uint64_t alu_result = pipeline_execute_float();
-
-        // Propagate previous-cycle signals for hazard detection
-        ex_mem_reg_.prev_reg_write   = ex_mem_reg_.reg_write;
-        ex_mem_reg_.prev_rd          = ex_mem_reg_.rd;
-        ex_mem_reg_.prev_freg_write  = ex_mem_reg_.freg_write;
-        ex_mem_reg_.prev_frd         = ex_mem_reg_.frd;
-        // Latch FP result into EX/MEM and preserve control signals
-        ex_mem_reg_.pc = id_ex_reg_.pc;
-        ex_mem_reg_.instruction = id_ex_reg_.instruction;
-        ex_mem_reg_.alu_result = alu_result;
-        ex_mem_reg_.f_alu_result = alu_result;
-        ex_mem_reg_.rd = id_ex_reg_.rd;
-        ex_mem_reg_.frd = id_ex_reg_.frd;
-        // pipeline_execute_float() may already have set forwarded store data into ex_mem_reg_.freg2_data
-        ex_mem_reg_.reg2_data = id_ex_reg_.reg2_data;
-        ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
-        ex_mem_reg_.freg_write = id_ex_reg_.freg_write;
-        ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
-        ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
-        ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
-        ex_mem_reg_.prev_branch_taken = ex_mem_reg_.branch_taken;
-        ex_mem_reg_.branch_taken = false;
-        ex_mem_reg_.branch_target_pc = 0;
-
-        return;
-    }
-
     uint32_t instruction = id_ex_reg_.instruction;
-    alu::AluOp alu_operation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
     bool overflow;
     uint64_t alu_result;
-    std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
-    //temporary fix for lui instruction
-    
-    if((id_ex_reg_.instruction & 0b1111111) == 0b0110111) //lui
+
+    bool is_f_instruction = instruction_set::isFInstruction(instruction);
+    bool is_d_instruction = instruction_set::isDInstruction(instruction);
+
+    if(is_f_instruction)
     {
-        alu_result = static_cast<uint64_t>(id_ex_reg_.imm << 12);
+        alu_result = pipeline_execute_float();
+    }
+    else if(is_d_instruction)
+    {
+        alu_result = pipeline_execute_double();
+    }
+    else
+    {
+        uint64_t alu_in1 = id_ex_reg_.reg1_data;
+        uint64_t alu_in2 = id_ex_reg_.reg2_data;
+
+        // --- GPR FORWARDING LOGIC ---
+        uint8_t forward_a = 0; // 10 = EX/MEM, 01 = MEM/WB
+        uint8_t forward_b = 0;
+
+        // **Priority 1: EX/MEM Forward** (R-R, R-Store hazard solved)
+        if (ex_mem_reg_.reg_write && (ex_mem_reg_.rd != 0))
+        {
+            if (ex_mem_reg_.rd == id_ex_reg_.rs1)
+                forward_a = 2;
+            if (ex_mem_reg_.rd == id_ex_reg_.rs2)
+                forward_b = 2;
+        }
+
+        // **Priority 2: MEM/WB Forward** (R-R, L-Store hazard solved)
+        if (mem_wb_reg_.prev_reg_write && (mem_wb_reg_.prev_rd != 0))
+        {
+            // Forward A from MEM/WB unless EX/MEM is already forwarding
+            if (mem_wb_reg_.prev_rd == id_ex_reg_.rs1 && forward_a != 2)
+                forward_a = 1;
+            // Forward B from MEM/WB unless EX/MEM is already forwarding
+            if (mem_wb_reg_.prev_rd == id_ex_reg_.rs2 && forward_b != 2)
+                forward_b = 1;
+        }
+
+        // --- FORWARDING APPLICATION ---
+
+        if (forward_a == 2)
+        {
+            alu_in1 = ex_mem_reg_.alu_result;
+        }
+        else if (forward_a == 1)
+        {
+            alu_in1 = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
+        }
+
+        if (forward_b == 2)
+        {
+            alu_in2 = ex_mem_reg_.alu_result;
+        }
+        else if (forward_b == 1)
+        {
+            alu_in2 = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
+        }
+
+        // Re-apply immediate value check (must happen AFTER forwarding application)
+        if (id_ex_reg_.alu_src)
+        {
+            alu_in2 = static_cast<uint64_t>(id_ex_reg_.imm);
+        }
+
+        // --- EXECUTION ---
+        alu::AluOp alu_operation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
+        std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
+        //temporary fix for lui instruction
+        
+        if((id_ex_reg_.instruction & 0b1111111) == 0b0110111) //lui
+        {
+            alu_result = static_cast<uint64_t>(id_ex_reg_.imm << 12);
+        }
+
+        
+        // Latch data for EX/MEM Register
+
+        // Store Data: CRITICAL FORWARDING - Store data must also be forwarded!
+        uint64_t store_data = id_ex_reg_.reg2_data;
+        if (forward_b == 2)
+        {
+            store_data = ex_mem_reg_.alu_result;
+        }
+        else if (forward_b == 1)
+        {
+            store_data = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
+        }
+        
+        ex_mem_reg_.reg2_data = store_data;
     }
 
-    
-    // Latch data for EX/MEM Register
-
-    // Store Data: CRITICAL FORWARDING - Store data must also be forwarded!
-    uint64_t store_data = id_ex_reg_.reg2_data;
-    if (forward_b == 2)
-    {
-        store_data = ex_mem_reg_.alu_result;
-    }
-    else if (forward_b == 1)
-    {
-        store_data = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
-    }
-
-    if (id_ex_reg_.mem_write)
-    {
-        std::cout << "Store data:" << (int)store_data << std::endl;
-    }
-    // Propagate previous-cycle signals for hazard detection
     ex_mem_reg_.prev_reg_write   = ex_mem_reg_.reg_write;
-    ex_mem_reg_.prev_rd          = ex_mem_reg_.rd;
+    ex_mem_reg_.prev_rd          = ex_mem_reg_.rd; 
     ex_mem_reg_.prev_freg_write  = ex_mem_reg_.freg_write;
     ex_mem_reg_.prev_frd         = ex_mem_reg_.frd;
-
-    ex_mem_reg_.reg2_data = store_data;
-    ex_mem_reg_.alu_result = alu_result;
-    ex_mem_reg_.rd = id_ex_reg_.rd;
-    ex_mem_reg_.frd = id_ex_reg_.frd;
-    // Pass control signals...
-    ex_mem_reg_.pc = id_ex_reg_.pc;
-    ex_mem_reg_.instruction = instruction;
-    ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
-    ex_mem_reg_.freg_write = id_ex_reg_.freg_write;
-    ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
-    ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
-    ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
-    ex_mem_reg_.branch_taken = false;
+    ex_mem_reg_.pc               = id_ex_reg_.pc;
+    ex_mem_reg_.instruction      = id_ex_reg_.instruction;
+    ex_mem_reg_.alu_result       = alu_result;
+    ex_mem_reg_.f_alu_result     = (is_f_instruction || is_d_instruction) ? alu_result : 0;
+    ex_mem_reg_.rd               = id_ex_reg_.rd;
+    ex_mem_reg_.frd              = id_ex_reg_.frd;
+    // NOTE: reg2_data and freg2_data are set inside the integer/FP execute
+    // branches above with proper forwarding applied — do NOT overwrite here.
+    ex_mem_reg_.reg_write        = id_ex_reg_.reg_write;
+    ex_mem_reg_.freg_write       = id_ex_reg_.freg_write;
+    ex_mem_reg_.mem_to_reg       = id_ex_reg_.mem_to_reg;
+    ex_mem_reg_.prev_mem_read    = ex_mem_reg_.mem_read;
+    ex_mem_reg_.prev_mem_write   = ex_mem_reg_.mem_write;
+    ex_mem_reg_.mem_read         = id_ex_reg_.mem_read;
+    ex_mem_reg_.mem_write        = id_ex_reg_.mem_write;
+    ex_mem_reg_.prev_branch_taken = ex_mem_reg_.branch_taken;
+    ex_mem_reg_.branch_taken     = false;
     ex_mem_reg_.branch_target_pc = 0;
-
+   
     uint8_t opcode = instruction & 0b1111111;
 
     // --- Control Hazard Logic (Automated) ---
@@ -495,145 +470,6 @@ void RV5StageVM_H_F::pipeline_execute()
         ex_mem_reg_.branch_taken = true;
     }
 }
-
-// void RV5StageVM_H_F::pipeline_memory()
-// {
-//     // --- B-Type Conditional Branch Resolution (3-Cycle Penalty) ---
-//     if (ex_mem_reg_.branch_taken && (ex_mem_reg_.instruction & 0b1111111) == 0b1100011)
-//     {
-//         // B-Type misprediction confirmed in MEM stage. Hardware flushes the pipeline.
-
-//         program_counter_ = ex_mem_reg_.branch_target_pc;
-//         if_id_reg_.reset();
-//         id_ex_reg_.reset();
-//         branch_mispredictions_++;
-//     }
-
-//     // since we are running cycle backward
-//     // by the time execture check this register forwarding previous results are gone
-//     // so we store these seperately
-//     mem_wb_reg_.prev_rd = mem_wb_reg_.rd;
-//     mem_wb_reg_.prev_alu_result = mem_wb_reg_.alu_result;
-//     mem_wb_reg_.prev_mem_to_reg = mem_wb_reg_.mem_to_reg;
-//     mem_wb_reg_.prev_reg_write = mem_wb_reg_.reg_write;
-//     mem_wb_reg_.prev_memory_data = mem_wb_reg_.memory_data;
-//     // --- Standard MEM Operations ---
-//     mem_wb_reg_.pc = ex_mem_reg_.pc;
-//     mem_wb_reg_.instruction = ex_mem_reg_.instruction;
-//     mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
-//     mem_wb_reg_.rd = ex_mem_reg_.rd;
-//     mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
-//     mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
-
-//     // Memory Access
-//     if (ex_mem_reg_.mem_read)
-//     {
-//         // Load instruction: Result available at end of this stage (Load-Use still needs 1 NOP stall)
-//         switch ((mem_wb_reg_.instruction >> 12) & 0b111)
-// 		{
-// 		case 0b000:
-// 		{ // LB
-// 			mem_wb_reg_.memory_data = static_cast<int8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
-// 			break;
-// 		}
-// 		case 0b001:
-// 		{ // LH
-// 			mem_wb_reg_.memory_data = static_cast<int16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
-// 			break;
-// 		}
-// 		case 0b010:
-// 		{ // LW
-// 			mem_wb_reg_.memory_data = static_cast<int32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
-// 			break;
-// 		}
-// 		case 0b011:
-// 		{ // LD
-// 			mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
-// 			break;
-// 		}
-// 		case 0b100:
-// 		{ // LBU
-// 			mem_wb_reg_.memory_data = static_cast<uint8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
-// 			break;
-// 		}
-// 		case 0b101:
-// 		{ // LHU
-// 			mem_wb_reg_.memory_data = static_cast<uint16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
-// 			break;
-// 		}
-// 		case 0b110:
-// 		{ // LWU
-// 			mem_wb_reg_.memory_data = static_cast<uint32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
-// 			break;
-// 		}
-// 		}
-//         std::cout << "Data read:" << (int)mem_wb_reg_.memory_data << std::endl;
-//     }
-//     else if (ex_mem_reg_.mem_write)
-//     {
-//         // Store instruction (Solved by forwarding store_data from EX)
-//         std::cout << "AHHAHAHAHAHAHAHAAH\n";
-//         std::cout << (int)ex_mem_reg_.alu_result << ' ' << (int)ex_mem_reg_.reg2_data << std::endl;
-        
-//         memory_write_back();
-//     }
-// }
-
-// void RV5StageVM_H_F::pipeline_writeback()
-// {
-//     // Write the final result back to the register file
-//     if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0)
-//     {
-//         // debug stuff
-//         std::cout << "Writing back to register x" << (int)mem_wb_reg_.rd << std::endl;
-//         std::cout << "Value:" << (int)(mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result) << std::endl;
-//         // debgug stuff end
-//
-//         uint64_t write_data = mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
-//
-//         // Record state for Undo/Redo
-//         uint64_t old_value = registers_.ReadGpr(mem_wb_reg_.rd);
-//         if (old_value != write_data)
-//         {
-//             current_delta_.register_changes.push_back({mem_wb_reg_.rd,
-//                                                        0, // GPR type
-//                                                        old_value,
-//                                                        write_data});
-//
-//         
-//         instructions_retired_++; // Instruction successfully retired
-//
-//         switch (mem_wb_reg_.instruction & 0b1111111)
-//         {Prv5s_nh_nf
-//         case 0b0110011: // R-Type
-//         case 0b0010011: // I-Type
-//         case 0b0010111:
-//         { // AUIPC
-//             registers_.WriteGpr(mem_wb_reg_.rd, write_data);
-//             break;
-//         }
-//         case 0b0000011:
-//         { // Load
-//             registers_.WriteGpr(mem_wb_reg_.rd, write_data);
-//             break;
-//         }
-//         case 0b1100111: // JALR
-//         case 0b1101111:
-//         { // JAL
-//             registers_.WriteGpr(mem_wb_reg_.rd, mem_wb_reg_.pc + 4);
-//             break;
-//         }
-//         case 0b0110111:
-//         { // LUI
-//             registers_.WriteGpr(mem_wb_reg_.rd, write_data );
-//             break;
-//         }
-//         default:
-//             break;
-//         }
-//     }
-// }
-
 
 
 void RV5StageVM_H_F::handle_syscall()
@@ -785,7 +621,7 @@ uint64_t RV5StageVM_H_F::pipeline_execute_double()
         if (ex_mem_reg_.frd == id_ex_reg_.frs3) fwd_c = 2;
     }
 
-    if (mem_wb_reg_.freg_write && (mem_wb_reg_.prev_frd != 0))
+    if (mem_wb_reg_.prev_freg_write && (mem_wb_reg_.prev_frd != 0))
     {
         if (mem_wb_reg_.prev_frd == id_ex_reg_.frs1 && fwd_a != 2) fwd_a = 1;
         if (mem_wb_reg_.prev_frd == id_ex_reg_.frs2 && fwd_b != 2) fwd_b = 1;

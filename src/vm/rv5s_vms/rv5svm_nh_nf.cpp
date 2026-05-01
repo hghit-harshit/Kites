@@ -267,26 +267,29 @@ void RV5StageVM_NH_NF::pipeline_execute()
     }
 
     // Latch data for EX/MEM Register
-    ex_mem_reg_.pc                = id_ex_reg_.pc;
-    ex_mem_reg_.instruction       = id_ex_reg_.instruction;
-    ex_mem_reg_.alu_result        = alu_result;
-    ex_mem_reg_.f_alu_result      = (is_f_instruction || is_d_instruction) ? alu_result : 0;
-    ex_mem_reg_.rd                = id_ex_reg_.rd;
-    ex_mem_reg_.frd               = id_ex_reg_.frd;
-    ex_mem_reg_.reg2_data         = id_ex_reg_.reg2_data;
-    ex_mem_reg_.freg2_data        = id_ex_reg_.freg2_data;
-    ex_mem_reg_.reg_write         = id_ex_reg_.reg_write;
-    ex_mem_reg_.mem_to_reg        = id_ex_reg_.mem_to_reg;
-    ex_mem_reg_.prev_mem_read     = ex_mem_reg_.mem_read;
-    ex_mem_reg_.prev_mem_write    = ex_mem_reg_.mem_write;
-    ex_mem_reg_.mem_read          = id_ex_reg_.mem_read;
-    ex_mem_reg_.mem_write         = id_ex_reg_.mem_write;
+    ex_mem_reg_.prev_reg_write   = ex_mem_reg_.reg_write;
+    ex_mem_reg_.prev_rd          = ex_mem_reg_.rd; 
+    ex_mem_reg_.prev_freg_write  = ex_mem_reg_.freg_write;
+    ex_mem_reg_.prev_frd         = ex_mem_reg_.frd;
+    ex_mem_reg_.pc               = id_ex_reg_.pc;
+    ex_mem_reg_.instruction      = id_ex_reg_.instruction;
+    ex_mem_reg_.alu_result       = alu_result;
+    ex_mem_reg_.f_alu_result     = (is_f_instruction || is_d_instruction) ? alu_result : 0;
+    ex_mem_reg_.rd               = id_ex_reg_.rd;
+    ex_mem_reg_.frd              = id_ex_reg_.frd;
+    ex_mem_reg_.reg2_data        = id_ex_reg_.reg2_data;
+    ex_mem_reg_.freg2_data       = id_ex_reg_.freg2_data;
+    ex_mem_reg_.reg_write        = id_ex_reg_.reg_write;
+    ex_mem_reg_.freg_write       = id_ex_reg_.freg_write;
+    ex_mem_reg_.mem_to_reg       = id_ex_reg_.mem_to_reg;
+    ex_mem_reg_.prev_mem_read    = ex_mem_reg_.mem_read;
+    ex_mem_reg_.prev_mem_write   = ex_mem_reg_.mem_write;
+    ex_mem_reg_.mem_read         = id_ex_reg_.mem_read;
+    ex_mem_reg_.mem_write        = id_ex_reg_.mem_write;
     ex_mem_reg_.prev_branch_taken = ex_mem_reg_.branch_taken;
-    ex_mem_reg_.branch_taken      = false;
-    ex_mem_reg_.branch_target_pc  = 0;
+    ex_mem_reg_.branch_taken     = false;
+    ex_mem_reg_.branch_target_pc = 0;
     
-    
-
     // --- Conditional Branch Check (B-type: BLT, BGE, etc.) ---
     if (id_ex_reg_.branch && opcode == 0b1100011) 
     {
