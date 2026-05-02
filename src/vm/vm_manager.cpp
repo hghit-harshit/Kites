@@ -63,12 +63,21 @@ void VMManager::run()
 
 void VMManager::step()
 {
-    m_currentVM->Step();
+    try
+    {
+        m_currentVM->Step();
+    }
+    catch(const std::exception& e)
+    {
+        emit runErrorSignal(QString::fromStdString(e.what()));
+    }
 }   
 
 void VMManager::debugRun()
 {
-
+    // Debug mode starts in paused/manual mode; user advances with Step.
+    m_currentVM->ClearStop();
+    m_currentVM->RequestPause();
 }
 
 void VMManager::stop()
@@ -88,10 +97,14 @@ void VMManager::resume()
 }
 void VMManager::undo()
 {
+    qDebug() << "Undoing last step";
+    //m_currentVM->RequestUndo();
     m_currentVM->Undo();
 }
 void VMManager::redo()
 {
+    qDebug() << "Redoing last undone step"; 
+    //m_currentVM->RequestRedo();
     m_currentVM->Redo();
 }
 void VMManager::setStepDelay(unsigned int delay)

@@ -20,7 +20,11 @@ void RV5StageVM_Base::Run()
             QMutexLocker locker(&pause_mutex_);
             // using while because thie wait can be interrupted by spurious wakeups
             while(pause_requested_ && !stop_requested_)
+            {
                 pause_wait_condition_.wait(&pause_mutex_);
+            }
+
+            
             
             if(stop_requested_) // if we were requested to stop while paused
                 break;
@@ -549,7 +553,6 @@ void RV5StageVM_Base::pipeline_writeback()
         
         if(instruction_set::isFInstruction(mem_wb_reg_.instruction))
         {
-            std::cout << "Are we geting here for float instructions?" << std::endl;
             pipeline_writeback_float();
             return;
         }

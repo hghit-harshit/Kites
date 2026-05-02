@@ -134,6 +134,70 @@ void RVSSVM::SetVMStateMap()
 	// Add more VM state variables as needed
 }
 
+
+void RVSSVM::Run()
+{
+	qDebug() << "Starting VM Run";
+	ClearStop();
+	while (!stop_requested_ && program_counter_ < program_size_)
+	{
+		if(std::find(breakpoints_.begin(), breakpoints_.end(), program_counter_ ) != breakpoints_.end())
+		{
+			pause_requested_ = true;
+			emit  vmPausedAtBreakpointSignal();
+		}
+		{
+			QMutexLocker locker(&pause_mutex_);
+			while (pause_requested_ && !stop_requested_)
+			{
+				pause_wait_condition_.wait(&pause_mutex_);
+			}
+			if(stop_requested_)
+			{
+				break;
+			}
+		}
+		// Fetch();
+		// Decode();
+		// Execute();
+		// WriteMemory();
+		// WriteBack();
+		Step();
+		instructions_retired_++;
+		cycle_s_++;
+		// emit UI update for circuit highlighting
+		SetActiveWireNames();
+		SetVMStateMap();
+		emit vmStateChangedSignal(vm_state_);
+		emit updateCircuitStateSignal(active_wires_);
+		active_wires_.erase(active_wires_.begin() + always_active_wires_count_, active_wires_.end()); 
+		// clear active wires after emitting signal except always active wires
+		// handling the delay
+        {
+            QMutexLocker locker(&pause_mutex_);
+            if(stop_requested_ || pause_requested_)
+                continue;
+            pause_wait_condition_.wait(&pause_mutex_, step_delay_);
+            // we wait for step_delay_ milliseconds or until notified to wake up
+            
+        }
+		
+	}
+	if(stop_requested_)
+	{
+		vm_state_.clear();
+		emit vmStateChangedSignal(vm_state_);
+	}
+	if (program_counter_ >= program_size_)
+	{
+		std::cout << "VM_PROGRAM_END" << std::endl;
+		output_status_ = "VM_PROGRAM_END";
+	}
+	DumpRegisters(globals::registers_dump_file_path, registers_);
+	DumpState(globals::vm_state_dump_file_path);
+}
+
+
 void RVSSVM::Fetch()
 {
 	current_instruction_ = memory_controller_.ReadInstruction(program_counter_);
@@ -997,66 +1061,7 @@ void RVSSVM::WriteBackCsr()
 	}
 }
 
-void RVSSVM::Run()
-{
-	qDebug() << "Starting VM Run";
-	ClearStop();
-	while (!stop_requested_ && program_counter_ < program_size_)
-	{
-		if(std::find(breakpoints_.begin(), breakpoints_.end(), program_counter_ ) != breakpoints_.end())
-		{
-			pause_requested_ = true;
-			emit  vmPausedAtBreakpointSignal();
-		}
-		{
-			QMutexLocker locker(&pause_mutex_);
-			while (pause_requested_ && !stop_requested_)
-			{
-				pause_wait_condition_.wait(&pause_mutex_);
-			}
-			if(stop_requested_)
-			{
-				break;
-			}
-		}
-		Fetch();
-		Decode();
-		Execute();
-		WriteMemory();
-		WriteBack();
-		instructions_retired_++;
-		cycle_s_++;
-		// emit UI update for circuit highlighting
-		SetActiveWireNames();
-		SetVMStateMap();
-		emit vmStateChangedSignal(vm_state_);
-		emit updateCircuitStateSignal(active_wires_);
-		active_wires_.erase(active_wires_.begin() + always_active_wires_count_, active_wires_.end()); 
-		// clear active wires after emitting signal except always active wires
-		// handling the delay
-        {
-            QMutexLocker locker(&pause_mutex_);
-            if(stop_requested_ || pause_requested_)
-                continue;
-            pause_wait_condition_.wait(&pause_mutex_, step_delay_);
-            // we wait for step_delay_ milliseconds or until notified to wake up
-            
-        }
-		
-	}
-	if(stop_requested_)
-	{
-		vm_state_.clear();
-		emit vmStateChangedSignal(vm_state_);
-	}
-	if (program_counter_ >= program_size_)
-	{
-		std::cout << "VM_PROGRAM_END" << std::endl;
-		output_status_ = "VM_PROGRAM_END";
-	}
-	DumpRegisters(globals::registers_dump_file_path, registers_);
-	DumpState(globals::vm_state_dump_file_path);
-}
+
 
 void RVSSVM::DebugRun()
 {
@@ -1163,12 +1168,18 @@ void RVSSVM::Step()
 	DumpRegisters(globals::registers_dump_file_path, registers_);
 	DumpState(globals::vm_state_dump_file_path);
 
+	SetActiveWireNames();
+	SetVMStateMap();
+	emit updateCircuitStateSignal(active_wires_);
+	emit vmStateChangedSignal(vm_state_);
 }
 
 void RVSSVM::Undo()
 {
+	qInfo() << "Attempting to undo last step in rvss";
 	if (undo_stack_.empty())
 	{
+		qInfo() << "No more steps to undo in rvss";
 		std::cout << "VM_NO_MORE_UNDO" << std::endl;
 		output_status_ = "VM_NO_MORE_UNDO";
 		return;
@@ -1176,13 +1187,6 @@ void RVSSVM::Undo()
 
 	StepDelta last = undo_stack_.top();
 	undo_stack_.pop();
-
-	// if (!history_.can_undo()) {
-	//     std::cout << "Nothing to undo.\n";
-	//     return;
-	// }
-
-	// StepDelta last = history_.undo();
 
 	for (const auto &change : last.register_changes)
 	{
@@ -1229,10 +1233,26 @@ void RVSSVM::Undo()
 
 	DumpRegisters(globals::registers_dump_file_path, registers_);
 	DumpState(globals::vm_state_dump_file_path);
+
+	// Decode the instruction at the restored PC so UI signals are correct
+	if (program_counter_ < program_size_) {
+		current_instruction_ = memory_controller_.ReadInstruction(program_counter_);
+		control_unit_.SetControlSignals(current_instruction_);
+	} else {
+		current_instruction_ = 0;
+		control_unit_.Reset();
+	}
+
+	SetActiveWireNames();
+	SetVMStateMap();
+	emit updateCircuitStateSignal(active_wires_);
+	emit vmStateChangedSignal(vm_state_);
+	qInfo() << "Undo completed in rvss";
 }
 
 void RVSSVM::Redo()
 {
+	qInfo() << "Attempting to redo last undone step in rvss";
 	if (redo_stack_.empty())
 	{
 		std::cout << "VM_NO_MORE_REDO" << std::endl;
@@ -1289,6 +1309,20 @@ void RVSSVM::Redo()
 	DumpState(globals::vm_state_dump_file_path);
 	std::cout << "Program Counter: " << program_counter_ << std::endl;
 	undo_stack_.push(next);
+
+	// Decode the instruction at the new PC so UI signals are correct
+	if (program_counter_ < program_size_) {
+		current_instruction_ = memory_controller_.ReadInstruction(program_counter_);
+		control_unit_.SetControlSignals(current_instruction_);
+	} else {
+		current_instruction_ = 0;
+		control_unit_.Reset();
+	}
+
+	SetActiveWireNames();
+	SetVMStateMap();
+	emit updateCircuitStateSignal(active_wires_);
+	emit vmStateChangedSignal(vm_state_);
 }
 
 void RVSSVM::Reset()
