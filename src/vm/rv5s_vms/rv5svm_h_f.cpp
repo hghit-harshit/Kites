@@ -46,6 +46,8 @@ RV5StageVM_H_F::RV5StageVM_H_F() : RV5StageVM_Base()
     circuit_scene_ = std::make_unique<Kites::RV5StageVM_H_F_CircuitScene>();
     connect(this, &VmBase::updateCircuitStateSignal,
             circuit_scene_.get(), &Kites::RV5StageVM_H_F_CircuitScene::updateCircuitState);
+    connect(this, &VmBase::vmStateChangedSignal,
+            circuit_scene_.get(), &Kites::RV5StageVM_H_F_CircuitScene::vmStateChangedSlot);
         #endif
     Reset();
 

@@ -143,6 +143,13 @@ void RV5StageVM_Base::SetVMStateMap()
         {"ID/EX",(id_ex_reg_.instruction)},
         {"EX/MEM",(ex_mem_reg_.instruction)},
         {"MEM/WB",(mem_wb_reg_.instruction)} };
+    vm_state_["CurrentInstructionsText"] = QVariantMap{
+        {"CI", QString::fromStdString(instruction_set::disassemble(current_instruction_))},
+        {"IF/ID",(if_id_reg_.instruction != NOP ? QString::fromStdString(instruction_set::disassemble(if_id_reg_.instruction)) : "NOP")},
+        {"ID/EX",(id_ex_reg_.instruction != NOP ? QString::fromStdString(instruction_set::disassemble(id_ex_reg_.instruction)) : "NOP")},
+        {"EX/MEM",(ex_mem_reg_.instruction != NOP ? QString::fromStdString(instruction_set::disassemble(ex_mem_reg_.instruction)) : "NOP")},
+        {"MEM/WB",(mem_wb_reg_.instruction != NOP ? QString::fromStdString(instruction_set::disassemble(mem_wb_reg_.instruction)) : "NOP")} 
+    };
     vm_state_["EditorLines"] = QVariantMap{
         {"CI", static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(program_counter_)/ 4])},
         {"IF/ID",(if_id_reg_.pc < UINT64_MAX ? static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(if_id_reg_.pc)/ 4]) : -1)},

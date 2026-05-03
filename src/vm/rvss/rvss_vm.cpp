@@ -33,6 +33,9 @@ RVSSVM::RVSSVM()
 	    connect(this, &VmBase::updateCircuitStateSignal,
 		    circuit_scene_.get(), &Kites::RVSSCircuitScene::updateCircuitState,
 		    Qt::QueuedConnection);
+		connect(this, &VmBase::vmStateChangedSignal,
+			circuit_scene_.get(), &Kites::RVSSCircuitScene::vmStateChangedSlot,
+			Qt::QueuedConnection);
 	#endif
 
 	active_wires_.append("IM_to_PC_pc");
@@ -131,6 +134,14 @@ void RVSSVM::SetVMStateMap()
     vm_state_["EditorLines"] = QVariantMap{{".",static_cast<qulonglong>(program_.instruction_number_line_number_mapping[(program_counter_)/ 4])}};
 	vm_state_["DisassemblyLines"] = QVariantMap{{".",static_cast<qulonglong>(program_.instruction_number_disassembly_mapping[(program_counter_)/ 4])}};
 
+	vm_state_["CurrentInstructions"] = QVariantMap{
+		{"CI", static_cast<qulonglong>(current_instruction_)}
+	};
+
+	vm_state_["CurrentInstructionsText"] = QVariantMap{
+		{"CI", QString::fromStdString(instruction_set::disassemble(current_instruction_))}
+	};
+
 	// Add more VM state variables as needed
 }
 
@@ -157,11 +168,6 @@ void RVSSVM::Run()
 				break;
 			}
 		}
-		// Fetch();
-		// Decode();
-		// Execute();
-		// WriteMemory();
-		// WriteBack();
 		Step();
 		instructions_retired_++;
 		cycle_s_++;
@@ -1008,6 +1014,9 @@ void RVSSVM::WriteBackCsr()
 	uint8_t rd = (current_instruction_ >> 7) & 0b11111;
 	uint8_t funct3 = (current_instruction_ >> 12) & 0b111;
 
+	uint64_t old_gpr = registers_.ReadGpr(rd);
+	uint64_t old_csr = registers_.ReadCsr(csr_target_address_);
+
 	switch (funct3)
 	{
 	case 0b001:
@@ -1058,6 +1067,18 @@ void RVSSVM::WriteBackCsr()
 		}
 		break;
 	}
+	}
+
+	uint64_t new_gpr = registers_.ReadGpr(rd);
+	uint64_t new_csr = registers_.ReadCsr(csr_target_address_);
+
+	if (old_gpr != new_gpr)
+	{
+		current_delta_.register_changes.push_back({rd, 0, old_gpr, new_gpr});
+	}
+	if (old_csr != new_csr)
+	{
+		current_delta_.register_changes.push_back({csr_target_address_, 1, old_csr, new_csr});
 	}
 }
 
@@ -1179,7 +1200,6 @@ void RVSSVM::Undo()
 	qInfo() << "Attempting to undo last step in rvss";
 	if (undo_stack_.empty())
 	{
-		qInfo() << "No more steps to undo in rvss";
 		std::cout << "VM_NO_MORE_UNDO" << std::endl;
 		output_status_ = "VM_NO_MORE_UNDO";
 		return;
@@ -1233,15 +1253,6 @@ void RVSSVM::Undo()
 
 	DumpRegisters(globals::registers_dump_file_path, registers_);
 	DumpState(globals::vm_state_dump_file_path);
-
-	// Decode the instruction at the restored PC so UI signals are correct
-	if (program_counter_ < program_size_) {
-		current_instruction_ = memory_controller_.ReadInstruction(program_counter_);
-		control_unit_.SetControlSignals(current_instruction_);
-	} else {
-		current_instruction_ = 0;
-		control_unit_.Reset();
-	}
 
 	SetActiveWireNames();
 	SetVMStateMap();
@@ -1309,15 +1320,6 @@ void RVSSVM::Redo()
 	DumpState(globals::vm_state_dump_file_path);
 	std::cout << "Program Counter: " << program_counter_ << std::endl;
 	undo_stack_.push(next);
-
-	// Decode the instruction at the new PC so UI signals are correct
-	if (program_counter_ < program_size_) {
-		current_instruction_ = memory_controller_.ReadInstruction(program_counter_);
-		control_unit_.SetControlSignals(current_instruction_);
-	} else {
-		current_instruction_ = 0;
-		control_unit_.Reset();
-	}
 
 	SetActiveWireNames();
 	SetVMStateMap();
