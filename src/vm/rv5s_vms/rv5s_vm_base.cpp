@@ -24,8 +24,6 @@ void RV5StageVM_Base::Run()
                 pause_wait_condition_.wait(&pause_mutex_);
             }
 
-            
-            
             if(stop_requested_) // if we were requested to stop while paused
                 break;
         }
@@ -43,8 +41,7 @@ void RV5StageVM_Base::Run()
             if(stop_requested_ || pause_requested_)
                 continue;
             pause_wait_condition_.wait(&pause_mutex_, step_delay_);
-            // we wait for step_delay_ milliseconds or until notified to wake up
-            
+            // we wait for step_delay_ milliseconds or until notified to wake up   
         }
     }
     if(stop_requested_)
@@ -74,10 +71,10 @@ void RV5StageVM_Base::DebugRun()
 
 void RV5StageVM_Base::Reset()
 {
-    program_counter_ = 0;
+    program_counter_      = 0;
     instructions_retired_ = 0;
-    cycle_s_ = 0;
-    stall_cycles_ = 0;
+    cycle_s_              = 0;
+    stall_cycles_         = 0;
 
     registers_.Reset();
     memory_controller_.Reset();
@@ -110,10 +107,10 @@ void RV5StageVM_Base::begin_step_delta()
 
 void RV5StageVM_Base::finalize_step_delta()
 {
-    current_delta_.new_pc = program_counter_;
-    current_delta_.new_cycle = cycle_s_;
-    current_delta_.new_instructions_retired = instructions_retired_;
-    current_delta_.new_stall_cycles = stall_cycles_;
+    current_delta_.new_pc                    = program_counter_;
+    current_delta_.new_cycle                 = cycle_s_;
+    current_delta_.new_instructions_retired  = instructions_retired_;
+    current_delta_.new_stall_cycles          = stall_cycles_;
     current_delta_.new_branch_mispredictions = branch_mispredictions_;
 
     current_delta_.pipeline_register_change.new_if_id_reg = if_id_reg_;
@@ -166,12 +163,12 @@ void RV5StageVM_Base::pipeline_decode()
     uint32_t instruction = if_id_reg_.instruction;
     if (instruction == NOP) {
         // Pass through fields as needed
-        id_ex_reg_.pc = if_id_reg_.pc;
+        id_ex_reg_.pc          = if_id_reg_.pc;
         id_ex_reg_.instruction = instruction;
-        id_ex_reg_.imm = 0;
-        id_ex_reg_.rs1 = id_ex_reg_.rs2 = id_ex_reg_.rd = 0;
-        id_ex_reg_.reg1_data = 0;
-        id_ex_reg_.reg2_data = 0;
+        id_ex_reg_.imm         = 0;
+        id_ex_reg_.rs1         = id_ex_reg_.rs2 = id_ex_reg_.rd = 0;
+        id_ex_reg_.reg1_data   = 0;
+        id_ex_reg_.reg2_data   = 0;
 
         // Clear FPR fields so stale values don't poison forwarding
         id_ex_reg_.frs1 = id_ex_reg_.frs2 = id_ex_reg_.frs3 = id_ex_reg_.frd = 0;
@@ -182,26 +179,26 @@ void RV5StageVM_Base::pipeline_decode()
         // Critically: zero *all* control signals so downstream stages are idle
         id_ex_reg_.reg_write  = false;
         id_ex_reg_.freg_write = false;
-        id_ex_reg_.branch    = false;
-        id_ex_reg_.alu_src   = false;
-        id_ex_reg_.mem_read  = false;
-        id_ex_reg_.mem_write = false;
-        id_ex_reg_.mem_to_reg= false;
-        id_ex_reg_.alu_op    = 0;
+        id_ex_reg_.branch     = false;
+        id_ex_reg_.alu_src    = false;
+        id_ex_reg_.mem_read   = false;
+        id_ex_reg_.mem_write  = false;
+        id_ex_reg_.mem_to_reg = false;
+        id_ex_reg_.alu_op     = 0;
         return;
     }
     // Control Unit: Generate signals based on the instruction
     control_unit_.SetControlSignals(instruction);
 
     // Latch data for the ID/EX register
-    id_ex_reg_.pc = if_id_reg_.pc;
+    id_ex_reg_.pc          = if_id_reg_.pc;
     id_ex_reg_.instruction = instruction;
-    id_ex_reg_.imm = ImmGenerator(instruction);
+    id_ex_reg_.imm         = ImmGenerator(instruction);
 
     // Extract register numbers
     id_ex_reg_.rs1 = (instruction >> 15) & 0x1F;
     id_ex_reg_.rs2 = (instruction >> 20) & 0x1F;
-    id_ex_reg_.rd = (instruction >> 7) & 0x1F;
+    id_ex_reg_.rd  = (instruction >> 7) & 0x1F;
 
     // Extract FP register indices for F/D instructions
     if(instruction_set::isFInstruction(instruction) || instruction_set::isDInstruction(instruction))
@@ -214,6 +211,7 @@ void RV5StageVM_Base::pipeline_decode()
         id_ex_reg_.freg1_data = registers_.ReadFpr(id_ex_reg_.frs1);
         id_ex_reg_.freg2_data = registers_.ReadFpr(id_ex_reg_.frs2);
         id_ex_reg_.freg3_data = registers_.ReadFpr(id_ex_reg_.frs3);
+
         uint8_t opcode = instruction & 0b1111111;
         uint8_t funct7 = (instruction >> 25) & 0b1111111;
 
@@ -397,10 +395,10 @@ void RV5StageVM_Base::pipeline_memory()
     // since we are running cycle backward
     // by the time execture check this register forwarding previous results are gone
     // so we store these seperately
-    mem_wb_reg_.prev_rd = mem_wb_reg_.rd;
-    mem_wb_reg_.prev_alu_result = mem_wb_reg_.alu_result;
-    mem_wb_reg_.prev_mem_to_reg = mem_wb_reg_.mem_to_reg;
-    mem_wb_reg_.prev_reg_write = mem_wb_reg_.reg_write;
+    mem_wb_reg_.prev_rd          = mem_wb_reg_.rd;
+    mem_wb_reg_.prev_alu_result  = mem_wb_reg_.alu_result;
+    mem_wb_reg_.prev_mem_to_reg  = mem_wb_reg_.mem_to_reg;
+    mem_wb_reg_.prev_reg_write   = mem_wb_reg_.reg_write;
     mem_wb_reg_.prev_memory_data = mem_wb_reg_.memory_data;
     // Save FPR prev fields for forwarding (mirrors GPR prev fields above)
     mem_wb_reg_.prev_frd           = mem_wb_reg_.frd;
@@ -408,16 +406,16 @@ void RV5StageVM_Base::pipeline_memory()
     mem_wb_reg_.prev_f_memory_data = mem_wb_reg_.f_memory_data;
     mem_wb_reg_.prev_freg_write    = mem_wb_reg_.freg_write;
     // --- Standard MEM Operations ---
-    mem_wb_reg_.pc = ex_mem_reg_.pc;
+    mem_wb_reg_.pc          = ex_mem_reg_.pc;
     mem_wb_reg_.instruction = ex_mem_reg_.instruction;
-    mem_wb_reg_.alu_result = ex_mem_reg_.alu_result;
-    mem_wb_reg_.rd = ex_mem_reg_.rd;
-    mem_wb_reg_.reg_write = ex_mem_reg_.reg_write;
-    mem_wb_reg_.mem_to_reg = ex_mem_reg_.mem_to_reg;
+    mem_wb_reg_.alu_result  = ex_mem_reg_.alu_result;
+    mem_wb_reg_.rd          = ex_mem_reg_.rd;
+    mem_wb_reg_.reg_write   = ex_mem_reg_.reg_write;
+    mem_wb_reg_.mem_to_reg  = ex_mem_reg_.mem_to_reg;
     // Latch FPR fields from EX/MEM
-    mem_wb_reg_.frd         = ex_mem_reg_.frd;
+    mem_wb_reg_.frd          = ex_mem_reg_.frd;
     mem_wb_reg_.f_alu_result = ex_mem_reg_.f_alu_result;
-    mem_wb_reg_.freg_write  = ex_mem_reg_.freg_write;
+    mem_wb_reg_.freg_write   = ex_mem_reg_.freg_write;
 
     bool is_F_Instruction = instruction_set::isFInstruction(mem_wb_reg_.instruction);
     bool is_D_Instruction = instruction_set::isDInstruction(mem_wb_reg_.instruction);
@@ -429,12 +427,12 @@ void RV5StageVM_Base::pipeline_memory()
         if(is_F_Instruction )
         {//FLW
             
-            mem_wb_reg_.memory_data = static_cast<int32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+            mem_wb_reg_.memory_data   = static_cast<int32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
             mem_wb_reg_.f_memory_data = mem_wb_reg_.memory_data;
         }
         else if(is_D_Instruction)
         {//FLD
-            mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+            mem_wb_reg_.memory_data   = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
             mem_wb_reg_.f_memory_data = mem_wb_reg_.memory_data;
         }
         else
@@ -596,15 +594,15 @@ void RV5StageVM_Base::pipeline_writeback()
 void RV5StageVM_Base::pipeline_writeback_float()
 {
     //yes i just copy pasted this from rvss
-    uint64_t current_instruction_ = mem_wb_reg_.instruction;
-    uint8_t opcode = current_instruction_ & 0b1111111;
-	uint8_t funct7 = (current_instruction_ >> 25) & 0b1111111;
-	uint8_t rd = (current_instruction_ >> 7) & 0b11111;
+	uint64_t current_instruction_ = mem_wb_reg_.instruction;
+	uint8_t  opcode               = current_instruction_ & 0b1111111;
+	uint8_t  funct7               = (current_instruction_ >> 25) & 0b1111111;
+	uint8_t  rd                   = (current_instruction_ >> 7) & 0b11111;
 
-	uint64_t old_reg = 0;
+	uint64_t old_reg       = 0;
 	unsigned int reg_index = rd;
-	unsigned int reg_type = 2; // 0 for GPR, 1 for CSR, 2 for FPR
-	uint64_t new_reg = 0;
+	unsigned int reg_type  = 2;   // 0 for GPR, 1 for CSR, 2 for FPR
+	uint64_t new_reg       = 0;
 
 	
 		// write to GPR
@@ -641,15 +639,15 @@ void RV5StageVM_Base::pipeline_writeback_float()
 
 void RV5StageVM_Base::pipeline_writeback_double()
 {
-    uint64_t current_instruction_ = mem_wb_reg_.instruction;
-    uint8_t opcode = current_instruction_ & 0b1111111;
-	uint8_t funct7 = (current_instruction_ >> 25) & 0b1111111;
-	uint8_t rd = (current_instruction_ >> 7) & 0b11111;
+	uint64_t current_instruction_ = mem_wb_reg_.instruction;
+	uint8_t  opcode               = current_instruction_ & 0b1111111;
+	uint8_t  funct7               = (current_instruction_ >> 25) & 0b1111111;
+	uint8_t  rd                   = (current_instruction_ >> 7) & 0b11111;
 
-	uint64_t old_reg = 0;
+	uint64_t old_reg       = 0;
 	unsigned int reg_index = rd;
-	unsigned int reg_type = 2; // 0 for GPR, 1 for CSR, 2 for FPR
-	uint64_t new_reg = 0;
+	unsigned int reg_type  = 2;   // 0 for GPR, 1 for CSR, 2 for FPR
+	uint64_t new_reg       = 0;
 
 	
 		// write to GPR
@@ -685,11 +683,11 @@ void RV5StageVM_Base::pipeline_writeback_double()
 
 uint64_t RV5StageVM_Base::execute_float() 
 {
-    uint32_t instruction = id_ex_reg_.instruction;
-    uint8_t opcode = instruction & 0b1111111;
-    uint8_t funct3 = (instruction >> 12) & 0b111;
-    uint8_t funct7 = (instruction >> 25) & 0b1111111;
-	uint8_t rm = funct3;
+	uint32_t instruction = id_ex_reg_.instruction;
+	uint8_t  opcode      = instruction & 0b1111111;
+	uint8_t  funct3      = (instruction >> 12) & 0b111;
+	uint8_t  funct7      = (instruction >> 25) & 0b1111111;
+	uint8_t  rm          = funct3;
 
 	uint8_t fcsr_status = 0;
     uint64_t alu_result = 0;
@@ -730,10 +728,10 @@ uint64_t RV5StageVM_Base::execute_float()
 uint64_t RV5StageVM_Base::execute_double()
 {
     uint32_t instruction = id_ex_reg_.instruction;
-    uint8_t opcode = instruction & 0b1111111;
-    uint8_t funct3 = (instruction >> 12) & 0b111;
-    uint8_t funct7 = (instruction >> 25) & 0b1111111;
-    uint8_t rm = funct3;
+    uint8_t  opcode      = instruction & 0b1111111;
+    uint8_t  funct3      = (instruction >> 12) & 0b111;
+    uint8_t  funct7      = (instruction >> 25) & 0b1111111;
+    uint8_t  rm          = funct3;
 
     uint8_t fcsr_status = 0;
     uint64_t alu_result = 0;
@@ -821,14 +819,14 @@ void RV5StageVM_Base::Undo()
         }
     }
 
-    program_counter_ = last.old_pc;
-    cycle_s_ = last.old_cycle;
-    instructions_retired_ = last.old_instructions_retired;
-    stall_cycles_ = last.old_stall_cycles;
+    program_counter_       = last.old_pc;
+    cycle_s_               = last.old_cycle;
+    instructions_retired_  = last.old_instructions_retired;
+    stall_cycles_          = last.old_stall_cycles;
     branch_mispredictions_ = last.old_branch_mispredictions;
 
-    if_id_reg_ = last.pipeline_register_change.old_if_id_reg;
-    id_ex_reg_ = last.pipeline_register_change.old_id_ex_reg;
+    if_id_reg_  = last.pipeline_register_change.old_if_id_reg;
+    id_ex_reg_  = last.pipeline_register_change.old_id_ex_reg;
     ex_mem_reg_ = last.pipeline_register_change.old_ex_mem_reg;
     mem_wb_reg_ = last.pipeline_register_change.old_mem_wb_reg;
 
@@ -880,14 +878,14 @@ void RV5StageVM_Base::Redo()
         }
     }
 
-    program_counter_ = next.new_pc;
-    cycle_s_ = next.new_cycle;
-    instructions_retired_ = next.new_instructions_retired;
-    stall_cycles_ = next.new_stall_cycles;
+    program_counter_       = next.new_pc;
+    cycle_s_               = next.new_cycle;
+    instructions_retired_  = next.new_instructions_retired;
+    stall_cycles_          = next.new_stall_cycles;
     branch_mispredictions_ = next.new_branch_mispredictions;
 
-    if_id_reg_ = next.pipeline_register_change.new_if_id_reg;
-    id_ex_reg_ = next.pipeline_register_change.new_id_ex_reg;
+    if_id_reg_  = next.pipeline_register_change.new_if_id_reg;
+    id_ex_reg_  = next.pipeline_register_change.new_id_ex_reg;
     ex_mem_reg_ = next.pipeline_register_change.new_ex_mem_reg;
     mem_wb_reg_ = next.pipeline_register_change.new_mem_wb_reg;
 
