@@ -13,196 +13,176 @@
 #include <string>
 #include <vector>
 
-namespace instruction_set {
+namespace instruction_set
+{
 
 std::unordered_map<Instruction, InstructionEncoding> instruction_encoding_map = {
-    {Instruction::kadd,      {0b0110011, -1, 0b000, -1, -1, 0b0000000}},
-    {Instruction::ksub,      {0b0110011, -1, 0b000, -1, -1, 0b0100000}},
-    {Instruction::ksll,      {0b0110011, -1, 0b001, -1, -1, 0b0000000}},
-    {Instruction::kslt,      {0b0110011, -1, 0b010, -1, -1, 0b0000000}},
-    {Instruction::ksltu,     {0b0110011, -1, 0b011, -1, -1, 0b0000000}},
-    {Instruction::kxor,      {0b0110011, -1, 0b100, -1, -1, 0b0000000}},
-    {Instruction::ksrl,      {0b0110011, -1, 0b101, -1, -1, 0b0000000}},
-    {Instruction::ksra,      {0b0110011, -1, 0b101, -1, -1, 0b0100000}},
-    {Instruction::kor,       {0b0110011, -1, 0b110, -1, -1, 0b0000000}},
-    {Instruction::kand,      {0b0110011, -1, 0b111, -1, -1, 0b0000000}},
+    {Instruction::kadd, {0b0110011, -1, 0b000, -1, -1, 0b0000000}},
+    {Instruction::ksub, {0b0110011, -1, 0b000, -1, -1, 0b0100000}},
+    {Instruction::ksll, {0b0110011, -1, 0b001, -1, -1, 0b0000000}},
+    {Instruction::kslt, {0b0110011, -1, 0b010, -1, -1, 0b0000000}},
+    {Instruction::ksltu, {0b0110011, -1, 0b011, -1, -1, 0b0000000}},
+    {Instruction::kxor, {0b0110011, -1, 0b100, -1, -1, 0b0000000}},
+    {Instruction::ksrl, {0b0110011, -1, 0b101, -1, -1, 0b0000000}},
+    {Instruction::ksra, {0b0110011, -1, 0b101, -1, -1, 0b0100000}},
+    {Instruction::kor, {0b0110011, -1, 0b110, -1, -1, 0b0000000}},
+    {Instruction::kand, {0b0110011, -1, 0b111, -1, -1, 0b0000000}},
 
-    {Instruction::kmul,      {0b0110011, -1, 0b000, -1, -1, 0b0000001}},
-    {Instruction::kmulh,     {0b0110011, -1, 0b001, -1, -1, 0b0000001}},
-    {Instruction::kmulhsu,   {0b0110011, -1, 0b010, -1, -1, 0b0000001}},
-    {Instruction::kmulhu,    {0b0110011, -1, 0b011, -1, -1, 0b0000001}},
-    {Instruction::kdiv,      {0b0110011, -1, 0b100, -1, -1, 0b0000001}},
-    {Instruction::kdivu,     {0b0110011, -1, 0b101, -1, -1, 0b0000001}},
-    {Instruction::krem,      {0b0110011, -1, 0b110, -1, -1, 0b0000001}},
-    {Instruction::kremu,     {0b0110011, -1, 0b111, -1, -1, 0b0000001}},
+    {Instruction::kmul, {0b0110011, -1, 0b000, -1, -1, 0b0000001}},
+    {Instruction::kmulh, {0b0110011, -1, 0b001, -1, -1, 0b0000001}},
+    {Instruction::kmulhsu, {0b0110011, -1, 0b010, -1, -1, 0b0000001}},
+    {Instruction::kmulhu, {0b0110011, -1, 0b011, -1, -1, 0b0000001}},
+    {Instruction::kdiv, {0b0110011, -1, 0b100, -1, -1, 0b0000001}},
+    {Instruction::kdivu, {0b0110011, -1, 0b101, -1, -1, 0b0000001}},
+    {Instruction::krem, {0b0110011, -1, 0b110, -1, -1, 0b0000001}},
+    {Instruction::kremu, {0b0110011, -1, 0b111, -1, -1, 0b0000001}},
 
-    {Instruction::kaddw,     {0b0111011, -1, 0b000, -1, -1, 0b0000000}},
-    {Instruction::ksubw,     {0b0111011, -1, 0b000, -1, -1, 0b0100000}},
-    {Instruction::ksllw,     {0b0111011, -1, 0b001, -1, -1, 0b0000000}},
-    {Instruction::ksrlw,     {0b0111011, -1, 0b101, -1, -1, 0b0000000}},
-    {Instruction::ksraw,     {0b0111011, -1, 0b101, -1, -1, 0b0100000}},
+    {Instruction::kaddw, {0b0111011, -1, 0b000, -1, -1, 0b0000000}},
+    {Instruction::ksubw, {0b0111011, -1, 0b000, -1, -1, 0b0100000}},
+    {Instruction::ksllw, {0b0111011, -1, 0b001, -1, -1, 0b0000000}},
+    {Instruction::ksrlw, {0b0111011, -1, 0b101, -1, -1, 0b0000000}},
+    {Instruction::ksraw, {0b0111011, -1, 0b101, -1, -1, 0b0100000}},
 
-    {Instruction::kmulw,     {0b0111011, -1, 0b000, -1, -1, 0b0000001}},
-    {Instruction::kdivw,     {0b0111011, -1, 0b100, -1, -1, 0b0000001}},
-    {Instruction::kdivuw,    {0b0111011, -1, 0b101, -1, -1, 0b0000001}},
-    {Instruction::kremw,     {0b0111011, -1, 0b110, -1, -1, 0b0000001}},
-    {Instruction::kremuw,    {0b0111011, -1, 0b111, -1, -1, 0b0000001}},
+    {Instruction::kmulw, {0b0111011, -1, 0b000, -1, -1, 0b0000001}},
+    {Instruction::kdivw, {0b0111011, -1, 0b100, -1, -1, 0b0000001}},
+    {Instruction::kdivuw, {0b0111011, -1, 0b101, -1, -1, 0b0000001}},
+    {Instruction::kremw, {0b0111011, -1, 0b110, -1, -1, 0b0000001}},
+    {Instruction::kremuw, {0b0111011, -1, 0b111, -1, -1, 0b0000001}},
 
-    {Instruction::kecall,    {0b1110011, -1, 0b000, -1, -1, 0b0000000}},
-    {Instruction::kebreak,   {0b1110011, -1, 0b001, -1, -1, 0b0000000}},
+    {Instruction::kecall, {0b1110011, -1, 0b000, -1, -1, 0b0000000}},
+    {Instruction::kebreak, {0b1110011, -1, 0b001, -1, -1, 0b0000000}},
 
-    {Instruction::kslli,     {0b0010011, -1, 0b001, -1, -1, 0b0000000}},
-    {Instruction::ksrli,     {0b0010011, -1, 0b101, -1, -1, 0b0000000}},
-    {Instruction::ksrai,     {0b0010011, -1, 0b101, -1, -1, 0b0100000}},
+    {Instruction::kslli, {0b0010011, -1, 0b001, -1, -1, 0b0000000}},
+    {Instruction::ksrli, {0b0010011, -1, 0b101, -1, -1, 0b0000000}},
+    {Instruction::ksrai, {0b0010011, -1, 0b101, -1, -1, 0b0100000}},
 
-    {Instruction::kslliw,    {0b0011011, -1, 0b001, -1, -1, 0b0000000}},
-    {Instruction::ksrliw,    {0b0011011, -1, 0b101, -1, -1, 0b0000000}},
-    {Instruction::ksraiw,    {0b0011011, -1, 0b101, -1, -1, 0b0100000}},
+    {Instruction::kslliw, {0b0011011, -1, 0b001, -1, -1, 0b0000000}},
+    {Instruction::ksrliw, {0b0011011, -1, 0b101, -1, -1, 0b0000000}},
+    {Instruction::ksraiw, {0b0011011, -1, 0b101, -1, -1, 0b0100000}},
 
-
-    {Instruction::kfsgnj_s,  {0b1010011, -1, 0b000, -1, -1, 0b0010000}},
+    {Instruction::kfsgnj_s, {0b1010011, -1, 0b000, -1, -1, 0b0010000}},
     {Instruction::kfsgnjn_s, {0b1010011, -1, 0b001, -1, -1, 0b0010000}},
     {Instruction::kfsgnjx_s, {0b1010011, -1, 0b010, -1, -1, 0b0010000}},
 
-    {Instruction::kfmin_s,   {0b1010011, -1, 0b000, -1, -1, 0b0010100}},
-    {Instruction::kfmax_s,   {0b1010011, -1, 0b001, -1, -1, 0b0010100}},
+    {Instruction::kfmin_s, {0b1010011, -1, 0b000, -1, -1, 0b0010100}},
+    {Instruction::kfmax_s, {0b1010011, -1, 0b001, -1, -1, 0b0010100}},
 
-    {Instruction::kfle_s,    {0b1010011, -1, 0b000, -1, -1, 0b1010000}},
-    {Instruction::kflt_s,    {0b1010011, -1, 0b001, -1, -1, 0b1010000}},
-    {Instruction::kfeq_s,    {0b1010011, -1, 0b010, -1, -1, 0b1010000}},
+    {Instruction::kfle_s, {0b1010011, -1, 0b000, -1, -1, 0b1010000}},
+    {Instruction::kflt_s, {0b1010011, -1, 0b001, -1, -1, 0b1010000}},
+    {Instruction::kfeq_s, {0b1010011, -1, 0b010, -1, -1, 0b1010000}},
 
-    {Instruction::kfsgnj_d,  {0b1010011, -1, 0b000, -1, -1, 0b0010001}},
+    {Instruction::kfsgnj_d, {0b1010011, -1, 0b000, -1, -1, 0b0010001}},
     {Instruction::kfsgnjn_d, {0b1010011, -1, 0b001, -1, -1, 0b0010001}},
     {Instruction::kfsgnjx_d, {0b1010011, -1, 0b010, -1, -1, 0b0010001}},
 
-    {Instruction::kfmin_d,   {0b1010011, -1, 0b000, -1, -1, 0b0010101}},
-    {Instruction::kfmax_d,   {0b1010011, -1, 0b001, -1, -1, 0b0010101}},
+    {Instruction::kfmin_d, {0b1010011, -1, 0b000, -1, -1, 0b0010101}},
+    {Instruction::kfmax_d, {0b1010011, -1, 0b001, -1, -1, 0b0010101}},
 
-    {Instruction::kfle_d,    {0b1010011, -1, 0b000, -1, -1, 0b1010001}},
-    {Instruction::kflt_d,    {0b1010011, -1, 0b001, -1, -1, 0b1010001}},
-    {Instruction::kfeq_d,    {0b1010011, -1, 0b010, -1, -1, 0b1010001}},
+    {Instruction::kfle_d, {0b1010011, -1, 0b000, -1, -1, 0b1010001}},
+    {Instruction::kflt_d, {0b1010011, -1, 0b001, -1, -1, 0b1010001}},
+    {Instruction::kfeq_d, {0b1010011, -1, 0b010, -1, -1, 0b1010001}},
 
+    {Instruction::kaddi, {0b0010011, -1, 0b000, -1, -1, -1}},
+    {Instruction::kslti, {0b0010011, -1, 0b010, -1, -1, -1}},
+    {Instruction::ksltiu, {0b0010011, -1, 0b011, -1, -1, -1}},
+    {Instruction::kxori, {0b0010011, -1, 0b100, -1, -1, -1}},
+    {Instruction::kori, {0b0010011, -1, 0b110, -1, -1, -1}},
+    {Instruction::kandi, {0b0010011, -1, 0b111, -1, -1, -1}},
 
+    {Instruction::kaddiw, {0b0011011, -1, 0b000, -1, -1, -1}},
 
+    {Instruction::klb, {0b0000011, -1, 0b000, -1, -1, -1}},
+    {Instruction::klh, {0b0000011, -1, 0b001, -1, -1, -1}},
+    {Instruction::klw, {0b0000011, -1, 0b010, -1, -1, -1}},
+    {Instruction::kld, {0b0000011, -1, 0b011, -1, -1, -1}},
+    {Instruction::klbu, {0b0000011, -1, 0b100, -1, -1, -1}},
+    {Instruction::klhu, {0b0000011, -1, 0b101, -1, -1, -1}},
+    {Instruction::klwu, {0b0000011, -1, 0b110, -1, -1, -1}},
 
-    {Instruction::kaddi,     {0b0010011, -1, 0b000, -1, -1, -1}},
-    {Instruction::kslti,     {0b0010011, -1, 0b010, -1, -1, -1}},
-    {Instruction::ksltiu,    {0b0010011, -1, 0b011, -1, -1, -1}},
-    {Instruction::kxori,     {0b0010011, -1, 0b100, -1, -1, -1}},
-    {Instruction::kori,      {0b0010011, -1, 0b110, -1, -1, -1}},
-    {Instruction::kandi,     {0b0010011, -1, 0b111, -1, -1, -1}},
+    {Instruction::kjalr, {0b1100111, -1, 0b000, -1, -1, -1}},
 
-    {Instruction::kaddiw,    {0b0011011, -1, 0b000, -1, -1, -1}},
+    {Instruction::ksb, {0b0100011, -1, 0b000, -1, -1, -1}},
+    {Instruction::ksh, {0b0100011, -1, 0b001, -1, -1, -1}},
+    {Instruction::ksw, {0b0100011, -1, 0b010, -1, -1, -1}},
+    {Instruction::ksd, {0b0100011, -1, 0b011, -1, -1, -1}},
 
-    {Instruction::klb,       {0b0000011, -1, 0b000, -1, -1, -1}},
-    {Instruction::klh,       {0b0000011, -1, 0b001, -1, -1, -1}},
-    {Instruction::klw,       {0b0000011, -1, 0b010, -1, -1, -1}},
-    {Instruction::kld,       {0b0000011, -1, 0b011, -1, -1, -1}},
-    {Instruction::klbu,      {0b0000011, -1, 0b100, -1, -1, -1}},
-    {Instruction::klhu,      {0b0000011, -1, 0b101, -1, -1, -1}},
-    {Instruction::klwu,      {0b0000011, -1, 0b110, -1, -1, -1}},
+    {Instruction::kbeq, {0b1100011, -1, 0b000, -1, -1, -1}},
+    {Instruction::kbne, {0b1100011, -1, 0b001, -1, -1, -1}},
+    {Instruction::kblt, {0b1100011, -1, 0b100, -1, -1, -1}},
+    {Instruction::kbge, {0b1100011, -1, 0b101, -1, -1, -1}},
+    {Instruction::kbltu, {0b1100011, -1, 0b110, -1, -1, -1}},
+    {Instruction::kbgeu, {0b1100011, -1, 0b111, -1, -1, -1}},
 
-    {Instruction::kjalr,     {0b1100111, -1, 0b000, -1, -1, -1}},
+    {Instruction::kcsrrw, {0b1110011, -1, 0b001, -1, -1, -1}},
+    {Instruction::kcsrrs, {0b1110011, -1, 0b010, -1, -1, -1}},
+    {Instruction::kcsrrc, {0b1110011, -1, 0b011, -1, -1, -1}},
+    {Instruction::kcsrrwi, {0b1110011, -1, 0b101, -1, -1, -1}},
+    {Instruction::kcsrrsi, {0b1110011, -1, 0b110, -1, -1, -1}},
+    {Instruction::kcsrrci, {0b1110011, -1, 0b111, -1, -1, -1}},
 
+    {Instruction::kflw, {0b0000111, -1, 0b010, -1, -1, -1}},
+    {Instruction::kfsw, {0b0100111, -1, 0b010, -1, -1, -1}},
+    {Instruction::kfld, {0b0000111, -1, 0b011, -1, -1, -1}},
+    {Instruction::kfsd, {0b0100111, -1, 0b011, -1, -1, -1}},
 
-    {Instruction::ksb,       {0b0100011, -1, 0b000, -1, -1, -1}},
-    {Instruction::ksh,       {0b0100011, -1, 0b001, -1, -1, -1}},
-    {Instruction::ksw,       {0b0100011, -1, 0b010, -1, -1, -1}},
-    {Instruction::ksd,       {0b0100011, -1, 0b011, -1, -1, -1}},
+    {Instruction::klui, {0b0110111, -1, -1, -1, -1, -1}},
+    {Instruction::kauipc, {0b0010111, -1, -1, -1, -1, -1}},
 
+    {Instruction::kjal, {0b1101111, -1, -1, -1, -1, -1}},
 
-    {Instruction::kbeq,      {0b1100011, -1, 0b000, -1, -1, -1}},
-    {Instruction::kbne,      {0b1100011, -1, 0b001, -1, -1, -1}},
-    {Instruction::kblt,      {0b1100011, -1, 0b100, -1, -1, -1}},
-    {Instruction::kbge,      {0b1100011, -1, 0b101, -1, -1, -1}},
-    {Instruction::kbltu,     {0b1100011, -1, 0b110, -1, -1, -1}},
-    {Instruction::kbgeu,     {0b1100011, -1, 0b111, -1, -1, -1}},
+    {Instruction::kfadd_s, {0b1010011, -1, -1, -1, -1, 0b0000000}},
+    {Instruction::kfsub_s, {0b1010011, -1, -1, -1, -1, 0b0000100}},
+    {Instruction::kfmul_s, {0b1010011, -1, -1, -1, -1, 0b0001000}},
+    {Instruction::kfdiv_s, {0b1010011, -1, -1, -1, -1, 0b0001100}},
 
+    {Instruction::kfadd_d, {0b1010011, -1, -1, -1, -1, 0b0000001}},
+    {Instruction::kfsub_d, {0b1010011, -1, -1, -1, -1, 0b0000101}},
+    {Instruction::kfmul_d, {0b1010011, -1, -1, -1, -1, 0b0001001}},
+    {Instruction::kfdiv_d, {0b1010011, -1, -1, -1, -1, 0b0001101}},
 
-    {Instruction::kcsrrw,    {0b1110011, -1, 0b001, -1, -1, -1}},
-    {Instruction::kcsrrs,    {0b1110011, -1, 0b010, -1, -1, -1}},
-    {Instruction::kcsrrc,    {0b1110011, -1, 0b011, -1, -1, -1}},
-    {Instruction::kcsrrwi,   {0b1110011, -1, 0b101, -1, -1, -1}},
-    {Instruction::kcsrrsi,   {0b1110011, -1, 0b110, -1, -1, -1}},
-    {Instruction::kcsrrci,   {0b1110011, -1, 0b111, -1, -1, -1}},
-
-
-    {Instruction::kflw,      {0b0000111, -1, 0b010, -1, -1, -1}},
-    {Instruction::kfsw,      {0b0100111, -1, 0b010, -1, -1, -1}},
-    {Instruction::kfld,      {0b0000111, -1, 0b011, -1, -1, -1}},
-    {Instruction::kfsd,      {0b0100111, -1, 0b011, -1, -1, -1}},
-
-
-
-
-    {Instruction::klui,      {0b0110111, -1, -1, -1, -1, -1}},
-    {Instruction::kauipc,    {0b0010111, -1, -1, -1, -1, -1}},
-    
-    {Instruction::kjal,      {0b1101111, -1, -1, -1, -1, -1}},
-
-
-
-
-
-    {Instruction::kfadd_s,   {0b1010011, -1, -1, -1, -1, 0b0000000}},
-    {Instruction::kfsub_s,   {0b1010011, -1, -1, -1, -1, 0b0000100}},
-    {Instruction::kfmul_s,   {0b1010011, -1, -1, -1, -1, 0b0001000}},
-    {Instruction::kfdiv_s,   {0b1010011, -1, -1, -1, -1, 0b0001100}},
-
-    {Instruction::kfadd_d,   {0b1010011, -1, -1, -1, -1, 0b0000001}},
-    {Instruction::kfsub_d,   {0b1010011, -1, -1, -1, -1, 0b0000101}},
-    {Instruction::kfmul_d,   {0b1010011, -1, -1, -1, -1, 0b0001001}},
-    {Instruction::kfdiv_d,   {0b1010011, -1, -1, -1, -1, 0b0001101}},
-
-
-    {Instruction::kfsqrt_s,  {0b1010011, -1, -1, 0b00000, -1, 0b0101100}},
+    {Instruction::kfsqrt_s, {0b1010011, -1, -1, 0b00000, -1, 0b0101100}},
 
     {Instruction::kfcvt_w_s, {0b1010011, -1, -1, 0b00000, -1, 0b1100000}},
-    {Instruction::kfcvt_wu_s,{0b1010011, -1, -1, 0b00001, -1, 0b1100000}},
+    {Instruction::kfcvt_wu_s, {0b1010011, -1, -1, 0b00001, -1, 0b1100000}},
     {Instruction::kfcvt_l_s, {0b1010011, -1, -1, 0b00010, -1, 0b1100000}},
-    {Instruction::kfcvt_lu_s,{0b1010011, -1, -1, 0b00011, -1, 0b1100000}},
+    {Instruction::kfcvt_lu_s, {0b1010011, -1, -1, 0b00011, -1, 0b1100000}},
 
     {Instruction::kfcvt_s_w, {0b1010011, -1, -1, 0b00000, -1, 0b1101000}},
-    {Instruction::kfcvt_s_wu,{0b1010011, -1, -1, 0b00001, -1, 0b1101000}},
+    {Instruction::kfcvt_s_wu, {0b1010011, -1, -1, 0b00001, -1, 0b1101000}},
     {Instruction::kfcvt_s_l, {0b1010011, -1, -1, 0b00010, -1, 0b1101000}},
-    {Instruction::kfcvt_s_lu,{0b1010011, -1, -1, 0b00011, -1, 0b1101000}},
+    {Instruction::kfcvt_s_lu, {0b1010011, -1, -1, 0b00011, -1, 0b1101000}},
 
-    {Instruction::kfsqrt_d,  {0b1010011, -1, -1, 0b00000, -1, 0b0101101}},
+    {Instruction::kfsqrt_d, {0b1010011, -1, -1, 0b00000, -1, 0b0101101}},
 
     {Instruction::kfcvt_w_d, {0b1010011, -1, -1, 0b00000, -1, 0b1100001}},
-    {Instruction::kfcvt_wu_d,{0b1010011, -1, -1, 0b00001, -1, 0b1100001}},
+    {Instruction::kfcvt_wu_d, {0b1010011, -1, -1, 0b00001, -1, 0b1100001}},
     {Instruction::kfcvt_l_d, {0b1010011, -1, -1, 0b00010, -1, 0b1100001}},
-    {Instruction::kfcvt_lu_d,{0b1010011, -1, -1, 0b00011, -1, 0b1100001}},
+    {Instruction::kfcvt_lu_d, {0b1010011, -1, -1, 0b00011, -1, 0b1100001}},
 
     {Instruction::kfcvt_d_w, {0b1010011, -1, -1, 0b00000, -1, 0b1101001}},
-    {Instruction::kfcvt_d_wu,{0b1010011, -1, -1, 0b00001, -1, 0b1101001}},
+    {Instruction::kfcvt_d_wu, {0b1010011, -1, -1, 0b00001, -1, 0b1101001}},
     {Instruction::kfcvt_d_l, {0b1010011, -1, -1, 0b00010, -1, 0b1101001}},
-    {Instruction::kfcvt_d_lu,{0b1010011, -1, -1, 0b00011, -1, 0b1101001}},
+    {Instruction::kfcvt_d_lu, {0b1010011, -1, -1, 0b00011, -1, 0b1101001}},
 
     {Instruction::kfcvt_s_d, {0b1010011, -1, -1, 0b00001, -1, 0b0100000}},
     {Instruction::kfcvt_d_s, {0b1010011, -1, -1, 0b00000, -1, 0b0100001}},
 
-
-    {Instruction::kfmv_x_w,  {0b1010011, -1, 0b000, 0b00000, -1, 0b1110000}},
-    {Instruction::kfmv_x_d,  {0b1010011, -1, 0b000, 0b00000, -1, 0b1110001}},
-    {Instruction::kfmv_w_x,  {0b1010011, -1, 0b000, 0b00000, -1, 0b1111000}},
-    {Instruction::kfmv_d_x,  {0b1010011, -1, 0b000, 0b00000, -1, 0b1111001}},
+    {Instruction::kfmv_x_w, {0b1010011, -1, 0b000, 0b00000, -1, 0b1110000}},
+    {Instruction::kfmv_x_d, {0b1010011, -1, 0b000, 0b00000, -1, 0b1110001}},
+    {Instruction::kfmv_w_x, {0b1010011, -1, 0b000, 0b00000, -1, 0b1111000}},
+    {Instruction::kfmv_d_x, {0b1010011, -1, 0b000, 0b00000, -1, 0b1111001}},
     {Instruction::kfclass_s, {0b1010011, -1, 0b001, 0b00000, -1, 0b1110000}},
     {Instruction::kfclass_d, {0b1010011, -1, 0b001, 0b00000, -1, 0b1110001}},
 
-    
-    {Instruction::kfmadd_s,  {0b1000011, 0b00, -1, -1, -1, -1}},
-    {Instruction::kfmsub_s,  {0b1000111, 0b00, -1, -1, -1, -1}},
+    {Instruction::kfmadd_s, {0b1000011, 0b00, -1, -1, -1, -1}},
+    {Instruction::kfmsub_s, {0b1000111, 0b00, -1, -1, -1, -1}},
     {Instruction::kfnmsub_s, {0b1001011, 0b00, -1, -1, -1, -1}},
     {Instruction::kfnmadd_s, {0b1001111, 0b00, -1, -1, -1, -1}},
 
-    {Instruction::kfmadd_d,  {0b1000011, 0b01, -1, -1, -1, -1}},
-    {Instruction::kfmsub_d,  {0b1000111, 0b01, -1, -1, -1, -1}},
+    {Instruction::kfmadd_d, {0b1000011, 0b01, -1, -1, -1, -1}},
+    {Instruction::kfmsub_d, {0b1000111, 0b01, -1, -1, -1, -1}},
     {Instruction::kfnmsub_d, {0b1001011, 0b01, -1, -1, -1, -1}},
     {Instruction::kfnmadd_d, {0b1001111, 0b01, -1, -1, -1, -1}},
-
-
-
 
 };
 
@@ -368,7 +348,6 @@ std::unordered_map<std::string, Instruction> instruction_string_map = {
 
 };
 
-
 static const std::unordered_set<std::string> valid_instructions = {
     "add", "sub", "and", "or", "xor", "sll", "srl", "sra", "slt", "sltu",
     "addw", "subw", "sllw", "srlw", "sraw",
@@ -416,16 +395,40 @@ static const std::unordered_set<std::string> valid_instructions = {
 
 static const std::unordered_set<std::string> RTypeInstructions = {
     // Base RV32I
-    "add", "sub", "and", "or", "xor", "sll", "srl", "sra", "slt", "sltu",
+    "add",
+    "sub",
+    "and",
+    "or",
+    "xor",
+    "sll",
+    "srl",
+    "sra",
+    "slt",
+    "sltu",
 
     // RV64
-    "addw", "subw", "sllw", "srlw", "sraw",
+    "addw",
+    "subw",
+    "sllw",
+    "srlw",
+    "sraw",
 
     // M Extension
-    "mul", "mulh", "mulhsu", "mulhu", "div", "divu", "rem", "remu",
+    "mul",
+    "mulh",
+    "mulhsu",
+    "mulhu",
+    "div",
+    "divu",
+    "rem",
+    "remu",
 
     // M Extension RV64
-    "mulw", "divw", "divuw", "remw", "remuw",
+    "mulw",
+    "divw",
+    "divuw",
+    "remw",
+    "remuw",
 
 };
 
@@ -433,159 +436,288 @@ static const std::unordered_set<std::string> ITypeInstructions = {
     "addi", "xori", "ori", "andi", "slli", "srli", "srai", "slti", "sltiu",
     "addiw", "slliw", "srliw", "sraiw",
     "lb", "lh", "lw", "ld", "lbu", "lhu", "lwu",
-    "jalr"
-};
+    "jalr"};
 
 static const std::unordered_set<std::string> I1TypeInstructions = {
     "addi", "xori", "ori", "andi", "sltiu", "slti",
     "addiw",
     "lb", "lh", "lw", "ld", "lbu", "lhu", "lwu",
-    "jalr"
-};
+    "jalr"};
 
 static const std::unordered_set<std::string> I2TypeInstructions = {
     "slli", "srli", "srai",
-    "slliw", "srliw", "sraiw"
-};
+    "slliw", "srliw", "sraiw"};
 
 static const std::unordered_set<std::string> I3TypeInstructions = {
-    "ecall", "ebreak"
-};
+    "ecall", "ebreak"};
 
 static const std::unordered_set<std::string> STypeInstructions = {
-    "sb", "sh", "sw", "sd"
-};
+    "sb", "sh", "sw", "sd"};
 
 static const std::unordered_set<std::string> BTypeInstructions = {
-    "beq", "bne", "blt", "bge", "bltu", "bgeu"
-};
+    "beq", "bne", "blt", "bge", "bltu", "bgeu"};
 
 static const std::unordered_set<std::string> UTypeInstructions = {
-    "lui", "auipc"
-};
+    "lui", "auipc"};
 
 static const std::unordered_set<std::string> JTypeInstructions = {
-    "jal"
-};
+    "jal"};
 
 static const std::unordered_set<std::string> PseudoInstructions = {
-    "la", "nop", "li", "mv", "not", "neg", "negw",
-    "sext.w", "seqz", "snez", "sltz", "sgtz",
-    "beqz", "bnez", "blez", "bgez", "bltz", "bgtz",
-    "bgt", "ble", "bgtu", "bleu",
-    "j", "jr", "ret", "call", "tail", "fence", "fence_i",
+    "la",
+    "nop",
+    "li",
+    "mv",
+    "not",
+    "neg",
+    "negw",
+    "sext.w",
+    "seqz",
+    "snez",
+    "sltz",
+    "sgtz",
+    "beqz",
+    "bnez",
+    "blez",
+    "bgez",
+    "bltz",
+    "bgtz",
+    "bgt",
+    "ble",
+    "bgtu",
+    "bleu",
+    "j",
+    "jr",
+    "ret",
+    "call",
+    "tail",
+    "fence",
+    "fence_i",
 };
 
 static const std::unordered_set<std::string> BaseExtensionInstructions = {
-    "add", "sub", "and", "or", "xor", "sll", "srl", "sra", "slt", "sltu",
-    "addw", "subw", "sllw", "srlw", "sraw",
-    "addi", "xori", "ori", "andi", "slli", "srli", "srai", "slti", "sltiu",
-    "addiw", "slliw", "srliw", "sraiw",
-    "lb", "lh", "lw", "ld", "lbu", "lhu", "lwu",
-    "sb", "sh", "sw", "sd",
-    "beq", "bne", "blt", "bge", "bltu", "bgeu",
-    "lui", "auipc",
-    "jal", "jalr",
-    "ecall", "ebreak",
+    "add",
+    "sub",
+    "and",
+    "or",
+    "xor",
+    "sll",
+    "srl",
+    "sra",
+    "slt",
+    "sltu",
+    "addw",
+    "subw",
+    "sllw",
+    "srlw",
+    "sraw",
+    "addi",
+    "xori",
+    "ori",
+    "andi",
+    "slli",
+    "srli",
+    "srai",
+    "slti",
+    "sltiu",
+    "addiw",
+    "slliw",
+    "srliw",
+    "sraiw",
+    "lb",
+    "lh",
+    "lw",
+    "ld",
+    "lbu",
+    "lhu",
+    "lwu",
+    "sb",
+    "sh",
+    "sw",
+    "sd",
+    "beq",
+    "bne",
+    "blt",
+    "bge",
+    "bltu",
+    "bgeu",
+    "lui",
+    "auipc",
+    "jal",
+    "jalr",
+    "ecall",
+    "ebreak",
 };
 
 static const std::unordered_set<std::string> CSRRInstructions = {
-    "csrrw", "csrrs", "csrrc"
-};
+    "csrrw", "csrrs", "csrrc"};
 
 static const std::unordered_set<std::string> CSRIInstructions = {
-    "csrrwi", "csrrsi", "csrrci"
-};
+    "csrrwi", "csrrsi", "csrrci"};
 
 static const std::unordered_set<std::string> CSRInstructions = {
-    "csrrw", "csrrs", "csrrc", "csrrwi", "csrrsi", "csrrci"
-};
+    "csrrw", "csrrs", "csrrc", "csrrwi", "csrrsi", "csrrci"};
 
 static const std::unordered_set<std::string> MExtensionInstructions = {
     "mul", "mulh", "mulhsu", "mulhu", "div", "divu", "rem", "remu",
-    "mulw", "divw", "divuw", "remw", "remuw"
-};
+    "mulw", "divw", "divuw", "remw", "remuw"};
 
 //====================================================================================
 static const std::unordered_set<std::string> FDExtensionRTypeInstructions = {
-    "fsgnj.s", "fsgnjn.s", "fsgnjx.s", "fmin.s", "fmax.s",
-    "feq.s", "flt.s", "fle.s",
-    "fsgnj.d", "fsgnjn.d", "fsgnjx.d", "fmin.d", "fmax.d",
-    "feq.d", "flt.d", "fle.d",
+    "fsgnj.s",
+    "fsgnjn.s",
+    "fsgnjx.s",
+    "fmin.s",
+    "fmax.s",
+    "feq.s",
+    "flt.s",
+    "fle.s",
+    "fsgnj.d",
+    "fsgnjn.d",
+    "fsgnjx.d",
+    "fmin.d",
+    "fmax.d",
+    "feq.d",
+    "flt.d",
+    "fle.d",
 };
 
 static const std::unordered_set<std::string> FDExtensionR1TypeInstructions = {
-    "fadd.s", "fsub.s", "fmul.s", "fdiv.s",
-    "fadd.d", "fsub.d", "fmul.d", "fdiv.d",
+    "fadd.s",
+    "fsub.s",
+    "fmul.s",
+    "fdiv.s",
+    "fadd.d",
+    "fsub.d",
+    "fmul.d",
+    "fdiv.d",
 };
 
 static const std::unordered_set<std::string> FDExtensionR2TypeInstructions = {
     "fsqrt.s",
-    "fcvt.w.s", "fcvt.wu.s",
-    "fcvt.s.w", "fcvt.s.wu",
-    "fcvt.l.s", "fcvt.lu.s",
-    "fcvt.s.l", "fcvt.s.lu",
+    "fcvt.w.s",
+    "fcvt.wu.s",
+    "fcvt.s.w",
+    "fcvt.s.wu",
+    "fcvt.l.s",
+    "fcvt.lu.s",
+    "fcvt.s.l",
+    "fcvt.s.lu",
     "fsqrt.d",
-    "fcvt.s.d", "fcvt.d.s",
-    "fcvt.w.d", "fcvt.wu.d",
-    "fcvt.d.w", "fcvt.d.wu",
+    "fcvt.s.d",
+    "fcvt.d.s",
+    "fcvt.w.d",
+    "fcvt.wu.d",
+    "fcvt.d.w",
+    "fcvt.d.wu",
 
-    "fcvt.l.d", "fcvt.lu.d",
-    "fcvt.d.l", "fcvt.d.lu",
+    "fcvt.l.d",
+    "fcvt.lu.d",
+    "fcvt.d.l",
+    "fcvt.d.lu",
 };
 
 static const std::unordered_set<std::string> FDExtensionR3TypeInstructions = {
-    "fmv.x.w", "fmv.w.x",
+    "fmv.x.w",
+    "fmv.w.x",
     "fclass.s"
     "fclass.d",
-    "fmv.x.d", "fmv.d.x",
+    "fmv.x.d",
+    "fmv.d.x",
 };
 
 static const std::unordered_set<std::string> FDExtensionR4TypeInstructions = {
-    "fmadd.s", "fmsub.s", "fnmsub.s", "fnmadd.s",
-    "fmadd.d", "fmsub.d", "fnmsub.d", "fnmadd.d",
+    "fmadd.s",
+    "fmsub.s",
+    "fnmsub.s",
+    "fnmadd.s",
+    "fmadd.d",
+    "fmsub.d",
+    "fnmsub.d",
+    "fnmadd.d",
 };
 
 static const std::unordered_set<std::string> FDExtensionITypeInstructions = {
-    "flw", "fld"
-};
+    "flw", "fld"};
 
 static const std::unordered_set<std::string> FDExtensionSTypeInstructions = {
-    "fsw", "fsd"
-};
+    "fsw", "fsd"};
 
 static const std::unordered_set<std::string> FExtensionInstructions = {
-    "flw", "fsw", "fmadd.s", "fmsub.d", "fnmsub.s", "fnmadd.s",
-    "fadd.s", "fsub.s", "fmul.s", "fdiv.s", "fsqrt.s",
-    "fsgnj.s", "fsgnjn.s", "fsgnjx.s",
-    "fmin.s", "fmax.s",
-    "fcvt.w.s", "fcvt.wu.s", "fmv.x.w",
-    "feq.s", "flt.s", "fle.s",
-    "fclass.s", "fcvt.s.w", "fcvt.s.wu", "fmv.w.x",
-    "fcvt.l.s", "fcvt.lu.s", "fcvt.s.l", "fcvt.s.lu",
+    "flw",
+    "fsw",
+    "fmadd.s",
+    "fmsub.d",
+    "fnmsub.s",
+    "fnmadd.s",
+    "fadd.s",
+    "fsub.s",
+    "fmul.s",
+    "fdiv.s",
+    "fsqrt.s",
+    "fsgnj.s",
+    "fsgnjn.s",
+    "fsgnjx.s",
+    "fmin.s",
+    "fmax.s",
+    "fcvt.w.s",
+    "fcvt.wu.s",
+    "fmv.x.w",
+    "feq.s",
+    "flt.s",
+    "fle.s",
+    "fclass.s",
+    "fcvt.s.w",
+    "fcvt.s.wu",
+    "fmv.w.x",
+    "fcvt.l.s",
+    "fcvt.lu.s",
+    "fcvt.s.l",
+    "fcvt.s.lu",
 };
 
 static const std::unordered_set<std::string> DExtensionInstructions = {
-    "fld", "fsd", "fmadd.d", "fmsub.d", "fnmsub.d", "fnmadd.d",
-    "fadd.d", "fsub.d", "fmul.d", "fdiv.d", "fsqrt.d",
-    "fsgnj.d", "fsgnjn.d", "fsgnjx.d",
-    "fmin.d", "fmax.d",
-    "fcvt.s.d", "fcvt.d.s",
-    "feq.d", "flt.d", "fle.d",
-    "fclass.d", "fcvt.w.d", "fcvt.wu.d", "fmv.x.d",
-    "fcvt.l.d", "fcvt.lu.d", "fcvt.d.l", "fcvt.d.lu",
+    "fld",
+    "fsd",
+    "fmadd.d",
+    "fmsub.d",
+    "fnmsub.d",
+    "fnmadd.d",
+    "fadd.d",
+    "fsub.d",
+    "fmul.d",
+    "fdiv.d",
+    "fsqrt.d",
+    "fsgnj.d",
+    "fsgnjn.d",
+    "fsgnjx.d",
+    "fmin.d",
+    "fmax.d",
+    "fcvt.s.d",
+    "fcvt.d.s",
+    "feq.d",
+    "flt.d",
+    "fle.d",
+    "fclass.d",
+    "fcvt.w.d",
+    "fcvt.wu.d",
+    "fmv.x.d",
+    "fcvt.l.d",
+    "fcvt.lu.d",
+    "fcvt.d.l",
+    "fcvt.d.lu",
 };
 
 std::unordered_map<std::string, RTypeInstructionEncoding> R_type_instruction_encoding_map = {
-    {"add", {0b0110011, 0b000, 0b0000000}}, // O_GPR_C_GPR_C_GPR
-    {"sub", {0b0110011, 0b000, 0b0100000}}, // O_GPR_C_GPR_C_GPR
-    {"xor", {0b0110011, 0b100, 0b0000000}}, // O_GPR_C_GPR_C_GPR
-    {"or", {0b0110011, 0b110, 0b0000000}}, // O_GPR_C_GPR_C_GPR
-    {"and", {0b0110011, 0b111, 0b0000000}}, // O_GPR_C_GPR_C_GPR
-    {"sll", {0b0110011, 0b001, 0b0000000}}, // O_GPR_C_GPR_C_GPR
-    {"srl", {0b0110011, 0b101, 0b0000000}}, // O_GPR_C_GPR_C_GPR
-    {"sra", {0b0110011, 0b101, 0b0100000}}, // O_GPR_C_GPR_C_GPR
-    {"slt", {0b0110011, 0b010, 0b0000000}}, // O_GPR_C_GPR_C_GPR
+    {"add", {0b0110011, 0b000, 0b0000000}},  // O_GPR_C_GPR_C_GPR
+    {"sub", {0b0110011, 0b000, 0b0100000}},  // O_GPR_C_GPR_C_GPR
+    {"xor", {0b0110011, 0b100, 0b0000000}},  // O_GPR_C_GPR_C_GPR
+    {"or", {0b0110011, 0b110, 0b0000000}},   // O_GPR_C_GPR_C_GPR
+    {"and", {0b0110011, 0b111, 0b0000000}},  // O_GPR_C_GPR_C_GPR
+    {"sll", {0b0110011, 0b001, 0b0000000}},  // O_GPR_C_GPR_C_GPR
+    {"srl", {0b0110011, 0b101, 0b0000000}},  // O_GPR_C_GPR_C_GPR
+    {"sra", {0b0110011, 0b101, 0b0100000}},  // O_GPR_C_GPR_C_GPR
+    {"slt", {0b0110011, 0b010, 0b0000000}},  // O_GPR_C_GPR_C_GPR
     {"sltu", {0b0110011, 0b011, 0b0000000}}, // O_GPR_C_GPR_C_GPR
 
     {"addw", {0b0111011, 0b000, 0b0000000}}, // O_GPR_C_GPR_C_GPR
@@ -594,38 +726,38 @@ std::unordered_map<std::string, RTypeInstructionEncoding> R_type_instruction_enc
     {"srlw", {0b0111011, 0b101, 0b0000000}}, // O_GPR_C_GPR_C_GPR
     {"sraw", {0b0111011, 0b101, 0b0100000}}, // O_GPR_C_GPR_C_GPR
 
-//==RV64M======================================================================================
-    {"mul", {0b0110011, 0b000, 0b0000001}}, // O_GPR_C_GPR_C_GPR
-    {"mulh", {0b0110011, 0b001, 0b0000001}}, // O_GPR_C_GPR_C_GPR
+    //==RV64M======================================================================================
+    {"mul", {0b0110011, 0b000, 0b0000001}},    // O_GPR_C_GPR_C_GPR
+    {"mulh", {0b0110011, 0b001, 0b0000001}},   // O_GPR_C_GPR_C_GPR
     {"mulhsu", {0b0110011, 0b010, 0b0000001}}, // O_GPR_C_GPR_C_GPR
-    {"mulhu", {0b0110011, 0b011, 0b0000001}}, // O_GPR_C_GPR_C_GPR
-    {"div", {0b0110011, 0b100, 0b0000001}}, // O_GPR_C_GPR_C_GPR
-    {"divu", {0b0110011, 0b101, 0b0000001}}, // O_GPR_C_GPR_C_GPR
-    {"rem", {0b0110011, 0b110, 0b0000001}}, // O_GPR_C_GPR_C_GPR
-    {"remu", {0b0110011, 0b111, 0b0000001}}, // O_GPR_C_GPR_C_GPR
+    {"mulhu", {0b0110011, 0b011, 0b0000001}},  // O_GPR_C_GPR_C_GPR
+    {"div", {0b0110011, 0b100, 0b0000001}},    // O_GPR_C_GPR_C_GPR
+    {"divu", {0b0110011, 0b101, 0b0000001}},   // O_GPR_C_GPR_C_GPR
+    {"rem", {0b0110011, 0b110, 0b0000001}},    // O_GPR_C_GPR_C_GPR
+    {"remu", {0b0110011, 0b111, 0b0000001}},   // O_GPR_C_GPR_C_GPR
 
-    {"mulw", {0b0111011, 0b000, 0b0000001}}, // O_GPR_C_GPR_C_GPR
-    {"divw", {0b0111011, 0b100, 0b0000001}}, // O_GPR_C_GPR_C_GPR
+    {"mulw", {0b0111011, 0b000, 0b0000001}},  // O_GPR_C_GPR_C_GPR
+    {"divw", {0b0111011, 0b100, 0b0000001}},  // O_GPR_C_GPR_C_GPR
     {"divuw", {0b0111011, 0b101, 0b0000001}}, // O_GPR_C_GPR_C_GPR
-    {"remw", {0b0111011, 0b110, 0b0000001}}, // O_GPR_C_GPR_C_GPR
+    {"remw", {0b0111011, 0b110, 0b0000001}},  // O_GPR_C_GPR_C_GPR
     {"remuw", {0b0111011, 0b111, 0b0000001}}, // O_GPR_C_GPR_C_GPR
 
 };
 
 std::unordered_map<std::string, I1TypeInstructionEncoding> I1_type_instruction_encoding_map = {
-    {"addi", {0b0010011, 0b000}}, // O_GPR_C_GPR_C_I
-    {"xori", {0b0010011, 0b100}}, // O_GPR_C_GPR_C_I
-    {"ori", {0b0010011, 0b110}}, // O_GPR_C_GPR_C_I
-    {"andi", {0b0010011, 0b111}}, // O_GPR_C_GPR_C_I
+    {"addi", {0b0010011, 0b000}},  // O_GPR_C_GPR_C_I
+    {"xori", {0b0010011, 0b100}},  // O_GPR_C_GPR_C_I
+    {"ori", {0b0010011, 0b110}},   // O_GPR_C_GPR_C_I
+    {"andi", {0b0010011, 0b111}},  // O_GPR_C_GPR_C_I
     {"sltiu", {0b0010011, 0b011}}, // O_GPR_C_GPR_C_I
-    {"slti", {0b0010011, 0b010}}, // O_GPR_C_GPR_C_I
+    {"slti", {0b0010011, 0b010}},  // O_GPR_C_GPR_C_I
 
     {"addiw", {0b0011011, 0b000}}, // O_GPR_C_GPR_C_I
 
-    {"lb", {0b0000011, 0b000}}, // O_GPR_C_I_LP_GPR_RP, O_GPR_C_DL
-    {"lh", {0b0000011, 0b001}}, // O_GPR_C_I_LP_GPR_RP, O_GPR_C_DL
-    {"lw", {0b0000011, 0b010}}, // O_GPR_C_I_LP_GPR_RP, O_GPR_C_DL
-    {"ld", {0b0000011, 0b011}}, // O_GPR_C_I_LP_GPR_RP, O_GPR_C_DL
+    {"lb", {0b0000011, 0b000}},  // O_GPR_C_I_LP_GPR_RP, O_GPR_C_DL
+    {"lh", {0b0000011, 0b001}},  // O_GPR_C_I_LP_GPR_RP, O_GPR_C_DL
+    {"lw", {0b0000011, 0b010}},  // O_GPR_C_I_LP_GPR_RP, O_GPR_C_DL
+    {"ld", {0b0000011, 0b011}},  // O_GPR_C_I_LP_GPR_RP, O_GPR_C_DL
     {"lbu", {0b0000011, 0b100}}, // O_GPR_C_I_LP_GPR_RP,
     {"lhu", {0b0000011, 0b101}}, // O_GPR_C_I_LP_GPR_RP,
     {"lwu", {0b0000011, 0b110}}, // O_GPR_C_I_LP_GPR_RP,
@@ -634,7 +766,7 @@ std::unordered_map<std::string, I1TypeInstructionEncoding> I1_type_instruction_e
 };
 
 std::unordered_map<std::string, I3TypeInstructionEncoding> I3_type_instruction_encoding_map = {
-    {"ecall", {0b1110011, 0b000, 0b0000000}}, // O
+    {"ecall", {0b1110011, 0b000, 0b0000000}},  // O
     {"ebreak", {0b1110011, 0b001, 0b0000000}}, // O
 };
 
@@ -656,16 +788,16 @@ std::unordered_map<std::string, STypeInstructionEncoding> S_type_instruction_enc
 };
 
 std::unordered_map<std::string, BTypeInstructionEncoding> B_type_instruction_encoding_map = {
-    {"beq", {0b1100011, 0b000}}, // O_GPR_C_GPR_C_I, O_GPR_C_GPR_C_IL
-    {"bne", {0b1100011, 0b001}}, // O_GPR_C_GPR_C_I, O_GPR_C_GPR_C_IL
-    {"blt", {0b1100011, 0b100}}, // O_GPR_C_GPR_C_I, O_GPR_C_GPR_C_IL
-    {"bge", {0b1100011, 0b101}}, // O_GPR_C_GPR_C_I, O_GPR_C_GPR_C_IL
+    {"beq", {0b1100011, 0b000}},  // O_GPR_C_GPR_C_I, O_GPR_C_GPR_C_IL
+    {"bne", {0b1100011, 0b001}},  // O_GPR_C_GPR_C_I, O_GPR_C_GPR_C_IL
+    {"blt", {0b1100011, 0b100}},  // O_GPR_C_GPR_C_I, O_GPR_C_GPR_C_IL
+    {"bge", {0b1100011, 0b101}},  // O_GPR_C_GPR_C_I, O_GPR_C_GPR_C_IL
     {"bltu", {0b1100011, 0b110}}, // O_GPR_C_GPR_C_I, O_GPR_C_GPR_C_IL
     {"bgeu", {0b1100011, 0b111}}, // O_GPR_C_GPR_C_I, O_GPR_C_GPR_C_IL
 };
 
 std::unordered_map<std::string, UTypeInstructionEncoding> U_type_instruction_encoding_map = {
-    {"lui", {0b0110111}}, // O_GR_C_I
+    {"lui", {0b0110111}},   // O_GR_C_I
     {"auipc", {0b0010111}}, // O_GR_C_I
 };
 
@@ -686,7 +818,7 @@ std::unordered_map<std::string, CSR_ITypeInstructionEncoding> CSR_I_type_instruc
 };
 
 std::unordered_map<std::string, FDRTypeInstructionEncoding> F_D_R_type_instruction_encoding_map = {
-    {"fsgnj.s", {0b1010011, 0b000, 0b0010000}}, // O_FPR_C_FPR_C_FPR
+    {"fsgnj.s", {0b1010011, 0b000, 0b0010000}},  // O_FPR_C_FPR_C_FPR
     {"fsgnjn.s", {0b1010011, 0b001, 0b0010000}}, // O_FPR_C_FPR_C_FPR
     {"fsgnjx.s", {0b1010011, 0b010, 0b0010000}}, // O_FPR_C_FPR_C_FPR
 
@@ -701,7 +833,7 @@ std::unordered_map<std::string, FDRTypeInstructionEncoding> F_D_R_type_instructi
     {"flt.d", {0b1010011, 0b001, 0b1010001}}, // O_GPR_C_FPR_C_FPR
     {"fle.d", {0b1010011, 0b000, 0b1010001}}, // O_GPR_C_FPR_C_FPR
 
-    {"fsgnj.d", {0b1010011, 0b000, 0b0010001}}, // O_FPR_C_FPR_C_FPR
+    {"fsgnj.d", {0b1010011, 0b000, 0b0010001}},  // O_FPR_C_FPR_C_FPR
     {"fsgnjn.d", {0b1010011, 0b001, 0b0010001}}, // O_FPR_C_FPR_C_FPR
     {"fsgnjx.d", {0b1010011, 0b010, 0b0010001}}, // O_FPR_C_FPR_C_FPR
 
@@ -724,29 +856,27 @@ std::unordered_map<std::string, FDR1TypeInstructionEncoding> F_D_R1_type_instruc
 std::unordered_map<std::string, FDR2TypeInstructionEncoding> F_D_R2_type_instruction_encoding_map = {
     {"fsqrt.s", {0b1010011, 0b00000, 0b0101100}}, // O_FPR_C_FPR
 
-    {"fcvt.w.s", {0b1010011, 0b00000, 0b1100000}}, // O_GPR_C_FPR // affect all
+    {"fcvt.w.s", {0b1010011, 0b00000, 0b1100000}},  // O_GPR_C_FPR // affect all
     {"fcvt.wu.s", {0b1010011, 0b00001, 0b1100000}}, // O_GPR_C_FPR // affect all
-    {"fcvt.l.s", {0b1010011, 0b00010, 0b1100000}}, // O_GPR_C_FPR // affect all
+    {"fcvt.l.s", {0b1010011, 0b00010, 0b1100000}},  // O_GPR_C_FPR // affect all
     {"fcvt.lu.s", {0b1010011, 0b00011, 0b1100000}}, // O_GPR_C_FPR // affect all
 
-    {"fcvt.s.w", {0b1010011, 0b00000, 0b1101000}}, // O_FPR_C_GPR
+    {"fcvt.s.w", {0b1010011, 0b00000, 0b1101000}},  // O_FPR_C_GPR
     {"fcvt.s.wu", {0b1010011, 0b00001, 0b1101000}}, // O_FPR_C_GPR
-    {"fcvt.s.l", {0b1010011, 0b00010, 0b1101000}}, // O_FPR_C_GPR
+    {"fcvt.s.l", {0b1010011, 0b00010, 0b1101000}},  // O_FPR_C_GPR
     {"fcvt.s.lu", {0b1010011, 0b00011, 0b1101000}}, // O_FPR_C_GPR
-
 
     {"fsqrt.d", {0b1010011, 0b00000, 0b0101101}}, // O_FPR_C_FPR
 
-    {"fcvt.w.d", {0b1010011, 0b00000, 0b1100001}}, // O_GPR_C_FPR
+    {"fcvt.w.d", {0b1010011, 0b00000, 0b1100001}},  // O_GPR_C_FPR
     {"fcvt.wu.d", {0b1010011, 0b00001, 0b1100001}}, // O_GPR_C_FPR
-    {"fcvt.l.d", {0b1010011, 0b00010, 0b1100001}}, // O_GPR_C_FPR
+    {"fcvt.l.d", {0b1010011, 0b00010, 0b1100001}},  // O_GPR_C_FPR
     {"fcvt.lu.d", {0b1010011, 0b00011, 0b1100001}}, // O_GPR_C_FPR
 
-    {"fcvt.d.w", {0b1010011, 0b00000, 0b1101001}}, // O_FPR_C_GPR
+    {"fcvt.d.w", {0b1010011, 0b00000, 0b1101001}},  // O_FPR_C_GPR
     {"fcvt.d.wu", {0b1010011, 0b00001, 0b1101001}}, // O_FPR_C_GPR
-    {"fcvt.d.l", {0b1010011, 0b00010, 0b1101001}}, // O_FPR_C_GPR
+    {"fcvt.d.l", {0b1010011, 0b00010, 0b1101001}},  // O_FPR_C_GPR
     {"fcvt.d.lu", {0b1010011, 0b00011, 0b1101001}}, // O_FPR_C_GPR
-
 
     {"fcvt.s.d", {0b1010011, 0b00001, 0b0100000}}, // O_FPR_C_FPR
     {"fcvt.d.s", {0b1010011, 0b00000, 0b0100001}}, // O_FPR_C_FPR
@@ -754,23 +884,23 @@ std::unordered_map<std::string, FDR2TypeInstructionEncoding> F_D_R2_type_instruc
 };
 
 std::unordered_map<std::string, FDR3TypeInstructionEncoding> F_D_R3_type_instruction_encoding_map = {
-    {"fmv.w.x", {0b1010011, 0b000, 0b00000, 0b1111000}}, // O_FPR_C_GPR
-    {"fmv.x.w", {0b1010011, 0b000, 0b00000, 0b1110000}}, // O_GPR_C_FPR // affect all
+    {"fmv.w.x", {0b1010011, 0b000, 0b00000, 0b1111000}},  // O_FPR_C_GPR
+    {"fmv.x.w", {0b1010011, 0b000, 0b00000, 0b1110000}},  // O_GPR_C_FPR // affect all
     {"fclass.s", {0b1010011, 0b001, 0b00000, 0b1110000}}, // O_GPR_C_FPR // affect all
 
-    {"fmv.d.x", {0b1010011, 0b000, 0b00000, 0b1111001}}, // O_FPR_C_GPR
-    {"fmv.x.d", {0b1010011, 0b000, 0b00000, 0b1110001}}, // O_GPR_C_FPR
+    {"fmv.d.x", {0b1010011, 0b000, 0b00000, 0b1111001}},  // O_FPR_C_GPR
+    {"fmv.x.d", {0b1010011, 0b000, 0b00000, 0b1110001}},  // O_GPR_C_FPR
     {"fclass.d", {0b1010011, 0b001, 0b00000, 0b1110001}}, // O_GPR_C_FPR
 };
 
 std::unordered_map<std::string, FDR4TypeInstructionEncoding> F_D_R4_type_instruction_encoding_map = {
-    {"fmadd.s", {0b1000011, 0b00}}, // O_FPR_C_FPR_C_FPR_C_FPR
-    {"fmsub.s", {0b1000111, 0b00}}, // O_FPR_C_FPR_C_FPR_C_FPR
+    {"fmadd.s", {0b1000011, 0b00}},  // O_FPR_C_FPR_C_FPR_C_FPR
+    {"fmsub.s", {0b1000111, 0b00}},  // O_FPR_C_FPR_C_FPR_C_FPR
     {"fnmsub.s", {0b1001011, 0b00}}, // O_FPR_C_FPR_C_FPR_C_FPR
     {"fnmadd.s", {0b1001111, 0b00}}, // O_FPR_C_FPR_C_FPR_C_FPR
 
-    {"fmadd.d", {0b1000011, 0b01}}, // O_FPR_C_FPR_C_FPR_C_FPR
-    {"fmsub.d", {0b1000111, 0b01}}, // O_FPR_C_FPR_C_FPR_C_FPR
+    {"fmadd.d", {0b1000011, 0b01}},  // O_FPR_C_FPR_C_FPR_C_FPR
+    {"fmsub.d", {0b1000111, 0b01}},  // O_FPR_C_FPR_C_FPR_C_FPR
     {"fnmsub.d", {0b1001011, 0b01}}, // O_FPR_C_FPR_C_FPR_C_FPR
     {"fnmadd.d", {0b1001111, 0b01}}, // O_FPR_C_FPR_C_FPR_C_FPR
 };
@@ -786,7 +916,7 @@ std::unordered_map<std::string, FDSTypeInstructionEncoding> F_D_S_type_instructi
 };
 
 /*
-   O_GPR_C_GPR_C_GPR,       ///< Opcode general-register , general-register , register
+    O_GPR_C_GPR_C_GPR,       ///< Opcode general-register , general-register , register
     O_GPR_C_GPR_C_I,        ///< Opcode general-register , general-register , immediate
     O_GPR_C_I,            ///< Opcode general-register , immediate
     O_GPR_C_GPR_C_IL,       ///< Opcode general-register , general-register , immediate , instruction_label
@@ -869,7 +999,7 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
     {"ecall", {SyntaxType::O}},
     {"ebreak", {SyntaxType::O}},
 
-///////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////
 
     {"csrrw", {SyntaxType::O_GPR_C_CSR_C_GPR}},
     {"csrrs", {SyntaxType::O_GPR_C_CSR_C_GPR}},
@@ -881,7 +1011,7 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
     {"fence", {SyntaxType::O}},
     {"fence_i", {SyntaxType::O}},
 
-///////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////
 
     {"nop", {SyntaxType::PSEUDO}},
     {"li", {SyntaxType::PSEUDO}},
@@ -913,7 +1043,7 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
     {"fence", {SyntaxType::PSEUDO}},
     {"fence_i", {SyntaxType::PSEUDO}},
 
-///////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////
     {"mul", {SyntaxType::O_GPR_C_GPR_C_GPR}},
     {"mulh", {SyntaxType::O_GPR_C_GPR_C_GPR}},
     {"mulhsu", {SyntaxType::O_GPR_C_GPR_C_GPR}},
@@ -929,7 +1059,7 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
     {"remw", {SyntaxType::O_GPR_C_GPR_C_GPR}},
     {"remuw", {SyntaxType::O_GPR_C_GPR_C_GPR}},
 
-///////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////
 
     {"flw", {SyntaxType::O_FPR_C_I_LP_GPR_RP}},
     {"fsw", {SyntaxType::O_FPR_C_I_LP_GPR_RP}},
@@ -961,18 +1091,17 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
     {"fmv.x.w", {SyntaxType::O_GPR_C_FPR}}, // x[n][0:31] to f[m][0:31], 32-bit floating-point value from an f (floating-point) register into an x (integer) register without conversion
     {"fmv.w.x", {SyntaxType::O_FPR_C_GPR}}, // f[n][0:31] to x[m][0:31],
 
-    {"fcvt.w.s", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_GPR_C_FPR_C_RM}}, // f32->int32
+    {"fcvt.w.s", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_GPR_C_FPR_C_RM}},  // f32->int32
     {"fcvt.wu.s", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_GPR_C_FPR_C_RM}}, // f32->uint32
-    {"fcvt.l.s", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_GPR_C_FPR_C_RM}}, // f32->int64
+    {"fcvt.l.s", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_GPR_C_FPR_C_RM}},  // f32->int64
     {"fcvt.lu.s", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_GPR_C_FPR_C_RM}}, // f32->uint64
 
-    {"fcvt.s.w", {SyntaxType::O_FPR_C_GPR, SyntaxType::O_FPR_C_GPR_C_RM}}, // int32->f32
+    {"fcvt.s.w", {SyntaxType::O_FPR_C_GPR, SyntaxType::O_FPR_C_GPR_C_RM}},  // int32->f32
     {"fcvt.s.wu", {SyntaxType::O_FPR_C_GPR, SyntaxType::O_FPR_C_GPR_C_RM}}, // uint32->f32
-    {"fcvt.s.l", {SyntaxType::O_FPR_C_GPR, SyntaxType::O_FPR_C_GPR_C_RM}}, // int64->f32
+    {"fcvt.s.l", {SyntaxType::O_FPR_C_GPR, SyntaxType::O_FPR_C_GPR_C_RM}},  // int64->f32
     {"fcvt.s.lu", {SyntaxType::O_FPR_C_GPR, SyntaxType::O_FPR_C_GPR_C_RM}}, // uint64->f32
 
-
-///////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////
 
     {"fld", {SyntaxType::O_FPR_C_I_LP_GPR_RP}},
     {"fsd", {SyntaxType::O_FPR_C_I_LP_GPR_RP}},
@@ -1001,14 +1130,14 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
 
     {"fclass.d", {SyntaxType::O_GPR_C_FPR}},
 
-    {"fcvt.w.d", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_FPR_C_GPR_C_RM}}, // f64->int32, sign extends
+    {"fcvt.w.d", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_FPR_C_GPR_C_RM}},  // f64->int32, sign extends
     {"fcvt.wu.d", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_FPR_C_GPR_C_RM}}, // f64->uint32, sign extends
-    {"fcvt.l.d", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_FPR_C_GPR_C_RM}}, // f64->int64
+    {"fcvt.l.d", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_FPR_C_GPR_C_RM}},  // f64->int64
     {"fcvt.lu.d", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_FPR_C_GPR_C_RM}}, // f64->uint64
 
-    {"fcvt.d.w", {SyntaxType::O_FPR_C_GPR, SyntaxType::O_GPR_C_FPR_C_RM}}, // int32->f64
+    {"fcvt.d.w", {SyntaxType::O_FPR_C_GPR, SyntaxType::O_GPR_C_FPR_C_RM}},  // int32->f64
     {"fcvt.d.wu", {SyntaxType::O_FPR_C_GPR, SyntaxType::O_GPR_C_FPR_C_RM}}, // uint32->f64
-    {"fcvt.d.l", {SyntaxType::O_FPR_C_GPR, SyntaxType::O_FPR_C_GPR_C_RM}}, // int64->f64
+    {"fcvt.d.l", {SyntaxType::O_FPR_C_GPR, SyntaxType::O_FPR_C_GPR_C_RM}},  // int64->f64
     {"fcvt.d.lu", {SyntaxType::O_FPR_C_GPR, SyntaxType::O_FPR_C_GPR_C_RM}}, // uint64->f64
 
     {"fcvt.s.d", {SyntaxType::O_FPR_C_FPR, SyntaxType::O_GPR_C_FPR_C_RM}}, // f64->f32
@@ -1019,151 +1148,190 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
 
 };
 
-bool isValidInstruction(const std::string &instruction) {
-  return valid_instructions.find(instruction)!=valid_instructions.end();
+bool isValidInstruction(const std::string &instruction)
+{
+  return valid_instructions.find(instruction) != valid_instructions.end();
 }
 
-bool isValidRTypeInstruction(const std::string &instruction) {
-  return RTypeInstructions.find(instruction)!=RTypeInstructions.end();
+bool isValidRTypeInstruction(const std::string &instruction)
+{
+  return RTypeInstructions.find(instruction) != RTypeInstructions.end();
 }
 
-bool isValidITypeInstruction(const std::string &instruction) {
-  return (I1TypeInstructions.find(instruction)!=I1TypeInstructions.end()) ||
-      (I2TypeInstructions.find(instruction)!=I2TypeInstructions.end()) ||
-      (I3TypeInstructions.find(instruction)!=I3TypeInstructions.end());
+bool isValidITypeInstruction(const std::string &instruction)
+{
+  return (I1TypeInstructions.find(instruction) != I1TypeInstructions.end()) ||
+          (I2TypeInstructions.find(instruction) != I2TypeInstructions.end()) ||
+          (I3TypeInstructions.find(instruction) != I3TypeInstructions.end());
 }
 
-bool isValidI1TypeInstruction(const std::string &instruction) {
-  return I1TypeInstructions.find(instruction)!=I1TypeInstructions.end();
+bool isValidI1TypeInstruction(const std::string &instruction)
+{
+  return I1TypeInstructions.find(instruction) != I1TypeInstructions.end();
 }
 
-bool isValidI2TypeInstruction(const std::string &instruction) {
-  return I2TypeInstructions.find(instruction)!=I2TypeInstructions.end();
+bool isValidI2TypeInstruction(const std::string &instruction)
+{
+  return I2TypeInstructions.find(instruction) != I2TypeInstructions.end();
 }
 
-bool isValidI3TypeInstruction(const std::string &instruction) {
-  return I3TypeInstructions.find(instruction)!=I3TypeInstructions.end();
+bool isValidI3TypeInstruction(const std::string &instruction)
+{
+  return I3TypeInstructions.find(instruction) != I3TypeInstructions.end();
 }
 
-bool isValidSTypeInstruction(const std::string &instruction) {
-  return STypeInstructions.find(instruction)!=STypeInstructions.end();
+bool isValidSTypeInstruction(const std::string &instruction)
+{
+  return STypeInstructions.find(instruction) != STypeInstructions.end();
 }
 
-bool isValidBTypeInstruction(const std::string &instruction) {
-  return BTypeInstructions.find(instruction)!=BTypeInstructions.end();
+bool isValidBTypeInstruction(const std::string &instruction)
+{
+  return BTypeInstructions.find(instruction) != BTypeInstructions.end();
 }
 
-bool isValidUTypeInstruction(const std::string &instruction) {
-  return UTypeInstructions.find(instruction)!=UTypeInstructions.end();
+bool isValidUTypeInstruction(const std::string &instruction)
+{
+  return UTypeInstructions.find(instruction) != UTypeInstructions.end();
 }
 
-bool isValidJTypeInstruction(const std::string &instruction) {
-  return JTypeInstructions.find(instruction)!=JTypeInstructions.end();
+bool isValidJTypeInstruction(const std::string &instruction)
+{
+  return JTypeInstructions.find(instruction) != JTypeInstructions.end();
 }
 
-bool isValidPseudoInstruction(const std::string &instruction) {
-  return PseudoInstructions.find(instruction)!=PseudoInstructions.end();
+bool isValidPseudoInstruction(const std::string &instruction)
+{
+  return PseudoInstructions.find(instruction) != PseudoInstructions.end();
 }
 
-bool isValidBaseExtensionInstruction(const std::string &instruction) {
-  return BaseExtensionInstructions.find(instruction)!=BaseExtensionInstructions.end();
+bool isValidBaseExtensionInstruction(const std::string &instruction)
+{
+  return BaseExtensionInstructions.find(instruction) != BaseExtensionInstructions.end();
 }
 
-bool isValidCSRRTypeInstruction(const std::string &instruction) {
-  return CSRRInstructions.find(instruction)!=CSRRInstructions.end();
+bool isValidCSRRTypeInstruction(const std::string &instruction)
+{
+  return CSRRInstructions.find(instruction) != CSRRInstructions.end();
 }
 
-bool isValidCSRITypeInstruction(const std::string &instruction) {
-  return CSRIInstructions.find(instruction)!=CSRIInstructions.end();
+bool isValidCSRITypeInstruction(const std::string &instruction)
+{
+  return CSRIInstructions.find(instruction) != CSRIInstructions.end();
 }
 
-bool isValidCSRInstruction(const std::string &instruction) {
-  return (CSRRInstructions.find(instruction)!=CSRRInstructions.end()) ||
-      (CSRIInstructions.find(instruction)!=CSRIInstructions.end());
+bool isValidCSRInstruction(const std::string &instruction)
+{
+  return (CSRRInstructions.find(instruction) != CSRRInstructions.end()) ||
+          (CSRIInstructions.find(instruction) != CSRIInstructions.end());
 }
 
-bool isValidFDRTypeInstruction(const std::string &instruction) {
-  return (FDExtensionRTypeInstructions.find(instruction)!=FDExtensionRTypeInstructions.end());
+bool isValidFDRTypeInstruction(const std::string &instruction)
+{
+  return (FDExtensionRTypeInstructions.find(instruction) != FDExtensionRTypeInstructions.end());
 }
 
-bool isValidFDR1TypeInstruction(const std::string &instruction) {
-  return (FDExtensionR1TypeInstructions.find(instruction)!=FDExtensionR1TypeInstructions.end());
+bool isValidFDR1TypeInstruction(const std::string &instruction)
+{
+  return (FDExtensionR1TypeInstructions.find(instruction) != FDExtensionR1TypeInstructions.end());
 }
 
-bool isValidFDR2TypeInstruction(const std::string &instruction) {
-  return (FDExtensionR2TypeInstructions.find(instruction)!=FDExtensionR2TypeInstructions.end());
+bool isValidFDR2TypeInstruction(const std::string &instruction)
+{
+  return (FDExtensionR2TypeInstructions.find(instruction) != FDExtensionR2TypeInstructions.end());
 }
 
-bool isValidFDR3TypeInstruction(const std::string &instruction) {
-  return (FDExtensionR3TypeInstructions.find(instruction)!=FDExtensionR3TypeInstructions.end());
+bool isValidFDR3TypeInstruction(const std::string &instruction)
+{
+  return (FDExtensionR3TypeInstructions.find(instruction) != FDExtensionR3TypeInstructions.end());
 }
 
-bool isValidFDR4TypeInstruction(const std::string &instruction) {
-  return (FDExtensionR4TypeInstructions.find(instruction)!=FDExtensionR4TypeInstructions.end());
+bool isValidFDR4TypeInstruction(const std::string &instruction)
+{
+  return (FDExtensionR4TypeInstructions.find(instruction) != FDExtensionR4TypeInstructions.end());
 }
 
-bool isValidFDITypeInstruction(const std::string &instruction) {
-  return (FDExtensionITypeInstructions.find(instruction)!=FDExtensionITypeInstructions.end());
+bool isValidFDITypeInstruction(const std::string &instruction)
+{
+  return (FDExtensionITypeInstructions.find(instruction) != FDExtensionITypeInstructions.end());
 }
 
-bool isValidFDSTypeInstruction(const std::string &instruction) {
-  return (FDExtensionSTypeInstructions.find(instruction)!=FDExtensionSTypeInstructions.end());
+bool isValidFDSTypeInstruction(const std::string &instruction)
+{
+  return (FDExtensionSTypeInstructions.find(instruction) != FDExtensionSTypeInstructions.end());
 }
 
-bool isFInstruction(const uint32_t &instruction) {
+bool isFInstruction(const uint32_t &instruction)
+{
   uint8_t opcode = (instruction & 0b1111111);
   uint8_t funct3 = (instruction >> 12) & 0b111;
   uint8_t funct7 = (instruction >> 25) & 0b1111111;
 
-  switch (opcode) {
-    case 0b0000111: // flw
-    case 0b0100111: {// fsw
-      if (funct3==0b010) {
-        return true; // flw
-      }
-      break;
+  switch (opcode)
+  {
+  case 0b0000111: // flw
+  case 0b0100111:
+  { // fsw
+    if (funct3 == 0b010)
+    {
+      return true; // flw
     }
-    case 0b1010011: {
-      if (!(funct7 & 0b1)) {
-        if (funct7==0b0100000) {
-          return false; // fcvt.s.d
-        }
-        return true;
+    break;
+  }
+  case 0b1010011:
+  {
+    if (!(funct7 & 0b1))
+    {
+      if (funct7 == 0b0100000)
+      {
+        return false; // fcvt.s.d
       }
+      return true;
     }
-    default: break;
+  }
+  default:
+    break;
   }
 
   return false;
 }
 
-bool isDInstruction(const uint32_t &instruction) {
+bool isDInstruction(const uint32_t &instruction)
+{
   uint8_t opcode = (instruction & 0b1111111);
   uint8_t funct3 = (instruction >> 12) & 0b111;
   uint8_t funct7 = (instruction >> 25) & 0b1111111;
-  
 
-  switch (opcode) {
-    case 0b0000111: // fld
-    case 0b0100111: {// fsd
-      if (funct3==0b011) {
-        return true; // fld
-      }
-      break;
+  switch (opcode)
+  {
+  case 0b0000111: // fld
+  case 0b0100111:
+  { // fsd
+    if (funct3 == 0b011)
+    {
+      return true; // fld
     }
-    case 0b1010011: {
-      if (funct7 & 0b1) {
-        return true;
-      } else if (funct7==0b0100000) {
-        return true; // fcvt.s.d
-      }
+    break;
+  }
+  case 0b1010011:
+  {
+    if (funct7 & 0b1)
+    {
+      return true;
     }
-    default: break;
+    else if (funct7 == 0b0100000)
+    {
+      return true; // fcvt.s.d
+    }
+  }
+  default:
+    break;
   }
   return false;
 }
 
-std::string getExpectedSyntaxes(const std::string &opcode) {
+std::string getExpectedSyntaxes(const std::string &opcode)
+{
   static const std::unordered_map<std::string, std::string> opcodeSyntaxMap = {
       {"nop", "nop"},
       {"li", "li <reg>, <imm>"},
@@ -1185,11 +1353,11 @@ std::string getExpectedSyntaxes(const std::string &opcode) {
       {"la", "la <reg>, <text label>"},
       {"call", "call <text label>"},
       {"tail", "tail <text label>"},
-      {"fence", "fence"}
-  };
+      {"fence", "fence"}};
 
   auto opcodeIt = opcodeSyntaxMap.find(opcode);
-  if (opcodeIt!=opcodeSyntaxMap.end()) {
+  if (opcodeIt != opcodeSyntaxMap.end())
+  {
     return opcodeIt->second;
   }
 
@@ -1221,17 +1389,591 @@ std::string getExpectedSyntaxes(const std::string &opcode) {
 
   std::string syntaxes;
   const auto &syntaxList = instruction_syntax_map[opcode];
-  for (size_t i = 0; i < syntaxList.size(); ++i) {
-    if (i > 0) {
+  for (size_t i = 0; i < syntaxList.size(); ++i)
+  {
+    if (i > 0)
+    {
       syntaxes += " or ";
     }
     auto syntaxIt = syntaxTypeToString.find(syntaxList[i]);
-    if (syntaxIt!=syntaxTypeToString.end()) {
+    if (syntaxIt != syntaxTypeToString.end())
+    {
       syntaxes += opcode + " " + syntaxIt->second;
     }
   }
 
   return syntaxes;
+}
+
+std::string getInstructionType(const std::string &instruction)
+{
+  // Check each instruction type
+  if (isValidRTypeInstruction(instruction))
+    return "R-Type";
+  if (isValidI1TypeInstruction(instruction))
+    return "I1-Type";
+  if (isValidI2TypeInstruction(instruction))
+    return "I2-Type";
+  if (isValidI3TypeInstruction(instruction))
+    return "I3-Type";
+  if (isValidSTypeInstruction(instruction))
+    return "S-Type";
+  if (isValidBTypeInstruction(instruction))
+    return "B-Type";
+  if (isValidUTypeInstruction(instruction))
+    return "U-Type";
+  if (isValidJTypeInstruction(instruction))
+    return "J-Type";
+  if (isValidPseudoInstruction(instruction))
+    return "Pseudo";
+  if (isValidCSRRTypeInstruction(instruction))
+    return "CSR-R";
+  if (isValidCSRITypeInstruction(instruction))
+    return "CSR-I";
+  if (isValidFDRTypeInstruction(instruction))
+    return "F/D-R";
+  if (isValidFDR1TypeInstruction(instruction))
+    return "F/D-R1";
+  if (isValidFDR2TypeInstruction(instruction))
+    return "F/D-R2";
+  if (isValidFDR3TypeInstruction(instruction))
+    return "F/D-R3";
+  if (isValidFDR4TypeInstruction(instruction))
+    return "F/D-R4";
+  if (isValidFDITypeInstruction(instruction))
+    return "F/D-I";
+  if (isValidFDSTypeInstruction(instruction))
+    return "F/D-S";
+  if (isValidBaseExtensionInstruction(instruction))
+    return "Base-Ext";
+
+  return "Unknown";
+}
+
+
+
+std::string disassemble(uint32_t instruction)
+{
+  if (instruction == 0 || instruction == 0x13)
+    return "nop";
+
+  uint8_t opcode = instruction & 0x7F;
+  uint8_t rd = (instruction >> 7) & 0x1F;
+  uint8_t funct3 = (instruction >> 12) & 0x07;
+  uint8_t rs1 = (instruction >> 15) & 0x1F;
+  uint8_t rs2 = (instruction >> 20) & 0x1F;
+  uint8_t funct7 = (instruction >> 25) & 0x7F;
+
+  auto xr = [](uint8_t r)
+  { return "x" + std::to_string(r); };
+  auto fr = [](uint8_t r)
+  { return "f" + std::to_string(r); };
+  auto signext = [](int32_t v, int b) -> int32_t
+  { return (v << (32 - b)) >> (32 - b); };
+
+  auto immI = [&]
+  { return signext((int32_t)(instruction >> 20), 12); };
+  auto immS = [&]
+  { return signext((funct7 << 5) | rd, 12); };
+  auto immB = [&]
+  { return signext(((funct7 >> 6) << 12) | ((rd & 1) << 11) | ((funct7 & 0x3F) << 5) | (rd & 0x1E), 13); };
+  auto immU = [&]
+  { return (int32_t)(instruction >> 12); };
+  auto immJ = [&]
+  { return signext((((instruction >> 31) & 1) << 20) | (((instruction >> 12) & 0xFF) << 12) | (((instruction >> 20) & 1) << 11) | (((instruction >> 21) & 0x3FF) << 1), 21); };
+  auto shamt = [&]
+  { return (int32_t)((instruction >> 20) & 0x3F); };
+
+  // R: name rd, rs1, rs2
+  // I: name rd, rs1, imm
+  // L: name rd, imm(rs1)   <- loads
+  // S: name rs2, imm(rs1)  <- stores
+  // B: name rs1, rs2, imm
+  // U: name rd, imm
+  // J: name rd, imm
+
+  switch (opcode)
+  {
+
+  case 0b0110011:
+  { // R-type integer
+    std::string name;
+    switch (funct7)
+    {
+    case 0b0000000:
+      switch (funct3)
+      {
+      case 0:
+        name = "add";
+        break;
+      case 1:
+        name = "sll";
+        break;
+      case 2:
+        name = "slt";
+        break;
+      case 3:
+        name = "sltu";
+        break;
+      case 4:
+        name = "xor";
+        break;
+      case 5:
+        name = "srl";
+        break;
+      case 6:
+        name = "or";
+        break;
+      case 7:
+        name = "and";
+        break;
+      }
+      break;
+    case 0b0100000:
+      switch (funct3)
+      {
+      case 0:
+        name = "sub";
+        break;
+      case 5:
+        name = "sra";
+        break;
+      }
+      break;
+    case 0b0000001:
+      switch (funct3)
+      {
+      case 0:
+        name = "mul";
+        break;
+      case 1:
+        name = "mulh";
+        break;
+      case 2:
+        name = "mulhsu";
+        break;
+      case 3:
+        name = "mulhu";
+        break;
+      case 4:
+        name = "div";
+        break;
+      case 5:
+        name = "divu";
+        break;
+      case 6:
+        name = "rem";
+        break;
+      case 7:
+        name = "remu";
+        break;
+      }
+      break;
+    }
+    if (!name.empty())
+      return name + " " + xr(rd) + ", " + xr(rs1) + ", " + xr(rs2);
+    break;
+  }
+
+  case 0b0111011:
+  { // R-type integer word (RV64)
+    std::string name;
+    switch (funct7)
+    {
+    case 0b0000000:
+      switch (funct3)
+      {
+      case 0:
+        name = "addw";
+        break;
+      case 1:
+        name = "sllw";
+        break;
+      case 5:
+        name = "srlw";
+        break;
+      }
+      break;
+    case 0b0100000:
+      switch (funct3)
+      {
+      case 0:
+        name = "subw";
+        break;
+      case 5:
+        name = "sraw";
+        break;
+      }
+      break;
+    case 0b0000001:
+      switch (funct3)
+      {
+      case 0:
+        name = "mulw";
+        break;
+      case 4:
+        name = "divw";
+        break;
+      case 5:
+        name = "divuw";
+        break;
+      case 6:
+        name = "remw";
+        break;
+      case 7:
+        name = "remuw";
+        break;
+      }
+      break;
+    }
+    if (!name.empty())
+      return name + " " + xr(rd) + ", " + xr(rs1) + ", " + xr(rs2);
+    break;
+  }
+
+  case 0b0010011:
+  { // I-type integer
+    if (funct3 == 0b001)
+      return "slli " + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(shamt());
+    if (funct3 == 0b101)
+      return (funct7 == 0b0100000 ? "srai " : "srli ") + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(shamt());
+    std::string name;
+    switch (funct3)
+    {
+    case 0:
+      name = "addi";
+      break;
+    case 2:
+      name = "slti";
+      break;
+    case 3:
+      name = "sltiu";
+      break;
+    case 4:
+      name = "xori";
+      break;
+    case 6:
+      name = "ori";
+      break;
+    case 7:
+      name = "andi";
+      break;
+    }
+    if (!name.empty())
+      return name + " " + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(immI());
+    break;
+  }
+
+  case 0b0011011:
+  { // I-type integer word (RV64)
+    if (funct3 == 0b001)
+      return "slliw " + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(shamt());
+    if (funct3 == 0b101)
+      return (funct7 == 0b0100000 ? "sraiw " : "srliw ") + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(shamt());
+    if (funct3 == 0b000)
+      return "addiw " + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(immI());
+    break;
+  }
+
+  case 0b0000011:
+  { // Loads
+    std::string name;
+    switch (funct3)
+    {
+    case 0:
+      name = "lb";
+      break;
+    case 1:
+      name = "lh";
+      break;
+    case 2:
+      name = "lw";
+      break;
+    case 3:
+      name = "ld";
+      break;
+    case 4:
+      name = "lbu";
+      break;
+    case 5:
+      name = "lhu";
+      break;
+    case 6:
+      name = "lwu";
+      break;
+    }
+    if (!name.empty())
+      return name + " " + xr(rd) + ", " + std::to_string(immI()) + "(" + xr(rs1) + ")";
+    break;
+  }
+
+  case 0b0100011:
+  { // Stores
+    std::string name;
+    switch (funct3)
+    {
+    case 0:
+      name = "sb";
+      break;
+    case 1:
+      name = "sh";
+      break;
+    case 2:
+      name = "sw";
+      break;
+    case 3:
+      name = "sd";
+      break;
+    }
+    if (!name.empty())
+      return name + " " + xr(rs2) + ", " + std::to_string(immS()) + "(" + xr(rs1) + ")";
+    break;
+  }
+
+  case 0b1100011:
+  { // Branches
+    std::string name;
+    switch (funct3)
+    {
+    case 0:
+      name = "beq";
+      break;
+    case 1:
+      name = "bne";
+      break;
+    case 4:
+      name = "blt";
+      break;
+    case 5:
+      name = "bge";
+      break;
+    case 6:
+      name = "bltu";
+      break;
+    case 7:
+      name = "bgeu";
+      break;
+    }
+    if (!name.empty())
+      return name + " " + xr(rs1) + ", " + xr(rs2) + ", " + std::to_string(immB());
+    break;
+  }
+
+  case 0b0110111:
+    return "lui " + xr(rd) + ", " + std::to_string(immU());
+  case 0b0010111:
+    return "auipc " + xr(rd) + ", " + std::to_string(immU());
+  case 0b1101111:
+    return "jal " + xr(rd) + ", " + std::to_string(immJ());
+  case 0b1100111:
+    return "jalr " + xr(rd) + ", " + std::to_string(immI()) + "(" + xr(rs1) + ")";
+
+  case 0b1110011:
+  { // ecall/ebreak/CSR
+    if (funct3 == 0)
+      return (rs2 == 0) ? "ecall" : "ebreak";
+    int32_t csr = (instruction >> 20) & 0xFFF;
+    char csrBuf[8];
+    snprintf(csrBuf, sizeof(csrBuf), "0x%03x", csr);
+    std::string name;
+    bool isImm = false;
+    switch (funct3)
+    {
+    case 1:
+      name = "csrrw";
+      break;
+    case 2:
+      name = "csrrs";
+      break;
+    case 3:
+      name = "csrrc";
+      break;
+    case 5:
+      name = "csrrwi";
+      isImm = true;
+      break;
+    case 6:
+      name = "csrrsi";
+      isImm = true;
+      break;
+    case 7:
+      name = "csrrci";
+      isImm = true;
+      break;
+    }
+    if (!name.empty())
+      return name + " " + xr(rd) + ", " + csrBuf + ", " + (isImm ? std::to_string(rs1) : xr(rs1));
+    break;
+  }
+
+  case 0b0000111:
+  { // FP loads
+    std::string name;
+    switch (funct3)
+    {
+    case 2:
+      name = "flw";
+      break;
+    case 3:
+      name = "fld";
+      break;
+    }
+    if (!name.empty())
+      return name + " " + fr(rd) + ", " + std::to_string(immI()) + "(" + xr(rs1) + ")";
+    break;
+  }
+
+  case 0b0100111:
+  { // FP stores
+    std::string name;
+    switch (funct3)
+    {
+    case 2:
+      name = "fsw";
+      break;
+    case 3:
+      name = "fsd";
+      break;
+    }
+    if (!name.empty())
+      return name + " " + fr(rs2) + ", " + std::to_string(immS()) + "(" + xr(rs1) + ")";
+    break;
+  }
+
+  case 0b1000011:
+  case 0b1000111:
+  case 0b1001011:
+  case 0b1001111:
+  { // R4-type (fmadd etc)
+    uint8_t fmt = (instruction >> 25) & 0x3;
+    uint8_t rs3 = (instruction >> 27) & 0x1F;
+    std::string suf = (fmt == 0) ? ".s" : ".d";
+    std::string name;
+    switch (opcode)
+    {
+    case 0b1000011:
+      name = "fmadd";
+      break;
+    case 0b1000111:
+      name = "fmsub";
+      break;
+    case 0b1001011:
+      name = "fnmsub";
+      break;
+    case 0b1001111:
+      name = "fnmadd";
+      break;
+    }
+    return name + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2) + ", " + fr(rs3);
+  }
+
+  case 0b1010011:
+  { // FP compute
+    std::string suf = (funct7 & 1) ? ".d" : ".s";
+
+    // fadd fsub fmul fdiv
+    switch (funct7 & ~1)
+    {
+    case 0b0000000:
+      return "fadd" + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
+    case 0b0000100:
+      return "fsub" + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
+    case 0b0001000:
+      return "fmul" + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
+    case 0b0001100:
+      return "fdiv" + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
+    }
+
+    // fsqrt
+    if ((funct7 & ~1) == 0b0101100)
+      return "fsqrt" + suf + " " + fr(rd) + ", " + fr(rs1);
+
+    // fsgnj fsgnjn fsgnjx
+    if ((funct7 & ~1) == 0b0010000)
+    {
+      std::string name;
+      switch (funct3)
+      {
+      case 0:
+        name = "fsgnj";
+        break;
+      case 1:
+        name = "fsgnjn";
+        break;
+      case 2:
+        name = "fsgnjx";
+        break;
+      }
+      return name + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
+    }
+
+    // fmin fmax
+    if ((funct7 & ~1) == 0b0010100)
+    {
+      return (funct3 == 0 ? "fmin" : "fmax") + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
+    }
+
+    // feq flt fle
+    if ((funct7 & ~1) == 0b1010000)
+    {
+      std::string name;
+      switch (funct3)
+      {
+      case 0:
+        name = "fle";
+        break;
+      case 1:
+        name = "flt";
+        break;
+      case 2:
+        name = "feq";
+        break;
+      }
+      return name + suf + " " + xr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
+    }
+
+    // fcvt.s.d / fcvt.d.s
+    if (funct7 == 0b0100000)
+      return "fcvt.s.d " + fr(rd) + ", " + fr(rs1);
+    if (funct7 == 0b0100001)
+      return "fcvt.d.s " + fr(rd) + ", " + fr(rs1);
+
+    // fcvt to int
+    if ((funct7 & ~1) == 0b1100000)
+    {
+      static const char *toInt[] = {"fcvt.w", "fcvt.wu", "fcvt.l", "fcvt.lu"};
+      if (rs2 < 4)
+        return std::string(toInt[rs2]) + suf + " " + xr(rd) + ", " + fr(rs1);
+    }
+
+    // fcvt from int
+    if ((funct7 & ~1) == 0b1101000)
+    {
+      static const char *fromInt[] = {"fcvt", "fcvt", "fcvt", "fcvt"};
+      static const char *fromIntSrc[] = {".w.", ".wu.", ".l.", ".lu."};
+      if (rs2 < 4)
+        return "fcvt" + suf + fromIntSrc[rs2] + (suf == ".s" ? "s" : "d") + // handled below
+                " " + fr(rd) + ", " + xr(rs1);
+    }
+
+    // fmv.x.w/d  fmv.w/d.x  fclass
+    if (funct7 == 0b1110000 && rs2 == 0)
+      return (funct3 == 0 ? "fmv.x.w " + xr(rd) + ", " + fr(rs1) : "fclass.s " + xr(rd) + ", " + fr(rs1));
+    if (funct7 == 0b1111000 && rs2 == 0)
+      return "fmv.w.x " + fr(rd) + ", " + xr(rs1);
+    if (funct7 == 0b1110001 && rs2 == 0)
+      return (funct3 == 0 ? "fmv.x.d " + xr(rd) + ", " + fr(rs1) : "fclass.d " + xr(rd) + ", " + fr(rs1));
+    if (funct7 == 0b1111001 && rs2 == 0)
+      return "fmv.d.x " + fr(rd) + ", " + xr(rs1);
+
+    break;
+  }
+
+  } // end switch
+
+  char buf[32];
+  snprintf(buf, sizeof(buf), "unknown(0x%08x)", instruction);
+  return std::string(buf);
 }
 
 } // namespace instruction_set
