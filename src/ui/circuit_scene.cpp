@@ -155,6 +155,8 @@ void CircuitScene::vmStateChangedSlot(const QMap<QString, QVariant> &vmState)
 
        
         QString instStr = instructionMap.value(key).toString();
+        
+        
 
         QTableWidgetItem *item = m_instructionTable->item(0, col);
         if (!item)
@@ -163,6 +165,14 @@ void CircuitScene::vmStateChangedSlot(const QMap<QString, QVariant> &vmState)
             m_instructionTable->setItem(0, col, item);
         }
         item->setText(instStr); // just update text, nothing else
+        if(instStr == "NOP")
+        {
+            item->setForeground(Qt::red);
+        }
+        else
+        {
+            item->setForeground(Qt::white);
+        }
     }
 }
 
