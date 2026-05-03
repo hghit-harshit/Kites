@@ -151,6 +151,7 @@ private:
     void SetupCache(size_t cache_size, size_t block_size, size_t num_ways); //common setup function for both constructors
     signals:
         void CacheMissSignal(uint64_t address);
+        void CacheHitSignal(uint64_t address);
         void CacheLineUpdatedSignal(uint64_t address);
         void CacheReconfiguredSignal(CacheConfig newConfig);
         void CacheStatsUpdatedSignal(CacheStats newStats);

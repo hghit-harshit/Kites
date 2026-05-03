@@ -411,6 +411,10 @@ uint8_t Cache::ReadByte(uint64_t address)
     {
         emit CacheMissSignal(address);
     }
+    else
+    {
+        emit CacheHitSignal(address);
+    }
     emit CacheLineUpdatedSignal(address);
     UpdateStats();
     return value;
@@ -423,6 +427,10 @@ uint16_t Cache::ReadHalfWord(uint64_t address)
     if (misses_ > misses_before)
     {
         emit CacheMissSignal(address);
+    }
+    else
+    {
+        emit CacheHitSignal(address);
     }
     emit CacheLineUpdatedSignal(address);
     UpdateStats();
@@ -437,6 +445,10 @@ uint32_t Cache::ReadWord(uint64_t address)
     {
         emit CacheMissSignal(address);
     }
+    else
+    {
+        emit CacheHitSignal(address);
+    }
     emit CacheLineUpdatedSignal(address);
     UpdateStats(); 
     return value;
@@ -449,6 +461,10 @@ uint64_t Cache::ReadDoubleWord(uint64_t address)
     if (misses_ > misses_before)
     {
         emit CacheMissSignal(address);
+    }
+    else
+    {
+        emit CacheHitSignal(address);
     }
     emit CacheLineUpdatedSignal(address);
     UpdateStats();
@@ -463,6 +479,10 @@ void Cache::WriteByte(uint64_t address, uint8_t value)
     {
         emit CacheMissSignal(address);
     }
+    else
+    {
+        emit CacheHitSignal(address);
+    }
     emit CacheLineUpdatedSignal(address);
     UpdateStats();
 }
@@ -474,6 +494,10 @@ void Cache::WriteHalfWord(uint64_t address, uint16_t value)
     if (misses_ > misses_before)
     {
         emit CacheMissSignal(address);
+    }
+    else
+    {
+        emit CacheHitSignal(address);
     }
     emit CacheLineUpdatedSignal(address);
     UpdateStats();
@@ -487,6 +511,10 @@ void Cache::WriteWord(uint64_t address, uint32_t value)
     {
         emit CacheMissSignal(address);
     }
+    else
+    {
+        emit CacheHitSignal(address);
+    }
     emit CacheLineUpdatedSignal(address);
     UpdateStats();
 
@@ -499,6 +527,10 @@ void Cache::WriteDoubleWord(uint64_t address, uint64_t value)
     if (misses_ > misses_before)
     {
         emit CacheMissSignal(address);
+    }
+    else
+    {
+        emit CacheHitSignal(address);
     }
     emit CacheLineUpdatedSignal(address);
     UpdateStats();
