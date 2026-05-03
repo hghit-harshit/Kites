@@ -30,14 +30,18 @@ public:
     }
 protected:
     //void mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent) override;
-    //void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent) override;
 
 private:
     std::filesystem::path m_sceneFilePath; // unused variable
 
     QTimer* m_timer; // well use it to make the wire blink
-    QTableWidget *m_instructionTable; // the table that shows the instructions
+    QTableWidget *m_instructionTable = nullptr; // the table that shows the instructions
     bool m_stayActive = false; // whether to keep the wires active or not
+    QStringList m_columnKeys;
+
+    void setUpInstructionTable();
+    void fitTableToCircuit(const QString& vmType);
 public slots:
     void updateCircuitState(const QList<QString>& wireList); 
     void vmStateChangedSlot(const QMap<QString, QVariant> &vmState);
