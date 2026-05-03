@@ -1,6 +1,9 @@
 #include "ui/processor_designs/components/base_component.h"
 #include <QPainter>
 #include <QJsonObject>
+#include <QTextOption>
+#include <algorithm>
+#include <QTextDocument>
 namespace Kites
 {
 BaseComponent::BaseComponent(const QPainterPath &path, const QString &name, QGraphicsItem *parent)
@@ -16,8 +19,16 @@ BaseComponent::BaseComponent(const QPainterPath &path, const QString &name, QGra
     if(name != "")
     {
         m_label = new QGraphicsTextItem(name, this);
+        QFont labelFont = m_label->font();
+        labelFont.setStretch(130);
+        m_label->setFont(labelFont);
         QRectF box = path.boundingRect();
-        m_label->setPos(box.center().x() - m_label->boundingRect().width() / 2,
+        const qreal labelWidth = std::max<qreal>(box.width() * 1.6, 80.0);
+        m_label->setTextWidth(labelWidth);
+        QTextOption option = m_label->document()->defaultTextOption();
+        option.setAlignment(Qt::AlignHCenter);
+        m_label->document()->setDefaultTextOption(option);
+        m_label->setPos(box.center().x() - labelWidth / 2,
                         box.center().y() - m_label->boundingRect().height() / 2);
     }
 }
@@ -28,8 +39,16 @@ void BaseComponent::setName(const QString& name)
     if(name != "")
     {
         m_label = new QGraphicsTextItem(name, this);
+        QFont labelFont = m_label->font();
+        labelFont.setStretch(130);
+        m_label->setFont(labelFont);
         QRectF box = path().boundingRect();
-        m_label->setPos(box.center().x() - m_label->boundingRect().width() / 2,
+        const qreal labelWidth = std::max<qreal>(box.width() * 1.6, 80.0);
+        m_label->setTextWidth(labelWidth);
+        QTextOption option = m_label->document()->defaultTextOption();
+        option.setAlignment(Qt::AlignHCenter);
+        m_label->document()->setDefaultTextOption(option);
+        m_label->setPos(box.center().x() - labelWidth / 2,
                         box.center().y() - m_label->boundingRect().height() / 2);
     }
 
