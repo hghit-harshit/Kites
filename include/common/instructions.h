@@ -323,6 +323,13 @@ std::string getExpectedSyntaxes(const std::string &opcode);
  * @return A string describing the instruction type (e.g., "R-Type", "I-Type", "S-Type", "Pseudo")
  */
 std::string getInstructionType(const std::string &instruction);
+/**
+ * @brief Disassembles a 32-bit instruction into its string representation.
+ * 
+ * @param instruction The 32-bit instruction to disassemble.
+ * @return The string representation of the instruction.
+ */
+std::string disassemble(uint32_t instruction);
 
 } // namespace instruction_set
 
