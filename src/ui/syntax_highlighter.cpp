@@ -43,7 +43,7 @@ void SyntaxHighlighter::setHighlightingRules()
     HighlightRule rule;
 
     QTextCharFormat instructionKeywordFormat;
-    instructionKeywordFormat.setForeground(Qt::blue);
+    instructionKeywordFormat.setForeground(Qt::cyan);
     instructionKeywordFormat.setFontWeight(QFont::Bold);
 
     QTextCharFormat registerFormat;
@@ -89,13 +89,17 @@ void SyntaxHighlighter::setHighlightingRules()
     "\\bflw\\b", "\\bfsw\\b",
     "\\bfmadd\\.s\\b", "\\bfmsub\\.s\\b", "\\bfnmsub\\.s\\b", "\\bfnmadd\\.s\\b",
     "\\bfadd\\.s\\b", "\\bfsub\\.s\\b", "\\bfmul\\.s\\b", "\\bfdiv\\.s\\b",
-    "\\bsqrt\\.s\\b",
+    "\\bfsqrt\\.s\\b", "\\bsqrt\\.s\\b",
     "\\bfsgnj\\.s\\b", "\\bfsgnjn\\.s\\b", "\\bfsgnjx\\.s\\b",
-    "\\bmin\\.s\\b", "\\bmax\\.s\\b",
-    "\\bcvt\\.w\\.s\\b", "\\bcvt\\.wu\\.s\\b",
-    "\\bmv\\.x\\.s\\b", "\\bclass\\.s\\b",
-    "\\beq\\.s\\b", "\\bne\\.s\\b", "\\blt\\.s\\b", "\\bge\\.s\\b",
-    "\\blt\\.u\\.s\\b", "\\bge\\.u\\.s\\b",
+    "\\bfmin\\.s\\b", "\\bfmax\\.s\\b", "\\bmin\\.s\\b", "\\bmax\\.s\\b",
+    "\\bfcvt\\.w\\.s\\b", "\\bfcvt\\.wu\\.s\\b", "\\bfcvt\\.l\\.s\\b", "\\bfcvt\\.lu\\.s\\b",
+    "\\bfcvt\\.s\\.w\\b", "\\bfcvt\\.s\\.wu\\b", "\\bfcvt\\.s\\.l\\b", "\\bfcvt\\.s\\.lu\\b",
+    "\\bcvt\\.w\\.s\\b", "\\bcvt\\.wu\\.s\\b", "\\bcvt\\.l\\.s\\b", "\\bcvt\\.lu\\.s\\b",
+    "\\bcvt\\.s\\.w\\b", "\\bcvt\\.s\\.wu\\b", "\\bcvt\\.s\\.l\\b", "\\bcvt\\.s\\.lu\\b",
+    "\\bfmv\\.x\\.w\\b", "\\bfmv\\.w\\.x\\b", "\\bfmv\\.x\\.s\\b", "\\bfmv\\.s\\.x\\b", "\\bmv\\.x\\.s\\b",
+    "\\bfclass\\.s\\b", "\\bclass\\.s\\b",
+    "\\bfeq\\.s\\b", "\\bflt\\.s\\b", "\\bfle\\.s\\b", "\\beq\\.s\\b", "\\blt\\.s\\b", "\\ble\\.s\\b",
+    "\\bne\\.s\\b", "\\bge\\.s\\b", "\\blt\\.u\\.s\\b", "\\bge\\.u\\.s\\b",
 
     // --- D Extension (Double-Precision Float) ---
     "\\bfld\\b", "\\bfsd\\b",
