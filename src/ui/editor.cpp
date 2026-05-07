@@ -153,10 +153,6 @@ void Editor::paintEvent(QPaintEvent *event)
         { continue; }
         drawnLines.insert(lineNumber);  
         QTextBlock block = this->document()->findBlockByNumber(lineNumber-1); // -1 for 0-based index
-        
-        QTextCursor cursor(block); // keeping the highlighted line in view
-        this->setTextCursor(cursor);
-        this->ensureCursorVisible();
 
         if (block.isValid()) 
         {
