@@ -1,5 +1,5 @@
 #include "src/mainwindow.h"
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
     #include "ui/debug/log_panel.h"
 #endif
