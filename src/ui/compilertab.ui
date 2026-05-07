@@ -72,7 +72,7 @@
           <item>
            <widget class="QPushButton" name="copyToMainEditorButton">
             <property name="text">
-             <string>CopyToMainEditor</string>
+             <string>Copy to Clipboard</string>
             </property>
            </widget>
           </item>

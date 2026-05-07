@@ -80,20 +80,6 @@
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QRadioButton" name="radioButton_3">
-           <property name="text">
-            <string>Disassembly</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="radioButton_4">
-           <property name="text">
-            <string>Binary</string>
-           </property>
-          </widget>
-         </item>
         </layout>
        </item>
        <item>
@@ -109,7 +95,7 @@
   <customwidget>
    <class>Editor</class>
    <extends>QPlainTextEdit</extends>
-   <header>ui/editor.h</header>
+   <header location="global">ui/editor.h</header>
   </customwidget>
   <customwidget>
    <class>DisassemblyEditor</class>
