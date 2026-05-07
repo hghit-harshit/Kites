@@ -55,7 +55,7 @@ void KitesEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
     int top = static_cast<int>(blockBoundingGeometry(block).translated(contentOffset()).top());
     int bottom = top + static_cast<int>(blockBoundingRect(block).height());
 
-    while (block.isValid() && top <= event->rect().bottom()) 
+    while(block.isValid() && top <= event->rect().bottom()) 
     {
         if (block.isVisible() && bottom >= event->rect().top()) 
         {
@@ -88,7 +88,7 @@ void KitesEditor::highlightCurrentLine()
     if (!isReadOnly()) {
         QTextEdit::ExtraSelection selection;
 
-        QColor lineColor = QColor(Qt::gray).lighter(160);
+        QColor lineColor = palette().color(QPalette::Base).lighter(115);
 
         selection.format.setBackground(lineColor);
         selection.format.setProperty(QTextFormat::FullWidthSelection, true);
