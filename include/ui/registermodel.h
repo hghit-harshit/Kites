@@ -27,6 +27,7 @@ class RegisterModel : public QAbstractTableModel
     private:
         RegisterFile* m_currentRegisterFile;
         Base m_displayBase = Base::Hexadecimal;
+        size_t m_highlightedRegisterIndex = -1; // No register highlighted by default
     public slots:
         void updateRegisterValue(size_t regIndex, uint64_t value);
         void registerResetSlot();
