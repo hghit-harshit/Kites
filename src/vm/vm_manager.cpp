@@ -28,8 +28,8 @@ VMManager::VMManager(QObject* parent,VMType vmType)
     VMFactory::RegisterVM<RV5StageVM_H_F>(VMType::RV5Stage_H_F);
     m_currentVMType = vmType;
     m_currentVM = VMFactory::createVM(vmType);
-    connect(m_currentVM.get(),&VmBase::vmStateChangedSignal,this,&VMManager::vmStageChangedSignal);
-    connect(m_currentVM.get(),&VmBase::vmPausedAtBreakpointSignal,this,&VMManager::vmPausedAtBreakpointSignal);
+    connect(m_currentVM.get(),&VmBase::vmStateChangedSignal,this,&VMManager::vmStageChangedSignal, Qt::DirectConnection);
+    connect(m_currentVM.get(),&VmBase::vmPausedAtBreakpointSignal,this,&VMManager::vmPausedAtBreakpointSignal, Qt::DirectConnection);
     // here we connect the vm state changed signal to the vm manager signal
     // and this will be further connected to the mainwindow slot to update the ui
 }
@@ -39,8 +39,8 @@ void VMManager::changeVM(VMType vmType)
     m_currentVMType = vmType;
     m_currentVM = VMFactory::createVM(vmType);
     m_currentVM->step_delay_ = m_stepDelayMs;
-    connect(m_currentVM.get(),&VmBase::vmStateChangedSignal,this,&VMManager::vmStageChangedSignal);
-    connect(m_currentVM.get(),&VmBase::vmPausedAtBreakpointSignal,this,&VMManager::vmPausedAtBreakpointSignal);
+    connect(m_currentVM.get(),&VmBase::vmStateChangedSignal,this,&VMManager::vmStageChangedSignal, Qt::DirectConnection);
+    connect(m_currentVM.get(),&VmBase::vmPausedAtBreakpointSignal,this,&VMManager::vmPausedAtBreakpointSignal, Qt::DirectConnection);
     // create new connections for the new VM
 }
 
@@ -66,6 +66,12 @@ void VMManager::step()
     try
     {
         m_currentVM->Step();
+        m_currentVM->cpi_ = m_currentVM->instructions_retired_ ? static_cast<float>(m_currentVM->cycle_s_) / static_cast<float>(m_currentVM->instructions_retired_) : 0.0f;
+        m_currentVM->ipc_ = m_currentVM->cycle_s_ ? static_cast<float>(m_currentVM->instructions_retired_) / static_cast<float>(m_currentVM->cycle_s_) : 0.0f;
+        m_currentVM->SetVMStateMap();
+        m_currentVM->SetActiveWireNames();
+        emit m_currentVM->updateCircuitStateSignal(m_currentVM->active_wires_);
+        emit m_currentVM->vmStateChangedSignal(m_currentVM->vm_state_);
     }
     catch(const std::exception& e)
     {
