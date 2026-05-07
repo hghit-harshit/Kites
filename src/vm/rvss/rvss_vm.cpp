@@ -1126,7 +1126,7 @@ void RVSSVM::DebugRun()
 			emit updateCircuitStateSignal(active_wires_);
 
 			unsigned int delay_ms = vm_config::config.getRunStepDelay();
-			std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+			//std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
 		}
 		else
 		{
