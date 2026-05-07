@@ -43,9 +43,9 @@ class CacheModel : public QAbstractTableModel
         size_t m_num_ways = 0;
         size_t m_block_size = 0;
         int m_last_miss_row = -1;
-        bool m_miss_highlight_pending = false;
+        //bool m_miss_highlight_pending = false;
         int m_last_hit_row = -1;
-        bool m_hit_highlight_pending = false;
+        //bool m_hit_highlight_pending = false;
     
     
    

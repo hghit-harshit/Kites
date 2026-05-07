@@ -67,12 +67,12 @@ QVariant CacheModel::data(const QModelIndex &index, int role) const
 
     if(role == Qt::BackgroundRole)
     {
-        if(m_hit_highlight_pending && index.row() == m_last_hit_row)
+        if(index.row() == m_last_hit_row)
         {
             return QColor(120, 220, 120, 90); // green for cache hit
         }
 
-        if(m_miss_highlight_pending && index.row() == m_last_miss_row)
+        if(index.row() == m_last_miss_row)
         {
             return QColor(255, 180, 180, 90); // red for cache miss
         }
@@ -237,15 +237,6 @@ void CacheModel::updateCacheData(uint64_t address)
         return;
     }
 
-    if (m_hit_highlight_pending)
-    {
-        m_hit_highlight_pending = false;
-    }
-    if (m_miss_highlight_pending)
-    {
-        m_miss_highlight_pending = false;
-    }
-
     emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
 }
 
@@ -263,14 +254,10 @@ void CacheModel::onCacheMiss(uint64_t address)
     if (!m_cache)
         return;
  
-    int miss_row = AddressToRow(address);
-    if (miss_row >= 0 && miss_row < rowCount())
-    {
-        m_hit_highlight_pending = false;
-        m_last_miss_row = miss_row;
-        m_miss_highlight_pending = true;
-        emit dataChanged(index(miss_row, 0), index(miss_row, columnCount() - 1), {Qt::BackgroundRole});
-    }
+    m_last_miss_row = AddressToRow(address);
+    beginResetModel();
+    endResetModel();
+    
 }
 
 void CacheModel::onCacheHit(uint64_t address)
@@ -278,13 +265,9 @@ void CacheModel::onCacheHit(uint64_t address)
     if (!m_cache)
         return;
 
-    int hit_row = AddressToHitRow(address);
-    if (hit_row >= 0 && hit_row < rowCount())
-    {
-        m_miss_highlight_pending = false;
-        m_last_hit_row = hit_row;
-        m_hit_highlight_pending = true;
-        emit dataChanged(index(hit_row, 0), index(hit_row, columnCount() - 1), {Qt::BackgroundRole});
-    }
+    m_last_hit_row = AddressToHitRow(address);
+    beginResetModel();
+    endResetModel();
+
 }
 }// namespace Kites
