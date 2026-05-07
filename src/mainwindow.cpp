@@ -145,7 +145,7 @@ void MainWindow::setUpToolBar()
     spinboxAction->setDefaultWidget(spinbox);
     toolbar->addAction(processorAction);
     toolbar->addAction(runAction);
-    toolbar->addAction(debugAction);
+    //toolbar->addAction(debugAction);
     toolbar->addAction(spinboxAction);
     toolbar->addAction(pauseAction);
     toolbar->addAction(stepAction);
@@ -180,6 +180,12 @@ void MainWindow::setUpToolBar()
         stepAction->setEnabled(true);
         undoAction->setEnabled(true);
         redoAction->setEnabled(true);
+        //setEditorNavigationEnabled(false);
+        auto editorTab = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
+        if (editorTab)
+        {
+            editorTab->setExpandedLocked(true);
+        }
         m_vmManager->debugRun();
     });
 
@@ -212,9 +218,15 @@ void MainWindow::setUpToolBar()
         pauseAction->setText("Resume");
     });
 
-    //connect(stepAction,&QAction::triggered,this,&MainWindow::step);
-    connect(undoAction,&QAction::triggered,m_vmManager,&VMManager::undo);
-    connect(redoAction,&QAction::triggered,m_vmManager,&VMManager::redo);
+    connect(stepAction,&QAction::triggered,this,[this](){
+        m_vmManager->step();
+    });
+    connect(undoAction,&QAction::triggered,this,[this](){
+        m_vmManager->undo();
+    });
+    connect(redoAction,&QAction::triggered,this,[this](){
+        m_vmManager->redo();
+    });
 }
 
 void MainWindow::setUpSidebar()
@@ -393,9 +405,26 @@ bool MainWindow::tryParseAndLoadProgram()
         buffer << in.rdbuf();
         editor->updateDisassemblyView(buffer.str());
         m_profilerManager->SetInstructionLineMapping(assembledProgram.instruction_number_line_number_mapping);
+        
+        // Build instruction mnemonic map from intermediate code.
+        // The boolean in intermediate_code is parser state (e.g., backpatch), not data/non-data.
+        std::map<unsigned int, std::string> instructionMnemonics;
+        for (const auto& [icUnit, _] : assembledProgram.intermediate_code)
+        {
+            const auto instructionIndex = icUnit.getInstructionIndex();
+            const auto mnemonic = icUnit.getOpcode();
+            if (!mnemonic.empty())
+            {
+                instructionMnemonics[instructionIndex] = mnemonic;
+            }
+        }
+        m_profilerManager->SetInstructionInfo(instructionMnemonics);
+        
         if (profilerTab)
         {
             profilerTab->setSourceText(QString::fromStdString(rawText));
+            // Update instruction types in profiler UI
+            profilerTab->updateInstructionTypes(m_profilerManager->GetLineInstructionTypes());
         }
         m_vmManager->loadProgram(assembledProgram);
         m_vmManager->setBreakpoints(editor->getBreakpoints());
@@ -415,6 +444,12 @@ void MainWindow::run()
     //disableToolBarButtons();
     if (tryParseAndLoadProgram()) 
     {
+        
+        auto editorTab = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
+        if (editorTab)
+        {
+            editorTab->setExpandedLocked(true);
+        }
         // qDebug() << "Starting VM Run";
         // m_vmManager->run();
 
@@ -446,7 +481,15 @@ void MainWindow::vmChanged(const VMType& vmType)
     m_profilerManager->Reset();
     m_registerContainer->setRegisterFile(m_vmManager->getRegisterFile());
     auto* memtab = dynamic_cast<MemoryTab*>(m_tabs[TabIndex::MemoryTabIndex]);
-    memtab->changeMemoryController(m_vmManager->getMemoryController());
+    if (memtab)
+    {
+        memtab->changeMemoryController(m_vmManager->getMemoryController());
+    }
+    auto* cacheTab = dynamic_cast<CacheTab*>(m_tabs[TabIndex::CacheTabIndex]);
+    if (cacheTab)
+    {
+        cacheTab->changeMemoryController(m_vmManager->getMemoryController());
+    }
     emit vmChangedSignal();
 
     //well also have to change the processor design from here later
@@ -457,6 +500,7 @@ void MainWindow::runFinishedSlot()
 {
     auto* editor  = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
     editor->setCanWrite(true); // re-enable writing in editor when vm stops
+    editor->setExpandedLocked(false);
     editor->clearHighlights(); // we clear any highlights when vm stops
     //other we are not alble to move the cursor as the paint
     // keeps jumping to last highlighted line
@@ -528,26 +572,26 @@ void MainWindow::setUpPalettes()
     {
         QPalette& p = m_palettes[Theme::Dark];
 
-        p.setColor(QPalette::Window,          QColor(0x35, 0x35, 0x35));
-        p.setColor(QPalette::WindowText,      QColor(0xF0, 0xF0, 0xF0));
-        p.setColor(QPalette::Base,            QColor(0x19, 0x19, 0x19));
-        p.setColor(QPalette::AlternateBase,   QColor(0x25, 0x25, 0x25));
-        p.setColor(QPalette::ToolTipBase,     QColor(0x45, 0x45, 0x45));
-        p.setColor(QPalette::ToolTipText,     QColor(0xF0, 0xF0, 0xF0));
-        p.setColor(QPalette::Text,            QColor(0xF0, 0xF0, 0xF0));
-        p.setColor(QPalette::Button,          QColor(0x45, 0x45, 0x45));
-        p.setColor(QPalette::ButtonText,      QColor(0xF0, 0xF0, 0xF0));
-        p.setColor(QPalette::Highlight,       QColor(0x2A, 0x82, 0xDA));
-        p.setColor(QPalette::HighlightedText, QColor(0x00, 0x00, 0x00));
-        p.setColor(QPalette::Link,            QColor(0x2A, 0x82, 0xDA));
+        // p.setColor(QPalette::Window,          QColor(0x35, 0x35, 0x35));
+        // p.setColor(QPalette::WindowText,      QColor(0xF0, 0xF0, 0xF0));
+        // p.setColor(QPalette::Base,            QColor(0x19, 0x19, 0x19));
+        // p.setColor(QPalette::AlternateBase,   QColor(0x25, 0x25, 0x25));
+        // p.setColor(QPalette::ToolTipBase,     QColor(0x45, 0x45, 0x45));
+        // p.setColor(QPalette::ToolTipText,     QColor(0xF0, 0xF0, 0xF0));
+        // p.setColor(QPalette::Text,            QColor(0xF0, 0xF0, 0xF0));
+        // p.setColor(QPalette::Button,          QColor(0x45, 0x45, 0x45));
+        // p.setColor(QPalette::ButtonText,      QColor(0xF0, 0xF0, 0xF0));
+        // p.setColor(QPalette::Highlight,       QColor(0x2A, 0x82, 0xDA));
+        // p.setColor(QPalette::HighlightedText, QColor(0x00, 0x00, 0x00));
+        // p.setColor(QPalette::Link,            QColor(0x2A, 0x82, 0xDA));
 
-        // Disabled group
-        p.setColor(QPalette::Disabled, QPalette::Window,     QColor(0x2A, 0x2A, 0x2A));
-        p.setColor(QPalette::Disabled, QPalette::WindowText, QColor(0x78, 0x78, 0x78));
-        p.setColor(QPalette::Disabled, QPalette::Base,       QColor(0x2A, 0x2A, 0x2A));
-        p.setColor(QPalette::Disabled, QPalette::Text,       QColor(0x78, 0x78, 0x78));
-        p.setColor(QPalette::Disabled, QPalette::Button,     QColor(0x46, 0x46, 0x46));
-        p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(0x78, 0x78, 0x78));
+        // // Disabled group
+        // p.setColor(QPalette::Disabled, QPalette::Window,     QColor(0x2A, 0x2A, 0x2A));
+        // p.setColor(QPalette::Disabled, QPalette::WindowText, QColor(0x78, 0x78, 0x78));
+        // p.setColor(QPalette::Disabled, QPalette::Base,       QColor(0x2A, 0x2A, 0x2A));
+        // p.setColor(QPalette::Disabled, QPalette::Text,       QColor(0x78, 0x78, 0x78));
+        // p.setColor(QPalette::Disabled, QPalette::Button,     QColor(0x46, 0x46, 0x46));
+        // p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(0x78, 0x78, 0x78));
     }
 
 }
@@ -566,11 +610,11 @@ void MainWindow::toggleTheme(Theme theme)
 {
     QApplication::setPalette(m_palettes[theme]);
 
-    // const QString path = (theme == Theme::Dark)
-    //                      ? QStringLiteral(":/themes/dark.qss")
-    //                      : QStringLiteral(":/themes/light.qss");
+    const QString path = (theme == Theme::Dark)
+                         ? QStringLiteral(":/themes/elegant_dark.qss")
+                         : QStringLiteral(":/themes/aqua_light.qss");
 
-    // qApp->setStyleSheet(loadStyleSheet(path));
+    qApp->setStyleSheet(loadStyleSheet(path));
 }
 
 MainWindow::~MainWindow()
