@@ -1,6 +1,8 @@
 #include "ui/registermodel.h"
 #include <QDebug>
-
+#include <QBrush>
+#include <QApplication>
+#include <QPalette>
 namespace Kites
 {
 
@@ -55,6 +57,17 @@ QVariant RegisterModel::data(const QModelIndex &index, int role) const
     if (role == Qt::TextAlignmentRole) 
     {
         return Qt::AlignCenter;
+    }
+    if(role == Qt::BackgroundRole)
+    {
+        if(static_cast<size_t>(index.row()) == m_highlightedRegisterIndex)
+        {
+            return QBrush(QColor(80, 20, 20)); // Highlight color for the updated register
+        }
+        else
+        {
+           return QBrush(qApp->palette().color(QPalette::Base));
+        }
     }
     if(role == Qt::DisplayRole || role == Qt::ToolTipRole)
     {
@@ -176,13 +189,20 @@ void RegisterModel::updateRegisterValue(size_t regIndex, uint64_t value)
 {
     qDebug() << "RegisterModel::updateRegisterValue called for regIndex:" << regIndex << " new value:" << value;
     QModelIndex index = this->index(static_cast<int>(regIndex),2);
-    emit dataChanged(index,index);
+    m_highlightedRegisterIndex = regIndex; // Update highlighted register index
+    //emit dataChanged(index,index);
+    beginResetModel();
+    endResetModel();
+
 }
 
 void RegisterModel::updateFRegisterValue(size_t regIndex, uint64_t value)
 {
     qDebug() << "RegisterModel::updateFRegisterValue called for regIndex:" << regIndex << " new value:" << value;
     QModelIndex index = this->index(static_cast<int>(regIndex + 32),2);
-    emit dataChanged(index,index);
+    m_highlightedRegisterIndex = regIndex + 32; // Update highlighted register index
+    //emit dataChanged(index,index);
+    beginResetModel();
+    endResetModel();
 }
 }// namespaec Kites
