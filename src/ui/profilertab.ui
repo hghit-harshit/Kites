@@ -75,7 +75,7 @@
             <item>
              <widget class="QLabel" name="label_4">
               <property name="text">
-               <string>B-type</string>
+            <string>B-Type</string>
               </property>
              </widget>
             </item>
@@ -84,6 +84,34 @@
             </item>
            </layout>
           </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+            <string>S-Type</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="STypelineEdit"/>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_6">
+          <item>
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+            <string>U-Type</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="UTypelineEdit"/>
+          </item>
+         </layout>
+        </item>
           <item>
            <spacer name="verticalSpacer">
             <property name="orientation">

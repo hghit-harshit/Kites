@@ -2,6 +2,8 @@
 #include "ui_profilertab.h"
 #include "vm/profiler_manager.h"
 
+#include <QLineEdit>
+
 namespace Kites
 {
 ProfilerTab::ProfilerTab(QWidget *parent, ProfilerManager* profilerManager)
@@ -44,12 +46,15 @@ void ProfilerTab::updateInstructionTypes(const std::map<int, std::string>& instr
 
     int rTypeCount = 0;
     int iTypeCount = 0;
+    int sTypeCount = 0;
     int jTypeCount = 0;
     int bTypeCount = 0;
+    int uTypeCount = 0;
 
     for (const auto& [lineNumber, type] : instructionTypes)
     {
         Q_UNUSED(lineNumber);
+
         if (type == "R-Type")
         {
             ++rTypeCount;
@@ -62,9 +67,17 @@ void ProfilerTab::updateInstructionTypes(const std::map<int, std::string>& instr
         {
             ++jTypeCount;
         }
+        else if (type == "S-Type")
+        {
+            ++sTypeCount;
+        }
         else if (type == "B-Type")
         {
             ++bTypeCount;
+        }
+        else if (type == "U-Type")
+        {
+            ++uTypeCount;
         }
     }
 
@@ -72,6 +85,15 @@ void ProfilerTab::updateInstructionTypes(const std::map<int, std::string>& instr
     ui->ITypelineEdit->setText(QString::number(iTypeCount));
     ui->JTypelineEdit->setText(QString::number(jTypeCount));
     ui->BTypelineEdit->setText(QString::number(bTypeCount));
+
+    if (auto* sTypeLineEdit = findChild<QLineEdit*>("STypelineEdit"))
+    {
+        sTypeLineEdit->setText(QString::number(sTypeCount));
+    }
+    if (auto* uTypeLineEdit = findChild<QLineEdit*>("UTypelineEdit"))
+    {
+        uTypeLineEdit->setText(QString::number(uTypeCount));
+    }
 }
 
 void ProfilerTab::updateStatistics(const std::map<std::string, int>& statistics)
@@ -94,6 +116,15 @@ void ProfilerTab::resetProfilerView()
     ui->ITypelineEdit->clear();
     ui->JTypelineEdit->clear();
     ui->BTypelineEdit->clear();
+
+    if (auto* sTypeLineEdit = findChild<QLineEdit*>("STypelineEdit"))
+    {
+        sTypeLineEdit->clear();
+    }
+    if (auto* uTypeLineEdit = findChild<QLineEdit*>("UTypelineEdit"))
+    {
+        uTypeLineEdit->clear();
+    }
     // ui->CycleslineEdit->clear();
     // ui->IPClineEdit->clear();
     // ui->CPIlineEdit->clear();
