@@ -13,6 +13,7 @@ namespace Kites
 Editor::Editor(QWidget* parent, bool isTextEditor):QPlainTextEdit(parent), m_isTextEditor(isTextEditor)
 //:m_LinesToHighlight({{".",1}})
 {
+    m_breakpointInteractionEnabled = isTextEditor;
     setMouseTracking(true);
     m_syntaxHighlighter = new SyntaxHighlighter(this->document());
     int id = QFontDatabase::addApplicationFont(":/fonts/Monaco.ttf");
@@ -61,6 +62,17 @@ Editor::Editor(QWidget* parent, bool isTextEditor):QPlainTextEdit(parent), m_isT
 std::vector<uint64_t> Editor::getBreakpoints() const
 {
     return m_breakPoints;
+}
+
+void Editor::setBreakpoints(const std::vector<uint64_t>& breakpoints)
+{
+    m_breakPoints = breakpoints;
+    update();
+}
+
+void Editor::setBreakpointInteractionEnabled(bool enabled)
+{
+    m_breakpointInteractionEnabled = enabled;
 }
 
  void Editor::clearHighlights()
@@ -241,7 +253,7 @@ void Editor::lineNumberAreapaintEvent(QPaintEvent* event)
 
 void Editor::lineNumberAreaMousePressEvent(QMouseEvent* event)
 {
-    if(!m_isTextEditor)return;
+    if(!m_isTextEditor || !m_breakpointInteractionEnabled)return;
 
     auto toggleBreakpointAtLine = [this,event]()
     {

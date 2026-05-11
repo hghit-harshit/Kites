@@ -9,10 +9,18 @@ void RV5StageVM_Base::Run()
     ClearStop();
     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
     {
-        // if we hit a break point, we pause execution
-        if(std::find(breakpoints_.begin(), breakpoints_.end(), program_counter_) != breakpoints_.end())
+        if(last_breakpoint_pc_ != UINT64_MAX && program_counter_ != last_breakpoint_pc_)
+        {
+            last_breakpoint_pc_ = UINT64_MAX;
+        }
+
+        // if we hit a break point (and it's a new PC), we pause execution
+        // This prevents firing the same breakpoint multiple times during stalls
+        if(std::find(breakpoints_.begin(), breakpoints_.end(), program_counter_) != breakpoints_.end() 
+           && program_counter_ != last_breakpoint_pc_)
 		{
 			pause_requested_ = true;
+            last_breakpoint_pc_ = program_counter_;
             emit vmPausedAtBreakpointSignal();
 		}
 
@@ -75,6 +83,7 @@ void RV5StageVM_Base::Reset()
     instructions_retired_ = 0;
     cycle_s_              = 0;
     stall_cycles_         = 0;
+    last_breakpoint_pc_   = UINT64_MAX;  // Clear breakpoint tracking on reset
 
     registers_.Reset();
     memory_controller_.Reset();

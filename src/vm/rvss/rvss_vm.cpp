@@ -152,9 +152,16 @@ void RVSSVM::Run()
 	ClearStop();
 	while (!stop_requested_ && program_counter_ < program_size_)
 	{
-		if(std::find(breakpoints_.begin(), breakpoints_.end(), program_counter_ ) != breakpoints_.end())
+		if(last_breakpoint_pc_ != UINT64_MAX && program_counter_ != last_breakpoint_pc_)
+		{
+			last_breakpoint_pc_ = UINT64_MAX;
+		}
+
+		if(std::find(breakpoints_.begin(), breakpoints_.end(), program_counter_ ) != breakpoints_.end()
+		   && program_counter_ != last_breakpoint_pc_)
 		{
 			pause_requested_ = true;
+            last_breakpoint_pc_ = program_counter_;
 			emit  vmPausedAtBreakpointSignal();
 		}
 		{
@@ -1332,6 +1339,7 @@ void RVSSVM::Reset()
 	program_counter_ = 0;
 	instructions_retired_ = 0;
 	cycle_s_ = 0;
+	last_breakpoint_pc_   = UINT64_MAX;  // Clear breakpoint tracking on reset
 	registers_.Reset();
 	memory_controller_.Reset();
 	control_unit_.Reset();

@@ -26,6 +26,8 @@ EditorTab::EditorTab(QWidget* parent, VMManager* vmManager)
     m_disassemblyView = ui->disassemblyTextEdit;
     m_expandedView = ui->expandedTextEdit;
     m_expandedView->setReadOnly(true);
+    m_expandedView->setBreakpointInteractionEnabled(false);
+    m_expandedView->setBreakpoints(m_editor->getBreakpoints());
     m_editor->setPlaceholderText("Enter your code here...");
     m_squiggleFormat.setUnderlineStyle(QTextCharFormat::WaveUnderline);
     m_squiggleFormat.setUnderlineColor(Qt::red);
@@ -45,6 +47,7 @@ void EditorTab::onExpandButtonClicked(bool checked)
     {
         std::string expandedCode = CustomPseudoManager::expandPseudoInstruction(getRawText());
         m_expandedView->setPlainText(QString::fromStdString(expandedCode));
+        m_expandedView->setBreakpoints(m_editor->getBreakpoints());
         ui->stackedWidget->setCurrentIndex(1);
     }
     else

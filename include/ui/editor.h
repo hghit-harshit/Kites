@@ -25,6 +25,8 @@ class Editor : public QPlainTextEdit
         void lineNumberAreaMouseMoveEvent(QMouseEvent* event);
 
         std::vector<uint64_t> getBreakpoints() const ;
+        void setBreakpoints(const std::vector<uint64_t>& breakpoints);
+        void setBreakpointInteractionEnabled(bool enabled);
         void clearHighlights();
 
         void insertCompletion(const QString& completion);
@@ -46,6 +48,7 @@ class Editor : public QPlainTextEdit
     //QSet<int> m_breakPointsSet; // for quick lookup
     //int m_gutterWidth = 30;
     bool m_isTextEditor; // to differentiate between text editor and disassembly viewer
+    bool m_breakpointInteractionEnabled = true;
     LineNumberArea* m_lineNumberArea = nullptr;
 };
 

@@ -80,6 +80,8 @@ public:
 	std::queue<std::string> input_queue_;
 
 	std::vector<uint64_t> breakpoints_;
+	uint64_t last_breakpoint_pc_ = UINT64_MAX;  // Track last PC where we paused at breakpoint 
+	// This is to prevent multiple pause signals when we are paused at a breakpoint and the user tries to resume but the PC hasn't moved yet
 
 	uint32_t current_instruction_{};
 	uint64_t program_counter_{};
