@@ -14,4 +14,5 @@ TODO.md
 *.autosave
 CMakeLists.txt.user
 /vm_state
-.*
+.clang-format
+.cph
