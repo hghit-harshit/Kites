@@ -49,7 +49,16 @@ bool CustomPseudoManager::parse(ParsedPseudoInstruction &parsedInst, const QStri
         return false;
     }
     parsedInst.name = tokens.first();
-    parsedInst.args = tokens.mid(1);
+    
+    // Strip commas from arguments
+    QStringList args = tokens.mid(1);
+    for (QString& arg : args) {
+        if (arg.endsWith(",")) {
+            arg.chop(1);
+        }
+    }
+    parsedInst.args = args;
+    
     for (const QString &line : expansion.split('\n', Qt::SkipEmptyParts)) 
     {
         const QString trimmed = line.trimmed();
