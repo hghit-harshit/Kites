@@ -7,6 +7,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -127,7 +130,7 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           ditto -c -k --sequesterRsrc --keepParent \
-            build/MyApp.app \
+            build/Kites.app \
             ${{ matrix.archive }}
 
       # ============================================
@@ -136,5 +139,4 @@ jobs:
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            *.zip
+          files: ${{ matrix.archive }}
