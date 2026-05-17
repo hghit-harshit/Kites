@@ -3,6 +3,8 @@
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <set>
+#include <unordered_map>
 
 bool CustomPseudoManager::addCustomPseudoInstruction(const QString &pseudoInst,
                                                      const QString &expansion,
