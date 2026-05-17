@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QJsonDocument>
 
 namespace Kites
 {
