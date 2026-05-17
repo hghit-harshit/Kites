@@ -1,0 +1,140 @@
+# .github/workflows/release.yml
+
+name: Qt Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          # ---------------- LINUX ----------------
+          - os: ubuntu-22.04
+            qt_version: '6.6.3'
+            archive: kites-linux.zip
+            executable_path: build/Kites
+
+          # ---------------- WINDOWS ----------------
+          - os: windows-latest
+            qt_version: '6.6.3'
+            archive: kites-windows.zip
+            executable_path: build/Release/Kites.exe
+
+          # ---------------- MACOS ----------------
+          - os: macos-latest
+            qt_version: '6.6.3'
+            archive: kites-macos.zip
+            executable_path: build/Kites.app
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # --------------------------------------------
+      # Checkout
+      # --------------------------------------------
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # --------------------------------------------
+      # Install Qt
+      # --------------------------------------------
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ matrix.qt_version }}
+
+      # --------------------------------------------
+      # Configure CMake
+      # --------------------------------------------
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      # --------------------------------------------
+      # Build
+      # --------------------------------------------
+      - name: Build
+        run: cmake --build build --config Release
+
+      # ============================================
+      # LINUX PACKAGING
+      # ============================================
+      - name: Install Linux Packaging Tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update
+          sudo apt install -y zip wget fuse libfuse2
+
+      - name: Download linuxdeployqt
+        if: runner.os == 'Linux'
+        run: |
+          wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+          chmod +x linuxdeployqt-continuous-x86_64.AppImage
+
+      - name: Create Linux AppImage
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p AppDir/usr/bin
+          cp build/Kites AppDir/usr/bin/
+
+          cat > AppDir/Kites.desktop <<EOF
+          [Desktop Entry]
+          Type=Application
+          Name=Kites
+          Exec=Kites
+          Icon=Kites
+          Categories=Utility;
+          EOF
+
+          ./linuxdeployqt-continuous-x86_64.AppImage \
+            AppDir/Kites.desktop \
+            -appimage
+
+      - name: Zip Linux AppImage
+        if: runner.os == 'Linux'
+        run: |
+          zip ${{ matrix.archive }} *.AppImage
+
+      # ============================================
+      # WINDOWS PACKAGING
+      # ============================================
+      - name: Run windeployqt
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          windeployqt build\Release\Kites.exe
+
+      - name: Zip Windows Package
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          Compress-Archive `
+            -Path build/Release/* `
+            -DestinationPath ${{ matrix.archive }}
+
+      # ============================================
+      # MACOS PACKAGING
+      # ============================================
+      - name: Run macdeployqt
+        if: runner.os == 'macOS'
+        run: |
+          macdeployqt build/Kites.app
+
+      - name: Zip macOS App
+        if: runner.os == 'macOS'
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/MyApp.app \
+            ${{ matrix.archive }}
+
+      # ============================================
+      # Upload Release Assets
+      # ============================================
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.zip
