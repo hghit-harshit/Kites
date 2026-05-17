@@ -38,13 +38,13 @@ TEST_F(CustomPseudoManagerTest, AddPseudoInstructionAndExpandSingleLine)
 {
 	QString error;
 	const bool added = CustomPseudoManager::addCustomPseudoInstruction(
-		"myadd r1 r2",
+		"myadd r1, r2",
 		"add x10 r1 r2",
 		error);
 
 	ASSERT_TRUE(added) << error.toStdString();
 
-	const std::string source = "myadd x3 x4";
+	const std::string source = "myadd x3, x4";
 	const std::string expanded = CustomPseudoManager::expandPseudoInstruction(source);
 
 	EXPECT_EQ(expanded, "add x10 x3 x4");
@@ -54,7 +54,7 @@ TEST_F(CustomPseudoManagerTest, ExpandPseudoInstructionWithMultipleExpansionLine
 {
 	QString error;
 	const bool added = CustomPseudoManager::addCustomPseudoInstruction(
-		"save2 r1 r2",
+		"save2 r1, r2",
 		"addi x2 x2 -8\n"
 		"sw r1 x2 0\n"
 		"sw r2 x2 4",
@@ -62,7 +62,7 @@ TEST_F(CustomPseudoManagerTest, ExpandPseudoInstructionWithMultipleExpansionLine
 
 	ASSERT_TRUE(added) << error.toStdString();
 
-	const std::string source = "save2 x8 x9";
+	const std::string source = "save2 x8, x9";
 	const std::string expanded = CustomPseudoManager::expandPseudoInstruction(source);
 
 	EXPECT_EQ(expanded,
@@ -75,7 +75,7 @@ TEST_F(CustomPseudoManagerTest, KeepsSourceLineWhenArgumentCountDoesNotMatch)
 {
 	QString error;
 	const bool added = CustomPseudoManager::addCustomPseudoInstruction(
-		"mov2 r1 r2",
+		"mov2 r1, r2",
 		"add r1 r2 x0",
 		error);
 
