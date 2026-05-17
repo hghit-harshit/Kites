@@ -1,5 +1,12 @@
 <RCC>
-  <qresource prefix="/icons">
-    <file>kite.png</file>
-  </qresource>
+    <qresource prefix="/icons">
+        <file>kite.png</file>
+        <file>pause.svg</file>
+        <file>redo-dot.svg</file>
+        <file>play.svg</file>
+        <file>stop.svg</file>
+        <file>undo-dot.svg</file>
+        <file>resume.svg</file>
+        <file>step.svg</file>
+    </qresource>
 </RCC>

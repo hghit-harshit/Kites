@@ -133,6 +133,23 @@ void MainWindow::setUpToolBar()
     undoAction->setDisabled(true);
     redoAction->setDisabled(true);
 
+    // set toolbar icons (resources in :/icons)
+    runAction->setIcon(QIcon(":/icons/play.svg"));
+    pauseAction->setIcon(QIcon(":/icons/pause.svg"));
+    undoAction->setIcon(QIcon(":/icons/undo-dot.svg"));
+    redoAction->setIcon(QIcon(":/icons/redo-dot.svg"));
+    stepAction->setIcon(QIcon(":/icons/step.svg"));
+    // tooltips for accessibility
+    processorAction->setToolTip("Processor settings");
+    runAction->setToolTip("Run program");
+    pauseAction->setToolTip("Pause execution");
+    debugAction->setToolTip("Start debug run");
+    stepAction->setToolTip("Execute single step");
+    undoAction->setToolTip("Undo last VM step");
+    redoAction->setToolTip("Redo last VM step");
+    // optional: make icons a consistent size
+    toolbar->setIconSize(QSize(18,18));
+
     //------------Spinbox for setting execution speed----------------
     QSpinBox *spinbox = new QSpinBox(this);
     spinbox->setRange(1,10000);
@@ -161,12 +178,16 @@ void MainWindow::setUpToolBar()
             processorAction->setDisabled(true);
             pauseAction->setEnabled(true);
             runAction->setText("Stop");
+            runAction->setIcon(QIcon(":/icons/stop.svg"));
+            runAction->setToolTip("Stop execution");
             this->run();
         }
         else if(runAction->text() == "Stop")
         {
             //emit stopSignal();
             runAction->setText("Run");
+            runAction->setIcon(QIcon(":/icons/play.svg"));
+            runAction->setToolTip("Run program");
             m_vmManager->stop();
         }
         
@@ -199,6 +220,8 @@ void MainWindow::setUpToolBar()
         if(pauseAction->text() == "Pause")
         {
             pauseAction->setText("Resume");
+            pauseAction->setIcon(QIcon(":/icons/resume.svg"));
+            pauseAction->setToolTip("Resume execution");
             undoAction->setEnabled(true);
             redoAction->setEnabled(true);
             m_vmManager->pause();
@@ -206,6 +229,8 @@ void MainWindow::setUpToolBar()
         else
         {
             pauseAction->setText("Pause");
+            pauseAction->setIcon(QIcon(":/icons/pause.svg"));
+            pauseAction->setToolTip("Pause execution");
             undoAction->setDisabled(true);
             redoAction->setDisabled(true);
             m_vmManager->resume();
@@ -216,6 +241,8 @@ void MainWindow::setUpToolBar()
     // we also connect the vm paused at breakpoint signal to change the pause button text
     connect(m_vmManager,&VMManager::vmPausedAtBreakpointSignal,this,[this,pauseAction](){
         pauseAction->setText("Resume");
+        pauseAction->setIcon(QIcon(":/icons/resume.svg"));
+        pauseAction->setToolTip("Resume execution");
     });
 
     connect(stepAction,&QAction::triggered,this,[this](){
@@ -516,11 +543,15 @@ void MainWindow::runFinishedSlot()
         if(action->text() == "Stop")
         {
             action->setText("Run");
+            action->setIcon(QIcon(":/icons/play.svg"));
+            action->setToolTip("Run program");
             // when the program finishes we set the run button text back to run
         }
         if(action->text() == "Resume")
         {
             action->setText("Pause");
+            action->setIcon(QIcon(":/icons/pause.svg"));
+            action->setToolTip("Pause execution");
             // in case we stop while paused
         }
 
