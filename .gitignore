@@ -16,3 +16,4 @@ CMakeLists.txt.user
 /vm_state
 .clang-format
 .cph
+gtest_filter.py
