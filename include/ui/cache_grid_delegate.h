@@ -1,7 +1,8 @@
 // ui/cache_grid_delegate.h
 #pragma once
-#include <QStyledItemDelegate>
 #include <QPainter>
+#include <QStyledItemDelegate>
+
 
 namespace Kites
 {
@@ -9,16 +10,19 @@ namespace Kites
 class CacheGridDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
-public:
-    explicit CacheGridDelegate(size_t num_ways, QObject* parent = nullptr)
-        : QStyledItemDelegate(parent)
-        , num_ways_(num_ways)
-    {}
+  public:
+    explicit CacheGridDelegate(size_t num_ways, QObject *parent = nullptr)
+        : QStyledItemDelegate(parent), num_ways_(num_ways)
+    {
+    }
 
-    void UpdateNumWays(size_t num_ways) { num_ways_ = num_ways; }
+    void UpdateNumWays(size_t num_ways)
+    {
+        num_ways_ = num_ways;
+    }
 
-    void paint(QPainter* painter, const QStyleOptionViewItem& option,
-               const QModelIndex& index) const override
+    void paint(QPainter *painter, const QStyleOptionViewItem &option,
+               const QModelIndex &index) const override
     {
         // draw the cell normally first
         QStyledItemDelegate::paint(painter, option, index);
@@ -46,7 +50,7 @@ public:
         painter->restore();
     }
 
-private:
+  private:
     size_t num_ways_;
 };
 

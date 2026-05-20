@@ -7,12 +7,13 @@
 #define CONFIG_H
 
 #include "globals.h"
-#include <string>
-#include <iostream>
-#include <stdexcept>
 #include <cstdint>
 #include <fstream>
+#include <iostream>
 #include <sstream>
+#include <stdexcept>
+#include <string>
+
 
 /**
  * @namespace vm_config
@@ -20,14 +21,14 @@
  */
 namespace vm_config
 {
-  enum class VmTypes
-  {
+enum class VmTypes
+{
     SINGLE_STAGE,
     MULTI_STAGE
-  };
+};
 
-  struct VmConfig
-  {
+struct VmConfig
+{
     VmTypes vm_type = VmTypes::SINGLE_STAGE;
     uint64_t run_step_delay = 300;
     uint64_t memory_size = 0xffffffffffffffff; // 64-bit address space
@@ -38,131 +39,131 @@ namespace vm_config
 
     void setVmType(const VmTypes &type)
     {
-      vm_type = type;
+        vm_type = type;
     }
 
     VmTypes getVmType() const
     {
-      return vm_type;
+        return vm_type;
     }
     void setRunStepDelay(uint64_t delay)
     {
-      run_step_delay = delay;
-      std::cout << "Run step delay set to: " << run_step_delay << " ms" << std::endl;
+        run_step_delay = delay;
+        std::cout << "Run step delay set to: " << run_step_delay << " ms" << std::endl;
     }
     uint64_t getRunStepDelay() const
     {
-      return run_step_delay;
+        return run_step_delay;
     }
     void setMemorySize(uint64_t size)
     {
-      memory_size = size;
+        memory_size = size;
     }
     uint64_t getMemorySize() const
     {
-      return memory_size;
+        return memory_size;
     }
     void setMemoryBlockSize(uint64_t size)
     {
-      memory_block_size = size;
+        memory_block_size = size;
     }
     uint64_t getMemoryBlockSize() const
     {
-      return memory_block_size;
+        return memory_block_size;
     }
     void setDataSectionStart(uint64_t start)
     {
-      data_section_start = start;
+        data_section_start = start;
     }
     uint64_t getDataSectionStart() const
     {
-      return data_section_start;
+        return data_section_start;
     }
 
     void setTextSectionStart(uint64_t start)
     {
-      text_section_start = start;
+        text_section_start = start;
     }
 
     uint64_t getTextSectionStart() const
     {
-      return text_section_start;
+        return text_section_start;
     }
 
     void setBssSectionStart(uint64_t start)
     {
-      bss_section_start = start;
+        bss_section_start = start;
     }
 
     uint64_t getBssSectionStart() const
     {
-      return bss_section_start;
+        return bss_section_start;
     }
 
     void modifyConfig(const std::string &section, const std::string &key, const std::string &value)
     {
-      if (section == "Execution")
-      {
-        if (key == "processor_type")
+        if (section == "Execution")
         {
-          if (value == "single_stage")
-          {
-            setVmType(VmTypes::SINGLE_STAGE);
-          }
-          else if (value == "multi_stage")
-          {
-            setVmType(VmTypes::MULTI_STAGE);
-          }
-          else
-          {
-            throw std::invalid_argument("Unknown VM type: " + value);
-          }
+            if (key == "processor_type")
+            {
+                if (value == "single_stage")
+                {
+                    setVmType(VmTypes::SINGLE_STAGE);
+                }
+                else if (value == "multi_stage")
+                {
+                    setVmType(VmTypes::MULTI_STAGE);
+                }
+                else
+                {
+                    throw std::invalid_argument("Unknown VM type: " + value);
+                }
+            }
+            else if (key == "run_step_delay")
+            {
+                setRunStepDelay(std::stoull(value));
+            }
+            else
+            {
+                throw std::invalid_argument("Unknown key: " + key);
+            }
         }
-        else if (key == "run_step_delay")
+        else if (section == "Memory")
         {
-          setRunStepDelay(std::stoull(value));
-        }
-        else
-        {
-          throw std::invalid_argument("Unknown key: " + key);
-        }
-      }
-      else if (section == "Memory")
-      {
-        if (key == "memory_size")
-        {
-          setMemorySize(std::stoull(value));
-        }
-        else if (key == "memory_block_size")
-        {
-          setMemoryBlockSize(std::stoull(value));
-        }
-        else if (key == "data_section_start")
-        {
-          setDataSectionStart(std::stoull(value, nullptr, 16));
-        }
-        else if (key == "text_section_start")
-        {
-          setTextSectionStart(std::stoull(value, nullptr, 16));
-        }
-        else if (key == "bss_section_start")
-        {
-          setBssSectionStart(std::stoull(value, nullptr, 16));
-        }
+            if (key == "memory_size")
+            {
+                setMemorySize(std::stoull(value));
+            }
+            else if (key == "memory_block_size")
+            {
+                setMemoryBlockSize(std::stoull(value));
+            }
+            else if (key == "data_section_start")
+            {
+                setDataSectionStart(std::stoull(value, nullptr, 16));
+            }
+            else if (key == "text_section_start")
+            {
+                setTextSectionStart(std::stoull(value, nullptr, 16));
+            }
+            else if (key == "bss_section_start")
+            {
+                setBssSectionStart(std::stoull(value, nullptr, 16));
+            }
 
+            else
+            {
+                throw std::invalid_argument("Unknown key: " + key);
+            }
+        }
         else
         {
-          throw std::invalid_argument("Unknown key: " + key);
+            throw std::invalid_argument("Unknown section: " + section);
         }
-      }
-      else
-      {
-        throw std::invalid_argument("Unknown section: " + section);
-      }
     }
-  };
+};
 
-  extern VmConfig config;
+extern VmConfig config;
 
 } // namespace vm_config
 

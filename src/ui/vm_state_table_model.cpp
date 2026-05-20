@@ -2,12 +2,11 @@
 
 namespace Kites
 {
-VMStateTableModel::VMStateTableModel(QObject *parent,VMManager* vmManager)
-    : QAbstractTableModel(parent)
-    , m_vmManager(vmManager)
+VMStateTableModel::VMStateTableModel(QObject *parent, VMManager *vmManager)
+    : QAbstractTableModel(parent), m_vmManager(vmManager)
 {
-    connect(m_vmManager, &VMManager::vmStageChangedSignal,
-            this, &VMStateTableModel::vmStateChangedSlot);
+    connect(m_vmManager, &VMManager::vmStageChangedSignal, this,
+            &VMStateTableModel::vmStateChangedSlot);
 }
 
 int VMStateTableModel::rowCount(const QModelIndex &parent) const
@@ -36,39 +35,31 @@ QVariant VMStateTableModel::data(const QModelIndex &index, int role) const
     // Define the keys in the order they should appear
     // cuz we dont want to display all the keys in vm state map
     static const QStringList keys = {
-        "ProgramCounter",
-        "Cycles",
-        "InstructionsRetired",
-        "CPI",
-        "IPC",
-        "StallCycles",
-        "BranchMispredictions"
-    };
+        "ProgramCounter",      "Cycles", "InstructionsRetired", "CPI", "IPC", "StallCycles",
+        "BranchMispredictions"};
 
-    static const QList<std::function<QVariant()>> valueGetters =
-    {
-        [this](){return m_vmManager->getProgramCounter();},
-        [this](){return m_vmManager->getCycles();},
-        [this](){return m_vmManager->getInstructionsRetired();},
-        [this](){return m_vmManager->getCPI();},
-        [this](){return m_vmManager->getIPC();},
-        [this](){return m_vmManager->getStallCycles();},
-        [this](){return m_vmManager->getBranchMispredictions();}
-    };
+    static const QList<std::function<QVariant()>> valueGetters = {
+        [this]() { return m_vmManager->getProgramCounter(); },
+        [this]() { return m_vmManager->getCycles(); },
+        [this]() { return m_vmManager->getInstructionsRetired(); },
+        [this]() { return m_vmManager->getCPI(); },
+        [this]() { return m_vmManager->getIPC(); },
+        [this]() { return m_vmManager->getStallCycles(); },
+        [this]() { return m_vmManager->getBranchMispredictions(); }};
 
     if (!m_vmManager)
         return QVariant{};
 
     if (role == Qt::DisplayRole)
     {
-       //Get the VM state map from the VMManager
-        // const QMap<QString, QVariant>& vmState = m_vmManager->getVMStateMap();
-        // if (index.row() < 0 || index.row() >= vmState.size())
-        //     return QVariant{};
+        // Get the VM state map from the VMManager
+        //  const QMap<QString, QVariant>& vmState = m_vmManager->getVMStateMap();
+        //  if (index.row() < 0 || index.row() >= vmState.size())
+        //      return QVariant{};
 
         // auto it = vmState.constBegin();
         // std::advance(it, index.row());
-        
+
         if (index.column() == 0)
         {
             return keys[index.row()];
@@ -81,9 +72,9 @@ QVariant VMStateTableModel::data(const QModelIndex &index, int role) const
     return QVariant{};
 }
 
-void VMStateTableModel::vmStateChangedSlot(const QMap<QString,QVariant>& vmState)
+void VMStateTableModel::vmStateChangedSlot(const QMap<QString, QVariant> &vmState)
 {
     beginResetModel();
     endResetModel();
 }
-} // namespace Kites 
+} // namespace Kites

@@ -1,9 +1,8 @@
-#pragma once 
-#include "vm/vm_base.h"
-#include "vm/pipeline_registers.h"
-#include "vm/vm_manager.h"
+#pragma once
 #include "rv5s_control_unit.h"
-
+#include "vm/pipeline_registers.h"
+#include "vm/vm_base.h"
+#include "vm/vm_manager.h"
 
 struct PipelineRegisterChange
 {
@@ -33,20 +32,18 @@ struct RV5StageStepDelta
     unsigned int old_branch_mispredictions;
     unsigned int new_branch_mispredictions;
     std::vector<RegisterChange> register_changes;
-	std::vector<MemoryChange> memory_changes;
+    std::vector<MemoryChange> memory_changes;
     PipelineRegisterChange pipeline_register_change;
 };
 
-
-
 class RV5StageVM_Base : public VmBase
 {
-public:
+  public:
     RV5StageVM_Base() = default;
     ~RV5StageVM_Base() = default;
 
     // --- VM Control Functions ---
- 
+
     void PrintType()
     {
         std::cout << "rv5s_vm" << std::endl;
@@ -55,8 +52,8 @@ public:
     void Reset() override;
     void Undo() override;
     void Redo() override;
-protected:
 
+  protected:
     // Pipeline Registers
     IF_ID_Register if_id_reg_;
     ID_EX_Register id_ex_reg_;
@@ -74,12 +71,10 @@ protected:
     void memory_writeback_float();
     void memory_writeback_double();
 
-    void register_write_back(const uint64_t& write_data);
+    void register_write_back(const uint64_t &write_data);
     void memory_read();
-    //void memory_read_float();
-    //void memory_read_double();
-
-   
+    // void memory_read_float();
+    // void memory_read_double();
 
     void begin_step_delta();
     void finalize_step_delta();
@@ -88,7 +83,7 @@ protected:
     bool is_pipeline_drained() const;
     void SetVMStateMap() override;
     void Run() override; // run debug run adn reset are same across all rv5s vms
-    
+
     // --- Private methods for each pipeline stage ---
     virtual void pipeline_fetch() = 0;
 
@@ -101,13 +96,12 @@ protected:
     uint64_t execute_float();
     uint64_t execute_double();
 
-    void execute_csr(){};
+    void execute_csr() {};
     // therse function are same across all rv5s vms so we can define them here
     // and implement them in the .cpp file
     void pipeline_memory();
-    //void pipeline_memory_float();
-    //void pipeline_memory_double();
-
+    // void pipeline_memory_float();
+    // void pipeline_memory_double();
 
     void pipeline_writeback();
     void pipeline_writeback_float();

@@ -2,20 +2,25 @@
 
 namespace Kites
 {
-    MemoryTableView::MemoryTableView(QWidget* parent)
-    :QTableView(parent){}
+MemoryTableView::MemoryTableView(QWidget *parent) : QTableView(parent)
+{
+}
 
-    void MemoryTableView::wheelEvent(QWheelEvent* event)
+void MemoryTableView::wheelEvent(QWheelEvent *event)
+{
+    if (event->angleDelta().y() > 0)
     {
-        if(event->angleDelta().y() > 0)
-        { emit scrolled(true);}
-        else
-        {emit scrolled(false);}
+        emit scrolled(true);
     }
-
-    void MemoryTableView::resizeEvent(QResizeEvent* event)
+    else
     {
-        QTableView::resizeEvent(event);
-        emit resized();
+        emit scrolled(false);
     }
 }
+
+void MemoryTableView::resizeEvent(QResizeEvent *event)
+{
+    QTableView::resizeEvent(event);
+    emit resized();
+}
+} // namespace Kites

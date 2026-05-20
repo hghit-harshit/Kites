@@ -7,23 +7,26 @@ namespace Kites
 {
 class PipelineReg : public BaseComponent
 {
-public:
-    PipelineReg(const QString& name = "",QGraphicsItem *parent = nullptr)
-        :BaseComponent
-        ([](){
-            QPainterPath path;
-            path.moveTo(0, 0);
-            path.lineTo(20, 0);
-            path.lineTo(20, 500);
-            path.lineTo(0, 500);
-            // aluPath.lineTo(0, 60);
-            // aluPath.lineTo(10, 50);
-            // aluPath.lineTo(0, 40);
-            //aluPath.lineTo(10, 100);
-            path.closeSubpath();
-            return path;
-        }(),
-         name, parent){}
+  public:
+    PipelineReg(const QString &name = "", QGraphicsItem *parent = nullptr)
+        : BaseComponent(
+              []()
+              {
+                  QPainterPath path;
+                  path.moveTo(0, 0);
+                  path.lineTo(20, 0);
+                  path.lineTo(20, 500);
+                  path.lineTo(0, 500);
+                  // aluPath.lineTo(0, 60);
+                  // aluPath.lineTo(10, 50);
+                  // aluPath.lineTo(0, 40);
+                  // aluPath.lineTo(10, 100);
+                  path.closeSubpath();
+                  return path;
+              }(),
+              name, parent)
+    {
+    }
 
     QJsonObject toJson()
     {

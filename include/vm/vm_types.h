@@ -1,5 +1,6 @@
 #pragma once
-enum class VMType{
+enum class VMType
+{
     RVSS,
     RV5Stage_NH_NF,
     RV5Stage_H_NF,

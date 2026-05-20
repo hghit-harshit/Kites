@@ -1,22 +1,23 @@
 #include "ui/processor_designs/components/base_component.h"
-#include <QPainter>
 #include <QJsonObject>
+#include <QPainter>
+#include <QTextDocument>
 #include <QTextOption>
 #include <algorithm>
-#include <QTextDocument>
+
 namespace Kites
 {
 BaseComponent::BaseComponent(const QPainterPath &path, const QString &name, QGraphicsItem *parent)
-    :QGraphicsPathItem(path,parent)
+    : QGraphicsPathItem(path, parent)
 {
     setBrush(Qt::gray);
-    setPen(QPen(Qt::white,2));
+    setPen(QPen(Qt::white, 2));
 
-    //setFlag(QGraphicsItem::ItemIsSelectable, false);
-    //setFlag(QGraphicsItem::ItemIsMovable, true);
+    // setFlag(QGraphicsItem::ItemIsSelectable, false);
+    // setFlag(QGraphicsItem::ItemIsMovable, true);
 
-    m_name  = name;
-    if(name != "")
+    m_name = name;
+    if (name != "")
     {
         m_label = new QGraphicsTextItem(name, this);
         QFont labelFont = m_label->font();
@@ -33,10 +34,10 @@ BaseComponent::BaseComponent(const QPainterPath &path, const QString &name, QGra
     }
 }
 
-void BaseComponent::setName(const QString& name)
+void BaseComponent::setName(const QString &name)
 {
     m_name = name;
-    if(name != "")
+    if (name != "")
     {
         m_label = new QGraphicsTextItem(name, this);
         QFont labelFont = m_label->font();
@@ -51,7 +52,6 @@ void BaseComponent::setName(const QString& name)
         m_label->setPos(box.center().x() - labelWidth / 2,
                         box.center().y() - m_label->boundingRect().height() / 2);
     }
-
 }
 
 QJsonObject BaseComponent::toJson()
@@ -64,4 +64,4 @@ QJsonObject BaseComponent::toJson()
 
     return obj;
 }
-}
+} // namespace Kites

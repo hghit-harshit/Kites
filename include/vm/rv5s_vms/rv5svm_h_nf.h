@@ -5,18 +5,20 @@
  */
 #pragma once
 
-#include "vm/rv5s_vms/rv5s_vm_base.h"
 #include "vm/pipeline_registers.h"
 #include "vm/rv5s_vms/rv5s_control_unit.h"
 #include "vm/rv5s_vms/rv5s_hdu.h" // <-- Including the new HDU
+#include "vm/rv5s_vms/rv5s_vm_base.h"
 
+
+#include <iostream>
 #include <stack>
 #include <vector>
-#include <iostream>
+
 
 class RV5StageVM_H_NF : public RV5StageVM_Base
 {
-public:
+  public:
     // Constructor and Destructor
     RV5StageVM_H_NF();
     ~RV5StageVM_H_NF() = default;
@@ -32,14 +34,15 @@ public:
     {
         std::cout << "RV5StageVM_H_NF" << std::endl;
     }
-    void SetActiveWireNames()  override;
-private:
+    void SetActiveWireNames() override;
+
+  private:
     // The Hazard Detection Unit instance
-    //RV5SHazardUnit hazard_unit_;
+    // RV5SHazardUnit hazard_unit_;
 
     // This flag is used to control the pipeline flow when a stall is detected.
     // If true, the IF stage freezes the PC and does not update IF/ID.
-    bool stall_fetch_and_decode_ = false; 
+    bool stall_fetch_and_decode_ = false;
 
     // --- Private methods for each pipeline stage ---
     void pipeline_fetch() override;
@@ -48,11 +51,11 @@ private:
 
     uint64_t pipeline_execute_float() override;
     uint64_t pipeline_execute_double() override;
-    //void pipeline_memory() override;
-    // void pipeline_writeback() override;
+    // void pipeline_memory() override;
+    //  void pipeline_writeback() override;
 
     // Helper function to consolidate hazard checks using the dedicated unit
 
-    //void print_pipeline_registers_debug();
+    // void print_pipeline_registers_debug();
     void handle_syscall() override;
 };

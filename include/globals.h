@@ -8,7 +8,8 @@
 
 #include <filesystem>
 
-namespace globals {
+namespace globals
+{
 extern std::filesystem::path invokation_path;
 extern std::filesystem::path vm_state_directory;
 extern std::filesystem::path config_file_path;
@@ -20,7 +21,7 @@ extern std::filesystem::path memory_dump_file_path;
 extern std::filesystem::path cache_dump_file_path;
 extern std::filesystem::path vm_state_dump_file_path;
 extern std::filesystem::path custom_pseudo_instructions_file_path;
-//extern std::string output_file;
+// extern std::string output_file;
 
 extern bool verbose_errors_print;
 extern bool verbose_warnings;
@@ -30,6 +31,6 @@ extern unsigned int text_section_start;
 extern unsigned int data_section_start;
 
 void initGlobals();
-}
+} // namespace globals
 
 #endif // GLOBALS_H

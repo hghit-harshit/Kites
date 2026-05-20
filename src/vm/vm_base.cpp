@@ -6,17 +6,19 @@
 
 #include "vm/vm_base.h"
 
-#include "globals.h"
 #include "config.h"
+#include "globals.h"
 
-#include <cstdint>
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <filesystem>
+
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <thread>
+
 
 VmBase::VmBase()
 {
@@ -70,46 +72,71 @@ void VmBase::LoadProgram(const AssembledProgram &program)
     };
     for (const auto &data : program.data_buffer)
     {
-        std::visit([&](auto &&value)
-                   {
-      using T = std::decay_t<decltype(value)>; 
-      
+        std::visit(
+            [&](auto &&value)
+            {
+                using T = std::decay_t<decltype(value)>;
 
-      if constexpr (std::is_same_v<T, uint8_t>) {
-        align(1);
-        memory_controller_.WriteByte_d(base_data_address + data_counter, value);  // Write a byte
-        data_counter += 1;
-      } else if constexpr (std::is_same_v<T, uint16_t>) {
-        align(2);
-        memory_controller_.WriteHalfWord_d(base_data_address + data_counter, value);  // Write a halfword (16 bits)
-        data_counter += 2;
-      } else if constexpr (std::is_same_v<T, uint32_t>) {
-        align(4);
-        memory_controller_.WriteWord_d(base_data_address + data_counter, value);  // Write a word (32 bits)
-        data_counter += 4;
-      } else if constexpr (std::is_same_v<T, uint64_t>) {
-        align(8);
-        memory_controller_.WriteDoubleWord_d(base_data_address + data_counter, value);  // Write a double word (64 bits)
-        data_counter += 8;
-      } else if constexpr (std::is_same_v<T, float>) {
-        align(4);
-        uint32_t float_as_int;
-        std::memcpy(&float_as_int, &value, sizeof(float));
-        memory_controller_.WriteWord_d(base_data_address + data_counter, float_as_int);  // Write the float as a word
-        data_counter += 4;
-      } else if constexpr (std::is_same_v<T, double>) {
-        align(8);
-        uint64_t double_as_int;
-        std::memcpy(&double_as_int, &value, sizeof(double));
-        memory_controller_.WriteDoubleWord_d(base_data_address + data_counter, double_as_int);  // Write the double as a double word
-        data_counter += 8;
-      } else if constexpr (std::is_same_v<T, std::string>) {
-        align(1);
-        for (size_t i = 0; i < value.size(); i++) {
-          memory_controller_.WriteByte_d(base_data_address + data_counter, static_cast<uint8_t>(value[i]));  // Write each byte of the string
-          data_counter += 1;
-        }
-      } }, data);
+                if constexpr (std::is_same_v<T, uint8_t>)
+                {
+                    align(1);
+                    memory_controller_.WriteByte_d(base_data_address + data_counter,
+                                                   value); // Write a byte
+                    data_counter += 1;
+                }
+                else if constexpr (std::is_same_v<T, uint16_t>)
+                {
+                    align(2);
+                    memory_controller_.WriteHalfWord_d(base_data_address + data_counter,
+                                                       value); // Write a halfword (16 bits)
+                    data_counter += 2;
+                }
+                else if constexpr (std::is_same_v<T, uint32_t>)
+                {
+                    align(4);
+                    memory_controller_.WriteWord_d(base_data_address + data_counter,
+                                                   value); // Write a word (32 bits)
+                    data_counter += 4;
+                }
+                else if constexpr (std::is_same_v<T, uint64_t>)
+                {
+                    align(8);
+                    memory_controller_.WriteDoubleWord_d(base_data_address + data_counter,
+                                                         value); // Write a double word (64 bits)
+                    data_counter += 8;
+                }
+                else if constexpr (std::is_same_v<T, float>)
+                {
+                    align(4);
+                    uint32_t float_as_int;
+                    std::memcpy(&float_as_int, &value, sizeof(float));
+                    memory_controller_.WriteWord_d(base_data_address + data_counter,
+                                                   float_as_int); // Write the float as a word
+                    data_counter += 4;
+                }
+                else if constexpr (std::is_same_v<T, double>)
+                {
+                    align(8);
+                    uint64_t double_as_int;
+                    std::memcpy(&double_as_int, &value, sizeof(double));
+                    memory_controller_.WriteDoubleWord_d(
+                        base_data_address + data_counter,
+                        double_as_int); // Write the double as a double word
+                    data_counter += 8;
+                }
+                else if constexpr (std::is_same_v<T, std::string>)
+                {
+                    align(1);
+                    for (size_t i = 0; i < value.size(); i++)
+                    {
+                        memory_controller_.WriteByte_d(
+                            base_data_address + data_counter,
+                            static_cast<uint8_t>(value[i])); // Write each byte of the string
+                        data_counter += 1;
+                    }
+                }
+            },
+            data);
     }
     std::cout << "VM_PROGRAM_LOADED" << std::endl;
     output_status_ = "VM_PROGRAM_LOADED";
@@ -214,8 +241,10 @@ void VmBase::SetBreakpoints(const std::vector<uint64_t> &breakpoints)
     {
         breakpoints_.emplace_back(program_.line_number_instruction_number_mapping[bp] * 4);
         qDebug() << "Breakpoint set at line: " << bp;
-        qDebug() << "Breakpoint set at instruction number: " << program_.line_number_instruction_number_mapping[bp];
-        qDebug() << "Breakpoint set at address: " << QString::number(program_.line_number_instruction_number_mapping[bp] * 4, 16);
+        qDebug() << "Breakpoint set at instruction number: "
+                 << program_.line_number_instruction_number_mapping[bp];
+        qDebug() << "Breakpoint set at address: "
+                 << QString::number(program_.line_number_instruction_number_mapping[bp] * 4, 16);
     }
 }
 
@@ -224,7 +253,8 @@ void VmBase::AddBreakpoint(uint64_t val, bool is_line)
     if (is_line)
     {
         // If the value is a line number, convert it to an instruction address
-        if (program_.line_number_instruction_number_mapping.find(val) == program_.line_number_instruction_number_mapping.end())
+        if (program_.line_number_instruction_number_mapping.find(val) ==
+            program_.line_number_instruction_number_mapping.end())
         {
             std::cerr << "Invalid line number: " << val << std::endl;
             return;
@@ -242,7 +272,8 @@ void VmBase::AddBreakpoint(uint64_t val, bool is_line)
     {
         if (val % 4 != 0)
         {
-            std::cerr << "Invalid instruction address: " << val << ". Must be a multiple of 4." << std::endl;
+            std::cerr << "Invalid instruction address: " << val << ". Must be a multiple of 4."
+                      << std::endl;
             return;
         }
         if (CheckBreakpoint(val))
@@ -261,7 +292,8 @@ void VmBase::RemoveBreakpoint(uint64_t val, bool is_line)
     if (is_line)
     {
         // If the value is a line number, convert it to an instruction address
-        if (program_.line_number_instruction_number_mapping.find(val) == program_.line_number_instruction_number_mapping.end())
+        if (program_.line_number_instruction_number_mapping.find(val) ==
+            program_.line_number_instruction_number_mapping.end())
         {
             std::cerr << "Invalid line number: " << val << std::endl;
             return;
@@ -273,13 +305,15 @@ void VmBase::RemoveBreakpoint(uint64_t val, bool is_line)
             std::cerr << "No breakpoint exists at line: " << line << std::endl;
             return;
         }
-        breakpoints_.erase(std::remove(breakpoints_.begin(), breakpoints_.end(), bp), breakpoints_.end());
+        breakpoints_.erase(std::remove(breakpoints_.begin(), breakpoints_.end(), bp),
+                           breakpoints_.end());
     }
     else
     {
         if (val % 4 != 0)
         {
-            std::cerr << "Invalid instruction address: " << val << ". Must be a multiple of 4." << std::endl;
+            std::cerr << "Invalid instruction address: " << val << ". Must be a multiple of 4."
+                      << std::endl;
             return;
         }
         if (!CheckBreakpoint(val))
@@ -287,7 +321,8 @@ void VmBase::RemoveBreakpoint(uint64_t val, bool is_line)
             std::cerr << "No breakpoint exists at address: " << val << std::endl;
             return;
         }
-        breakpoints_.erase(std::remove(breakpoints_.begin(), breakpoints_.end(), val), breakpoints_.end());
+        breakpoints_.erase(std::remove(breakpoints_.begin(), breakpoints_.end(), val),
+                           breakpoints_.end());
     }
     DumpState(globals::vm_state_dump_file_path);
 }
@@ -322,18 +357,13 @@ void VmBase::DumpState(const std::filesystem::path &filename)
     unsigned int current_line = program_.instruction_number_line_number_mapping[instruction_number];
 
     file << "{\n";
-    file << "    \"program_counter\": " << "\"0x"
-         << std::hex << std::setw(8) << std::setfill('0')
-         << program_counter_
-         << std::dec << std::setfill(' ')
-         << "\",\n";
+    file << "    \"program_counter\": " << "\"0x" << std::hex << std::setw(8) << std::setfill('0')
+         << program_counter_ << std::dec << std::setfill(' ') << "\",\n";
     file << "    \"current_line\": " << current_line << ",\n";
-    file << "    \"current_instruction\": " << "\"0x"
-         << std::hex << std::setw(8) << std::setfill('0')
-         << current_instruction_
-         << std::dec << std::setfill(' ')
-         << "\",\n";
-    file << "    \"disassembly_line_number\": " << program_.instruction_number_disassembly_mapping[instruction_number] << ",\n";
+    file << "    \"current_instruction\": " << "\"0x" << std::hex << std::setw(8)
+         << std::setfill('0') << current_instruction_ << std::dec << std::setfill(' ') << "\",\n";
+    file << "    \"disassembly_line_number\": "
+         << program_.instruction_number_disassembly_mapping[instruction_number] << ",\n";
     file << "    \"cycle_count\": " << cycle_s_ << ",\n";
     file << "    \"instructions_retired\": " << instructions_retired_ << ",\n";
     file << "    \"cpi\": " << cpi_ << ",\n";

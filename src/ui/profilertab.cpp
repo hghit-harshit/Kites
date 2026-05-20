@@ -6,20 +6,18 @@
 
 namespace Kites
 {
-ProfilerTab::ProfilerTab(QWidget *parent, ProfilerManager* profilerManager)
-    : KitesTab(parent)
-    , ui(new Ui::ProfilerTab)
-    , profiler_manager_(profilerManager)
+ProfilerTab::ProfilerTab(QWidget *parent, ProfilerManager *profilerManager)
+    : KitesTab(parent), ui(new Ui::ProfilerTab), profiler_manager_(profilerManager)
 {
     ui->setupUi(this);
     ui->splitter->setStretchFactor(0, 1);
 
     if (profiler_manager_)
     {
-        connect(profiler_manager_, &ProfilerManager::lineExecutionCountsUpdated,
-                this, &ProfilerTab::updateLineExecutionCounts);
-        connect(profiler_manager_, &ProfilerManager::profilerReset,
-                this, &ProfilerTab::resetProfilerView);
+        connect(profiler_manager_, &ProfilerManager::lineExecutionCountsUpdated, this,
+                &ProfilerTab::updateLineExecutionCounts);
+        connect(profiler_manager_, &ProfilerManager::profilerReset, this,
+                &ProfilerTab::resetProfilerView);
     }
 }
 
@@ -28,18 +26,18 @@ ProfilerTab::~ProfilerTab()
     delete ui;
 }
 
-void ProfilerTab::setSourceText(const QString& sourceText)
+void ProfilerTab::setSourceText(const QString &sourceText)
 {
     ui->plainTextEdit->setPlainText(sourceText);
     ui->plainTextEdit->clearHitCount();
 }
 
-void ProfilerTab::updateLineExecutionCounts(const std::map<int, int>& lineExecutionCounts)
+void ProfilerTab::updateLineExecutionCounts(const std::map<int, int> &lineExecutionCounts)
 {
     ui->plainTextEdit->setHitCount(lineExecutionCounts);
 }
 
-void ProfilerTab::updateInstructionTypes(const std::map<int, std::string>& instructionTypes)
+void ProfilerTab::updateInstructionTypes(const std::map<int, std::string> &instructionTypes)
 {
     /*TODO move this logic to the profiler manager but this will have to do for now*/
     ui->plainTextEdit->setInstructionTypes(instructionTypes);
@@ -51,7 +49,7 @@ void ProfilerTab::updateInstructionTypes(const std::map<int, std::string>& instr
     int bTypeCount = 0;
     int uTypeCount = 0;
 
-    for (const auto& [lineNumber, type] : instructionTypes)
+    for (const auto &[lineNumber, type] : instructionTypes)
     {
         Q_UNUSED(lineNumber);
 
@@ -86,19 +84,20 @@ void ProfilerTab::updateInstructionTypes(const std::map<int, std::string>& instr
     ui->JTypelineEdit->setText(QString::number(jTypeCount));
     ui->BTypelineEdit->setText(QString::number(bTypeCount));
 
-    if (auto* sTypeLineEdit = findChild<QLineEdit*>("STypelineEdit"))
+    if (auto *sTypeLineEdit = findChild<QLineEdit *>("STypelineEdit"))
     {
         sTypeLineEdit->setText(QString::number(sTypeCount));
     }
-    if (auto* uTypeLineEdit = findChild<QLineEdit*>("UTypelineEdit"))
+    if (auto *uTypeLineEdit = findChild<QLineEdit *>("UTypelineEdit"))
     {
         uTypeLineEdit->setText(QString::number(uTypeCount));
     }
 }
 
-void ProfilerTab::updateStatistics(const std::map<std::string, int>& statistics)
+void ProfilerTab::updateStatistics(const std::map<std::string, int> &statistics)
 {
-    const auto getOrDefault = [&statistics](const char* key) -> int {
+    const auto getOrDefault = [&statistics](const char *key) -> int
+    {
         const auto it = statistics.find(key);
         return it != statistics.end() ? it->second : 0;
     };
@@ -117,11 +116,11 @@ void ProfilerTab::resetProfilerView()
     ui->JTypelineEdit->clear();
     ui->BTypelineEdit->clear();
 
-    if (auto* sTypeLineEdit = findChild<QLineEdit*>("STypelineEdit"))
+    if (auto *sTypeLineEdit = findChild<QLineEdit *>("STypelineEdit"))
     {
         sTypeLineEdit->clear();
     }
-    if (auto* uTypeLineEdit = findChild<QLineEdit*>("UTypelineEdit"))
+    if (auto *uTypeLineEdit = findChild<QLineEdit *>("UTypelineEdit"))
     {
         uTypeLineEdit->clear();
     }
@@ -130,4 +129,4 @@ void ProfilerTab::resetProfilerView()
     // ui->CPIlineEdit->clear();
     // ui->InstlineEdit->clear();
 }
-}// namespace Kites
+} // namespace Kites

@@ -6,9 +6,10 @@
 
 #include "assembler/parser.h"
 #include "common/instructions.h"
-#include "vm/registers.h"
-#include "utils.h"
 #include "config.h"
+#include "utils.h"
+#include "vm/registers.h"
+
 
 #include <string>
 
@@ -16,14 +17,22 @@ bool Parser::parse_pseudo()
 {
     if (currentToken().value == "la")
     {
-        if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::LABEL_REF && (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::LABEL_REF &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
         {
             std::string reg = reg_alias_to_name.at(peekToken(1).value);
             std::string label = peekToken(3).value;
 
             if (symbol_table_.find(label) != symbol_table_.end() && symbol_table_[label].isData)
             {
-                uint64_t address = symbol_table_[label].address; // relative to data section (e.g., 0,8,16,...)
+                uint64_t address =
+                    symbol_table_[label].address; // relative to data section (e.g., 0,8,16,...)
                 uint64_t data_section_start = vm_config::config.getDataSectionStart();
                 uint64_t symbol_addr = data_section_start + address;
                 uint64_t pc = instruction_index_ * 4;
@@ -39,7 +48,8 @@ bool Parser::parse_pseudo()
                 auipc_instr.setImm(std::to_string(hi20));
                 auipc_instr.setLineNumber(currentToken().line_number);
 
-                // std::cout << "auipc " << reg << ", " << "0x" << std::hex << hi20 << std::dec << std::endl;
+                // std::cout << "auipc " << reg << ", " << "0x" << std::hex << hi20 << std::dec <<
+                // std::endl;
 
                 ICUnit addi_instr;
                 addi_instr.setOpcode("addi");
@@ -49,30 +59,29 @@ bool Parser::parse_pseudo()
                 addi_instr.setImm(std::to_string(lo12));
                 addi_instr.setLineNumber(currentToken().line_number);
 
-                // std::cout << "addi " << reg << ", " << reg << ", " << lo12 << std::dec << std::endl;
+                // std::cout << "addi " << reg << ", " << reg << ", " << lo12 << std::dec <<
+                // std::endl;
 
                 auipc_instr.setInstructionIndex(instruction_index_);
                 intermediate_code_.emplace_back(auipc_instr, true);
-                instruction_number_line_number_mapping_[instruction_index_] = auipc_instr.getLineNumber();
+                instruction_number_line_number_mapping_[instruction_index_] =
+                    auipc_instr.getLineNumber();
                 instruction_index_++;
 
                 addi_instr.setInstructionIndex(instruction_index_);
                 intermediate_code_.emplace_back(addi_instr, true);
-                instruction_number_line_number_mapping_[instruction_index_] = addi_instr.getLineNumber();
+                instruction_number_line_number_mapping_[instruction_index_] =
+                    addi_instr.getLineNumber();
                 instruction_index_++;
             }
             else
             {
                 errors_.count++;
                 recordError(ParseError(currentToken().line_number, "Invalid label reference"));
-                errors_.all_errors.emplace_back(
-                    errors::InvalidLabelRefError(
-                        "Invalid label reference",
-                        "Expected: Label defined in .data section",
-                        filename_,
-                        currentToken().line_number,
-                        currentToken().column_number,
-                        GetLineFromFile(filename_, currentToken().line_number)));
+                errors_.all_errors.emplace_back(errors::InvalidLabelRefError(
+                    "Invalid label reference", "Expected: Label defined in .data section",
+                    filename_, currentToken().line_number, currentToken().column_number,
+                    GetLineFromFile(filename_, currentToken().line_number)));
             }
             skipCurrentLine();
             // instruction_index_+=2;
@@ -84,7 +93,8 @@ bool Parser::parse_pseudo()
     // nop
     else if (currentToken().value == "nop")
     {
-        if (peekToken(1).type == TokenType::EOF_ || peekToken(1).line_number != currentToken().line_number)
+        if (peekToken(1).type == TokenType::EOF_ ||
+            peekToken(1).line_number != currentToken().line_number)
         {
             ICUnit block;
             block.setOpcode(currentToken().value);
@@ -107,8 +117,14 @@ bool Parser::parse_pseudo()
     // li
     else if (currentToken().value == "li")
     {
-        if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::NUM &&
-            (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::NUM &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
         {
             ICUnit block;
             block.setOpcode(currentToken().value);
@@ -123,7 +139,8 @@ bool Parser::parse_pseudo()
                 block.setRs1("x0");
                 block.setImm(peekToken(3).value);
                 intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_++] = block.getLineNumber();
+                instruction_number_line_number_mapping_[instruction_index_++] =
+                    block.getLineNumber();
             }
             else if (-2147483648LL <= imm && imm <= 2147483647LL)
             {
@@ -137,7 +154,8 @@ bool Parser::parse_pseudo()
                 luiBlock.setRd(reg);
                 luiBlock.setImm(std::to_string(upper));
                 intermediate_code_.emplace_back(luiBlock, true);
-                instruction_number_line_number_mapping_[instruction_index_++] = luiBlock.getLineNumber();
+                instruction_number_line_number_mapping_[instruction_index_++] =
+                    luiBlock.getLineNumber();
 
                 if (lower != 0)
                 {
@@ -149,34 +167,27 @@ bool Parser::parse_pseudo()
                     addiBlock.setRs1(reg);
                     addiBlock.setImm(std::to_string(lower));
                     intermediate_code_.emplace_back(addiBlock, true);
-                    instruction_number_line_number_mapping_[instruction_index_++] = addiBlock.getLineNumber();
+                    instruction_number_line_number_mapping_[instruction_index_++] =
+                        addiBlock.getLineNumber();
                 }
             }
             else if (INT64_MIN <= imm && imm <= INT64_MAX)
             {
                 errors_.count++;
                 recordError(ParseError(currentToken().line_number, "Immediate value out of range"));
-                errors_.all_errors.emplace_back(
-                    errors::ImmediateOutOfRangeError(
-                        "Immediate value out of range",
-                        "Expected: -2^31 <= imm <= 2^31 - 1",
-                        filename_,
-                        currentToken().line_number,
-                        currentToken().column_number,
-                        GetLineFromFile(filename_, currentToken().line_number)));
+                errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
+                    "Immediate value out of range", "Expected: -2^31 <= imm <= 2^31 - 1", filename_,
+                    currentToken().line_number, currentToken().column_number,
+                    GetLineFromFile(filename_, currentToken().line_number)));
             }
             else
             {
                 errors_.count++;
                 recordError(ParseError(currentToken().line_number, "Immediate value out of range"));
-                errors_.all_errors.emplace_back(
-                    errors::ImmediateOutOfRangeError(
-                        "Immediate value out of range",
-                        "Expected: -2^31 <= imm <= 2^31 - 1",
-                        filename_,
-                        currentToken().line_number,
-                        currentToken().column_number,
-                        GetLineFromFile(filename_, currentToken().line_number)));
+                errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
+                    "Immediate value out of range", "Expected: -2^31 <= imm <= 2^31 - 1", filename_,
+                    currentToken().line_number, currentToken().column_number,
+                    GetLineFromFile(filename_, currentToken().line_number)));
             }
             skipCurrentLine();
             return true;
@@ -187,8 +198,14 @@ bool Parser::parse_pseudo()
     // mv
     else if (currentToken().value == "mv")
     {
-        if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::GP_REGISTER &&
-            (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::GP_REGISTER &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
         {
             ICUnit block;
             block.setOpcode("add");
@@ -212,8 +229,14 @@ bool Parser::parse_pseudo()
     // not
     else if (currentToken().value == "not")
     {
-        if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::GP_REGISTER &&
-            (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::GP_REGISTER &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
         {
             ICUnit block;
             block.setOpcode("xori");
@@ -236,7 +259,8 @@ bool Parser::parse_pseudo()
     // ret
     else if (currentToken().value == "ret")
     {
-        if (peekToken(1).type == TokenType::EOF_ || peekToken(1).line_number != currentToken().line_number)
+        if (peekToken(1).type == TokenType::EOF_ ||
+            peekToken(1).line_number != currentToken().line_number)
         {
             ICUnit block;
             block.setOpcode("jalr");
@@ -257,8 +281,14 @@ bool Parser::parse_pseudo()
     // neg
     else if (currentToken().value == "neg")
     {
-        if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::GP_REGISTER &&
-            (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::GP_REGISTER &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
         {
             ICUnit block;
             block.setOpcode("sub");
@@ -282,8 +312,14 @@ bool Parser::parse_pseudo()
     // negw
     else if (currentToken().value == "negw")
     {
-        if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::GP_REGISTER &&
-            (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::GP_REGISTER &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
         {
             ICUnit block;
             block.setOpcode("subw");
@@ -307,8 +343,14 @@ bool Parser::parse_pseudo()
     // sext.w
     else if (currentToken().value == "sext.w")
     {
-        if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::GP_REGISTER &&
-            (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::GP_REGISTER &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
         {
             ICUnit block;
             block.setOpcode("addiw");
@@ -332,8 +374,14 @@ bool Parser::parse_pseudo()
     // seqz
     else if (currentToken().value == "seqz")
     {
-        if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::GP_REGISTER &&
-            (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::GP_REGISTER &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
         {
             ICUnit block;
             block.setOpcode("sltiu");
@@ -357,8 +405,14 @@ bool Parser::parse_pseudo()
     // snez
     else if (currentToken().value == "snez")
     {
-        if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::GP_REGISTER &&
-            (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::GP_REGISTER &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
         {
             ICUnit block;
             block.setOpcode("sltu");
@@ -382,8 +436,14 @@ bool Parser::parse_pseudo()
     // sltz
     else if (currentToken().value == "sltz")
     {
-        if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::GP_REGISTER &&
-            (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::GP_REGISTER &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
         {
             ICUnit block;
             block.setOpcode("slt");
@@ -405,8 +465,14 @@ bool Parser::parse_pseudo()
         // sgtz
         else if (currentToken().value == "sgtz")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::GP_REGISTER &&
-                (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::GP_REGISTER &&
+                peekToken(2).line_number == currentToken().line_number &&
+                peekToken(2).type == TokenType::COMMA &&
+                peekToken(3).line_number == currentToken().line_number &&
+                peekToken(3).type == TokenType::GP_REGISTER &&
+                (peekToken(4).type == TokenType::EOF_ ||
+                 peekToken(4).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("slt");
@@ -430,8 +496,14 @@ bool Parser::parse_pseudo()
         // beqz
         else if (currentToken().value == "beqz")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::LABEL_REF &&
-                (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::GP_REGISTER &&
+                peekToken(2).line_number == currentToken().line_number &&
+                peekToken(2).type == TokenType::COMMA &&
+                peekToken(3).line_number == currentToken().line_number &&
+                peekToken(3).type == TokenType::LABEL_REF &&
+                (peekToken(4).type == TokenType::EOF_ ||
+                 peekToken(4).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("beq");
@@ -454,8 +526,14 @@ bool Parser::parse_pseudo()
         // bnez
         else if (currentToken().value == "bnez")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::LABEL_REF &&
-                (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::GP_REGISTER &&
+                peekToken(2).line_number == currentToken().line_number &&
+                peekToken(2).type == TokenType::COMMA &&
+                peekToken(3).line_number == currentToken().line_number &&
+                peekToken(3).type == TokenType::LABEL_REF &&
+                (peekToken(4).type == TokenType::EOF_ ||
+                 peekToken(4).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("bne");
@@ -478,8 +556,14 @@ bool Parser::parse_pseudo()
         // blez
         else if (currentToken().value == "blez")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::LABEL_REF &&
-                (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::GP_REGISTER &&
+                peekToken(2).line_number == currentToken().line_number &&
+                peekToken(2).type == TokenType::COMMA &&
+                peekToken(3).line_number == currentToken().line_number &&
+                peekToken(3).type == TokenType::LABEL_REF &&
+                (peekToken(4).type == TokenType::EOF_ ||
+                 peekToken(4).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("bge");
@@ -502,8 +586,14 @@ bool Parser::parse_pseudo()
         // bgez
         else if (currentToken().value == "bgez")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::LABEL_REF &&
-                (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::GP_REGISTER &&
+                peekToken(2).line_number == currentToken().line_number &&
+                peekToken(2).type == TokenType::COMMA &&
+                peekToken(3).line_number == currentToken().line_number &&
+                peekToken(3).type == TokenType::LABEL_REF &&
+                (peekToken(4).type == TokenType::EOF_ ||
+                 peekToken(4).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("bge");
@@ -526,8 +616,14 @@ bool Parser::parse_pseudo()
         // bltz
         else if (currentToken().value == "bltz")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::LABEL_REF &&
-                (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::GP_REGISTER &&
+                peekToken(2).line_number == currentToken().line_number &&
+                peekToken(2).type == TokenType::COMMA &&
+                peekToken(3).line_number == currentToken().line_number &&
+                peekToken(3).type == TokenType::LABEL_REF &&
+                (peekToken(4).type == TokenType::EOF_ ||
+                 peekToken(4).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("blt");
@@ -550,8 +646,14 @@ bool Parser::parse_pseudo()
         // bgtz
         else if (currentToken().value == "bgtz")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::LABEL_REF &&
-                (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::GP_REGISTER &&
+                peekToken(2).line_number == currentToken().line_number &&
+                peekToken(2).type == TokenType::COMMA &&
+                peekToken(3).line_number == currentToken().line_number &&
+                peekToken(3).type == TokenType::LABEL_REF &&
+                (peekToken(4).type == TokenType::EOF_ ||
+                 peekToken(4).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("blt");
@@ -574,8 +676,18 @@ bool Parser::parse_pseudo()
         // bgt
         else if (currentToken().value == "bgt")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::GP_REGISTER && peekToken(4).line_number == currentToken().line_number && peekToken(4).type == TokenType::COMMA && peekToken(5).line_number == currentToken().line_number && peekToken(5).type == TokenType::LABEL_REF &&
-                (peekToken(6).type == TokenType::EOF_ || peekToken(6).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::GP_REGISTER &&
+                peekToken(2).line_number == currentToken().line_number &&
+                peekToken(2).type == TokenType::COMMA &&
+                peekToken(3).line_number == currentToken().line_number &&
+                peekToken(3).type == TokenType::GP_REGISTER &&
+                peekToken(4).line_number == currentToken().line_number &&
+                peekToken(4).type == TokenType::COMMA &&
+                peekToken(5).line_number == currentToken().line_number &&
+                peekToken(5).type == TokenType::LABEL_REF &&
+                (peekToken(6).type == TokenType::EOF_ ||
+                 peekToken(6).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("blt");
@@ -599,8 +711,18 @@ bool Parser::parse_pseudo()
         // ble
         else if (currentToken().value == "ble")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::GP_REGISTER && peekToken(4).line_number == currentToken().line_number && peekToken(4).type == TokenType::COMMA && peekToken(5).line_number == currentToken().line_number && peekToken(5).type == TokenType::LABEL_REF &&
-                (peekToken(6).type == TokenType::EOF_ || peekToken(6).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::GP_REGISTER &&
+                peekToken(2).line_number == currentToken().line_number &&
+                peekToken(2).type == TokenType::COMMA &&
+                peekToken(3).line_number == currentToken().line_number &&
+                peekToken(3).type == TokenType::GP_REGISTER &&
+                peekToken(4).line_number == currentToken().line_number &&
+                peekToken(4).type == TokenType::COMMA &&
+                peekToken(5).line_number == currentToken().line_number &&
+                peekToken(5).type == TokenType::LABEL_REF &&
+                (peekToken(6).type == TokenType::EOF_ ||
+                 peekToken(6).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("bge");
@@ -625,8 +747,18 @@ bool Parser::parse_pseudo()
         // bgtu
         else if (currentToken().value == "bgtu")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::GP_REGISTER && peekToken(4).line_number == currentToken().line_number && peekToken(4).type == TokenType::COMMA && peekToken(5).line_number == currentToken().line_number && peekToken(5).type == TokenType::LABEL_REF &&
-                (peekToken(6).type == TokenType::EOF_ || peekToken(6).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::GP_REGISTER &&
+                peekToken(2).line_number == currentToken().line_number &&
+                peekToken(2).type == TokenType::COMMA &&
+                peekToken(3).line_number == currentToken().line_number &&
+                peekToken(3).type == TokenType::GP_REGISTER &&
+                peekToken(4).line_number == currentToken().line_number &&
+                peekToken(4).type == TokenType::COMMA &&
+                peekToken(5).line_number == currentToken().line_number &&
+                peekToken(5).type == TokenType::LABEL_REF &&
+                (peekToken(6).type == TokenType::EOF_ ||
+                 peekToken(6).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("bltu");
@@ -651,8 +783,18 @@ bool Parser::parse_pseudo()
         // bleu
         else if (currentToken().value == "bleu")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::GP_REGISTER && peekToken(4).line_number == currentToken().line_number && peekToken(4).type == TokenType::COMMA && peekToken(5).line_number == currentToken().line_number && peekToken(5).type == TokenType::LABEL_REF &&
-                (peekToken(6).type == TokenType::EOF_ || peekToken(6).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::GP_REGISTER &&
+                peekToken(2).line_number == currentToken().line_number &&
+                peekToken(2).type == TokenType::COMMA &&
+                peekToken(3).line_number == currentToken().line_number &&
+                peekToken(3).type == TokenType::GP_REGISTER &&
+                peekToken(4).line_number == currentToken().line_number &&
+                peekToken(4).type == TokenType::COMMA &&
+                peekToken(5).line_number == currentToken().line_number &&
+                peekToken(5).type == TokenType::LABEL_REF &&
+                (peekToken(6).type == TokenType::EOF_ ||
+                 peekToken(6).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("bgeu");
@@ -677,8 +819,10 @@ bool Parser::parse_pseudo()
         // j
         else if (currentToken().value == "j")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::LABEL_REF &&
-                (peekToken(2).type == TokenType::EOF_ || peekToken(2).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::LABEL_REF &&
+                (peekToken(2).type == TokenType::EOF_ ||
+                 peekToken(2).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("jal");
@@ -699,8 +843,10 @@ bool Parser::parse_pseudo()
         // jal // this might need looking into
         else if (currentToken().value == "jal")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::LABEL_REF &&
-                (peekToken(2).type == TokenType::EOF_ || peekToken(2).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::LABEL_REF &&
+                (peekToken(2).type == TokenType::EOF_ ||
+                 peekToken(2).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("jal");
@@ -721,8 +867,10 @@ bool Parser::parse_pseudo()
         // jr
         else if (currentToken().value == "jr")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER &&
-                (peekToken(2).type == TokenType::EOF_ || peekToken(2).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::GP_REGISTER &&
+                (peekToken(2).type == TokenType::EOF_ ||
+                 peekToken(2).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("jalr");
@@ -745,8 +893,14 @@ bool Parser::parse_pseudo()
         // jalr
         else if (currentToken().value == "jalr")
         {
-            if (peekToken(1).line_number == currentToken().line_number && peekToken(1).type == TokenType::GP_REGISTER && peekToken(2).line_number == currentToken().line_number && peekToken(2).type == TokenType::COMMA && peekToken(3).line_number == currentToken().line_number && peekToken(3).type == TokenType::NUM &&
-                (peekToken(4).type == TokenType::EOF_ || peekToken(4).line_number != currentToken().line_number))
+            if (peekToken(1).line_number == currentToken().line_number &&
+                peekToken(1).type == TokenType::GP_REGISTER &&
+                peekToken(2).line_number == currentToken().line_number &&
+                peekToken(2).type == TokenType::COMMA &&
+                peekToken(3).line_number == currentToken().line_number &&
+                peekToken(3).type == TokenType::NUM &&
+                (peekToken(4).type == TokenType::EOF_ ||
+                 peekToken(4).line_number != currentToken().line_number))
             {
                 ICUnit block;
                 block.setOpcode("jalr");
@@ -769,7 +923,8 @@ bool Parser::parse_pseudo()
         // ret
         else if (currentToken().value == "ret")
         {
-            if (peekToken(1).type == TokenType::EOF_ || peekToken(1).line_number != currentToken().line_number)
+            if (peekToken(1).type == TokenType::EOF_ ||
+                peekToken(1).line_number != currentToken().line_number)
             {
                 ICUnit block;
                 block.setOpcode("jalr");

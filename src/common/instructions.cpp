@@ -8,10 +8,11 @@
 
 #include "common/instructions.h"
 
-#include <unordered_set>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
+
 
 namespace instruction_set
 {
@@ -349,47 +350,31 @@ std::unordered_map<std::string, Instruction> instruction_string_map = {
 };
 
 static const std::unordered_set<std::string> valid_instructions = {
-    "add", "sub", "and", "or", "xor", "sll", "srl", "sra", "slt", "sltu",
-    "addw", "subw", "sllw", "srlw", "sraw",
-    "addi", "xori", "ori", "andi", "slli", "srli", "srai", "slti", "sltiu",
-    "addiw", "slliw", "srliw", "sraiw",
-    "lb", "lh", "lw", "ld", "lbu", "lhu", "lwu",
-    "sb", "sh", "sw", "sd",
-    "beq", "bne", "blt", "bge", "bltu", "bgeu",
-    "lui", "auipc",
-    "jal", "jalr",
-    "ecall", "ebreak",
+    "add", "sub", "and", "or", "xor", "sll", "srl", "sra", "slt", "sltu", "addw", "subw", "sllw",
+    "srlw", "sraw", "addi", "xori", "ori", "andi", "slli", "srli", "srai", "slti", "sltiu", "addiw",
+    "slliw", "srliw", "sraiw", "lb", "lh", "lw", "ld", "lbu", "lhu", "lwu", "sb", "sh", "sw", "sd",
+    "beq", "bne", "blt", "bge", "bltu", "bgeu", "lui", "auipc", "jal", "jalr", "ecall", "ebreak",
 
     "csrrw", "csrrs", "csrrc", "csrrwi", "csrrsi", "csrrci",
 
-    "la", "nop", "li", "mv", "not", "neg", "negw",
-    "sext.w", "seqz", "snez", "sltz", "sgtz",
-    "beqz", "bnez", "blez", "bgez", "bltz", "bgtz",
-    "bgt", "ble", "bgtu", "bleu",
-    "j", "jr", "ret", "call", "tail", "fence", "fence_i",
+    "la", "nop", "li", "mv", "not", "neg", "negw", "sext.w", "seqz", "snez", "sltz", "sgtz", "beqz",
+    "bnez", "blez", "bgez", "bltz", "bgtz", "bgt", "ble", "bgtu", "bleu", "j", "jr", "ret", "call",
+    "tail", "fence", "fence_i",
 
-    "mul", "mulh", "mulhsu", "mulhu", "div", "divu", "rem", "remu",
-    "mulw", "divw", "divuw", "remw", "remuw",
+    "mul", "mulh", "mulhsu", "mulhu", "div", "divu", "rem", "remu", "mulw", "divw", "divuw", "remw",
+    "remuw",
 
     // RV64F
-    "flw", "fsw", "fmadd.s", "fmsub.s", "fnmsub.s", "fnmadd.s",
-    "fadd.s", "fsub.s", "fmul.s", "fdiv.s", "fsqrt.s",
-    "fsgnj.s", "fsgnjn.s", "fsgnjx.s",
-    "fmin.s", "fmax.s",
-    "fcvt.w.s", "fcvt.wu.s", "fmv.x.w",
-    "feq.s", "flt.s", "fle.s",
-    "fclass.s", "fcvt.s.w", "fcvt.s.wu", "fmv.w.x",
-    "fcvt.l.s", "fcvt.lu.s", "fcvt.s.l", "fcvt.s.lu",
+    "flw", "fsw", "fmadd.s", "fmsub.s", "fnmsub.s", "fnmadd.s", "fadd.s", "fsub.s", "fmul.s",
+    "fdiv.s", "fsqrt.s", "fsgnj.s", "fsgnjn.s", "fsgnjx.s", "fmin.s", "fmax.s", "fcvt.w.s",
+    "fcvt.wu.s", "fmv.x.w", "feq.s", "flt.s", "fle.s", "fclass.s", "fcvt.s.w", "fcvt.s.wu",
+    "fmv.w.x", "fcvt.l.s", "fcvt.lu.s", "fcvt.s.l", "fcvt.s.lu",
 
     // RV64D
-    "fld", "fsd", "fmadd.d", "fmsub.d", "fnmsub.d", "fnmadd.d",
-    "fadd.d", "fsub.d", "fmul.d", "fdiv.d", "fsqrt.d",
-    "fsgnj.d", "fsgnjn.d", "fsgnjx.d",
-    "fmin.d", "fmax.d",
-    "fcvt.s.d", "fcvt.d.s",
-    "feq.d", "flt.d", "fle.d",
-    "fclass.d", "fcvt.w.d", "fcvt.wu.d", "fcvt.d.w", "fcvt.d.wu",
-    "fcvt.l.d", "fcvt.lu.d", "fmv.x.d", "fcvt.d.l", "fcvt.d.lu", "fmv.d.x"
+    "fld", "fsd", "fmadd.d", "fmsub.d", "fnmsub.d", "fnmadd.d", "fadd.d", "fsub.d", "fmul.d",
+    "fdiv.d", "fsqrt.d", "fsgnj.d", "fsgnjn.d", "fsgnjx.d", "fmin.d", "fmax.d", "fcvt.s.d",
+    "fcvt.d.s", "feq.d", "flt.d", "fle.d", "fclass.d", "fcvt.w.d", "fcvt.wu.d", "fcvt.d.w",
+    "fcvt.d.wu", "fcvt.l.d", "fcvt.lu.d", "fmv.x.d", "fcvt.d.l", "fcvt.d.lu", "fmv.d.x"
 
 };
 
@@ -433,188 +418,68 @@ static const std::unordered_set<std::string> RTypeInstructions = {
 };
 
 static const std::unordered_set<std::string> ITypeInstructions = {
-    "addi", "xori", "ori", "andi", "slli", "srli", "srai", "slti", "sltiu",
-    "addiw", "slliw", "srliw", "sraiw",
-    "lb", "lh", "lw", "ld", "lbu", "lhu", "lwu",
-    "jalr"};
+    "addi",  "xori",  "ori", "andi", "slli", "srli", "srai", "slti", "sltiu", "addiw", "slliw",
+    "srliw", "sraiw", "lb",  "lh",   "lw",   "ld",   "lbu",  "lhu",  "lwu",   "jalr"};
 
 static const std::unordered_set<std::string> I1TypeInstructions = {
-    "addi", "xori", "ori", "andi", "sltiu", "slti",
-    "addiw",
-    "lb", "lh", "lw", "ld", "lbu", "lhu", "lwu",
-    "jalr"};
+    "addi", "xori", "ori", "andi", "sltiu", "slti", "addiw", "lb",
+    "lh",   "lw",   "ld",  "lbu",  "lhu",   "lwu",  "jalr"};
 
-static const std::unordered_set<std::string> I2TypeInstructions = {
-    "slli", "srli", "srai",
-    "slliw", "srliw", "sraiw"};
+static const std::unordered_set<std::string> I2TypeInstructions = {"slli",  "srli",  "srai",
+                                                                   "slliw", "srliw", "sraiw"};
 
-static const std::unordered_set<std::string> I3TypeInstructions = {
-    "ecall", "ebreak"};
+static const std::unordered_set<std::string> I3TypeInstructions = {"ecall", "ebreak"};
 
-static const std::unordered_set<std::string> STypeInstructions = {
-    "sb", "sh", "sw", "sd"};
+static const std::unordered_set<std::string> STypeInstructions = {"sb", "sh", "sw", "sd"};
 
-static const std::unordered_set<std::string> BTypeInstructions = {
-    "beq", "bne", "blt", "bge", "bltu", "bgeu"};
+static const std::unordered_set<std::string> BTypeInstructions = {"beq", "bne",  "blt",
+                                                                  "bge", "bltu", "bgeu"};
 
-static const std::unordered_set<std::string> UTypeInstructions = {
-    "lui", "auipc"};
+static const std::unordered_set<std::string> UTypeInstructions = {"lui", "auipc"};
 
-static const std::unordered_set<std::string> JTypeInstructions = {
-    "jal"};
+static const std::unordered_set<std::string> JTypeInstructions = {"jal"};
 
 static const std::unordered_set<std::string> PseudoInstructions = {
-    "la",
-    "nop",
-    "li",
-    "mv",
-    "not",
-    "neg",
-    "negw",
-    "sext.w",
-    "seqz",
-    "snez",
-    "sltz",
-    "sgtz",
-    "beqz",
-    "bnez",
-    "blez",
-    "bgez",
-    "bltz",
-    "bgtz",
-    "bgt",
-    "ble",
-    "bgtu",
-    "bleu",
-    "j",
-    "jr",
-    "ret",
-    "call",
-    "tail",
-    "fence",
-    "fence_i",
+    "la",   "nop",  "li",   "mv",   "not",  "neg",  "negw", "sext.w", "seqz",    "snez",
+    "sltz", "sgtz", "beqz", "bnez", "blez", "bgez", "bltz", "bgtz",   "bgt",     "ble",
+    "bgtu", "bleu", "j",    "jr",   "ret",  "call", "tail", "fence",  "fence_i",
 };
 
 static const std::unordered_set<std::string> BaseExtensionInstructions = {
-    "add",
-    "sub",
-    "and",
-    "or",
-    "xor",
-    "sll",
-    "srl",
-    "sra",
-    "slt",
-    "sltu",
-    "addw",
-    "subw",
-    "sllw",
-    "srlw",
-    "sraw",
-    "addi",
-    "xori",
-    "ori",
-    "andi",
-    "slli",
-    "srli",
-    "srai",
-    "slti",
-    "sltiu",
-    "addiw",
-    "slliw",
-    "srliw",
-    "sraiw",
-    "lb",
-    "lh",
-    "lw",
-    "ld",
-    "lbu",
-    "lhu",
-    "lwu",
-    "sb",
-    "sh",
-    "sw",
-    "sd",
-    "beq",
-    "bne",
-    "blt",
-    "bge",
-    "bltu",
-    "bgeu",
-    "lui",
-    "auipc",
-    "jal",
-    "jalr",
-    "ecall",
-    "ebreak",
+    "add",  "sub",   "and",   "or",    "xor",   "sll",   "srl",    "sra",  "slt",  "sltu", "addw",
+    "subw", "sllw",  "srlw",  "sraw",  "addi",  "xori",  "ori",    "andi", "slli", "srli", "srai",
+    "slti", "sltiu", "addiw", "slliw", "srliw", "sraiw", "lb",     "lh",   "lw",   "ld",   "lbu",
+    "lhu",  "lwu",   "sb",    "sh",    "sw",    "sd",    "beq",    "bne",  "blt",  "bge",  "bltu",
+    "bgeu", "lui",   "auipc", "jal",   "jalr",  "ecall", "ebreak",
 };
 
-static const std::unordered_set<std::string> CSRRInstructions = {
-    "csrrw", "csrrs", "csrrc"};
+static const std::unordered_set<std::string> CSRRInstructions = {"csrrw", "csrrs", "csrrc"};
 
-static const std::unordered_set<std::string> CSRIInstructions = {
-    "csrrwi", "csrrsi", "csrrci"};
+static const std::unordered_set<std::string> CSRIInstructions = {"csrrwi", "csrrsi", "csrrci"};
 
-static const std::unordered_set<std::string> CSRInstructions = {
-    "csrrw", "csrrs", "csrrc", "csrrwi", "csrrsi", "csrrci"};
+static const std::unordered_set<std::string> CSRInstructions = {"csrrw",  "csrrs",  "csrrc",
+                                                                "csrrwi", "csrrsi", "csrrci"};
 
 static const std::unordered_set<std::string> MExtensionInstructions = {
-    "mul", "mulh", "mulhsu", "mulhu", "div", "divu", "rem", "remu",
-    "mulw", "divw", "divuw", "remw", "remuw"};
+    "mul",  "mulh", "mulhsu", "mulhu", "div",  "divu", "rem",
+    "remu", "mulw", "divw",   "divuw", "remw", "remuw"};
 
 //====================================================================================
 static const std::unordered_set<std::string> FDExtensionRTypeInstructions = {
-    "fsgnj.s",
-    "fsgnjn.s",
-    "fsgnjx.s",
-    "fmin.s",
-    "fmax.s",
-    "feq.s",
-    "flt.s",
-    "fle.s",
-    "fsgnj.d",
-    "fsgnjn.d",
-    "fsgnjx.d",
-    "fmin.d",
-    "fmax.d",
-    "feq.d",
-    "flt.d",
-    "fle.d",
+    "fsgnj.s", "fsgnjn.s", "fsgnjx.s", "fmin.s", "fmax.s", "feq.s", "flt.s", "fle.s",
+    "fsgnj.d", "fsgnjn.d", "fsgnjx.d", "fmin.d", "fmax.d", "feq.d", "flt.d", "fle.d",
 };
 
 static const std::unordered_set<std::string> FDExtensionR1TypeInstructions = {
-    "fadd.s",
-    "fsub.s",
-    "fmul.s",
-    "fdiv.s",
-    "fadd.d",
-    "fsub.d",
-    "fmul.d",
-    "fdiv.d",
+    "fadd.s", "fsub.s", "fmul.s", "fdiv.s", "fadd.d", "fsub.d", "fmul.d", "fdiv.d",
 };
 
 static const std::unordered_set<std::string> FDExtensionR2TypeInstructions = {
-    "fsqrt.s",
-    "fcvt.w.s",
-    "fcvt.wu.s",
-    "fcvt.s.w",
-    "fcvt.s.wu",
-    "fcvt.l.s",
-    "fcvt.lu.s",
-    "fcvt.s.l",
-    "fcvt.s.lu",
-    "fsqrt.d",
-    "fcvt.s.d",
-    "fcvt.d.s",
-    "fcvt.w.d",
-    "fcvt.wu.d",
-    "fcvt.d.w",
-    "fcvt.d.wu",
+    "fsqrt.s",   "fcvt.w.s",  "fcvt.wu.s", "fcvt.s.w",  "fcvt.s.wu", "fcvt.l.s",
+    "fcvt.lu.s", "fcvt.s.l",  "fcvt.s.lu", "fsqrt.d",   "fcvt.s.d",  "fcvt.d.s",
+    "fcvt.w.d",  "fcvt.wu.d", "fcvt.d.w",  "fcvt.d.wu",
 
-    "fcvt.l.d",
-    "fcvt.lu.d",
-    "fcvt.d.l",
-    "fcvt.d.lu",
+    "fcvt.l.d",  "fcvt.lu.d", "fcvt.d.l",  "fcvt.d.lu",
 };
 
 static const std::unordered_set<std::string> FDExtensionR3TypeInstructions = {
@@ -627,85 +492,27 @@ static const std::unordered_set<std::string> FDExtensionR3TypeInstructions = {
 };
 
 static const std::unordered_set<std::string> FDExtensionR4TypeInstructions = {
-    "fmadd.s",
-    "fmsub.s",
-    "fnmsub.s",
-    "fnmadd.s",
-    "fmadd.d",
-    "fmsub.d",
-    "fnmsub.d",
-    "fnmadd.d",
+    "fmadd.s", "fmsub.s", "fnmsub.s", "fnmadd.s", "fmadd.d", "fmsub.d", "fnmsub.d", "fnmadd.d",
 };
 
-static const std::unordered_set<std::string> FDExtensionITypeInstructions = {
-    "flw", "fld"};
+static const std::unordered_set<std::string> FDExtensionITypeInstructions = {"flw", "fld"};
 
-static const std::unordered_set<std::string> FDExtensionSTypeInstructions = {
-    "fsw", "fsd"};
+static const std::unordered_set<std::string> FDExtensionSTypeInstructions = {"fsw", "fsd"};
 
 static const std::unordered_set<std::string> FExtensionInstructions = {
-    "flw",
-    "fsw",
-    "fmadd.s",
-    "fmsub.d",
-    "fnmsub.s",
-    "fnmadd.s",
-    "fadd.s",
-    "fsub.s",
-    "fmul.s",
-    "fdiv.s",
-    "fsqrt.s",
-    "fsgnj.s",
-    "fsgnjn.s",
-    "fsgnjx.s",
-    "fmin.s",
-    "fmax.s",
-    "fcvt.w.s",
-    "fcvt.wu.s",
-    "fmv.x.w",
-    "feq.s",
-    "flt.s",
-    "fle.s",
-    "fclass.s",
-    "fcvt.s.w",
-    "fcvt.s.wu",
-    "fmv.w.x",
-    "fcvt.l.s",
-    "fcvt.lu.s",
-    "fcvt.s.l",
-    "fcvt.s.lu",
+    "flw",       "fsw",      "fmadd.s",  "fmsub.d",   "fnmsub.s", "fnmadd.s",
+    "fadd.s",    "fsub.s",   "fmul.s",   "fdiv.s",    "fsqrt.s",  "fsgnj.s",
+    "fsgnjn.s",  "fsgnjx.s", "fmin.s",   "fmax.s",    "fcvt.w.s", "fcvt.wu.s",
+    "fmv.x.w",   "feq.s",    "flt.s",    "fle.s",     "fclass.s", "fcvt.s.w",
+    "fcvt.s.wu", "fmv.w.x",  "fcvt.l.s", "fcvt.lu.s", "fcvt.s.l", "fcvt.s.lu",
 };
 
 static const std::unordered_set<std::string> DExtensionInstructions = {
-    "fld",
-    "fsd",
-    "fmadd.d",
-    "fmsub.d",
-    "fnmsub.d",
-    "fnmadd.d",
-    "fadd.d",
-    "fsub.d",
-    "fmul.d",
-    "fdiv.d",
-    "fsqrt.d",
-    "fsgnj.d",
-    "fsgnjn.d",
-    "fsgnjx.d",
-    "fmin.d",
-    "fmax.d",
-    "fcvt.s.d",
-    "fcvt.d.s",
-    "feq.d",
-    "flt.d",
-    "fle.d",
-    "fclass.d",
-    "fcvt.w.d",
-    "fcvt.wu.d",
-    "fmv.x.d",
-    "fcvt.l.d",
-    "fcvt.lu.d",
-    "fcvt.d.l",
-    "fcvt.d.lu",
+    "fld",      "fsd",      "fmadd.d",   "fmsub.d",  "fnmsub.d",  "fnmadd.d",
+    "fadd.d",   "fsub.d",   "fmul.d",    "fdiv.d",   "fsqrt.d",   "fsgnj.d",
+    "fsgnjn.d", "fsgnjx.d", "fmin.d",    "fmax.d",   "fcvt.s.d",  "fcvt.d.s",
+    "feq.d",    "flt.d",    "fle.d",     "fclass.d", "fcvt.w.d",  "fcvt.wu.d",
+    "fmv.x.d",  "fcvt.l.d", "fcvt.lu.d", "fcvt.d.l", "fcvt.d.lu",
 };
 
 std::unordered_map<std::string, RTypeInstructionEncoding> R_type_instruction_encoding_map = {
@@ -841,68 +648,72 @@ std::unordered_map<std::string, FDRTypeInstructionEncoding> F_D_R_type_instructi
     {"fmax.d", {0b1010011, 0b001, 0b0010101}}, // O_FPR_C_FPR_C_FPR
 };
 
-std::unordered_map<std::string, FDR1TypeInstructionEncoding> F_D_R1_type_instruction_encoding_map = {
-    {"fadd.s", {0b1010011, 0b0000000}}, // O_FPR_C_FPR_C_FPR
-    {"fsub.s", {0b1010011, 0b0000100}}, // O_FPR_C_FPR_C_FPR
-    {"fmul.s", {0b1010011, 0b0001000}}, // O_FPR_C_FPR_C_FPR
-    {"fdiv.s", {0b1010011, 0b0001100}}, // O_FPR_C_FPR_C_FPR
+std::unordered_map<std::string, FDR1TypeInstructionEncoding> F_D_R1_type_instruction_encoding_map =
+    {
+        {"fadd.s", {0b1010011, 0b0000000}}, // O_FPR_C_FPR_C_FPR
+        {"fsub.s", {0b1010011, 0b0000100}}, // O_FPR_C_FPR_C_FPR
+        {"fmul.s", {0b1010011, 0b0001000}}, // O_FPR_C_FPR_C_FPR
+        {"fdiv.s", {0b1010011, 0b0001100}}, // O_FPR_C_FPR_C_FPR
 
-    {"fadd.d", {0b1010011, 0b0000001}}, // O_FPR_C_FPR_C_FPR
-    {"fsub.d", {0b1010011, 0b0000101}}, // O_FPR_C_FPR_C_FPR
-    {"fmul.d", {0b1010011, 0b0001001}}, // O_FPR_C_FPR_C_FPR
-    {"fdiv.d", {0b1010011, 0b0001101}}, // O_FPR_C_FPR_C_FPR
+        {"fadd.d", {0b1010011, 0b0000001}}, // O_FPR_C_FPR_C_FPR
+        {"fsub.d", {0b1010011, 0b0000101}}, // O_FPR_C_FPR_C_FPR
+        {"fmul.d", {0b1010011, 0b0001001}}, // O_FPR_C_FPR_C_FPR
+        {"fdiv.d", {0b1010011, 0b0001101}}, // O_FPR_C_FPR_C_FPR
 };
 
-std::unordered_map<std::string, FDR2TypeInstructionEncoding> F_D_R2_type_instruction_encoding_map = {
-    {"fsqrt.s", {0b1010011, 0b00000, 0b0101100}}, // O_FPR_C_FPR
+std::unordered_map<std::string, FDR2TypeInstructionEncoding> F_D_R2_type_instruction_encoding_map =
+    {
+        {"fsqrt.s", {0b1010011, 0b00000, 0b0101100}}, // O_FPR_C_FPR
 
-    {"fcvt.w.s", {0b1010011, 0b00000, 0b1100000}},  // O_GPR_C_FPR // affect all
-    {"fcvt.wu.s", {0b1010011, 0b00001, 0b1100000}}, // O_GPR_C_FPR // affect all
-    {"fcvt.l.s", {0b1010011, 0b00010, 0b1100000}},  // O_GPR_C_FPR // affect all
-    {"fcvt.lu.s", {0b1010011, 0b00011, 0b1100000}}, // O_GPR_C_FPR // affect all
+        {"fcvt.w.s", {0b1010011, 0b00000, 0b1100000}},  // O_GPR_C_FPR // affect all
+        {"fcvt.wu.s", {0b1010011, 0b00001, 0b1100000}}, // O_GPR_C_FPR // affect all
+        {"fcvt.l.s", {0b1010011, 0b00010, 0b1100000}},  // O_GPR_C_FPR // affect all
+        {"fcvt.lu.s", {0b1010011, 0b00011, 0b1100000}}, // O_GPR_C_FPR // affect all
 
-    {"fcvt.s.w", {0b1010011, 0b00000, 0b1101000}},  // O_FPR_C_GPR
-    {"fcvt.s.wu", {0b1010011, 0b00001, 0b1101000}}, // O_FPR_C_GPR
-    {"fcvt.s.l", {0b1010011, 0b00010, 0b1101000}},  // O_FPR_C_GPR
-    {"fcvt.s.lu", {0b1010011, 0b00011, 0b1101000}}, // O_FPR_C_GPR
+        {"fcvt.s.w", {0b1010011, 0b00000, 0b1101000}},  // O_FPR_C_GPR
+        {"fcvt.s.wu", {0b1010011, 0b00001, 0b1101000}}, // O_FPR_C_GPR
+        {"fcvt.s.l", {0b1010011, 0b00010, 0b1101000}},  // O_FPR_C_GPR
+        {"fcvt.s.lu", {0b1010011, 0b00011, 0b1101000}}, // O_FPR_C_GPR
 
-    {"fsqrt.d", {0b1010011, 0b00000, 0b0101101}}, // O_FPR_C_FPR
+        {"fsqrt.d", {0b1010011, 0b00000, 0b0101101}}, // O_FPR_C_FPR
 
-    {"fcvt.w.d", {0b1010011, 0b00000, 0b1100001}},  // O_GPR_C_FPR
-    {"fcvt.wu.d", {0b1010011, 0b00001, 0b1100001}}, // O_GPR_C_FPR
-    {"fcvt.l.d", {0b1010011, 0b00010, 0b1100001}},  // O_GPR_C_FPR
-    {"fcvt.lu.d", {0b1010011, 0b00011, 0b1100001}}, // O_GPR_C_FPR
+        {"fcvt.w.d", {0b1010011, 0b00000, 0b1100001}},  // O_GPR_C_FPR
+        {"fcvt.wu.d", {0b1010011, 0b00001, 0b1100001}}, // O_GPR_C_FPR
+        {"fcvt.l.d", {0b1010011, 0b00010, 0b1100001}},  // O_GPR_C_FPR
+        {"fcvt.lu.d", {0b1010011, 0b00011, 0b1100001}}, // O_GPR_C_FPR
 
-    {"fcvt.d.w", {0b1010011, 0b00000, 0b1101001}},  // O_FPR_C_GPR
-    {"fcvt.d.wu", {0b1010011, 0b00001, 0b1101001}}, // O_FPR_C_GPR
-    {"fcvt.d.l", {0b1010011, 0b00010, 0b1101001}},  // O_FPR_C_GPR
-    {"fcvt.d.lu", {0b1010011, 0b00011, 0b1101001}}, // O_FPR_C_GPR
+        {"fcvt.d.w", {0b1010011, 0b00000, 0b1101001}},  // O_FPR_C_GPR
+        {"fcvt.d.wu", {0b1010011, 0b00001, 0b1101001}}, // O_FPR_C_GPR
+        {"fcvt.d.l", {0b1010011, 0b00010, 0b1101001}},  // O_FPR_C_GPR
+        {"fcvt.d.lu", {0b1010011, 0b00011, 0b1101001}}, // O_FPR_C_GPR
 
-    {"fcvt.s.d", {0b1010011, 0b00001, 0b0100000}}, // O_FPR_C_FPR
-    {"fcvt.d.s", {0b1010011, 0b00000, 0b0100001}}, // O_FPR_C_FPR
+        {"fcvt.s.d", {0b1010011, 0b00001, 0b0100000}}, // O_FPR_C_FPR
+        {"fcvt.d.s", {0b1010011, 0b00000, 0b0100001}}, // O_FPR_C_FPR
 
 };
 
-std::unordered_map<std::string, FDR3TypeInstructionEncoding> F_D_R3_type_instruction_encoding_map = {
-    {"fmv.w.x", {0b1010011, 0b000, 0b00000, 0b1111000}},  // O_FPR_C_GPR
-    {"fmv.x.w", {0b1010011, 0b000, 0b00000, 0b1110000}},  // O_GPR_C_FPR // affect all
-    {"fclass.s", {0b1010011, 0b001, 0b00000, 0b1110000}}, // O_GPR_C_FPR // affect all
+std::unordered_map<std::string, FDR3TypeInstructionEncoding> F_D_R3_type_instruction_encoding_map =
+    {
+        {"fmv.w.x", {0b1010011, 0b000, 0b00000, 0b1111000}},  // O_FPR_C_GPR
+        {"fmv.x.w", {0b1010011, 0b000, 0b00000, 0b1110000}},  // O_GPR_C_FPR // affect all
+        {"fclass.s", {0b1010011, 0b001, 0b00000, 0b1110000}}, // O_GPR_C_FPR // affect all
 
-    {"fmv.d.x", {0b1010011, 0b000, 0b00000, 0b1111001}},  // O_FPR_C_GPR
-    {"fmv.x.d", {0b1010011, 0b000, 0b00000, 0b1110001}},  // O_GPR_C_FPR
-    {"fclass.d", {0b1010011, 0b001, 0b00000, 0b1110001}}, // O_GPR_C_FPR
+        {"fmv.d.x", {0b1010011, 0b000, 0b00000, 0b1111001}},  // O_FPR_C_GPR
+        {"fmv.x.d", {0b1010011, 0b000, 0b00000, 0b1110001}},  // O_GPR_C_FPR
+        {"fclass.d", {0b1010011, 0b001, 0b00000, 0b1110001}}, // O_GPR_C_FPR
 };
 
-std::unordered_map<std::string, FDR4TypeInstructionEncoding> F_D_R4_type_instruction_encoding_map = {
-    {"fmadd.s", {0b1000011, 0b00}},  // O_FPR_C_FPR_C_FPR_C_FPR
-    {"fmsub.s", {0b1000111, 0b00}},  // O_FPR_C_FPR_C_FPR_C_FPR
-    {"fnmsub.s", {0b1001011, 0b00}}, // O_FPR_C_FPR_C_FPR_C_FPR
-    {"fnmadd.s", {0b1001111, 0b00}}, // O_FPR_C_FPR_C_FPR_C_FPR
+std::unordered_map<std::string, FDR4TypeInstructionEncoding> F_D_R4_type_instruction_encoding_map =
+    {
+        {"fmadd.s", {0b1000011, 0b00}},  // O_FPR_C_FPR_C_FPR_C_FPR
+        {"fmsub.s", {0b1000111, 0b00}},  // O_FPR_C_FPR_C_FPR_C_FPR
+        {"fnmsub.s", {0b1001011, 0b00}}, // O_FPR_C_FPR_C_FPR_C_FPR
+        {"fnmadd.s", {0b1001111, 0b00}}, // O_FPR_C_FPR_C_FPR_C_FPR
 
-    {"fmadd.d", {0b1000011, 0b01}},  // O_FPR_C_FPR_C_FPR_C_FPR
-    {"fmsub.d", {0b1000111, 0b01}},  // O_FPR_C_FPR_C_FPR_C_FPR
-    {"fnmsub.d", {0b1001011, 0b01}}, // O_FPR_C_FPR_C_FPR_C_FPR
-    {"fnmadd.d", {0b1001111, 0b01}}, // O_FPR_C_FPR_C_FPR_C_FPR
+        {"fmadd.d", {0b1000011, 0b01}},  // O_FPR_C_FPR_C_FPR_C_FPR
+        {"fmsub.d", {0b1000111, 0b01}},  // O_FPR_C_FPR_C_FPR_C_FPR
+        {"fnmsub.d", {0b1001011, 0b01}}, // O_FPR_C_FPR_C_FPR_C_FPR
+        {"fnmadd.d", {0b1001111, 0b01}}, // O_FPR_C_FPR_C_FPR_C_FPR
 };
 
 std::unordered_map<std::string, FDITypeInstructionEncoding> F_D_I_type_instruction_encoding_map = {
@@ -919,30 +730,31 @@ std::unordered_map<std::string, FDSTypeInstructionEncoding> F_D_S_type_instructi
     O_GPR_C_GPR_C_GPR,       ///< Opcode general-register , general-register , register
     O_GPR_C_GPR_C_I,        ///< Opcode general-register , general-register , immediate
     O_GPR_C_I,            ///< Opcode general-register , immediate
-    O_GPR_C_GPR_C_IL,       ///< Opcode general-register , general-register , immediate , instruction_label
-    O_GPR_C_GPR_C_DL,       ///< Opcode register , register , immediate , data_label
-    O_GPR_C_IL,           ///< Opcode register , instruction_label
-    O_GPR_C_DL,           ///< Opcode register , data_label
-    O_GPR_C_I_LP_GPR_RP,    ///< Opcode register , immediate , lparen ( register )rparen
-    O,                  ///< Opcode
-    PSEUDO,              ///< Pseudo instruction
+    O_GPR_C_GPR_C_IL,       ///< Opcode general-register , general-register , immediate ,
+   instruction_label O_GPR_C_GPR_C_DL,       ///< Opcode register , register , immediate ,
+   data_label O_GPR_C_IL,           ///< Opcode register , instruction_label O_GPR_C_DL, ///< Opcode
+   register , data_label O_GPR_C_I_LP_GPR_RP,    ///< Opcode register , immediate , lparen (
+   register )rparen O,                  ///< Opcode PSEUDO,              ///< Pseudo instruction
 
     O_GPR_C_CSR_C_GPR,       ///< Opcode general-register , csr , general-register
     O_GPR_C_CSR_C_I,        ///< Opcode general-register , csr , immediate
 
-    O_FPR_C_FPR_C_FPR_C_FPR,    ///< Opcode floating-point-register , floating-point-register , floating-point-register , floating-point-register
-    O_FPR_C_FPR_C_FPR_C_FPR_C_RM,    ///< Opcode floating-point-register , floating-point-register , floating-point-register , rounding_mode
-    O_FPR_C_FPR_C_FPR,        ///< Opcode floating-point-register , floating-point-register , floating-point-register
-    O_FPR_C_FPR_C_FPR_C_RM,    ///< Opcode floating-point-register , floating-point-register , floating-point-register , rounding_mode
-    O_FPR_C_FPR,            ///< Opcode floating-point-register , floating-point-register
-    O_FPR_C_FPR_C_RM,           ///< Opcode floating-point-register , floating-point-register , rounding_mode
+    O_FPR_C_FPR_C_FPR_C_FPR,    ///< Opcode floating-point-register , floating-point-register ,
+   floating-point-register , floating-point-register O_FPR_C_FPR_C_FPR_C_FPR_C_RM,    ///< Opcode
+   floating-point-register , floating-point-register , floating-point-register , rounding_mode
+    O_FPR_C_FPR_C_FPR,        ///< Opcode floating-point-register , floating-point-register ,
+   floating-point-register O_FPR_C_FPR_C_FPR_C_RM,    ///< Opcode floating-point-register ,
+   floating-point-register , floating-point-register , rounding_mode O_FPR_C_FPR,            ///<
+   Opcode floating-point-register , floating-point-register O_FPR_C_FPR_C_RM,           ///< Opcode
+   floating-point-register , floating-point-register , rounding_mode
 
     O_FPR_C_GPR,            ///< Opcode floating-point-register , general-register
-    O_FPR_C_GPR_C_RM,           ///< Opcode floating-point-register , general-register , rounding_mode
-    O_GPR_C_FPR,           ///< Opcode general-register , floating-point-register
+    O_FPR_C_GPR_C_RM,           ///< Opcode floating-point-register , general-register ,
+   rounding_mode O_GPR_C_FPR,           ///< Opcode general-register , floating-point-register
     O_GPR_C_FPR_C_RM,       ///< Opcode general-register , floating-point-register , rounding_mode
-    O_GPR_C_FPR_C_FPR,       ///< Opcode general-register , floating-point-register , floating-point-register
-    O_FPR_C_I_LP_GPR_RP,    ///< Opcode floating-point-register , immediate , lparen ( general-register ) rparen
+    O_GPR_C_FPR_C_FPR,       ///< Opcode general-register , floating-point-register ,
+   floating-point-register O_FPR_C_I_LP_GPR_RP,    ///< Opcode floating-point-register , immediate ,
+   lparen ( general-register ) rparen
 
     DL -> Data Label
     IL -> Instruction Label
@@ -1088,7 +900,9 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
 
     {"fclass.s", {SyntaxType::O_GPR_C_FPR}},
 
-    {"fmv.x.w", {SyntaxType::O_GPR_C_FPR}}, // x[n][0:31] to f[m][0:31], 32-bit floating-point value from an f (floating-point) register into an x (integer) register without conversion
+    {"fmv.x.w", {SyntaxType::O_GPR_C_FPR}}, // x[n][0:31] to f[m][0:31], 32-bit floating-point value
+                                            // from an f (floating-point) register into an x
+                                            // (integer) register without conversion
     {"fmv.w.x", {SyntaxType::O_FPR_C_GPR}}, // f[n][0:31] to x[m][0:31],
 
     {"fcvt.w.s", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_GPR_C_FPR_C_RM}},  // f32->int32
@@ -1130,8 +944,10 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
 
     {"fclass.d", {SyntaxType::O_GPR_C_FPR}},
 
-    {"fcvt.w.d", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_FPR_C_GPR_C_RM}},  // f64->int32, sign extends
-    {"fcvt.wu.d", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_FPR_C_GPR_C_RM}}, // f64->uint32, sign extends
+    {"fcvt.w.d",
+     {SyntaxType::O_GPR_C_FPR, SyntaxType::O_FPR_C_GPR_C_RM}}, // f64->int32, sign extends
+    {"fcvt.wu.d",
+     {SyntaxType::O_GPR_C_FPR, SyntaxType::O_FPR_C_GPR_C_RM}}, // f64->uint32, sign extends
     {"fcvt.l.d", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_FPR_C_GPR_C_RM}},  // f64->int64
     {"fcvt.lu.d", {SyntaxType::O_GPR_C_FPR, SyntaxType::O_FPR_C_GPR_C_RM}}, // f64->uint64
 
@@ -1143,837 +959,845 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
     {"fcvt.s.d", {SyntaxType::O_FPR_C_FPR, SyntaxType::O_GPR_C_FPR_C_RM}}, // f64->f32
     {"fcvt.d.s", {SyntaxType::O_FPR_C_FPR, SyntaxType::O_GPR_C_FPR_C_RM}}, // f32->f64
 
-    {"fmv.x.d", {SyntaxType::O_GPR_C_FPR}}, // x[n][0:63] to f[m][0:63], 64-bit floating-point value from an f (floating-point) register into an x (integer) register without conversion
-    {"fmv.d.x", {SyntaxType::O_FPR_C_GPR}}, // f[n][0:63] to x[m][0:63], 64-bit floating-point value from an x (integer) register into an f (floating-point) register without conversion
+    {"fmv.x.d", {SyntaxType::O_GPR_C_FPR}}, // x[n][0:63] to f[m][0:63], 64-bit floating-point value
+                                            // from an f (floating-point) register into an x
+                                            // (integer) register without conversion
+    {"fmv.d.x", {SyntaxType::O_FPR_C_GPR}}, // f[n][0:63] to x[m][0:63], 64-bit floating-point value
+                                            // from an x (integer) register into an f
+                                            // (floating-point) register without conversion
 
 };
 
 bool isValidInstruction(const std::string &instruction)
 {
-  return valid_instructions.find(instruction) != valid_instructions.end();
+    return valid_instructions.find(instruction) != valid_instructions.end();
 }
 
 bool isValidRTypeInstruction(const std::string &instruction)
 {
-  return RTypeInstructions.find(instruction) != RTypeInstructions.end();
+    return RTypeInstructions.find(instruction) != RTypeInstructions.end();
 }
 
 bool isValidITypeInstruction(const std::string &instruction)
 {
-  return (I1TypeInstructions.find(instruction) != I1TypeInstructions.end()) ||
-          (I2TypeInstructions.find(instruction) != I2TypeInstructions.end()) ||
-          (I3TypeInstructions.find(instruction) != I3TypeInstructions.end());
+    return (I1TypeInstructions.find(instruction) != I1TypeInstructions.end()) ||
+           (I2TypeInstructions.find(instruction) != I2TypeInstructions.end()) ||
+           (I3TypeInstructions.find(instruction) != I3TypeInstructions.end());
 }
 
 bool isValidI1TypeInstruction(const std::string &instruction)
 {
-  return I1TypeInstructions.find(instruction) != I1TypeInstructions.end();
+    return I1TypeInstructions.find(instruction) != I1TypeInstructions.end();
 }
 
 bool isValidI2TypeInstruction(const std::string &instruction)
 {
-  return I2TypeInstructions.find(instruction) != I2TypeInstructions.end();
+    return I2TypeInstructions.find(instruction) != I2TypeInstructions.end();
 }
 
 bool isValidI3TypeInstruction(const std::string &instruction)
 {
-  return I3TypeInstructions.find(instruction) != I3TypeInstructions.end();
+    return I3TypeInstructions.find(instruction) != I3TypeInstructions.end();
 }
 
 bool isValidSTypeInstruction(const std::string &instruction)
 {
-  return STypeInstructions.find(instruction) != STypeInstructions.end();
+    return STypeInstructions.find(instruction) != STypeInstructions.end();
 }
 
 bool isValidBTypeInstruction(const std::string &instruction)
 {
-  return BTypeInstructions.find(instruction) != BTypeInstructions.end();
+    return BTypeInstructions.find(instruction) != BTypeInstructions.end();
 }
 
 bool isValidUTypeInstruction(const std::string &instruction)
 {
-  return UTypeInstructions.find(instruction) != UTypeInstructions.end();
+    return UTypeInstructions.find(instruction) != UTypeInstructions.end();
 }
 
 bool isValidJTypeInstruction(const std::string &instruction)
 {
-  return JTypeInstructions.find(instruction) != JTypeInstructions.end();
+    return JTypeInstructions.find(instruction) != JTypeInstructions.end();
 }
 
 bool isValidPseudoInstruction(const std::string &instruction)
 {
-  return PseudoInstructions.find(instruction) != PseudoInstructions.end();
+    return PseudoInstructions.find(instruction) != PseudoInstructions.end();
 }
 
 bool isValidBaseExtensionInstruction(const std::string &instruction)
 {
-  return BaseExtensionInstructions.find(instruction) != BaseExtensionInstructions.end();
+    return BaseExtensionInstructions.find(instruction) != BaseExtensionInstructions.end();
 }
 
 bool isValidCSRRTypeInstruction(const std::string &instruction)
 {
-  return CSRRInstructions.find(instruction) != CSRRInstructions.end();
+    return CSRRInstructions.find(instruction) != CSRRInstructions.end();
 }
 
 bool isValidCSRITypeInstruction(const std::string &instruction)
 {
-  return CSRIInstructions.find(instruction) != CSRIInstructions.end();
+    return CSRIInstructions.find(instruction) != CSRIInstructions.end();
 }
 
 bool isValidCSRInstruction(const std::string &instruction)
 {
-  return (CSRRInstructions.find(instruction) != CSRRInstructions.end()) ||
-          (CSRIInstructions.find(instruction) != CSRIInstructions.end());
+    return (CSRRInstructions.find(instruction) != CSRRInstructions.end()) ||
+           (CSRIInstructions.find(instruction) != CSRIInstructions.end());
 }
 
 bool isValidFDRTypeInstruction(const std::string &instruction)
 {
-  return (FDExtensionRTypeInstructions.find(instruction) != FDExtensionRTypeInstructions.end());
+    return (FDExtensionRTypeInstructions.find(instruction) != FDExtensionRTypeInstructions.end());
 }
 
 bool isValidFDR1TypeInstruction(const std::string &instruction)
 {
-  return (FDExtensionR1TypeInstructions.find(instruction) != FDExtensionR1TypeInstructions.end());
+    return (FDExtensionR1TypeInstructions.find(instruction) != FDExtensionR1TypeInstructions.end());
 }
 
 bool isValidFDR2TypeInstruction(const std::string &instruction)
 {
-  return (FDExtensionR2TypeInstructions.find(instruction) != FDExtensionR2TypeInstructions.end());
+    return (FDExtensionR2TypeInstructions.find(instruction) != FDExtensionR2TypeInstructions.end());
 }
 
 bool isValidFDR3TypeInstruction(const std::string &instruction)
 {
-  return (FDExtensionR3TypeInstructions.find(instruction) != FDExtensionR3TypeInstructions.end());
+    return (FDExtensionR3TypeInstructions.find(instruction) != FDExtensionR3TypeInstructions.end());
 }
 
 bool isValidFDR4TypeInstruction(const std::string &instruction)
 {
-  return (FDExtensionR4TypeInstructions.find(instruction) != FDExtensionR4TypeInstructions.end());
+    return (FDExtensionR4TypeInstructions.find(instruction) != FDExtensionR4TypeInstructions.end());
 }
 
 bool isValidFDITypeInstruction(const std::string &instruction)
 {
-  return (FDExtensionITypeInstructions.find(instruction) != FDExtensionITypeInstructions.end());
+    return (FDExtensionITypeInstructions.find(instruction) != FDExtensionITypeInstructions.end());
 }
 
 bool isValidFDSTypeInstruction(const std::string &instruction)
 {
-  return (FDExtensionSTypeInstructions.find(instruction) != FDExtensionSTypeInstructions.end());
+    return (FDExtensionSTypeInstructions.find(instruction) != FDExtensionSTypeInstructions.end());
 }
 
 bool isFInstruction(const uint32_t &instruction)
 {
-  uint8_t opcode = (instruction & 0b1111111);
-  uint8_t funct3 = (instruction >> 12) & 0b111;
-  uint8_t funct7 = (instruction >> 25) & 0b1111111;
+    uint8_t opcode = (instruction & 0b1111111);
+    uint8_t funct3 = (instruction >> 12) & 0b111;
+    uint8_t funct7 = (instruction >> 25) & 0b1111111;
 
-  switch (opcode)
-  {
-  case 0b0000111: // flw
-  case 0b0100111:
-  { // fsw
-    if (funct3 == 0b010)
+    switch (opcode)
     {
-      return true; // flw
+    case 0b0000111: // flw
+    case 0b0100111:
+    { // fsw
+        if (funct3 == 0b010)
+        {
+            return true; // flw
+        }
+        break;
     }
-    break;
-  }
-  case 0b1010011:
-  {
-    if (!(funct7 & 0b1))
+    case 0b1010011:
     {
-      if (funct7 == 0b0100000)
-      {
-        return false; // fcvt.s.d
-      }
-      return true;
+        if (!(funct7 & 0b1))
+        {
+            if (funct7 == 0b0100000)
+            {
+                return false; // fcvt.s.d
+            }
+            return true;
+        }
     }
-  }
-  default:
-    break;
-  }
+    default:
+        break;
+    }
 
-  return false;
+    return false;
 }
 
 bool isDInstruction(const uint32_t &instruction)
 {
-  uint8_t opcode = (instruction & 0b1111111);
-  uint8_t funct3 = (instruction >> 12) & 0b111;
-  uint8_t funct7 = (instruction >> 25) & 0b1111111;
+    uint8_t opcode = (instruction & 0b1111111);
+    uint8_t funct3 = (instruction >> 12) & 0b111;
+    uint8_t funct7 = (instruction >> 25) & 0b1111111;
 
-  switch (opcode)
-  {
-  case 0b0000111: // fld
-  case 0b0100111:
-  { // fsd
-    if (funct3 == 0b011)
+    switch (opcode)
     {
-      return true; // fld
+    case 0b0000111: // fld
+    case 0b0100111:
+    { // fsd
+        if (funct3 == 0b011)
+        {
+            return true; // fld
+        }
+        break;
     }
-    break;
-  }
-  case 0b1010011:
-  {
-    if (funct7 & 0b1)
+    case 0b1010011:
     {
-      return true;
+        if (funct7 & 0b1)
+        {
+            return true;
+        }
+        else if (funct7 == 0b0100000)
+        {
+            return true; // fcvt.s.d
+        }
     }
-    else if (funct7 == 0b0100000)
-    {
-      return true; // fcvt.s.d
+    default:
+        break;
     }
-  }
-  default:
-    break;
-  }
-  return false;
+    return false;
 }
 
 std::string getExpectedSyntaxes(const std::string &opcode)
 {
-  static const std::unordered_map<std::string, std::string> opcodeSyntaxMap = {
-      {"nop", "nop"},
-      {"li", "li <reg>, <imm>"},
-      {"mv", "mv <reg>, <reg>"},
-      {"not", "not <reg>, <reg>"},
-      {"neg", "neg <reg>, <reg>"},
-      {"seqz", "seqz <reg>, <reg>"},
-      {"snez", "snez <reg>, <reg>"},
-      {"sltz", "sltz <reg>, <reg>"},
-      {"sgtz", "sgtz <reg>, <reg>"},
-      {"beqz", "beqz <reg>, <text label>"},
-      {"bnez", "bnez <reg>, <text label>"},
-      {"blez", "blez <reg>, <text label>"},
-      {"bgez", "bgez <reg>, <text label>"},
-      {"bltz", "bltz <reg>, <text label>"},
-      {"bgtz", "bgtz <reg>, <text label>"},
-      {"j", "j <text label>"},
-      {"jr", "jr <reg>"},
-      {"la", "la <reg>, <text label>"},
-      {"call", "call <text label>"},
-      {"tail", "tail <text label>"},
-      {"fence", "fence"}};
+    static const std::unordered_map<std::string, std::string> opcodeSyntaxMap = {
+        {"nop", "nop"},
+        {"li", "li <reg>, <imm>"},
+        {"mv", "mv <reg>, <reg>"},
+        {"not", "not <reg>, <reg>"},
+        {"neg", "neg <reg>, <reg>"},
+        {"seqz", "seqz <reg>, <reg>"},
+        {"snez", "snez <reg>, <reg>"},
+        {"sltz", "sltz <reg>, <reg>"},
+        {"sgtz", "sgtz <reg>, <reg>"},
+        {"beqz", "beqz <reg>, <text label>"},
+        {"bnez", "bnez <reg>, <text label>"},
+        {"blez", "blez <reg>, <text label>"},
+        {"bgez", "bgez <reg>, <text label>"},
+        {"bltz", "bltz <reg>, <text label>"},
+        {"bgtz", "bgtz <reg>, <text label>"},
+        {"j", "j <text label>"},
+        {"jr", "jr <reg>"},
+        {"la", "la <reg>, <text label>"},
+        {"call", "call <text label>"},
+        {"tail", "tail <text label>"},
+        {"fence", "fence"}};
 
-  auto opcodeIt = opcodeSyntaxMap.find(opcode);
-  if (opcodeIt != opcodeSyntaxMap.end())
-  {
-    return opcodeIt->second;
-  }
-
-  static const std::unordered_map<SyntaxType, std::string> syntaxTypeToString = {
-      {SyntaxType::O, "<empty>"},
-      {SyntaxType::O_GPR_C_GPR_C_GPR, "<gp-reg>, <gp-reg>, <gp-reg>"},
-      {SyntaxType::O_GPR_C_GPR_C_I, "<gp-reg>, <gp-reg>, <imm>"},
-      {SyntaxType::O_GPR_C_GPR_C_IL, "<gp-reg>, <gp-reg>, <text-label>"},
-      {SyntaxType::O_GPR_C_GPR_C_DL, "<gp-reg>, <gp-reg>, <data-label>"},
-      {SyntaxType::O_GPR_C_I_LP_GPR_RP, "<gp-reg>, <gp-imm>(<gp-reg>)"},
-      {SyntaxType::O_GPR_C_I, "<gp-reg>, <imm>"},
-      {SyntaxType::O_GPR_C_IL, "<gp-reg>, <text-label>"},
-      {SyntaxType::O_GPR_C_DL, "<gp-reg>, <data-label>"},
-      {SyntaxType::O_GPR_C_CSR_C_GPR, "<gp-reg>, <csr>, <gp-reg>"},
-      {SyntaxType::O_GPR_C_CSR_C_I, "<gp-reg>, <csr>, <uimm>"},
-      {SyntaxType::O_FPR_C_FPR_C_FPR_C_FPR, "<fp-reg>, <fp-reg>, <fp-reg>, <fp-reg>"},
-      {SyntaxType::O_FPR_C_FPR_C_FPR_C_FPR_C_RM, "<fp-reg>, <fp-reg>, <fp-reg>, <fp-reg>, <rm>"},
-      {SyntaxType::O_FPR_C_FPR_C_FPR, "<fp-reg>, <fp-reg>, <fp-reg>"},
-      {SyntaxType::O_FPR_C_FPR_C_FPR_C_RM, "<fp-reg>, <fp-reg>, <fp-reg>, <rm>"},
-      {SyntaxType::O_FPR_C_FPR, "<fp-reg>, <fp-reg>"},
-      {SyntaxType::O_FPR_C_FPR_C_RM, "<fp-reg>, <fp-reg>, <rm>"},
-      {SyntaxType::O_FPR_C_GPR, "<fp-reg>, <gp-reg>"},
-      {SyntaxType::O_FPR_C_GPR_C_RM, "<fp-reg>, <gp-reg>, <rm>"},
-      {SyntaxType::O_GPR_C_FPR, "<gp-reg>, <fp-reg>"},
-      {SyntaxType::O_GPR_C_FPR_C_RM, "<gp-reg>, <fp-reg>, <rm>"},
-      {SyntaxType::O_GPR_C_FPR_C_FPR, "<gp-reg>, <fp-reg>, <fp-reg>"},
-      {SyntaxType::O_FPR_C_I_LP_GPR_RP, "<fp-reg>, <imm>(<gp-reg>)"},
-  };
-
-  std::string syntaxes;
-  const auto &syntaxList = instruction_syntax_map[opcode];
-  for (size_t i = 0; i < syntaxList.size(); ++i)
-  {
-    if (i > 0)
+    auto opcodeIt = opcodeSyntaxMap.find(opcode);
+    if (opcodeIt != opcodeSyntaxMap.end())
     {
-      syntaxes += " or ";
+        return opcodeIt->second;
     }
-    auto syntaxIt = syntaxTypeToString.find(syntaxList[i]);
-    if (syntaxIt != syntaxTypeToString.end())
-    {
-      syntaxes += opcode + " " + syntaxIt->second;
-    }
-  }
 
-  return syntaxes;
+    static const std::unordered_map<SyntaxType, std::string> syntaxTypeToString = {
+        {SyntaxType::O, "<empty>"},
+        {SyntaxType::O_GPR_C_GPR_C_GPR, "<gp-reg>, <gp-reg>, <gp-reg>"},
+        {SyntaxType::O_GPR_C_GPR_C_I, "<gp-reg>, <gp-reg>, <imm>"},
+        {SyntaxType::O_GPR_C_GPR_C_IL, "<gp-reg>, <gp-reg>, <text-label>"},
+        {SyntaxType::O_GPR_C_GPR_C_DL, "<gp-reg>, <gp-reg>, <data-label>"},
+        {SyntaxType::O_GPR_C_I_LP_GPR_RP, "<gp-reg>, <gp-imm>(<gp-reg>)"},
+        {SyntaxType::O_GPR_C_I, "<gp-reg>, <imm>"},
+        {SyntaxType::O_GPR_C_IL, "<gp-reg>, <text-label>"},
+        {SyntaxType::O_GPR_C_DL, "<gp-reg>, <data-label>"},
+        {SyntaxType::O_GPR_C_CSR_C_GPR, "<gp-reg>, <csr>, <gp-reg>"},
+        {SyntaxType::O_GPR_C_CSR_C_I, "<gp-reg>, <csr>, <uimm>"},
+        {SyntaxType::O_FPR_C_FPR_C_FPR_C_FPR, "<fp-reg>, <fp-reg>, <fp-reg>, <fp-reg>"},
+        {SyntaxType::O_FPR_C_FPR_C_FPR_C_FPR_C_RM, "<fp-reg>, <fp-reg>, <fp-reg>, <fp-reg>, <rm>"},
+        {SyntaxType::O_FPR_C_FPR_C_FPR, "<fp-reg>, <fp-reg>, <fp-reg>"},
+        {SyntaxType::O_FPR_C_FPR_C_FPR_C_RM, "<fp-reg>, <fp-reg>, <fp-reg>, <rm>"},
+        {SyntaxType::O_FPR_C_FPR, "<fp-reg>, <fp-reg>"},
+        {SyntaxType::O_FPR_C_FPR_C_RM, "<fp-reg>, <fp-reg>, <rm>"},
+        {SyntaxType::O_FPR_C_GPR, "<fp-reg>, <gp-reg>"},
+        {SyntaxType::O_FPR_C_GPR_C_RM, "<fp-reg>, <gp-reg>, <rm>"},
+        {SyntaxType::O_GPR_C_FPR, "<gp-reg>, <fp-reg>"},
+        {SyntaxType::O_GPR_C_FPR_C_RM, "<gp-reg>, <fp-reg>, <rm>"},
+        {SyntaxType::O_GPR_C_FPR_C_FPR, "<gp-reg>, <fp-reg>, <fp-reg>"},
+        {SyntaxType::O_FPR_C_I_LP_GPR_RP, "<fp-reg>, <imm>(<gp-reg>)"},
+    };
+
+    std::string syntaxes;
+    const auto &syntaxList = instruction_syntax_map[opcode];
+    for (size_t i = 0; i < syntaxList.size(); ++i)
+    {
+        if (i > 0)
+        {
+            syntaxes += " or ";
+        }
+        auto syntaxIt = syntaxTypeToString.find(syntaxList[i]);
+        if (syntaxIt != syntaxTypeToString.end())
+        {
+            syntaxes += opcode + " " + syntaxIt->second;
+        }
+    }
+
+    return syntaxes;
 }
 
 std::string getInstructionType(const std::string &instruction)
 {
-  // Check each instruction type
-  if (isValidRTypeInstruction(instruction))
-    return "R-Type";
-  if (isValidI1TypeInstruction(instruction))
-    return "I1-Type";
-  if (isValidI2TypeInstruction(instruction))
-    return "I2-Type";
-  if (isValidI3TypeInstruction(instruction))
-    return "I3-Type";
-  if (isValidSTypeInstruction(instruction))
-    return "S-Type";
-  if (isValidBTypeInstruction(instruction))
-    return "B-Type";
-  if (isValidUTypeInstruction(instruction))
-    return "U-Type";
-  if (isValidJTypeInstruction(instruction))
-    return "J-Type";
-  if (isValidPseudoInstruction(instruction))
-    return "Pseudo";
-  if (isValidCSRRTypeInstruction(instruction))
-    return "CSR-R";
-  if (isValidCSRITypeInstruction(instruction))
-    return "CSR-I";
-  if (isValidFDRTypeInstruction(instruction))
-    return "F/D-R";
-  if (isValidFDR1TypeInstruction(instruction))
-    return "F/D-R1";
-  if (isValidFDR2TypeInstruction(instruction))
-    return "F/D-R2";
-  if (isValidFDR3TypeInstruction(instruction))
-    return "F/D-R3";
-  if (isValidFDR4TypeInstruction(instruction))
-    return "F/D-R4";
-  if (isValidFDITypeInstruction(instruction))
-    return "F/D-I";
-  if (isValidFDSTypeInstruction(instruction))
-    return "F/D-S";
-  if (isValidBaseExtensionInstruction(instruction))
-    return "Base-Ext";
+    // Check each instruction type
+    if (isValidRTypeInstruction(instruction))
+        return "R-Type";
+    if (isValidI1TypeInstruction(instruction))
+        return "I1-Type";
+    if (isValidI2TypeInstruction(instruction))
+        return "I2-Type";
+    if (isValidI3TypeInstruction(instruction))
+        return "I3-Type";
+    if (isValidSTypeInstruction(instruction))
+        return "S-Type";
+    if (isValidBTypeInstruction(instruction))
+        return "B-Type";
+    if (isValidUTypeInstruction(instruction))
+        return "U-Type";
+    if (isValidJTypeInstruction(instruction))
+        return "J-Type";
+    if (isValidPseudoInstruction(instruction))
+        return "Pseudo";
+    if (isValidCSRRTypeInstruction(instruction))
+        return "CSR-R";
+    if (isValidCSRITypeInstruction(instruction))
+        return "CSR-I";
+    if (isValidFDRTypeInstruction(instruction))
+        return "F/D-R";
+    if (isValidFDR1TypeInstruction(instruction))
+        return "F/D-R1";
+    if (isValidFDR2TypeInstruction(instruction))
+        return "F/D-R2";
+    if (isValidFDR3TypeInstruction(instruction))
+        return "F/D-R3";
+    if (isValidFDR4TypeInstruction(instruction))
+        return "F/D-R4";
+    if (isValidFDITypeInstruction(instruction))
+        return "F/D-I";
+    if (isValidFDSTypeInstruction(instruction))
+        return "F/D-S";
+    if (isValidBaseExtensionInstruction(instruction))
+        return "Base-Ext";
 
-  return "Unknown";
+    return "Unknown";
 }
-
-
 
 std::string disassemble(uint32_t instruction)
 {
-  if (instruction == 0 || instruction == 0x13)
-    return "nop";
+    if (instruction == 0 || instruction == 0x13)
+        return "nop";
 
-  uint8_t opcode = instruction & 0x7F;
-  uint8_t rd = (instruction >> 7) & 0x1F;
-  uint8_t funct3 = (instruction >> 12) & 0x07;
-  uint8_t rs1 = (instruction >> 15) & 0x1F;
-  uint8_t rs2 = (instruction >> 20) & 0x1F;
-  uint8_t funct7 = (instruction >> 25) & 0x7F;
+    uint8_t opcode = instruction & 0x7F;
+    uint8_t rd = (instruction >> 7) & 0x1F;
+    uint8_t funct3 = (instruction >> 12) & 0x07;
+    uint8_t rs1 = (instruction >> 15) & 0x1F;
+    uint8_t rs2 = (instruction >> 20) & 0x1F;
+    uint8_t funct7 = (instruction >> 25) & 0x7F;
 
-  auto xr = [](uint8_t r)
-  { return "x" + std::to_string(r); };
-  auto fr = [](uint8_t r)
-  { return "f" + std::to_string(r); };
-  auto signext = [](int32_t v, int b) -> int32_t
-  { return (v << (32 - b)) >> (32 - b); };
+    auto xr = [](uint8_t r) { return "x" + std::to_string(r); };
+    auto fr = [](uint8_t r) { return "f" + std::to_string(r); };
+    auto signext = [](int32_t v, int b) -> int32_t { return (v << (32 - b)) >> (32 - b); };
 
-  auto immI = [&]
-  { return signext((int32_t)(instruction >> 20), 12); };
-  auto immS = [&]
-  { return signext((funct7 << 5) | rd, 12); };
-  auto immB = [&]
-  { return signext(((funct7 >> 6) << 12) | ((rd & 1) << 11) | ((funct7 & 0x3F) << 5) | (rd & 0x1E), 13); };
-  auto immU = [&]
-  { return (int32_t)(instruction >> 12); };
-  auto immJ = [&]
-  { return signext((((instruction >> 31) & 1) << 20) | (((instruction >> 12) & 0xFF) << 12) | (((instruction >> 20) & 1) << 11) | (((instruction >> 21) & 0x3FF) << 1), 21); };
-  auto shamt = [&]
-  { return (int32_t)((instruction >> 20) & 0x3F); };
-
-  // R: name rd, rs1, rs2
-  // I: name rd, rs1, imm
-  // L: name rd, imm(rs1)   <- loads
-  // S: name rs2, imm(rs1)  <- stores
-  // B: name rs1, rs2, imm
-  // U: name rd, imm
-  // J: name rd, imm
-
-  switch (opcode)
-  {
-
-  case 0b0110011:
-  { // R-type integer
-    std::string name;
-    switch (funct7)
+    auto immI = [&] { return signext((int32_t)(instruction >> 20), 12); };
+    auto immS = [&] { return signext((funct7 << 5) | rd, 12); };
+    auto immB = [&]
     {
-    case 0b0000000:
-      switch (funct3)
-      {
-      case 0:
-        name = "add";
-        break;
-      case 1:
-        name = "sll";
-        break;
-      case 2:
-        name = "slt";
-        break;
-      case 3:
-        name = "sltu";
-        break;
-      case 4:
-        name = "xor";
-        break;
-      case 5:
-        name = "srl";
-        break;
-      case 6:
-        name = "or";
-        break;
-      case 7:
-        name = "and";
-        break;
-      }
-      break;
-    case 0b0100000:
-      switch (funct3)
-      {
-      case 0:
-        name = "sub";
-        break;
-      case 5:
-        name = "sra";
-        break;
-      }
-      break;
-    case 0b0000001:
-      switch (funct3)
-      {
-      case 0:
-        name = "mul";
-        break;
-      case 1:
-        name = "mulh";
-        break;
-      case 2:
-        name = "mulhsu";
-        break;
-      case 3:
-        name = "mulhu";
-        break;
-      case 4:
-        name = "div";
-        break;
-      case 5:
-        name = "divu";
-        break;
-      case 6:
-        name = "rem";
-        break;
-      case 7:
-        name = "remu";
-        break;
-      }
-      break;
-    }
-    if (!name.empty())
-      return name + " " + xr(rd) + ", " + xr(rs1) + ", " + xr(rs2);
-    break;
-  }
-
-  case 0b0111011:
-  { // R-type integer word (RV64)
-    std::string name;
-    switch (funct7)
+        return signext(
+            ((funct7 >> 6) << 12) | ((rd & 1) << 11) | ((funct7 & 0x3F) << 5) | (rd & 0x1E), 13);
+    };
+    auto immU = [&] { return (int32_t)(instruction >> 12); };
+    auto immJ = [&]
     {
-    case 0b0000000:
-      switch (funct3)
-      {
-      case 0:
-        name = "addw";
-        break;
-      case 1:
-        name = "sllw";
-        break;
-      case 5:
-        name = "srlw";
-        break;
-      }
-      break;
-    case 0b0100000:
-      switch (funct3)
-      {
-      case 0:
-        name = "subw";
-        break;
-      case 5:
-        name = "sraw";
-        break;
-      }
-      break;
-    case 0b0000001:
-      switch (funct3)
-      {
-      case 0:
-        name = "mulw";
-        break;
-      case 4:
-        name = "divw";
-        break;
-      case 5:
-        name = "divuw";
-        break;
-      case 6:
-        name = "remw";
-        break;
-      case 7:
-        name = "remuw";
-        break;
-      }
-      break;
-    }
-    if (!name.empty())
-      return name + " " + xr(rd) + ", " + xr(rs1) + ", " + xr(rs2);
-    break;
-  }
+        return signext((((instruction >> 31) & 1) << 20) | (((instruction >> 12) & 0xFF) << 12) |
+                           (((instruction >> 20) & 1) << 11) | (((instruction >> 21) & 0x3FF) << 1),
+                       21);
+    };
+    auto shamt = [&] { return (int32_t)((instruction >> 20) & 0x3F); };
 
-  case 0b0010011:
-  { // I-type integer
-    if (funct3 == 0b001)
-      return "slli " + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(shamt());
-    if (funct3 == 0b101)
-      return (funct7 == 0b0100000 ? "srai " : "srli ") + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(shamt());
-    std::string name;
-    switch (funct3)
-    {
-    case 0:
-      name = "addi";
-      break;
-    case 2:
-      name = "slti";
-      break;
-    case 3:
-      name = "sltiu";
-      break;
-    case 4:
-      name = "xori";
-      break;
-    case 6:
-      name = "ori";
-      break;
-    case 7:
-      name = "andi";
-      break;
-    }
-    if (!name.empty())
-      return name + " " + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(immI());
-    break;
-  }
+    // R: name rd, rs1, rs2
+    // I: name rd, rs1, imm
+    // L: name rd, imm(rs1)   <- loads
+    // S: name rs2, imm(rs1)  <- stores
+    // B: name rs1, rs2, imm
+    // U: name rd, imm
+    // J: name rd, imm
 
-  case 0b0011011:
-  { // I-type integer word (RV64)
-    if (funct3 == 0b001)
-      return "slliw " + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(shamt());
-    if (funct3 == 0b101)
-      return (funct7 == 0b0100000 ? "sraiw " : "srliw ") + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(shamt());
-    if (funct3 == 0b000)
-      return "addiw " + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(immI());
-    break;
-  }
-
-  case 0b0000011:
-  { // Loads
-    std::string name;
-    switch (funct3)
-    {
-    case 0:
-      name = "lb";
-      break;
-    case 1:
-      name = "lh";
-      break;
-    case 2:
-      name = "lw";
-      break;
-    case 3:
-      name = "ld";
-      break;
-    case 4:
-      name = "lbu";
-      break;
-    case 5:
-      name = "lhu";
-      break;
-    case 6:
-      name = "lwu";
-      break;
-    }
-    if (!name.empty())
-      return name + " " + xr(rd) + ", " + std::to_string(immI()) + "(" + xr(rs1) + ")";
-    break;
-  }
-
-  case 0b0100011:
-  { // Stores
-    std::string name;
-    switch (funct3)
-    {
-    case 0:
-      name = "sb";
-      break;
-    case 1:
-      name = "sh";
-      break;
-    case 2:
-      name = "sw";
-      break;
-    case 3:
-      name = "sd";
-      break;
-    }
-    if (!name.empty())
-      return name + " " + xr(rs2) + ", " + std::to_string(immS()) + "(" + xr(rs1) + ")";
-    break;
-  }
-
-  case 0b1100011:
-  { // Branches
-    std::string name;
-    switch (funct3)
-    {
-    case 0:
-      name = "beq";
-      break;
-    case 1:
-      name = "bne";
-      break;
-    case 4:
-      name = "blt";
-      break;
-    case 5:
-      name = "bge";
-      break;
-    case 6:
-      name = "bltu";
-      break;
-    case 7:
-      name = "bgeu";
-      break;
-    }
-    if (!name.empty())
-      return name + " " + xr(rs1) + ", " + xr(rs2) + ", " + std::to_string(immB());
-    break;
-  }
-
-  case 0b0110111:
-    return "lui " + xr(rd) + ", " + std::to_string(immU());
-  case 0b0010111:
-    return "auipc " + xr(rd) + ", " + std::to_string(immU());
-  case 0b1101111:
-    return "jal " + xr(rd) + ", " + std::to_string(immJ());
-  case 0b1100111:
-    return "jalr " + xr(rd) + ", " + std::to_string(immI()) + "(" + xr(rs1) + ")";
-
-  case 0b1110011:
-  { // ecall/ebreak/CSR
-    if (funct3 == 0)
-      return (rs2 == 0) ? "ecall" : "ebreak";
-    int32_t csr = (instruction >> 20) & 0xFFF;
-    char csrBuf[8];
-    snprintf(csrBuf, sizeof(csrBuf), "0x%03x", csr);
-    std::string name;
-    bool isImm = false;
-    switch (funct3)
-    {
-    case 1:
-      name = "csrrw";
-      break;
-    case 2:
-      name = "csrrs";
-      break;
-    case 3:
-      name = "csrrc";
-      break;
-    case 5:
-      name = "csrrwi";
-      isImm = true;
-      break;
-    case 6:
-      name = "csrrsi";
-      isImm = true;
-      break;
-    case 7:
-      name = "csrrci";
-      isImm = true;
-      break;
-    }
-    if (!name.empty())
-      return name + " " + xr(rd) + ", " + csrBuf + ", " + (isImm ? std::to_string(rs1) : xr(rs1));
-    break;
-  }
-
-  case 0b0000111:
-  { // FP loads
-    std::string name;
-    switch (funct3)
-    {
-    case 2:
-      name = "flw";
-      break;
-    case 3:
-      name = "fld";
-      break;
-    }
-    if (!name.empty())
-      return name + " " + fr(rd) + ", " + std::to_string(immI()) + "(" + xr(rs1) + ")";
-    break;
-  }
-
-  case 0b0100111:
-  { // FP stores
-    std::string name;
-    switch (funct3)
-    {
-    case 2:
-      name = "fsw";
-      break;
-    case 3:
-      name = "fsd";
-      break;
-    }
-    if (!name.empty())
-      return name + " " + fr(rs2) + ", " + std::to_string(immS()) + "(" + xr(rs1) + ")";
-    break;
-  }
-
-  case 0b1000011:
-  case 0b1000111:
-  case 0b1001011:
-  case 0b1001111:
-  { // R4-type (fmadd etc)
-    uint8_t fmt = (instruction >> 25) & 0x3;
-    uint8_t rs3 = (instruction >> 27) & 0x1F;
-    std::string suf = (fmt == 0) ? ".s" : ".d";
-    std::string name;
     switch (opcode)
     {
+
+    case 0b0110011:
+    { // R-type integer
+        std::string name;
+        switch (funct7)
+        {
+        case 0b0000000:
+            switch (funct3)
+            {
+            case 0:
+                name = "add";
+                break;
+            case 1:
+                name = "sll";
+                break;
+            case 2:
+                name = "slt";
+                break;
+            case 3:
+                name = "sltu";
+                break;
+            case 4:
+                name = "xor";
+                break;
+            case 5:
+                name = "srl";
+                break;
+            case 6:
+                name = "or";
+                break;
+            case 7:
+                name = "and";
+                break;
+            }
+            break;
+        case 0b0100000:
+            switch (funct3)
+            {
+            case 0:
+                name = "sub";
+                break;
+            case 5:
+                name = "sra";
+                break;
+            }
+            break;
+        case 0b0000001:
+            switch (funct3)
+            {
+            case 0:
+                name = "mul";
+                break;
+            case 1:
+                name = "mulh";
+                break;
+            case 2:
+                name = "mulhsu";
+                break;
+            case 3:
+                name = "mulhu";
+                break;
+            case 4:
+                name = "div";
+                break;
+            case 5:
+                name = "divu";
+                break;
+            case 6:
+                name = "rem";
+                break;
+            case 7:
+                name = "remu";
+                break;
+            }
+            break;
+        }
+        if (!name.empty())
+            return name + " " + xr(rd) + ", " + xr(rs1) + ", " + xr(rs2);
+        break;
+    }
+
+    case 0b0111011:
+    { // R-type integer word (RV64)
+        std::string name;
+        switch (funct7)
+        {
+        case 0b0000000:
+            switch (funct3)
+            {
+            case 0:
+                name = "addw";
+                break;
+            case 1:
+                name = "sllw";
+                break;
+            case 5:
+                name = "srlw";
+                break;
+            }
+            break;
+        case 0b0100000:
+            switch (funct3)
+            {
+            case 0:
+                name = "subw";
+                break;
+            case 5:
+                name = "sraw";
+                break;
+            }
+            break;
+        case 0b0000001:
+            switch (funct3)
+            {
+            case 0:
+                name = "mulw";
+                break;
+            case 4:
+                name = "divw";
+                break;
+            case 5:
+                name = "divuw";
+                break;
+            case 6:
+                name = "remw";
+                break;
+            case 7:
+                name = "remuw";
+                break;
+            }
+            break;
+        }
+        if (!name.empty())
+            return name + " " + xr(rd) + ", " + xr(rs1) + ", " + xr(rs2);
+        break;
+    }
+
+    case 0b0010011:
+    { // I-type integer
+        if (funct3 == 0b001)
+            return "slli " + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(shamt());
+        if (funct3 == 0b101)
+            return (funct7 == 0b0100000 ? "srai " : "srli ") + xr(rd) + ", " + xr(rs1) + ", " +
+                   std::to_string(shamt());
+        std::string name;
+        switch (funct3)
+        {
+        case 0:
+            name = "addi";
+            break;
+        case 2:
+            name = "slti";
+            break;
+        case 3:
+            name = "sltiu";
+            break;
+        case 4:
+            name = "xori";
+            break;
+        case 6:
+            name = "ori";
+            break;
+        case 7:
+            name = "andi";
+            break;
+        }
+        if (!name.empty())
+            return name + " " + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(immI());
+        break;
+    }
+
+    case 0b0011011:
+    { // I-type integer word (RV64)
+        if (funct3 == 0b001)
+            return "slliw " + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(shamt());
+        if (funct3 == 0b101)
+            return (funct7 == 0b0100000 ? "sraiw " : "srliw ") + xr(rd) + ", " + xr(rs1) + ", " +
+                   std::to_string(shamt());
+        if (funct3 == 0b000)
+            return "addiw " + xr(rd) + ", " + xr(rs1) + ", " + std::to_string(immI());
+        break;
+    }
+
+    case 0b0000011:
+    { // Loads
+        std::string name;
+        switch (funct3)
+        {
+        case 0:
+            name = "lb";
+            break;
+        case 1:
+            name = "lh";
+            break;
+        case 2:
+            name = "lw";
+            break;
+        case 3:
+            name = "ld";
+            break;
+        case 4:
+            name = "lbu";
+            break;
+        case 5:
+            name = "lhu";
+            break;
+        case 6:
+            name = "lwu";
+            break;
+        }
+        if (!name.empty())
+            return name + " " + xr(rd) + ", " + std::to_string(immI()) + "(" + xr(rs1) + ")";
+        break;
+    }
+
+    case 0b0100011:
+    { // Stores
+        std::string name;
+        switch (funct3)
+        {
+        case 0:
+            name = "sb";
+            break;
+        case 1:
+            name = "sh";
+            break;
+        case 2:
+            name = "sw";
+            break;
+        case 3:
+            name = "sd";
+            break;
+        }
+        if (!name.empty())
+            return name + " " + xr(rs2) + ", " + std::to_string(immS()) + "(" + xr(rs1) + ")";
+        break;
+    }
+
+    case 0b1100011:
+    { // Branches
+        std::string name;
+        switch (funct3)
+        {
+        case 0:
+            name = "beq";
+            break;
+        case 1:
+            name = "bne";
+            break;
+        case 4:
+            name = "blt";
+            break;
+        case 5:
+            name = "bge";
+            break;
+        case 6:
+            name = "bltu";
+            break;
+        case 7:
+            name = "bgeu";
+            break;
+        }
+        if (!name.empty())
+            return name + " " + xr(rs1) + ", " + xr(rs2) + ", " + std::to_string(immB());
+        break;
+    }
+
+    case 0b0110111:
+        return "lui " + xr(rd) + ", " + std::to_string(immU());
+    case 0b0010111:
+        return "auipc " + xr(rd) + ", " + std::to_string(immU());
+    case 0b1101111:
+        return "jal " + xr(rd) + ", " + std::to_string(immJ());
+    case 0b1100111:
+        return "jalr " + xr(rd) + ", " + std::to_string(immI()) + "(" + xr(rs1) + ")";
+
+    case 0b1110011:
+    { // ecall/ebreak/CSR
+        if (funct3 == 0)
+            return (rs2 == 0) ? "ecall" : "ebreak";
+        int32_t csr = (instruction >> 20) & 0xFFF;
+        char csrBuf[8];
+        snprintf(csrBuf, sizeof(csrBuf), "0x%03x", csr);
+        std::string name;
+        bool isImm = false;
+        switch (funct3)
+        {
+        case 1:
+            name = "csrrw";
+            break;
+        case 2:
+            name = "csrrs";
+            break;
+        case 3:
+            name = "csrrc";
+            break;
+        case 5:
+            name = "csrrwi";
+            isImm = true;
+            break;
+        case 6:
+            name = "csrrsi";
+            isImm = true;
+            break;
+        case 7:
+            name = "csrrci";
+            isImm = true;
+            break;
+        }
+        if (!name.empty())
+            return name + " " + xr(rd) + ", " + csrBuf + ", " +
+                   (isImm ? std::to_string(rs1) : xr(rs1));
+        break;
+    }
+
+    case 0b0000111:
+    { // FP loads
+        std::string name;
+        switch (funct3)
+        {
+        case 2:
+            name = "flw";
+            break;
+        case 3:
+            name = "fld";
+            break;
+        }
+        if (!name.empty())
+            return name + " " + fr(rd) + ", " + std::to_string(immI()) + "(" + xr(rs1) + ")";
+        break;
+    }
+
+    case 0b0100111:
+    { // FP stores
+        std::string name;
+        switch (funct3)
+        {
+        case 2:
+            name = "fsw";
+            break;
+        case 3:
+            name = "fsd";
+            break;
+        }
+        if (!name.empty())
+            return name + " " + fr(rs2) + ", " + std::to_string(immS()) + "(" + xr(rs1) + ")";
+        break;
+    }
+
     case 0b1000011:
-      name = "fmadd";
-      break;
     case 0b1000111:
-      name = "fmsub";
-      break;
     case 0b1001011:
-      name = "fnmsub";
-      break;
     case 0b1001111:
-      name = "fnmadd";
-      break;
+    { // R4-type (fmadd etc)
+        uint8_t fmt = (instruction >> 25) & 0x3;
+        uint8_t rs3 = (instruction >> 27) & 0x1F;
+        std::string suf = (fmt == 0) ? ".s" : ".d";
+        std::string name;
+        switch (opcode)
+        {
+        case 0b1000011:
+            name = "fmadd";
+            break;
+        case 0b1000111:
+            name = "fmsub";
+            break;
+        case 0b1001011:
+            name = "fnmsub";
+            break;
+        case 0b1001111:
+            name = "fnmadd";
+            break;
+        }
+        return name + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2) + ", " + fr(rs3);
     }
-    return name + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2) + ", " + fr(rs3);
-  }
 
-  case 0b1010011:
-  { // FP compute
-    std::string suf = (funct7 & 1) ? ".d" : ".s";
+    case 0b1010011:
+    { // FP compute
+        std::string suf = (funct7 & 1) ? ".d" : ".s";
 
-    // fadd fsub fmul fdiv
-    switch (funct7 & ~1)
-    {
-    case 0b0000000:
-      return "fadd" + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
-    case 0b0000100:
-      return "fsub" + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
-    case 0b0001000:
-      return "fmul" + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
-    case 0b0001100:
-      return "fdiv" + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
-    }
+        // fadd fsub fmul fdiv
+        switch (funct7 & ~1)
+        {
+        case 0b0000000:
+            return "fadd" + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
+        case 0b0000100:
+            return "fsub" + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
+        case 0b0001000:
+            return "fmul" + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
+        case 0b0001100:
+            return "fdiv" + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
+        }
 
-    // fsqrt
-    if ((funct7 & ~1) == 0b0101100)
-      return "fsqrt" + suf + " " + fr(rd) + ", " + fr(rs1);
+        // fsqrt
+        if ((funct7 & ~1) == 0b0101100)
+            return "fsqrt" + suf + " " + fr(rd) + ", " + fr(rs1);
 
-    // fsgnj fsgnjn fsgnjx
-    if ((funct7 & ~1) == 0b0010000)
-    {
-      std::string name;
-      switch (funct3)
-      {
-      case 0:
-        name = "fsgnj";
+        // fsgnj fsgnjn fsgnjx
+        if ((funct7 & ~1) == 0b0010000)
+        {
+            std::string name;
+            switch (funct3)
+            {
+            case 0:
+                name = "fsgnj";
+                break;
+            case 1:
+                name = "fsgnjn";
+                break;
+            case 2:
+                name = "fsgnjx";
+                break;
+            }
+            return name + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
+        }
+
+        // fmin fmax
+        if ((funct7 & ~1) == 0b0010100)
+        {
+            return (funct3 == 0 ? "fmin" : "fmax") + suf + " " + fr(rd) + ", " + fr(rs1) + ", " +
+                   fr(rs2);
+        }
+
+        // feq flt fle
+        if ((funct7 & ~1) == 0b1010000)
+        {
+            std::string name;
+            switch (funct3)
+            {
+            case 0:
+                name = "fle";
+                break;
+            case 1:
+                name = "flt";
+                break;
+            case 2:
+                name = "feq";
+                break;
+            }
+            return name + suf + " " + xr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
+        }
+
+        // fcvt.s.d / fcvt.d.s
+        if (funct7 == 0b0100000)
+            return "fcvt.s.d " + fr(rd) + ", " + fr(rs1);
+        if (funct7 == 0b0100001)
+            return "fcvt.d.s " + fr(rd) + ", " + fr(rs1);
+
+        // fcvt to int
+        if ((funct7 & ~1) == 0b1100000)
+        {
+            static const char *toInt[] = {"fcvt.w", "fcvt.wu", "fcvt.l", "fcvt.lu"};
+            if (rs2 < 4)
+                return std::string(toInt[rs2]) + suf + " " + xr(rd) + ", " + fr(rs1);
+        }
+
+        // fcvt from int
+        if ((funct7 & ~1) == 0b1101000)
+        {
+            static const char *fromInt[] = {"fcvt", "fcvt", "fcvt", "fcvt"};
+            static const char *fromIntSrc[] = {".w.", ".wu.", ".l.", ".lu."};
+            if (rs2 < 4)
+                return "fcvt" + suf + fromIntSrc[rs2] + (suf == ".s" ? "s" : "d") + // handled below
+                       " " + fr(rd) + ", " + xr(rs1);
+        }
+
+        // fmv.x.w/d  fmv.w/d.x  fclass
+        if (funct7 == 0b1110000 && rs2 == 0)
+            return (funct3 == 0 ? "fmv.x.w " + xr(rd) + ", " + fr(rs1)
+                                : "fclass.s " + xr(rd) + ", " + fr(rs1));
+        if (funct7 == 0b1111000 && rs2 == 0)
+            return "fmv.w.x " + fr(rd) + ", " + xr(rs1);
+        if (funct7 == 0b1110001 && rs2 == 0)
+            return (funct3 == 0 ? "fmv.x.d " + xr(rd) + ", " + fr(rs1)
+                                : "fclass.d " + xr(rd) + ", " + fr(rs1));
+        if (funct7 == 0b1111001 && rs2 == 0)
+            return "fmv.d.x " + fr(rd) + ", " + xr(rs1);
+
         break;
-      case 1:
-        name = "fsgnjn";
-        break;
-      case 2:
-        name = "fsgnjx";
-        break;
-      }
-      return name + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
     }
 
-    // fmin fmax
-    if ((funct7 & ~1) == 0b0010100)
-    {
-      return (funct3 == 0 ? "fmin" : "fmax") + suf + " " + fr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
-    }
+    } // end switch
 
-    // feq flt fle
-    if ((funct7 & ~1) == 0b1010000)
-    {
-      std::string name;
-      switch (funct3)
-      {
-      case 0:
-        name = "fle";
-        break;
-      case 1:
-        name = "flt";
-        break;
-      case 2:
-        name = "feq";
-        break;
-      }
-      return name + suf + " " + xr(rd) + ", " + fr(rs1) + ", " + fr(rs2);
-    }
-
-    // fcvt.s.d / fcvt.d.s
-    if (funct7 == 0b0100000)
-      return "fcvt.s.d " + fr(rd) + ", " + fr(rs1);
-    if (funct7 == 0b0100001)
-      return "fcvt.d.s " + fr(rd) + ", " + fr(rs1);
-
-    // fcvt to int
-    if ((funct7 & ~1) == 0b1100000)
-    {
-      static const char *toInt[] = {"fcvt.w", "fcvt.wu", "fcvt.l", "fcvt.lu"};
-      if (rs2 < 4)
-        return std::string(toInt[rs2]) + suf + " " + xr(rd) + ", " + fr(rs1);
-    }
-
-    // fcvt from int
-    if ((funct7 & ~1) == 0b1101000)
-    {
-      static const char *fromInt[] = {"fcvt", "fcvt", "fcvt", "fcvt"};
-      static const char *fromIntSrc[] = {".w.", ".wu.", ".l.", ".lu."};
-      if (rs2 < 4)
-        return "fcvt" + suf + fromIntSrc[rs2] + (suf == ".s" ? "s" : "d") + // handled below
-                " " + fr(rd) + ", " + xr(rs1);
-    }
-
-    // fmv.x.w/d  fmv.w/d.x  fclass
-    if (funct7 == 0b1110000 && rs2 == 0)
-      return (funct3 == 0 ? "fmv.x.w " + xr(rd) + ", " + fr(rs1) : "fclass.s " + xr(rd) + ", " + fr(rs1));
-    if (funct7 == 0b1111000 && rs2 == 0)
-      return "fmv.w.x " + fr(rd) + ", " + xr(rs1);
-    if (funct7 == 0b1110001 && rs2 == 0)
-      return (funct3 == 0 ? "fmv.x.d " + xr(rd) + ", " + fr(rs1) : "fclass.d " + xr(rd) + ", " + fr(rs1));
-    if (funct7 == 0b1111001 && rs2 == 0)
-      return "fmv.d.x " + fr(rd) + ", " + xr(rs1);
-
-    break;
-  }
-
-  } // end switch
-
-  char buf[32];
-  snprintf(buf, sizeof(buf), "unknown(0x%08x)", instruction);
-  return std::string(buf);
+    char buf[32];
+    snprintf(buf, sizeof(buf), "unknown(0x%08x)", instruction);
+    return std::string(buf);
 }
 
 } // namespace instruction_set

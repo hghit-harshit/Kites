@@ -10,14 +10,15 @@
 #include "vm/rv5s_vms/rv5svm_nh_f.h"
 #include "common/instructions.h"
 #include "config.h"
+#include "ui/processor_designs/rv5svm_nh_f_circuit_scene.h"
 #include "vm/alu.h"
 #include "vm/vm_base.h" // For ImmGenerator, etc.
-#include "ui/processor_designs/rv5svm_nh_f_circuit_scene.h"
+#include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <thread>
-#include <chrono>
 #include <tuple>
-#include <algorithm>
+
 
 // NOP instruction: ADDI x0, x0, 0
 constexpr uint32_t NOP = 0x00000013;
@@ -27,17 +28,17 @@ using namespace alu;
 // --- VmBase Pure Virtual Method Implementations (Run, DebugRun, Reset, Step) ---
 RV5StageVM_NH_F::RV5StageVM_NH_F() : RV5StageVM_Base()
 {
-    // Reset components and history
-    #ifndef DISABLE_GUI
+// Reset components and history
+#ifndef DISABLE_GUI
     circuit_scene_ = std::make_unique<Kites::RV5StageVM_NH_F_CircuitScene>();
-    connect(this, &VmBase::updateCircuitStateSignal,
-           circuit_scene_.get(), &Kites::RV5StageVM_NH_F_CircuitScene::updateCircuitState);
-    connect(this, &VmBase::vmStateChangedSignal,
-           circuit_scene_.get(), &Kites::RV5StageVM_NH_F_CircuitScene::vmStateChangedSlot);
-    #endif
+    connect(this, &VmBase::updateCircuitStateSignal, circuit_scene_.get(),
+            &Kites::RV5StageVM_NH_F_CircuitScene::updateCircuitState);
+    connect(this, &VmBase::vmStateChangedSignal, circuit_scene_.get(),
+            &Kites::RV5StageVM_NH_F_CircuitScene::vmStateChangedSlot);
+#endif
     Reset();
 
-     // Always-visible / backbone wires in the NH_F circuit
+    // Always-visible / backbone wires in the NH_F circuit
     active_wires_.append("PC_to_IM");
     active_wires_.append("IM_to_P1");
     active_wires_.append("P1_to_P2_PCcarry");
@@ -60,7 +61,6 @@ RV5StageVM_NH_F::RV5StageVM_NH_F() : RV5StageVM_Base()
     active_wires_.append("ALUcontrol_to_ALU");
     active_wires_.append("Fmux1_to_ALU");
     active_wires_.append("Fmux_to_ALUMux_up");
-  
 
     // Pipeline/ALU control and data path wires
     active_wires_.append("P2_to_FMUX");
@@ -68,23 +68,20 @@ RV5StageVM_NH_F::RV5StageVM_NH_F() : RV5StageVM_Base()
     active_wires_.append("P2_to_ALUMux");
     active_wires_.append("P2_to_ALUcontrol_Control");
 
-
     always_active_wires_count_ = active_wires_.size();
 }
-
 
 void RV5StageVM_NH_F::SetActiveWireNames()
 {
     // Clear current dynamic list and populate canonical always-active wires first
     active_wires_.erase(active_wires_.begin() + always_active_wires_count_, active_wires_.end());
 
-   //Note we are checking the singnals are the execution of these imstructions
-   // so all the signals indicated what happened in this cycle
-   //for example if mem_wb_reg_.prev_reg_write is true that means in this cycle
-   //we executed an instruction that will write to register file in this cycle
-   //so we highlight accordingly
-    // Immediate / ALU source selection
-
+    // Note we are checking the singnals are the execution of these imstructions
+    //  so all the signals indicated what happened in this cycle
+    // for example if mem_wb_reg_.prev_reg_write is true that means in this cycle
+    // we executed an instruction that will write to register file in this cycle
+    // so we highlight accordingly
+    //  Immediate / ALU source selection
 
     if (id_ex_reg_.alu_src)
     {
@@ -92,17 +89,17 @@ void RV5StageVM_NH_F::SetActiveWireNames()
         active_wires_.append("P2Imm_to_ALU2_down");
     }
 
-    if(id_ex_reg_.mem_write)
+    if (id_ex_reg_.mem_write)
     {
         active_wires_.append("Control_to_P2_MEM");
     }
-    if(id_ex_reg_.reg_write)
+    if (id_ex_reg_.reg_write)
     {
         active_wires_.append("Control_to_P2_WB");
     }
 
     // Memory control / data path (in EX/MEM stage)
-    //mem_read  happened is this cycle
+    // mem_read  happened is this cycle
     if (ex_mem_reg_.prev_mem_read)
     {
         active_wires_.append("P3_to_DM_Memread");
@@ -113,7 +110,7 @@ void RV5StageVM_NH_F::SetActiveWireNames()
         active_wires_.append("P3_TO_DM_control_memwrite");
         active_wires_.append("P3ALUres_to_DMup");
     }
-    
+
     // Register writeback paths (MEM/WB stage)
     if (mem_wb_reg_.prev_reg_write)
     {
@@ -164,13 +161,12 @@ void RV5StageVM_NH_F::SetActiveWireNames()
         active_wires_.append("ANDGate_lower_entry");
         active_wires_.append("ANDGATE_to_PCMUX");
         active_wires_.append("P3_to_PCMux");
-        //active_wires_.append("ALU1_to_PCMuxUp");
+        // active_wires_.append("ALU1_to_PCMuxUp");
     }
     else
     {
         active_wires_.append("ALU1_to_PCMuxUp");
     }
- 
 }
 
 void RV5StageVM_NH_F::Reset()
@@ -206,8 +202,6 @@ void RV5StageVM_NH_F::Step()
     cycle_s_++; // One clock cycle has passed
 
     finalize_step_delta();
-
-
 }
 
 // --- Pipeline Stage Implementations (Full Proof Control + Forwarding) ---
@@ -227,8 +221,6 @@ void RV5StageVM_NH_F::pipeline_fetch()
     }
 }
 
-
-
 void RV5StageVM_NH_F::pipeline_execute()
 {
 
@@ -240,18 +232,18 @@ void RV5StageVM_NH_F::pipeline_execute()
     bool is_f_instruction = instruction_set::isFInstruction(instruction);
     bool is_d_instruction = instruction_set::isDInstruction(instruction);
 
-    if(is_f_instruction)
+    if (is_f_instruction)
     {
         alu_result = pipeline_execute_float();
     }
-    else if(is_d_instruction)
+    else if (is_d_instruction)
     {
         alu_result = pipeline_execute_double();
     }
     else
     {
         // ALU execution with forwarding
-        
+
         // Initial ALU inputs are the stale values read from the register file (ID_EX)
         uint64_t alu_in1 = id_ex_reg_.reg1_data;
         uint64_t alu_in2 = id_ex_reg_.reg2_data;
@@ -270,7 +262,8 @@ void RV5StageVM_NH_F::pipeline_execute()
 
         // **Priority 1: EX/MEM (Data available from current instruction in MEM)**
         // Covers R->R, R->Branch, R->MemAddr, R->Store (Cases 1, 5, 7, 3)
-        //std::cout << (int)id_ex_reg_.rd<< " " << (int)id_ex_reg_.rs1<< " "<<(int)id_ex_reg_.rs2 <<  std::endl;
+        // std::cout << (int)id_ex_reg_.rd<< " " << (int)id_ex_reg_.rs1<< " "<<(int)id_ex_reg_.rs2
+        // <<  std::endl;
         if (ex_mem_reg_.reg_write && (ex_mem_reg_.rd != 0))
         {
             if (ex_mem_reg_.rd == id_ex_reg_.rs1)
@@ -306,7 +299,8 @@ void RV5StageVM_NH_F::pipeline_execute()
         }
         else if (forward_a == 1)
         { // Forward from MEM/WB
-            alu_in1 = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
+            alu_in1 = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data
+                                                  : mem_wb_reg_.prev_alu_result;
         }
 
         // Forwarding Source B
@@ -316,7 +310,8 @@ void RV5StageVM_NH_F::pipeline_execute()
         }
         else if (forward_b == 1)
         { // Forward from MEM/WB
-            alu_in2 = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
+            alu_in2 = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data
+                                                  : mem_wb_reg_.prev_alu_result;
         }
 
         // Re-apply immediate value check after forwarding for ALU_B if needed
@@ -331,15 +326,14 @@ void RV5StageVM_NH_F::pipeline_execute()
 
         // --- EXECUTION ---
         std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
-        
-        
-        if((id_ex_reg_.instruction & 0b1111111) == 0b0110111) //lui
+
+        if ((id_ex_reg_.instruction & 0b1111111) == 0b0110111) // lui
         {
             alu_result = static_cast<uint64_t>(id_ex_reg_.imm << 12);
         }
 
         // Latch data for EX/MEM Register
-        
+
         // CRITICAL: The data to be stored (reg2_data for Store) must ALSO be forwarded!
         uint64_t store_data = id_ex_reg_.reg2_data;
         if (forward_b == 2)
@@ -348,33 +342,33 @@ void RV5StageVM_NH_F::pipeline_execute()
         }
         else if (forward_b == 1)
         { // Forward from MEM/WB
-            store_data = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data : mem_wb_reg_.prev_alu_result;
+            store_data = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data
+                                                     : mem_wb_reg_.prev_alu_result;
         }
-        ex_mem_reg_.reg2_data         = store_data;
+        ex_mem_reg_.reg2_data = store_data;
     }
 
-    
-    ex_mem_reg_.prev_reg_write   = ex_mem_reg_.reg_write;
-    ex_mem_reg_.prev_rd          = ex_mem_reg_.rd; 
-    ex_mem_reg_.prev_freg_write  = ex_mem_reg_.freg_write;
-    ex_mem_reg_.prev_frd         = ex_mem_reg_.frd;
-    ex_mem_reg_.pc               = id_ex_reg_.pc;
-    ex_mem_reg_.instruction      = id_ex_reg_.instruction;
-    ex_mem_reg_.alu_result       = alu_result;
-    ex_mem_reg_.f_alu_result     = (is_f_instruction || is_d_instruction) ? alu_result : 0;
-    ex_mem_reg_.rd                = id_ex_reg_.rd;
-    ex_mem_reg_.frd               = id_ex_reg_.frd;
+    ex_mem_reg_.prev_reg_write = ex_mem_reg_.reg_write;
+    ex_mem_reg_.prev_rd = ex_mem_reg_.rd;
+    ex_mem_reg_.prev_freg_write = ex_mem_reg_.freg_write;
+    ex_mem_reg_.prev_frd = ex_mem_reg_.frd;
+    ex_mem_reg_.pc = id_ex_reg_.pc;
+    ex_mem_reg_.instruction = id_ex_reg_.instruction;
+    ex_mem_reg_.alu_result = alu_result;
+    ex_mem_reg_.f_alu_result = (is_f_instruction || is_d_instruction) ? alu_result : 0;
+    ex_mem_reg_.rd = id_ex_reg_.rd;
+    ex_mem_reg_.frd = id_ex_reg_.frd;
     // NOTE: reg2_data and freg2_data are set inside the integer/FP execute
     // branches above with proper forwarding applied — do NOT overwrite here.
-    ex_mem_reg_.reg_write         = id_ex_reg_.reg_write;
-    ex_mem_reg_.freg_write       = id_ex_reg_.freg_write;
-    ex_mem_reg_.mem_to_reg       = id_ex_reg_.mem_to_reg;
-    ex_mem_reg_.prev_mem_read    = ex_mem_reg_.mem_read;
-    ex_mem_reg_.prev_mem_write   = ex_mem_reg_.mem_write;
-    ex_mem_reg_.mem_read         = id_ex_reg_.mem_read;
-    ex_mem_reg_.mem_write        = id_ex_reg_.mem_write;
+    ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
+    ex_mem_reg_.freg_write = id_ex_reg_.freg_write;
+    ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
+    ex_mem_reg_.prev_mem_read = ex_mem_reg_.mem_read;
+    ex_mem_reg_.prev_mem_write = ex_mem_reg_.mem_write;
+    ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
+    ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
     ex_mem_reg_.prev_branch_taken = ex_mem_reg_.branch_taken;
-    ex_mem_reg_.branch_taken     = false;
+    ex_mem_reg_.branch_taken = false;
     ex_mem_reg_.branch_target_pc = 0;
 
     uint8_t opcode = instruction & 0b1111111;
@@ -434,39 +428,37 @@ void RV5StageVM_NH_F::pipeline_execute()
     }
 }
 
-
-
-uint64_t RV5StageVM_NH_F::pipeline_execute_float() 
+uint64_t RV5StageVM_NH_F::pipeline_execute_float()
 {
     uint32_t instruction = id_ex_reg_.instruction;
     uint8_t opcode = instruction & 0b1111111;
     uint8_t funct3 = (instruction >> 12) & 0b111;
     uint8_t funct7 = (instruction >> 25) & 0b1111111;
-	uint8_t rm = funct3;
+    uint8_t rm = funct3;
 
-	uint8_t fcsr_status = 0;
+    uint8_t fcsr_status = 0;
     uint64_t alu_result = 0;
 
-	if (rm == 0b111)
-	{
-		rm = registers_.ReadCsr(0x002);
-	}
+    if (rm == 0b111)
+    {
+        rm = registers_.ReadCsr(0x002);
+    }
 
     uint64_t reg1_value = id_ex_reg_.freg1_data;
     uint64_t reg2_value = id_ex_reg_.freg2_data;
     uint64_t reg3_value = id_ex_reg_.freg3_data;
 
-	if (funct7 == 0b1101000 || funct7 == 0b1111000 || opcode == 0b0000111 || opcode == 0b0100111)
-	{
+    if (funct7 == 0b1101000 || funct7 == 0b1111000 || opcode == 0b0000111 || opcode == 0b0100111)
+    {
         reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
-	}
+    }
 
     if (id_ex_reg_.alu_src)
-	{
-        //std::cout << GREEN << "Is the alu src set correctly?" << RESET << std::endl;
+    {
+        // std::cout << GREEN << "Is the alu src set correctly?" << RESET << std::endl;
         reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
-        //std::cout << BLUE << "Immediate value used in ALU: " << reg2_value << RESET << std::endl;
-	}
+        // std::cout << BLUE << "Immediate value used in ALU: " << reg2_value << RESET << std::endl;
+    }
 
     // --- FORWARDING for FPR sources (frs1/frs2/frs3) ---
     uint8_t fwd_a = 0; // 2 = EX/MEM, 1 = MEM/WB
@@ -476,36 +468,46 @@ uint64_t RV5StageVM_NH_F::pipeline_execute_float()
     // EX/MEM forwarding (highest priority)
     if (ex_mem_reg_.freg_write && (ex_mem_reg_.frd != 0))
     {
-        if (ex_mem_reg_.frd == id_ex_reg_.frs1) fwd_a = 2;
-        if (ex_mem_reg_.frd == id_ex_reg_.frs2) fwd_b = 2;
-        if (ex_mem_reg_.frd == id_ex_reg_.frs3) fwd_c = 2;
+        if (ex_mem_reg_.frd == id_ex_reg_.frs1)
+            fwd_a = 2;
+        if (ex_mem_reg_.frd == id_ex_reg_.frs2)
+            fwd_b = 2;
+        if (ex_mem_reg_.frd == id_ex_reg_.frs3)
+            fwd_c = 2;
     }
 
     // MEM/WB forwarding (lower priority)
     if (mem_wb_reg_.prev_freg_write && (mem_wb_reg_.prev_frd != 0))
     {
-        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs1 && fwd_a != 2) fwd_a = 1;
-        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs2 && fwd_b != 2) fwd_b = 1;
-        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs3 && fwd_c != 2) fwd_c = 1;
+        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs1 && fwd_a != 2)
+            fwd_a = 1;
+        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs2 && fwd_b != 2)
+            fwd_b = 1;
+        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs3 && fwd_c != 2)
+            fwd_c = 1;
     }
 
     // Apply forwarding to source values
     if (fwd_a == 2)
         reg1_value = ex_mem_reg_.f_alu_result;
     else if (fwd_a == 1)
-        reg1_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+        reg1_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data
+                                                 : mem_wb_reg_.prev_f_alu_result;
 
     if (fwd_b == 2)
         reg2_value = ex_mem_reg_.f_alu_result;
     else if (fwd_b == 1)
-        reg2_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+        reg2_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data
+                                                 : mem_wb_reg_.prev_f_alu_result;
 
     if (fwd_c == 2)
         reg3_value = ex_mem_reg_.f_alu_result;
     else if (fwd_c == 1)
-        reg3_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+        reg3_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data
+                                                 : mem_wb_reg_.prev_f_alu_result;
 
-    // Re-apply GPR-read override (for conversion ops) after forwarding decision: if instruction requires GPR, use it.
+    // Re-apply GPR-read override (for conversion ops) after forwarding decision: if instruction
+    // requires GPR, use it.
     if (funct7 == 0b1101000 || funct7 == 0b1111000 || opcode == 0b0000111 || opcode == 0b0100111)
     {
         reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
@@ -522,12 +524,14 @@ uint64_t RV5StageVM_NH_F::pipeline_execute_float()
     if (fwd_b == 2)
         fstore_data = ex_mem_reg_.f_alu_result;
     else if (fwd_b == 1)
-        fstore_data = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+        fstore_data = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data
+                                                  : mem_wb_reg_.prev_f_alu_result;
 
     ex_mem_reg_.freg2_data = fstore_data;
     // Execute FP operation
     alu::AluOp aluOperation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
-    std::tie(alu_result, fcsr_status) = alu::Alu::fpexecute(aluOperation, reg1_value, reg2_value, reg3_value, rm);
+    std::tie(alu_result, fcsr_status) =
+        alu::Alu::fpexecute(aluOperation, reg1_value, reg2_value, reg3_value, rm);
 
     registers_.WriteCsr(0x003, fcsr_status);
 
@@ -561,8 +565,8 @@ uint64_t RV5StageVM_NH_F::pipeline_execute_double()
 
     if (id_ex_reg_.alu_src)
     {
-        //two casts are necessary here the inner one extends the sign
-        // and then we cast it back to uint64_t
+        // two casts are necessary here the inner one extends the sign
+        //  and then we cast it back to uint64_t
         reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
     }
 
@@ -573,32 +577,41 @@ uint64_t RV5StageVM_NH_F::pipeline_execute_double()
 
     if (ex_mem_reg_.freg_write && (ex_mem_reg_.frd != 0))
     {
-        if (ex_mem_reg_.frd == id_ex_reg_.frs1) fwd_a = 2;
-        if (ex_mem_reg_.frd == id_ex_reg_.frs2) fwd_b = 2;
-        if (ex_mem_reg_.frd == id_ex_reg_.frs3) fwd_c = 2;
+        if (ex_mem_reg_.frd == id_ex_reg_.frs1)
+            fwd_a = 2;
+        if (ex_mem_reg_.frd == id_ex_reg_.frs2)
+            fwd_b = 2;
+        if (ex_mem_reg_.frd == id_ex_reg_.frs3)
+            fwd_c = 2;
     }
 
     if (mem_wb_reg_.prev_freg_write && (mem_wb_reg_.prev_frd != 0))
     {
-        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs1 && fwd_a != 2) fwd_a = 1;
-        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs2 && fwd_b != 2) fwd_b = 1;
-        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs3 && fwd_c != 2) fwd_c = 1;
+        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs1 && fwd_a != 2)
+            fwd_a = 1;
+        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs2 && fwd_b != 2)
+            fwd_b = 1;
+        if (mem_wb_reg_.prev_frd == id_ex_reg_.frs3 && fwd_c != 2)
+            fwd_c = 1;
     }
 
     if (fwd_a == 2)
         reg1_value = ex_mem_reg_.f_alu_result;
     else if (fwd_a == 1)
-        reg1_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+        reg1_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data
+                                                 : mem_wb_reg_.prev_f_alu_result;
 
     if (fwd_b == 2)
         reg2_value = ex_mem_reg_.f_alu_result;
     else if (fwd_b == 1)
-        reg2_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+        reg2_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data
+                                                 : mem_wb_reg_.prev_f_alu_result;
 
     if (fwd_c == 2)
         reg3_value = ex_mem_reg_.f_alu_result;
     else if (fwd_c == 1)
-        reg3_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+        reg3_value = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data
+                                                 : mem_wb_reg_.prev_f_alu_result;
 
     // Re-apply GPR-read override for specific instructions
     if (funct7 == 0b1101001 || funct7 == 0b1111001 || opcode == 0b0000111 || opcode == 0b0100111)
@@ -617,13 +630,15 @@ uint64_t RV5StageVM_NH_F::pipeline_execute_double()
     if (fwd_b == 2)
         fstore_data = ex_mem_reg_.f_alu_result;
     else if (fwd_b == 1)
-        fstore_data = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data : mem_wb_reg_.prev_f_alu_result;
+        fstore_data = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_f_memory_data
+                                                  : mem_wb_reg_.prev_f_alu_result;
 
     ex_mem_reg_.freg2_data = fstore_data;
 
     alu::AluOp alu_operation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
-    std::tie(alu_result, fcsr_status) = alu::Alu::dfpexecute(alu_operation, reg1_value, reg2_value, reg3_value, rm);
-    
+    std::tie(alu_result, fcsr_status) =
+        alu::Alu::dfpexecute(alu_operation, reg1_value, reg2_value, reg3_value, rm);
+
     registers_.WriteCsr(0x003, fcsr_status);
 
     return alu_result;
@@ -631,7 +646,8 @@ uint64_t RV5StageVM_NH_F::pipeline_execute_double()
 
 void RV5StageVM_NH_F::handle_syscall()
 {
-    if ((id_ex_reg_.instruction & 0x7F) == 0b1110011 && ((id_ex_reg_.instruction >> 12) & 0x7) == 0b000)
+    if ((id_ex_reg_.instruction & 0x7F) == 0b1110011 &&
+        ((id_ex_reg_.instruction >> 12) & 0x7) == 0b000)
     {
         RequestStop();
         output_status_ = "ECALL_EXIT";

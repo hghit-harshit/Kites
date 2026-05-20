@@ -3,7 +3,6 @@
 #include <QPainter>
 #include <QTextBlock>
 
-
 namespace Kites
 {
 KitesEditor::KitesEditor(QWidget *parent)
@@ -55,9 +54,9 @@ void KitesEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
     int top = static_cast<int>(blockBoundingGeometry(block).translated(contentOffset()).top());
     int bottom = top + static_cast<int>(blockBoundingRect(block).height());
 
-    while(block.isValid() && top <= event->rect().bottom()) 
+    while (block.isValid() && top <= event->rect().bottom())
     {
-        if (block.isVisible() && bottom >= event->rect().top()) 
+        if (block.isVisible() && bottom >= event->rect().top())
         {
             QString number = QString::number(blockNumber + 1); // +1 for 1-based line numbers
             painter.setPen(Qt::black);
@@ -65,12 +64,14 @@ void KitesEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
                              Qt::AlignRight, number);
 
             // Draw breakpoint indicator if exists
-            // if (m_isTextEditor && std::find(m_breakPoints.begin(), m_breakPoints.end(), blockNumber + 1) != m_breakPoints.end()) 
+            // if (m_isTextEditor && std::find(m_breakPoints.begin(), m_breakPoints.end(),
+            // blockNumber + 1) != m_breakPoints.end())
             // {
             //     painter.setBrush(Qt::red);
             //     painter.setPen(Qt::NoPen);
             //     int radius = 8;
-            //     painter.drawEllipse(2, top + (fontMetrics().height() - radius) / 2, radius, radius);
+            //     painter.drawEllipse(2, top + (fontMetrics().height() - radius) / 2, radius,
+            //     radius);
             // }
         }
 
@@ -85,7 +86,8 @@ void KitesEditor::highlightCurrentLine()
 {
     QList<QTextEdit::ExtraSelection> extraSelections;
 
-    if (!isReadOnly()) {
+    if (!isReadOnly())
+    {
         QTextEdit::ExtraSelection selection;
 
         QColor lineColor = palette().color(QPalette::Base).lighter(115);
@@ -100,7 +102,6 @@ void KitesEditor::highlightCurrentLine()
     setExtraSelections(extraSelections);
 }
 
-
 void KitesEditor::resizeEvent(QResizeEvent *event)
 {
     QPlainTextEdit::resizeEvent(event);
@@ -108,4 +109,4 @@ void KitesEditor::resizeEvent(QResizeEvent *event)
     QRect cr = contentsRect();
     m_lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
 }
-}// namespace Kites 
+} // namespace Kites

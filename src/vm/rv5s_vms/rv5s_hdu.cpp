@@ -6,9 +6,10 @@
  * (bubbles) needed based on the simulator's mode (Forwarding ON/OFF).
  * * NOTE: This version includes and uses the full structs from pipeline_registers.h.
  */
-#include <cstdint>
 #include <algorithm>
+#include <cstdint>
 #include <iostream>
+
 
 #include "vm/pipeline_registers.h"
 
@@ -19,15 +20,15 @@ constexpr int STALL_TWO_CYCLES = 2;
 
 /**
  * @brief Checks for data hazards and returns the number of stalls required.
- * @param if_id_reg The register holding the instruction in the IF/ID stage (the dependent instruction).
- * @param id_ex_reg The register holding the instruction in the ID/EX stage (the source instruction).
+ * @param if_id_reg The register holding the instruction in the IF/ID stage (the dependent
+ * instruction).
+ * @param id_ex_reg The register holding the instruction in the ID/EX stage (the source
+ * instruction).
  * @param is_forwarding_enabled Flag to switch between 'Forwarding ON' and 'No Forwarding' modes.
  * @return The number of cycles the pipeline should stall (0, 1, or 2).
  */
-int check_data_hazard(const IF_ID_Register &if_id_reg,
-                      const ID_EX_Register &id_ex_reg,
-                      const EX_MEM_Register &ex_mem_reg,
-                      bool is_forwarding_enabled)
+int check_data_hazard(const IF_ID_Register &if_id_reg, const ID_EX_Register &id_ex_reg,
+                      const EX_MEM_Register &ex_mem_reg, bool is_forwarding_enabled)
 {
     // --- 1. Extract Source Register Indices from IF/ID Instruction (Dependent) ---
     uint32_t instruction = if_id_reg.instruction;
@@ -44,24 +45,29 @@ int check_data_hazard(const IF_ID_Register &if_id_reg,
 
     // --- 2. Check for GPR Hazard (Source writes GPR, Dependent reads GPR) ---
     // Two-cycle hazard: current EX/MEM instruction writes a GPR the IF/ID instruction reads
-    bool gpr_hazard_two_cycle = (ex_mem_reg.reg_write && (ex_mem_reg.rd != 0))
-        && (ex_mem_reg.rd == if_id_rs1 || ex_mem_reg.rd == if_id_rs2);
+    bool gpr_hazard_two_cycle = (ex_mem_reg.reg_write && (ex_mem_reg.rd != 0)) &&
+                                (ex_mem_reg.rd == if_id_rs1 || ex_mem_reg.rd == if_id_rs2);
 
-    // One-cycle hazard: previous EX/MEM instruction (now further down) writes a GPR the IF/ID instruction reads
-    bool gpr_hazard_one_cycle = (ex_mem_reg.prev_reg_write && (ex_mem_reg.prev_rd != 0))
-        && (ex_mem_reg.prev_rd == if_id_rs1 || ex_mem_reg.prev_rd == if_id_rs2);
+    // One-cycle hazard: previous EX/MEM instruction (now further down) writes a GPR the IF/ID
+    // instruction reads
+    bool gpr_hazard_one_cycle =
+        (ex_mem_reg.prev_reg_write && (ex_mem_reg.prev_rd != 0)) &&
+        (ex_mem_reg.prev_rd == if_id_rs1 || ex_mem_reg.prev_rd == if_id_rs2);
 
     bool gpr_hazard = gpr_hazard_one_cycle || gpr_hazard_two_cycle;
 
     // --- 3. Check for FPR Hazard (Source writes FPR, Dependent reads FPR) ---
     // Note: FPR f0 is NOT hardwired to zero (unlike GPR x0), so no frd != 0 check needed.
     // Two-cycle hazard: current EX/MEM instruction writes an FPR the IF/ID instruction reads
-    bool fpr_hazard_two_cycle = (ex_mem_reg.freg_write)
-        && (ex_mem_reg.frd == if_id_frs1 || ex_mem_reg.frd == if_id_frs2 || ex_mem_reg.frd == if_id_frs3);
+    bool fpr_hazard_two_cycle =
+        (ex_mem_reg.freg_write) && (ex_mem_reg.frd == if_id_frs1 || ex_mem_reg.frd == if_id_frs2 ||
+                                    ex_mem_reg.frd == if_id_frs3);
 
     // One-cycle hazard: previous EX/MEM instruction writes an FPR the IF/ID instruction reads
-    bool fpr_hazard_one_cycle = (ex_mem_reg.prev_freg_write)
-        && (ex_mem_reg.prev_frd == if_id_frs1 || ex_mem_reg.prev_frd == if_id_frs2 || ex_mem_reg.prev_frd == if_id_frs3);
+    bool fpr_hazard_one_cycle =
+        (ex_mem_reg.prev_freg_write) &&
+        (ex_mem_reg.prev_frd == if_id_frs1 || ex_mem_reg.prev_frd == if_id_frs2 ||
+         ex_mem_reg.prev_frd == if_id_frs3);
 
     bool fpr_hazard = fpr_hazard_one_cycle || fpr_hazard_two_cycle;
 
@@ -79,11 +85,12 @@ int check_data_hazard(const IF_ID_Register &if_id_reg,
         if (id_ex_reg.mem_read)
         {
             // Check if the load destination matches any source of the dependent instruction
-            bool gpr_load_use = (id_ex_reg.reg_write && id_ex_reg.rd != 0)
-                && (id_ex_reg.rd == if_id_rs1 || id_ex_reg.rd == if_id_rs2);
+            bool gpr_load_use = (id_ex_reg.reg_write && id_ex_reg.rd != 0) &&
+                                (id_ex_reg.rd == if_id_rs1 || id_ex_reg.rd == if_id_rs2);
 
-            bool fpr_load_use = (id_ex_reg.freg_write)
-                && (id_ex_reg.frd == if_id_frs1 || id_ex_reg.frd == if_id_frs2 || id_ex_reg.frd == if_id_frs3);
+            bool fpr_load_use = (id_ex_reg.freg_write) &&
+                                (id_ex_reg.frd == if_id_frs1 || id_ex_reg.frd == if_id_frs2 ||
+                                 id_ex_reg.frd == if_id_frs3);
 
             if (gpr_load_use || fpr_load_use)
             {

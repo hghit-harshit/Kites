@@ -5,29 +5,29 @@
 
 extern "C"
 {
-#include "lua.h"
 #include "lauxlib.h"
+#include "lua.h"
 #include "lualib.h"
+
 }
 
-//we want hasfuction to be visible only within this file, so we put it in an anonymous namespace
-// same as defining it static, but this is the more modern way to do it in C++
+// we want hasfuction to be visible only within this file, so we put it in an anonymous namespace
+//  same as defining it static, but this is the more modern way to do it in C++
 namespace
 {
-    bool hasFunction(lua_State* state, const char* name)
-    {
-        //gets the fuction and then pushes it on the state
-        lua_getglobal(state, name);
-        // we check if the topmost value is a fuction
-        const bool isFunction = lua_isfunction(state, -1);
-        // pop the function (or non function)
-        lua_pop(state, 1);
-        return isFunction;
-    }
+bool hasFunction(lua_State *state, const char *name)
+{
+    // gets the fuction and then pushes it on the state
+    lua_getglobal(state, name);
+    // we check if the topmost value is a fuction
+    const bool isFunction = lua_isfunction(state, -1);
+    // pop the function (or non function)
+    lua_pop(state, 1);
+    return isFunction;
 }
+} // namespace
 
-CustomPolicyEngine::CustomPolicyEngine()
-    : m_state_(luaL_newstate())
+CustomPolicyEngine::CustomPolicyEngine() : m_state_(luaL_newstate())
 {
     if (!m_state_)
     {
@@ -46,7 +46,7 @@ CustomPolicyEngine::~CustomPolicyEngine()
     }
 }
 
-void CustomPolicyEngine::loadCustomPolicyScript(const std::string& path)
+void CustomPolicyEngine::loadCustomPolicyScript(const std::string &path)
 {
     if (!m_state_)
     {
@@ -57,7 +57,8 @@ void CustomPolicyEngine::loadCustomPolicyScript(const std::string& path)
     {
         std::string message = readLuaError(m_state_);
         lua_pop(m_state_, 1);
-        throw std::runtime_error("Failed to load custom cache policy script '" + path + "': " + message);
+        throw std::runtime_error("Failed to load custom cache policy script '" + path +
+                                 "': " + message);
     }
 
     m_script_path_ = path;
@@ -69,34 +70,34 @@ bool CustomPolicyEngine::hasScript() const
 }
 
 size_t CustomPolicyEngine::callChooseVictim(std::span<const CacheLineView> cacheLines,
-                                            const CacheRequestView& request,
-                                            const CacheContextView& context)
+                                            const CacheRequestView &request,
+                                            const CacheContextView &context)
 {
     return callChooseVictimFunction("chooseVictim", cacheLines, request, context, true);
 }
 
 void CustomPolicyEngine::callOnAccess(std::span<const CacheLineView> cacheLines,
-                                      const CacheRequestView& request,
-                                      const CacheContextView& context)
+                                      const CacheRequestView &request,
+                                      const CacheContextView &context)
 {
     callOptionalVoidFunction("onAccess", cacheLines, request, context);
 }
 
 void CustomPolicyEngine::callOnInsert(std::span<const CacheLineView> cacheLines,
-                                      const CacheRequestView& request,
-                                      const CacheContextView& context)
+                                      const CacheRequestView &request,
+                                      const CacheContextView &context)
 {
     callOptionalVoidFunction("onInsert", cacheLines, request, context);
 }
 
 void CustomPolicyEngine::callOnEvict(std::span<const CacheLineView> cacheLines,
-                                     const CacheRequestView& request,
-                                     const CacheContextView& context)
+                                     const CacheRequestView &request,
+                                     const CacheContextView &context)
 {
     callOptionalVoidFunction("onEvict", cacheLines, request, context);
 }
 
-void CustomPolicyEngine::pushLineTable(lua_State* state, const CacheLineView& line, size_t index)
+void CustomPolicyEngine::pushLineTable(lua_State *state, const CacheLineView &line, size_t index)
 {
     lua_newtable(state);
 
@@ -125,7 +126,7 @@ void CustomPolicyEngine::pushLineTable(lua_State* state, const CacheLineView& li
     lua_setfield(state, -2, "dirty");
 }
 
-void CustomPolicyEngine::pushLinesTable(lua_State* state, std::span<const CacheLineView> cacheLines)
+void CustomPolicyEngine::pushLinesTable(lua_State *state, std::span<const CacheLineView> cacheLines)
 {
     lua_newtable(state);
 
@@ -137,7 +138,7 @@ void CustomPolicyEngine::pushLinesTable(lua_State* state, std::span<const CacheL
     }
 }
 
-void CustomPolicyEngine::pushRequestTable(lua_State* state, const CacheRequestView& request)
+void CustomPolicyEngine::pushRequestTable(lua_State *state, const CacheRequestView &request)
 {
     lua_newtable(state);
 
@@ -163,7 +164,7 @@ void CustomPolicyEngine::pushRequestTable(lua_State* state, const CacheRequestVi
     lua_setfield(state, -2, "tag");
 }
 
-void CustomPolicyEngine::pushContextTable(lua_State* state, const CacheContextView& context)
+void CustomPolicyEngine::pushContextTable(lua_State *state, const CacheContextView &context)
 {
     lua_newtable(state);
 
@@ -180,17 +181,16 @@ void CustomPolicyEngine::pushContextTable(lua_State* state, const CacheContextVi
     lua_setfield(state, -2, "tick");
 }
 
-std::string CustomPolicyEngine::readLuaError(lua_State* state)
+std::string CustomPolicyEngine::readLuaError(lua_State *state)
 {
-    const char* message = lua_tostring(state, -1);
+    const char *message = lua_tostring(state, -1);
     return message ? std::string(message) : std::string("unknown Lua error");
 }
 
-size_t CustomPolicyEngine::callChooseVictimFunction(const char* functionName,
+size_t CustomPolicyEngine::callChooseVictimFunction(const char *functionName,
                                                     std::span<const CacheLineView> cacheLines,
-                                                    const CacheRequestView& request,
-                                                    const CacheContextView& context,
-                                                    bool required)
+                                                    const CacheRequestView &request,
+                                                    const CacheContextView &context, bool required)
 {
     if (!m_state_)
     {
@@ -201,7 +201,9 @@ size_t CustomPolicyEngine::callChooseVictimFunction(const char* functionName,
     {
         if (required)
         {
-            throw std::runtime_error(std::string("Custom policy script does not define function '") + functionName + "'");
+            throw std::runtime_error(
+                std::string("Custom policy script does not define function '") + functionName +
+                "'");
         }
         return 0;
     }
@@ -213,20 +215,22 @@ size_t CustomPolicyEngine::callChooseVictimFunction(const char* functionName,
     pushRequestTable(m_state_, request);
     pushContextTable(m_state_, context);
 
-    // lua_pcall (protected call) will call the function 
+    // lua_pcall (protected call) will call the function
     // at the top of the stack
     // the args are no of args,no of return values and error function (0 means no error function)
     if (lua_pcall(m_state_, 3, 1, 0) != LUA_OK)
     {
         std::string message = readLuaError(m_state_);
         lua_pop(m_state_, 1);
-        throw std::runtime_error(std::string("Custom policy script function '") + functionName + "' failed: " + message);
+        throw std::runtime_error(std::string("Custom policy script function '") + functionName +
+                                 "' failed: " + message);
     }
 
     if (!lua_isinteger(m_state_, -1))
     {
         lua_pop(m_state_, 1);
-        throw std::runtime_error(std::string("Custom policy function '") + functionName + "' must return an integer victim index");
+        throw std::runtime_error(std::string("Custom policy function '") + functionName +
+                                 "' must return an integer victim index");
     }
 
     const lua_Integer returnedIndex = lua_tointeger(m_state_, -1);
@@ -234,17 +238,20 @@ size_t CustomPolicyEngine::callChooseVictimFunction(const char* functionName,
 
     if (returnedIndex < 0)
     {
-        throw std::runtime_error(std::string("Custom policy function '") + functionName + "' returned a negative victim index");
+        throw std::runtime_error(std::string("Custom policy function '") + functionName +
+                                 "' returned a negative victim index");
     }
 
     if (cacheLines.empty())
     {
-        throw std::runtime_error(std::string("Custom policy function '") + functionName + "' was called with no cache lines");
+        throw std::runtime_error(std::string("Custom policy function '") + functionName +
+                                 "' was called with no cache lines");
     }
 
     if (returnedIndex > static_cast<lua_Integer>(cacheLines.size()))
     {
-        throw std::runtime_error(std::string("Custom policy function '") + functionName + "' returned an out-of-range victim index");
+        throw std::runtime_error(std::string("Custom policy function '") + functionName +
+                                 "' returned an out-of-range victim index");
     }
 
     if (returnedIndex == 0)
@@ -255,10 +262,10 @@ size_t CustomPolicyEngine::callChooseVictimFunction(const char* functionName,
     return static_cast<size_t>(returnedIndex - 1);
 }
 
-void CustomPolicyEngine::callOptionalVoidFunction(const char* functionName,
+void CustomPolicyEngine::callOptionalVoidFunction(const char *functionName,
                                                   std::span<const CacheLineView> cacheLines,
-                                                  const CacheRequestView& request,
-                                                  const CacheContextView& context)
+                                                  const CacheRequestView &request,
+                                                  const CacheContextView &context)
 {
     if (!m_state_ || !hasFunction(m_state_, functionName))
     {
@@ -276,6 +283,7 @@ void CustomPolicyEngine::callOptionalVoidFunction(const char* functionName,
     {
         std::string message = readLuaError(m_state_);
         lua_pop(m_state_, 1);
-        throw std::runtime_error(std::string("Custom policy script function '") + functionName + "' failed: " + message);
+        throw std::runtime_error(std::string("Custom policy script function '") + functionName +
+                                 "' failed: " + message);
     }
 }

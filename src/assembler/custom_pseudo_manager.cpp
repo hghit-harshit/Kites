@@ -224,34 +224,35 @@ std::string CustomPseudoManager::expandPseudoInstruction(const std::string &sour
 
         for (const QJsonValue &expansionLineval : expansionArray)
         {
-                // Split expansion line on whitespace, then accept commas between
-                // operands; detect empty pieces (consecutive commas) and treat
-                // as invalid expansion (skip expansion).
-                QStringList rawTokens = expansionLineval.toString().split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
-                QStringList expansionLineTokens;
-                bool badExpansion = false;
-                for (const QString &rt : rawTokens)
+            // Split expansion line on whitespace, then accept commas between
+            // operands; detect empty pieces (consecutive commas) and treat
+            // as invalid expansion (skip expansion).
+            QStringList rawTokens =
+                expansionLineval.toString().split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+            QStringList expansionLineTokens;
+            bool badExpansion = false;
+            for (const QString &rt : rawTokens)
+            {
+                const QStringList subs = rt.split(',', Qt::KeepEmptyParts);
+                for (QString s : subs)
                 {
-                    const QStringList subs = rt.split(',', Qt::KeepEmptyParts);
-                    for (QString s : subs)
+                    s = s.trimmed();
+                    if (s.isEmpty())
                     {
-                        s = s.trimmed();
-                        if (s.isEmpty())
-                        {
-                            badExpansion = true;
-                            break;
-                        }
-                        expansionLineTokens << s;
-                    }
-                    if (badExpansion)
+                        badExpansion = true;
                         break;
+                    }
+                    expansionLineTokens << s;
                 }
                 if (badExpansion)
-                {
-                    // malformed expansion template; fall back to leaving source line as-is
-                    expandedLines << line;
                     break;
-                }
+            }
+            if (badExpansion)
+            {
+                // malformed expansion template; fall back to leaving source line as-is
+                expandedLines << line;
+                break;
+            }
 
             for (QString &token : expansionLineTokens)
             {

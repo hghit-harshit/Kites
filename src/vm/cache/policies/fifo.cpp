@@ -11,8 +11,8 @@ ReplacementPolicy FIFOReplacementPolicy::type() const
 }
 
 size_t FIFOReplacementPolicy::chooseVictim(std::span<const CacheLineView> lines,
-                 const CacheRequestView& request,
-                 const CacheContextView& context) 
+                                           const CacheRequestView &request,
+                                           const CacheContextView &context)
 {
     // The FIFO queue is maintained in the cache metadata for each set.
     // The victim is the line at the front of the queue (the oldest line).
@@ -27,11 +27,12 @@ size_t FIFOReplacementPolicy::chooseVictim(std::span<const CacheLineView> lines,
         }
     }
 
-    size_t least_insert_time_index = 0; // All lines are valid, so we need to evict the oldest one from the FIFO queue
+    size_t least_insert_time_index =
+        0; // All lines are valid, so we need to evict the oldest one from the FIFO queue
     size_t least_insert_time = UINT64_MAX;
-    for(size_t i = 0; i < lines.size(); ++i)
+    for (size_t i = 0; i < lines.size(); ++i)
     {
-        if(lines[i].insertTime < least_insert_time)
+        if (lines[i].insertTime < least_insert_time)
         {
             least_insert_time = lines[i].insertTime;
             least_insert_time_index = i;
@@ -41,23 +42,22 @@ size_t FIFOReplacementPolicy::chooseVictim(std::span<const CacheLineView> lines,
     return least_insert_time_index;
 }
 
-void FIFOReplacementPolicy::onAccess(const CacheLineView& line,
-                                   const CacheRequestView& request,
-                                   const CacheContextView& context)
+void FIFOReplacementPolicy::onAccess(const CacheLineView &line, const CacheRequestView &request,
+                                     const CacheContextView &context)
 {
     // No internal state to update on access for FIFO
 }
 
-void FIFOReplacementPolicy::onInsert(const CacheLineView& line,
-                                   const CacheRequestView& request,
-                                   const CacheContextView& context)
+void FIFOReplacementPolicy::onInsert(const CacheLineView &line, const CacheRequestView &request,
+                                     const CacheContextView &context)
 {
-    // No internal state to update on insert for FIFO since we maintain the FIFO queue in the cache metadata
+    // No internal state to update on insert for FIFO since we maintain the FIFO queue in the cache
+    // metadata
 }
 
-void FIFOReplacementPolicy::onEvict(const CacheLineView& line,
-                                  const CacheRequestView& request,
-                                  const CacheContextView& context)
+void FIFOReplacementPolicy::onEvict(const CacheLineView &line, const CacheRequestView &request,
+                                    const CacheContextView &context)
 {
-    // No internal state to update on evict for FIFO since we maintain the FIFO queue in the cache metadata
+    // No internal state to update on evict for FIFO since we maintain the FIFO queue in the cache
+    // metadata
 }

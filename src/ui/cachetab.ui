@@ -1,141 +1,144 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Kites::CacheTab</class>
- <widget class="QWidget" name="Kites::CacheTab">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>824</width>
-    <height>549</height>
-   </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Form</string>
-  </property>
-  <layout class="QGridLayout" name="gridLayout_4">
-   <item row="0" column="0">
-    <widget class="QTabWidget" name="tabWidget">
-     <property name="currentIndex">
-      <number>1</number>
-     </property>
-     <widget class="QWidget" name="tab">
-      <attribute name="title">
-       <string>Page</string>
-      </attribute>
-      <layout class="QGridLayout" name="gridLayout_3">
-       <item row="0" column="0">
-        <widget class="QSplitter" name="splitter_4">
-         <property name="orientation">
-          <enum>Qt::Orientation::Horizontal</enum>
-         </property>
-         <widget class="QWidget" name="">
-          <layout class="QVBoxLayout" name="verticalLayout_4">
-           <item>
-            <widget class="CacheConfigWidget" name="InstructionConfig" native="true"/>
-           </item>
-           <item>
-            <spacer name="verticalSpacer_3">
-             <property name="orientation">
-              <enum>Qt::Orientation::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QTableView" name="InstructiontableView"/>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="L1Tab">
-      <attribute name="title">
-       <string>Tab 1</string>
-      </attribute>
-      <layout class="QGridLayout" name="gridLayout_2">
-       <item row="0" column="0">
-        <widget class="QSplitter" name="splitter_2">
-         <property name="orientation">
-          <enum>Qt::Orientation::Horizontal</enum>
-         </property>
-         <widget class="QWidget" name="layoutWidget">
-          <layout class="QVBoxLayout" name="verticalLayout_2">
-           <item>
-            <widget class="CacheConfigWidget" name="L1Config" native="true"/>
-           </item>
-           <item>
-            <spacer name="verticalSpacer">
-             <property name="orientation">
-              <enum>Qt::Orientation::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>464</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QTableView" name="L1tableView"/>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="L2Tab">
-      <attribute name="title">
-       <string>Tab 2</string>
-      </attribute>
-      <layout class="QGridLayout" name="gridLayout">
-       <item row="0" column="0">
-        <widget class="QSplitter" name="splitter_3">
-         <property name="orientation">
-          <enum>Qt::Orientation::Horizontal</enum>
-         </property>
-         <widget class="QWidget" name="layoutWidget">
-          <layout class="QVBoxLayout" name="verticalLayout_3">
-           <item>
-            <widget class="CacheConfigWidget" name="L2Config" native="true"/>
-           </item>
-           <item>
-            <spacer name="verticalSpacer_2">
-             <property name="orientation">
-              <enum>Qt::Orientation::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>464</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QTableView" name="L2tableView"/>
-        </widget>
-       </item>
-      </layout>
-     </widget>
+    <class>Kites::CacheTab</class>
+    <widget class="QWidget" name="Kites::CacheTab">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>824</width>
+                <height>549</height>
+            </rect>
+        </property>
+        <property name="windowTitle">
+            <string>Form</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_4">
+            <item row="0" column="0">
+                <widget class="QTabWidget" name="tabWidget">
+                    <property name="currentIndex">
+                        <number>1</number>
+                    </property>
+                    <widget class="QWidget" name="tab">
+                        <attribute name="title">
+                            <string>Page</string>
+                        </attribute>
+                        <layout class="QGridLayout" name="gridLayout_3">
+                            <item row="0" column="0">
+                                <widget class="QSplitter" name="splitter_4">
+                                    <property name="orientation">
+                                        <enum>Qt::Orientation::Horizontal</enum>
+                                    </property>
+                                    <widget class="QWidget" name="">
+                                        <layout class="QVBoxLayout" name="verticalLayout_4">
+                                            <item>
+                                                <widget class="CacheConfigWidget"
+                                                    name="InstructionConfig" native="true" />
+                                            </item>
+                                            <item>
+                                                <spacer name="verticalSpacer_3">
+                                                    <property name="orientation">
+                                                        <enum>Qt::Orientation::Vertical</enum>
+                                                    </property>
+                                                    <property name="sizeHint" stdset="0">
+                                                        <size>
+                                                            <width>20</width>
+                                                            <height>40</height>
+                                                        </size>
+                                                    </property>
+                                                </spacer>
+                                            </item>
+                                        </layout>
+                                    </widget>
+                                    <widget class="QTableView" name="InstructiontableView" />
+                                </widget>
+                            </item>
+                        </layout>
+                    </widget>
+                    <widget class="QWidget" name="L1Tab">
+                        <attribute name="title">
+                            <string>Tab 1</string>
+                        </attribute>
+                        <layout class="QGridLayout" name="gridLayout_2">
+                            <item row="0" column="0">
+                                <widget class="QSplitter" name="splitter_2">
+                                    <property name="orientation">
+                                        <enum>Qt::Orientation::Horizontal</enum>
+                                    </property>
+                                    <widget class="QWidget" name="layoutWidget">
+                                        <layout class="QVBoxLayout" name="verticalLayout_2">
+                                            <item>
+                                                <widget class="CacheConfigWidget" name="L1Config"
+                                                    native="true" />
+                                            </item>
+                                            <item>
+                                                <spacer name="verticalSpacer">
+                                                    <property name="orientation">
+                                                        <enum>Qt::Orientation::Vertical</enum>
+                                                    </property>
+                                                    <property name="sizeHint" stdset="0">
+                                                        <size>
+                                                            <width>20</width>
+                                                            <height>464</height>
+                                                        </size>
+                                                    </property>
+                                                </spacer>
+                                            </item>
+                                        </layout>
+                                    </widget>
+                                    <widget class="QTableView" name="L1tableView" />
+                                </widget>
+                            </item>
+                        </layout>
+                    </widget>
+                    <widget class="QWidget" name="L2Tab">
+                        <attribute name="title">
+                            <string>Tab 2</string>
+                        </attribute>
+                        <layout class="QGridLayout" name="gridLayout">
+                            <item row="0" column="0">
+                                <widget class="QSplitter" name="splitter_3">
+                                    <property name="orientation">
+                                        <enum>Qt::Orientation::Horizontal</enum>
+                                    </property>
+                                    <widget class="QWidget" name="layoutWidget">
+                                        <layout class="QVBoxLayout" name="verticalLayout_3">
+                                            <item>
+                                                <widget class="CacheConfigWidget" name="L2Config"
+                                                    native="true" />
+                                            </item>
+                                            <item>
+                                                <spacer name="verticalSpacer_2">
+                                                    <property name="orientation">
+                                                        <enum>Qt::Orientation::Vertical</enum>
+                                                    </property>
+                                                    <property name="sizeHint" stdset="0">
+                                                        <size>
+                                                            <width>20</width>
+                                                            <height>464</height>
+                                                        </size>
+                                                    </property>
+                                                </spacer>
+                                            </item>
+                                        </layout>
+                                    </widget>
+                                    <widget class="QTableView" name="L2tableView" />
+                                </widget>
+                            </item>
+                        </layout>
+                    </widget>
+                </widget>
+            </item>
+        </layout>
     </widget>
-   </item>
-  </layout>
- </widget>
- <customwidgets>
-  <customwidget>
-   <class>CacheConfigWidget</class>
-   <extends>QWidget</extends>
-   <header location="global">ui/cacheconfigwidget.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
- <resources/>
- <connections/>
+    <customwidgets>
+        <customwidget>
+            <class>CacheConfigWidget</class>
+            <extends>QWidget</extends>
+            <header location="global">ui/cacheconfigwidget.h</header>
+            <container>1</container>
+        </customwidget>
+    </customwidgets>
+    <resources />
+    <connections />
 </ui>

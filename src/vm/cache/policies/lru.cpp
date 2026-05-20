@@ -1,6 +1,5 @@
 #include "vm/cache/policies/lru.h"
 
-
 std::string_view LRUReplacementPolicy::name() const
 {
     return "LRU";
@@ -10,8 +9,8 @@ ReplacementPolicy LRUReplacementPolicy::type() const
     return ReplacementPolicy::LRU;
 }
 size_t LRUReplacementPolicy::chooseVictim(std::span<const CacheLineView> lines,
-                                         const CacheRequestView& request,
-                                         const CacheContextView& context)
+                                          const CacheRequestView &request,
+                                          const CacheContextView &context)
 {
     // Find the line with the smallest age (least recently used)
     size_t victim_index = 0;
@@ -31,25 +30,22 @@ size_t LRUReplacementPolicy::chooseVictim(std::span<const CacheLineView> lines,
         }
     }
     return victim_index;
-}       
+}
 
-void LRUReplacementPolicy::onAccess(const CacheLineView& line,
-                                   const CacheRequestView& request,
-                                   const CacheContextView& context)
+void LRUReplacementPolicy::onAccess(const CacheLineView &line, const CacheRequestView &request,
+                                    const CacheContextView &context)
 {
     // No internal state to update on access since we rely on the age field in CacheLineView
 }
 
-void LRUReplacementPolicy::onInsert(const CacheLineView& line,
-                                   const CacheRequestView& request,
-                                   const CacheContextView& context)
+void LRUReplacementPolicy::onInsert(const CacheLineView &line, const CacheRequestView &request,
+                                    const CacheContextView &context)
 {
     // No internal state to update on insert since we rely on the age field in CacheLineView
 }
 
-void LRUReplacementPolicy::onEvict(const CacheLineView& line,
-                                  const CacheRequestView& request,
-                                  const CacheContextView& context)
+void LRUReplacementPolicy::onEvict(const CacheLineView &line, const CacheRequestView &request,
+                                   const CacheContextView &context)
 {
     // No internal state to update on evict since we rely on the age field in CacheLineView
 }

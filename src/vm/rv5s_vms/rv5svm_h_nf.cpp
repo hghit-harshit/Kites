@@ -1,6 +1,7 @@
 /**
  * @file rv5svm_h_nf.cpp
- * @brief Implementation for the 5-stage pipelined VM (RV5S) in Mode 3: Hazard Detection, No Forwarding.
+ * @brief Implementation for the 5-stage pipelined VM (RV5S) in Mode 3: Hazard Detection, No
+ * Forwarding.
  * * NOTE: This VM is fully autonomous for all hazards (data and control).
  * * Stall Rule: Any GPR data dependency results in a 2-cycle stall (2 bubbles).
  * * Control Hazards (JAL/JALR, B-Type) are AUTOMATICALLY handled by flush/redirect.
@@ -9,15 +10,16 @@
 #include "vm/rv5s_vms/rv5svm_h_nf.h"
 #include "common/instructions.h"
 #include "config.h"
-#include "vm/alu.h"
-#include "vm/vm_base.h"
-#include "vm/pipeline_registers.h"
 #include "ui/processor_designs/rv5svm_h_nf_circuit_scene.h"
+#include "vm/alu.h"
+#include "vm/pipeline_registers.h"
+#include "vm/vm_base.h"
+#include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <thread>
-#include <chrono>
 #include <tuple>
-#include <algorithm>
+
 
 // NOP instruction: ADDI x0, x0, 0
 constexpr uint32_t NOP = 0x00000013;
@@ -38,13 +40,13 @@ RV5StageVM_H_NF::RV5StageVM_H_NF() : RV5StageVM_Base()
     // stall_fetch_and_decode_ = false;
 
     // Reset components and history
-        #ifndef DISABLE_GUI
+#ifndef DISABLE_GUI
     circuit_scene_ = std::make_unique<Kites::RV5StageVM_H_NF_CircuitScene>();
-    connect(this, &VmBase::updateCircuitStateSignal,
-            circuit_scene_.get(), &Kites::RV5StageVM_H_NF_CircuitScene::updateCircuitState);
-    connect(this, &VmBase::vmStateChangedSignal,
-            circuit_scene_.get(), &Kites::RV5StageVM_H_NF_CircuitScene::vmStateChangedSlot);
-        #endif
+    connect(this, &VmBase::updateCircuitStateSignal, circuit_scene_.get(),
+            &Kites::RV5StageVM_H_NF_CircuitScene::updateCircuitState);
+    connect(this, &VmBase::vmStateChangedSignal, circuit_scene_.get(),
+            &Kites::RV5StageVM_H_NF_CircuitScene::vmStateChangedSlot);
+#endif
     Reset();
 
     active_wires_.append("PC_to_IM");
@@ -68,8 +70,6 @@ RV5StageVM_H_NF::RV5StageVM_H_NF() : RV5StageVM_Base()
 
     always_active_wires_count_ = active_wires_.size();
 }
-
-
 
 void RV5StageVM_H_NF::SetActiveWireNames()
 {
@@ -231,8 +231,6 @@ void RV5StageVM_H_NF::pipeline_fetch()
     }
 }
 
-
-
 void RV5StageVM_H_NF::pipeline_execute()
 {
     uint32_t cur_instruction = id_ex_reg_.instruction;
@@ -240,7 +238,8 @@ void RV5StageVM_H_NF::pipeline_execute()
     const bool is_d_instruction = instruction_set::isDInstruction(cur_instruction);
 
     uint64_t alu_in1 = id_ex_reg_.reg1_data;
-    uint64_t alu_in2 = id_ex_reg_.alu_src ? static_cast<uint64_t>(id_ex_reg_.imm) : id_ex_reg_.reg2_data;
+    uint64_t alu_in2 =
+        id_ex_reg_.alu_src ? static_cast<uint64_t>(id_ex_reg_.imm) : id_ex_reg_.reg2_data;
 
     alu::AluOp alu_operation = control_unit_.GetAluSignal(cur_instruction, id_ex_reg_.alu_op > 0);
     uint64_t alu_result = 0;
@@ -258,32 +257,32 @@ void RV5StageVM_H_NF::pipeline_execute()
     {
         std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
     }
-    if((cur_instruction & 0b1111111) == 0b0110111) //lui
+    if ((cur_instruction & 0b1111111) == 0b0110111) // lui
     {
         alu_result = static_cast<uint64_t>(id_ex_reg_.imm << 12);
     }
 
-    ex_mem_reg_.prev_reg_write   = ex_mem_reg_.reg_write;
-    ex_mem_reg_.prev_rd          = ex_mem_reg_.rd; 
-    ex_mem_reg_.prev_freg_write  = ex_mem_reg_.freg_write;
-    ex_mem_reg_.prev_frd         = ex_mem_reg_.frd;
-    ex_mem_reg_.pc               = id_ex_reg_.pc;
-    ex_mem_reg_.instruction      = id_ex_reg_.instruction;
-    ex_mem_reg_.alu_result       = alu_result;
-    ex_mem_reg_.f_alu_result     = (is_f_instruction || is_d_instruction) ? alu_result : 0;
-    ex_mem_reg_.rd               = id_ex_reg_.rd;
-    ex_mem_reg_.frd              = id_ex_reg_.frd;
-    ex_mem_reg_.reg2_data        = id_ex_reg_.reg2_data;
-    ex_mem_reg_.freg2_data       = id_ex_reg_.freg2_data;
-    ex_mem_reg_.reg_write        = id_ex_reg_.reg_write;
-    ex_mem_reg_.freg_write       = id_ex_reg_.freg_write;
-    ex_mem_reg_.mem_to_reg       = id_ex_reg_.mem_to_reg;
-    ex_mem_reg_.prev_mem_read    = ex_mem_reg_.mem_read;
-    ex_mem_reg_.prev_mem_write   = ex_mem_reg_.mem_write;
-    ex_mem_reg_.mem_read         = id_ex_reg_.mem_read;
-    ex_mem_reg_.mem_write        = id_ex_reg_.mem_write;
+    ex_mem_reg_.prev_reg_write = ex_mem_reg_.reg_write;
+    ex_mem_reg_.prev_rd = ex_mem_reg_.rd;
+    ex_mem_reg_.prev_freg_write = ex_mem_reg_.freg_write;
+    ex_mem_reg_.prev_frd = ex_mem_reg_.frd;
+    ex_mem_reg_.pc = id_ex_reg_.pc;
+    ex_mem_reg_.instruction = id_ex_reg_.instruction;
+    ex_mem_reg_.alu_result = alu_result;
+    ex_mem_reg_.f_alu_result = (is_f_instruction || is_d_instruction) ? alu_result : 0;
+    ex_mem_reg_.rd = id_ex_reg_.rd;
+    ex_mem_reg_.frd = id_ex_reg_.frd;
+    ex_mem_reg_.reg2_data = id_ex_reg_.reg2_data;
+    ex_mem_reg_.freg2_data = id_ex_reg_.freg2_data;
+    ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
+    ex_mem_reg_.freg_write = id_ex_reg_.freg_write;
+    ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
+    ex_mem_reg_.prev_mem_read = ex_mem_reg_.mem_read;
+    ex_mem_reg_.prev_mem_write = ex_mem_reg_.mem_write;
+    ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
+    ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
     ex_mem_reg_.prev_branch_taken = ex_mem_reg_.branch_taken;
-    ex_mem_reg_.branch_taken     = false;
+    ex_mem_reg_.branch_taken = false;
     ex_mem_reg_.branch_target_pc = 0;
 
     uint32_t instruction = id_ex_reg_.instruction;
@@ -322,9 +321,10 @@ void RV5StageVM_H_NF::pipeline_execute()
         {
             ex_mem_reg_.branch_taken = true;
             ex_mem_reg_.branch_target_pc = id_ex_reg_.pc + id_ex_reg_.imm;
-            //program_counter_ = ex_mem_reg_.branch_target_pc;
+            // program_counter_ = ex_mem_reg_.branch_target_pc;
             std::cout << "Jump size: " << id_ex_reg_.imm << std::endl;
-            std::cout << "Branch taken to PC: 0x" << std::hex << ex_mem_reg_.branch_target_pc << std::dec << std::endl;
+            std::cout << "Branch taken to PC: 0x" << std::hex << ex_mem_reg_.branch_target_pc
+                      << std::dec << std::endl;
         }
     }
     else if (opcode == 0b1101111 || opcode == 0b1100111)
@@ -346,17 +346,15 @@ void RV5StageVM_H_NF::pipeline_execute()
     }
 }
 
-
-
 void RV5StageVM_H_NF::handle_syscall()
 {
-    if ((id_ex_reg_.instruction & 0x7F) == 0b1110011 && ((id_ex_reg_.instruction >> 12) & 0x7) == 0b000)
+    if ((id_ex_reg_.instruction & 0x7F) == 0b1110011 &&
+        ((id_ex_reg_.instruction >> 12) & 0x7) == 0b000)
     {
         RequestStop();
         output_status_ = "ECALL_EXIT";
     }
 }
-
 
 uint64_t RV5StageVM_H_NF::pipeline_execute_float()
 {
@@ -389,7 +387,8 @@ uint64_t RV5StageVM_H_NF::pipeline_execute_float()
     }
 
     alu::AluOp aluOperation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
-    std::tie(alu_result, fcsr_status) = alu::Alu::fpexecute(aluOperation, reg1_value, reg2_value, reg3_value, rm);
+    std::tie(alu_result, fcsr_status) =
+        alu::Alu::fpexecute(aluOperation, reg1_value, reg2_value, reg3_value, rm);
 
     registers_.WriteCsr(0x003, fcsr_status);
     return alu_result;
@@ -426,8 +425,9 @@ uint64_t RV5StageVM_H_NF::pipeline_execute_double()
     }
 
     alu::AluOp alu_operation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
-    std::tie(alu_result, fcsr_status) = alu::Alu::dfpexecute(alu_operation, reg1_value, reg2_value, reg3_value, rm);
-    
+    std::tie(alu_result, fcsr_status) =
+        alu::Alu::dfpexecute(alu_operation, reg1_value, reg2_value, reg3_value, rm);
+
     registers_.WriteCsr(0x003, fcsr_status);
     return alu_result;
 }

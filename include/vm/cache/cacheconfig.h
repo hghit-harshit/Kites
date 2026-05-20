@@ -34,5 +34,4 @@ struct CacheStats
     size_t hits = 0;
     size_t misses = 0;
     size_t writeBacks = 0;
-
 };

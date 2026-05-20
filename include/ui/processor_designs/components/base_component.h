@@ -6,13 +6,13 @@ namespace Kites
 {
 class BaseComponent : public QGraphicsPathItem
 {
-public:
+  public:
     BaseComponent(const QPainterPath &path, const QString &name, QGraphicsItem *parent = nullptr);
-    void setName(const QString& name);
+    void setName(const QString &name);
     virtual QJsonObject toJson();
-private:
+
+  private:
     QGraphicsTextItem *m_label;
     QString m_name;
-    
 };
 } // namespace Kites

@@ -8,13 +8,12 @@
 
 #include "../control_unit_base.h"
 
+class RVSSControlUnit : public ControlUnit
+{
+  public:
+    void SetControlSignals(uint32_t instruction) override;
 
-class RVSSControlUnit : public ControlUnit {
- public:
-  void SetControlSignals(uint32_t instruction) override;
-
-  alu::AluOp GetAluSignal(uint32_t instruction, bool ALUOp) override;
-
+    alu::AluOp GetAluSignal(uint32_t instruction, bool ALUOp) override;
 };
 
 #endif // RVSS_CONTROL_UNIT_H

@@ -5,18 +5,20 @@
  */
 #pragma once
 
-#include "vm/rv5s_vms/rv5s_vm_base.h"
 #include "vm/pipeline_registers.h"
 #include "vm/rv5s_vms/rv5s_control_unit.h"
 #include "vm/rv5s_vms/rv5s_hdu.h" // <-- Including the HDU
+#include "vm/rv5s_vms/rv5s_vm_base.h"
 
+
+#include <iostream>
 #include <stack>
 #include <vector>
-#include <iostream>
+
 
 class RV5StageVM_H_F : public RV5StageVM_Base
 {
-public:
+  public:
     // Constructor and Destructor
     RV5StageVM_H_F();
     ~RV5StageVM_H_F() = default;
@@ -26,19 +28,20 @@ public:
     // void DebugRun() override;
     void Step() override;
     void Reset() override;
-    
+
     void PrintType()
     {
         std::cout << "RV5StageVM_H_F" << std::endl;
     }
 
-    void SetActiveWireNames() override; 
-private:
+    void SetActiveWireNames() override;
+
+  private:
     // The Hazard Detection Unit instance
-    //RV5SHazardUnit hazard_unit_;
+    // RV5SHazardUnit hazard_unit_;
 
     // This flag controls freezing the front-end (IF/ID registers and PC)
-    bool stall_fetch_and_decode_ = false; 
+    bool stall_fetch_and_decode_ = false;
 
     // --- Private methods for each pipeline stage ---
     void pipeline_fetch() override;
@@ -46,12 +49,11 @@ private:
     void pipeline_execute() override;
     uint64_t pipeline_execute_float() override;
     uint64_t pipeline_execute_double() override;
-    //void pipeline_memory() override;
-    // void pipeline_writeback() override;
-
+    // void pipeline_memory() override;
+    //  void pipeline_writeback() override;
 
     // Helper function to consolidate hazard checks (now only Load-Use)
 
-    //void print_pipeline_registers_debug();
+    // void print_pipeline_registers_debug();
     void handle_syscall() override;
 };

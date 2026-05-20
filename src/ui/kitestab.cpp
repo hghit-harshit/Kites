@@ -2,8 +2,8 @@
 
 namespace Kites
 {
-KitesTab::KitesTab( QWidget* parent)
-    : QWidget(parent)
-{}
-
+KitesTab::KitesTab(QWidget *parent) : QWidget(parent)
+{
 }
+
+} // namespace Kites

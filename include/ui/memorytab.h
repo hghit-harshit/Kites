@@ -6,23 +6,23 @@
 namespace Kites
 {
 
-namespace Ui {
+namespace Ui
+{
 class MemoryTab;
 }
 
 class MemoryTab : public KitesTab
-{   
+{
     Q_OBJECT
 
-public:
-    explicit MemoryTab(QWidget *parent = nullptr,MemoryController* memoryController = nullptr);
-    void changeMemoryController(MemoryController* memoryController);
+  public:
+    explicit MemoryTab(QWidget *parent = nullptr, MemoryController *memoryController = nullptr);
+    void changeMemoryController(MemoryController *memoryController);
     ~MemoryTab();
 
-private:
+  private:
     Ui::MemoryTab *ui;
-    MemoryModel* m_memoryModel = nullptr;
+    MemoryModel *m_memoryModel = nullptr;
 };
-}// namespace Kites
+} // namespace Kites
 #endif // MEMORYTAB_H
-

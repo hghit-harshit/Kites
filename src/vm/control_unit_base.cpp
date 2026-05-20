@@ -8,30 +8,37 @@
 
 #include <cstdint>
 
-bool ControlUnit::GetAluSrc() const {
-  return alu_src_;
+bool ControlUnit::GetAluSrc() const
+{
+    return alu_src_;
 }
 
-bool ControlUnit::GetMemToReg() const {
-  return mem_to_reg_;
+bool ControlUnit::GetMemToReg() const
+{
+    return mem_to_reg_;
 }
 
-bool ControlUnit::GetRegWrite() const {
-  return reg_write_;
+bool ControlUnit::GetRegWrite() const
+{
+    return reg_write_;
 }
 
-bool ControlUnit::GetMemRead() const {
-  return mem_read_;
+bool ControlUnit::GetMemRead() const
+{
+    return mem_read_;
 }
 
-bool ControlUnit::GetMemWrite() const {
-  return mem_write_;
+bool ControlUnit::GetMemWrite() const
+{
+    return mem_write_;
 }
 
-uint8_t ControlUnit::GetAluOp() const {
-  return alu_op_;
+uint8_t ControlUnit::GetAluOp() const
+{
+    return alu_op_;
 }
 
-bool ControlUnit::GetBranch() const {
-  return branch_;
+bool ControlUnit::GetBranch() const
+{
+    return branch_;
 }

@@ -1,15 +1,20 @@
 #pragma once
-#include <QWidget>
 #include <QToolBar>
+#include <QWidget>
+
 
 namespace Kites
 {
 class KitesTab : public QWidget
 {
-    public:
-    KitesTab(QWidget* parent = nullptr);
-    QToolBar* getToolbar() const { return m_toolbar; }
-    protected:
-        QToolBar* m_toolbar = nullptr;
+  public:
+    KitesTab(QWidget *parent = nullptr);
+    QToolBar *getToolbar() const
+    {
+        return m_toolbar;
+    }
+
+  protected:
+    QToolBar *m_toolbar = nullptr;
 };
 } // namespace Kites

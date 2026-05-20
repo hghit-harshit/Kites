@@ -1,16 +1,18 @@
 /**
  * @file rv5svm_nh_f.h
- * @brief Header for the 5-stage pipelined VM (RV5S) in Mode 2: No Hazard Detection, With Forwarding.
+ * @brief Header for the 5-stage pipelined VM (RV5S) in Mode 2: No Hazard Detection, With
+ * Forwarding.
  * @author Atharva and Harshit
  */
 #pragma once
 
-#include "vm/rv5s_vms/rv5s_vm_base.h"
 #include "vm/pipeline_registers.h"
 #include "vm/rv5s_vms/rv5s_control_unit.h"
+#include "vm/rv5s_vms/rv5s_vm_base.h"
+#include <iostream>
 #include <stack>
 #include <vector>
-#include <iostream>
+
 
 // --- Programmer NOP Requirements for Mode 2 ---
 // * Data Hazards (ALU-ALU): 0 NOPs (Handled by Forwarding)
@@ -20,7 +22,7 @@
 
 class RV5StageVM_NH_F : public RV5StageVM_Base
 {
-public:
+  public:
     // Constructor and Destructor
     RV5StageVM_NH_F();
     ~RV5StageVM_NH_F() = default;
@@ -35,17 +37,18 @@ public:
     {
         std::cout << "RV5StageVM_NH_F" << std::endl;
     }
-    void SetActiveWireNames()  override;
-private:
+    void SetActiveWireNames() override;
+
+  private:
     // --- Private methods for each pipeline stage ---
     void pipeline_fetch() override;
     // void pipeline_decode() override;
     void pipeline_execute() override;
     uint64_t pipeline_execute_float() override;
     uint64_t pipeline_execute_double() override;
-    //void pipeline_memory() override;
-    // void pipeline_writeback() override;
+    // void pipeline_memory() override;
+    //  void pipeline_writeback() override;
 
-    //void print_pipeline_registers_debug();
+    // void print_pipeline_registers_debug();
     void handle_syscall() override;
 };

@@ -8,4 +8,4 @@ enum class Base
     Decimal = 10,
     Binary = 2
 };
-}// namespace Kite
+} // namespace Kites

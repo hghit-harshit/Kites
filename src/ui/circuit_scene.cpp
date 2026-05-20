@@ -1,27 +1,27 @@
 #include "ui/circuit_scene.h"
-#include "ui/processor_designs/components/base_component.h"
 #include "ui/processor_designs/components/alu_item.h"
-#include "ui/processor_designs/components/wire_item.h"
-#include "ui/processor_designs/components/rect_item.h"
+#include "ui/processor_designs/components/and_gate.h"
+#include "ui/processor_designs/components/base_component.h"
+#include "ui/processor_designs/components/hori_rect.h"
 #include "ui/processor_designs/components/mux_item.h"
 #include "ui/processor_designs/components/pipeline_reg.h"
+#include "ui/processor_designs/components/rect_item.h"
 #include "ui/processor_designs/components/short_alu.h"
-#include "ui/processor_designs/components/hori_rect.h"
 #include "ui/processor_designs/components/short_rect.h"
-#include "ui/processor_designs/components/and_gate.h"
-#include <QLineEdit>
-#include <QInputDialog>
-#include <QJsonArray>
+#include "ui/processor_designs/components/wire_item.h"
 #include <QFile>
-#include <QIODevice>
-#include <QTimer>
 #include <QGraphicsProxyWidget>
 #include <QHeaderView>
+#include <QIODevice>
+#include <QInputDialog>
+#include <QJsonArray>
+#include <QLineEdit>
+#include <QTimer>
+
 namespace Kites
 {
 
-CircuitScene::CircuitScene(QObject *parent)
-    : QGraphicsScene(parent)
+CircuitScene::CircuitScene(QObject *parent) : QGraphicsScene(parent)
 {
     setSceneRect(-100, -400, 300, 500);
     // setSceneRect(-1000, -1000, 2000, 2000);
@@ -30,16 +30,19 @@ CircuitScene::CircuitScene(QObject *parent)
     m_timer->setSingleShot(true);
     m_timer->setInterval(100); // flash for 100ms
 
-    connect(m_timer, &QTimer::timeout, this, [this]()
+    connect(m_timer, &QTimer::timeout, this,
+            [this]()
             {
-if(m_stayActive)
-    return;
-for (QGraphicsItem* item : items()) {
-    WireItem* wire = dynamic_cast<WireItem*>(item);
-    if (wire)
-        wire->setActive(false);
-}
-update(); });
+                if (m_stayActive)
+                    return;
+                for (QGraphicsItem *item : items())
+                {
+                    WireItem *wire = dynamic_cast<WireItem *>(item);
+                    if (wire)
+                        wire->setActive(false);
+                }
+                update();
+            });
 
     setUpInstructionTable();
 }
@@ -119,9 +122,8 @@ void CircuitScene::fitTableToCircuit(const QString &vmType)
 
     int totalWidth = (int)(colWidth * m_columnKeys.size());
     m_instructionTable->setFixedWidth(totalWidth + 4);
-    m_instructionTable->setFixedHeight(
-        m_instructionTable->horizontalHeader()->height() +
-        m_instructionTable->rowHeight(0) + 10);
+    m_instructionTable->setFixedHeight(m_instructionTable->horizontalHeader()->height() +
+                                       m_instructionTable->rowHeight(0) + 10);
 
     // ── 4. Position above circuit ──
     for (QGraphicsItem *item : items())
@@ -153,10 +155,7 @@ void CircuitScene::vmStateChangedSlot(const QMap<QString, QVariant> &vmState)
         if (!instructionMap.contains(key))
             continue;
 
-       
         QString instStr = instructionMap.value(key).toString();
-        
-        
 
         QTableWidgetItem *item = m_instructionTable->item(0, col);
         if (!item)
@@ -165,7 +164,7 @@ void CircuitScene::vmStateChangedSlot(const QMap<QString, QVariant> &vmState)
             m_instructionTable->setItem(0, col, item);
         }
         item->setText(instStr); // just update text, nothing else
-        if(instStr == "NOP")
+        if (instStr == "NOP")
         {
             item->setForeground(Qt::red);
         }
@@ -228,8 +227,6 @@ void CircuitScene::loadScene(const QString &fileName)
         qWarning() << "Could not open file:" << file.errorString();
         return;
     }
-
-    
 
     QByteArray fileData = file.readAll();
     file.close();
@@ -395,9 +392,9 @@ void CircuitScene::loadScene(const QString &fileName)
     qDebug() << "Scene loaded from" << fileName;
     setUpInstructionTable();
 
-    //this is very very hacky but it works fow now
-    // i am sooo sorrry
-    if(fileName.contains("single_cycle"))
+    // this is very very hacky but it works fow now
+    //  i am sooo sorrry
+    if (fileName.contains("single_cycle"))
     {
         fitTableToCircuit("single_cycle");
     }

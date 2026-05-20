@@ -2,7 +2,7 @@
  *  @brief Debug color definitions for console output.
  */
 #include <string>
- 
+
 constexpr std::string RED = "\033[31m";
 constexpr std::string GREEN = "\033[32m";
 constexpr std::string YELLOW = "\033[33m";

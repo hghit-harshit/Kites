@@ -6,11 +6,12 @@
 
 #include "config.h"
 
-#include <string>
 #include <fstream>
 #include <sstream>
+#include <string>
 
-namespace vm_config {
-    VmConfig config;
+
+namespace vm_config
+{
+VmConfig config;
 }
-

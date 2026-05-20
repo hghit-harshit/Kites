@@ -8,8 +8,7 @@ CustomReplacementPolicy::CustomReplacementPolicy()
 {
 }
 
-CustomReplacementPolicy::CustomReplacementPolicy(std::string scriptPath)
-    : CustomReplacementPolicy()
+CustomReplacementPolicy::CustomReplacementPolicy(std::string scriptPath) : CustomReplacementPolicy()
 {
     if (!scriptPath.empty())
     {
@@ -20,7 +19,7 @@ CustomReplacementPolicy::CustomReplacementPolicy(std::string scriptPath)
 
 CustomReplacementPolicy::~CustomReplacementPolicy() = default;
 
-void CustomReplacementPolicy::loadScript(const std::string& scriptPath)
+void CustomReplacementPolicy::loadScript(const std::string &scriptPath)
 {
     if (!m_engine_)
     {
@@ -31,20 +30,20 @@ void CustomReplacementPolicy::loadScript(const std::string& scriptPath)
 }
 
 size_t CustomReplacementPolicy::chooseVictim(std::span<const CacheLineView> lines,
-                                             const CacheRequestView& request,
-                                             const CacheContextView& context)
+                                             const CacheRequestView &request,
+                                             const CacheContextView &context)
 {
     if (!m_engine_ || !m_engine_->hasScript())
     {
-        throw std::runtime_error("Custom replacement policy cannot choose a victim before a Lua script is loaded");
+        throw std::runtime_error(
+            "Custom replacement policy cannot choose a victim before a Lua script is loaded");
     }
 
     return m_engine_->callChooseVictim(lines, request, context);
 }
 
-void CustomReplacementPolicy::onAccess(const CacheLineView& line,
-                                       const CacheRequestView& request,
-                                       const CacheContextView& context)
+void CustomReplacementPolicy::onAccess(const CacheLineView &line, const CacheRequestView &request,
+                                       const CacheContextView &context)
 {
     if (!m_engine_ || !m_engine_->hasScript())
     {
@@ -54,9 +53,8 @@ void CustomReplacementPolicy::onAccess(const CacheLineView& line,
     m_engine_->callOnAccess(std::span<const CacheLineView>(&line, 1), request, context);
 }
 
-void CustomReplacementPolicy::onInsert(const CacheLineView& line,
-                                       const CacheRequestView& request,
-                                       const CacheContextView& context)
+void CustomReplacementPolicy::onInsert(const CacheLineView &line, const CacheRequestView &request,
+                                       const CacheContextView &context)
 {
     if (!m_engine_ || !m_engine_->hasScript())
     {
@@ -66,9 +64,8 @@ void CustomReplacementPolicy::onInsert(const CacheLineView& line,
     m_engine_->callOnInsert(std::span<const CacheLineView>(&line, 1), request, context);
 }
 
-void CustomReplacementPolicy::onEvict(const CacheLineView& line,
-                                      const CacheRequestView& request,
-                                      const CacheContextView& context)
+void CustomReplacementPolicy::onEvict(const CacheLineView &line, const CacheRequestView &request,
+                                      const CacheContextView &context)
 {
     if (!m_engine_ || !m_engine_->hasScript())
     {

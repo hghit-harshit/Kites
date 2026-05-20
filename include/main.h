@@ -12,5 +12,4 @@
  * This project implements various components such as the assembler and virtual machine.
  */
 
-
 #endif // MAIN_H
