@@ -14,7 +14,7 @@ RegisterContainer::RegisterContainer(QWidget *parent, RegisterFile *regfile)
     // setupRegisterTable();
     ui->displayType->setCurrentText("Hexadecimal");
     connect(ui->displayType, &QComboBox::currentTextChanged, this,
-            [=](const QString &text)
+            [this](const QString &text)
             {
                 if (text == "Hexadecimal")
                 {

@@ -11,11 +11,13 @@ VMStateTableModel::VMStateTableModel(QObject *parent, VMManager *vmManager)
 
 int VMStateTableModel::rowCount(const QModelIndex &parent) const
 {
+    Q_UNUSED(parent);
     return 7;
 }
 
 int VMStateTableModel::columnCount(const QModelIndex &parent) const
 {
+    Q_UNUSED(parent);
     return 2; // Key and Value
 }
 
@@ -74,6 +76,7 @@ QVariant VMStateTableModel::data(const QModelIndex &index, int role) const
 
 void VMStateTableModel::vmStateChangedSlot(const QMap<QString, QVariant> &vmState)
 {
+    Q_UNUSED(vmState);
     beginResetModel();
     endResetModel();
 }

@@ -20,11 +20,13 @@ RegisterModel::RegisterModel(QObject *parent, RegisterFile *regfile) : QAbstract
 
 int RegisterModel::rowCount(const QModelIndex &parent) const
 {
+    Q_UNUSED(parent);
     return 64;
 }
 
 int RegisterModel::columnCount(const QModelIndex &parent) const
 {
+    Q_UNUSED(parent);
     return 3;
 } // Register name, alias, value
 
@@ -134,7 +136,9 @@ QVariant RegisterModel::data(const QModelIndex &index, int role) const
                 switch (m_displayBase)
                 {
                 case Base::Binary:
+                {
                     return QString("0b%1").arg(QString::number(raw, 2));
+                }
 
                 case Base::Decimal:
                 {
@@ -157,7 +161,9 @@ QVariant RegisterModel::data(const QModelIndex &index, int role) const
                 }
 
                 case Base::Hexadecimal:
+                {
                     return QString("0x%1").arg(QString::number(raw, 16).toUpper());
+                }
                 }
             }
             else
@@ -197,7 +203,7 @@ void RegisterModel::updateRegisterValue(size_t regIndex, uint64_t value)
 {
     qDebug() << "RegisterModel::updateRegisterValue called for regIndex:" << regIndex
              << " new value:" << value;
-    QModelIndex index = this->index(static_cast<int>(regIndex), 2);
+    //QModelIndex index = this->index(static_cast<int>(regIndex), 2);
     m_highlightedRegisterIndex = regIndex; // Update highlighted register index
     // emit dataChanged(index,index);
     beginResetModel();
@@ -208,7 +214,7 @@ void RegisterModel::updateFRegisterValue(size_t regIndex, uint64_t value)
 {
     qDebug() << "RegisterModel::updateFRegisterValue called for regIndex:" << regIndex
              << " new value:" << value;
-    QModelIndex index = this->index(static_cast<int>(regIndex + 32), 2);
+    //QModelIndex index = this->index(static_cast<int>(regIndex + 32), 2);
     m_highlightedRegisterIndex = regIndex + 32; // Update highlighted register index
     // emit dataChanged(index,index);
     beginResetModel();

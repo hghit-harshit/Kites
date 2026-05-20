@@ -47,11 +47,13 @@ void CacheModel::AttachCache(Cache *cache)
 
 int CacheModel::rowCount(const QModelIndex &parent) const
 {
+    Q_UNUSED(parent);
     return static_cast<int>(m_num_sets * m_num_ways);
 }
 
 int CacheModel::columnCount(const QModelIndex &parent) const
 {
+    Q_UNUSED(parent);
     return 4 + NumberOfWordColumns(); // Index, Valid, Dirty, Tag + Data columns
 }
 
@@ -227,9 +229,7 @@ int CacheModel::AddressToHitRow(uint64_t address) const
 
 void CacheModel::updateCacheData(uint64_t address)
 {
-    // For now, we will just emit dataChanged for the entire model.
-    // In a real implementation, you might want to be more specific about which rows/columns
-    // changed.
+    Q_UNUSED(address);
     if (!m_cache || m_cache->GetNumSets() != m_num_sets || m_cache->GetNumWays() != m_num_ways ||
         m_cache->GetBlockSize() != m_block_size)
     {

@@ -154,7 +154,7 @@ void SettingsDialog::addPage(const QString &name, QWidget *page)
     connect(ui->settingList, &QListWidget::currentRowChanged, this,
             [this](int currentRow)
             {
-                if (currentRow >= 0 && currentRow < m_pages.size())
+                if (currentRow >= 0 && static_cast<size_t>(currentRow) < m_pages.size())
                 {
                     ui->settingPages->setCurrentIndex(m_pages[currentRow].second);
                 }

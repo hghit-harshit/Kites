@@ -159,14 +159,14 @@ Token Lexer::number()
     unsigned int start_column = column_number_;
 
     while (pos_ < current_line_.size() &&
-               (std::isdigit(current_line_[pos_]) || current_line_[pos_] == '-' ||
+               ((std::isdigit(current_line_[pos_]) || current_line_[pos_] == '-' ||
                 current_line_[pos_] == 'x' || current_line_[pos_] == 'X' ||
                 current_line_[pos_] == 'o' || current_line_[pos_] == 'O' ||
                 current_line_[pos_] == 'b' || current_line_[pos_] == 'B' ||
                 current_line_[pos_] == '.' || current_line_[pos_] == 'e' ||
                 current_line_[pos_] == 'E' || current_line_[pos_] == '+') ||
            (current_line_[pos_] >= 'a' && current_line_[pos_] <= 'f') ||
-           (current_line_[pos_] >= 'A' && current_line_[pos_] <= 'F'))
+            (current_line_[pos_] >= 'A' && current_line_[pos_] <= 'F')))
     {
         ++pos_;
         ++column_number_;

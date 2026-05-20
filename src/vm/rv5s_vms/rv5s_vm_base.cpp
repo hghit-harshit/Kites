@@ -272,8 +272,8 @@ void RV5StageVM_Base::pipeline_decode()
         id_ex_reg_.freg2_data = registers_.ReadFpr(id_ex_reg_.frs2);
         id_ex_reg_.freg3_data = registers_.ReadFpr(id_ex_reg_.frs3);
 
-        uint8_t opcode = instruction & 0b1111111;
-        uint8_t funct7 = (instruction >> 25) & 0b1111111;
+        // uint8_t opcode = instruction & 0b1111111;
+        // uint8_t funct7 = (instruction >> 25) & 0b1111111;
 
         // For load instructions, rs1 is a GPR base address.
         // For integer-to-float conversions / moves, rs1 is also a GPR source.

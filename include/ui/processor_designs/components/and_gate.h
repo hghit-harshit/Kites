@@ -36,6 +36,7 @@ class AndGateItem : public BaseComponent
               }(),
               "", parent)
     {
+        Q_UNUSED(name);
     }
 
     QJsonObject toJson()

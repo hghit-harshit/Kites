@@ -13,6 +13,8 @@ size_t LRUReplacementPolicy::chooseVictim(std::span<const CacheLineView> lines,
                                           const CacheContextView &context)
 {
     // Find the line with the smallest age (least recently used)
+    (void)request;
+    (void)context;
     size_t victim_index = 0;
     uint64_t min_age = UINT64_MAX;
 
@@ -36,16 +38,25 @@ void LRUReplacementPolicy::onAccess(const CacheLineView &line, const CacheReques
                                     const CacheContextView &context)
 {
     // No internal state to update on access since we rely on the age field in CacheLineView
+    (void)line;
+    (void)request;
+    (void)context;
 }
 
 void LRUReplacementPolicy::onInsert(const CacheLineView &line, const CacheRequestView &request,
                                     const CacheContextView &context)
 {
     // No internal state to update on insert since we rely on the age field in CacheLineView
+    (void)line;
+    (void)request;
+    (void)context;
 }
 
 void LRUReplacementPolicy::onEvict(const CacheLineView &line, const CacheRequestView &request,
                                    const CacheContextView &context)
 {
     // No internal state to update on evict since we rely on the age field in CacheLineView
+    (void)line;
+    (void)request;
+    (void)context;
 }

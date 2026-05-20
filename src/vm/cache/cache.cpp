@@ -49,7 +49,7 @@ void Cache::SetupCache(size_t num_sets, size_t block_size, size_t num_ways)
 Cache::Cache(Memory &memory, size_t num_sets, size_t block_size, size_t num_ways,
              WritePolicy write_policy, AllocationPolicy allocation_policy,
              ReplacementPolicy replacement_policy)
-    : memory_(&memory), next_level_cache_(nullptr), write_policy_(write_policy),
+    : QObject(nullptr),memory_(&memory), next_level_cache_(nullptr), write_policy_(write_policy),
       allocation_policy_(allocation_policy),
       m_policy(CreatePolicy(replacement_policy, std::string{}))
 {
@@ -59,7 +59,7 @@ Cache::Cache(Memory &memory, size_t num_sets, size_t block_size, size_t num_ways
 Cache::Cache(Cache &next_level_cache, size_t num_sets, size_t block_size, size_t num_ways,
              WritePolicy write_policy, AllocationPolicy allocation_policy,
              ReplacementPolicy replacement_policy)
-    : memory_(nullptr), next_level_cache_(&next_level_cache), write_policy_(write_policy),
+    : QObject(nullptr),memory_(nullptr), next_level_cache_(&next_level_cache), write_policy_(write_policy),
       allocation_policy_(allocation_policy),
       m_policy(CreatePolicy(replacement_policy, std::string{}))
 {

@@ -10,7 +10,6 @@
 #include "utils.h"
 #include "vm/registers.h"
 
-
 #include <string>
 
 bool Parser::parse_pseudo()
@@ -461,487 +460,486 @@ bool Parser::parse_pseudo()
             skipCurrentLine();
             return true;
         }
-
-        // sgtz
-        else if (currentToken().value == "sgtz")
+    }
+    // sgtz
+    else if (currentToken().value == "sgtz")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::GP_REGISTER &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
         {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::GP_REGISTER &&
-                peekToken(2).line_number == currentToken().line_number &&
-                peekToken(2).type == TokenType::COMMA &&
-                peekToken(3).line_number == currentToken().line_number &&
-                peekToken(3).type == TokenType::GP_REGISTER &&
-                (peekToken(4).type == TokenType::EOF_ ||
-                 peekToken(4).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("slt");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                std::string reg;
-                reg = reg_alias_to_name.at(peekToken(1).value);
-                block.setRd(reg);
-                reg = reg_alias_to_name.at(peekToken(3).value);
-                block.setRs1("x0");
-                block.setRs2(reg);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-            return false;
+            ICUnit block;
+            block.setOpcode("slt");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            std::string reg;
+            reg = reg_alias_to_name.at(peekToken(1).value);
+            block.setRd(reg);
+            reg = reg_alias_to_name.at(peekToken(3).value);
+            block.setRs1("x0");
+            block.setRs2(reg);
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
+        }
+        return false;
+    }
+
+    // beqz
+    else if (currentToken().value == "beqz")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::LABEL_REF &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
+        {
+            ICUnit block;
+            block.setOpcode("beq");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            std::string reg;
+            reg = reg_alias_to_name.at(peekToken(1).value);
+            block.setRs1(reg);
+            block.setRs2("x0");
+            block.setLabel(peekToken(3).value);
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
+        }
+        return false;
+    }
+
+    // bnez
+    else if (currentToken().value == "bnez")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::LABEL_REF &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
+        {
+            ICUnit block;
+            block.setOpcode("bne");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            std::string reg;
+            reg = reg_alias_to_name.at(peekToken(1).value);
+            block.setRs1(reg);
+            block.setRs2("x0");
+            block.setLabel(peekToken(3).value);
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
+        }
+        return false;
+    }
+
+    // blez
+    else if (currentToken().value == "blez")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::LABEL_REF &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
+        {
+            ICUnit block;
+            block.setOpcode("bge");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            std::string reg;
+            reg = reg_alias_to_name.at(peekToken(1).value);
+            block.setRs1("x0");
+            block.setRs2(reg);
+            block.setLabel(peekToken(3).value);
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
+        }
+        return false;
+    }
+
+    // bgez
+    else if (currentToken().value == "bgez")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::LABEL_REF &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
+        {
+            ICUnit block;
+            block.setOpcode("bge");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            std::string reg;
+            reg = reg_alias_to_name.at(peekToken(1).value);
+            block.setRs1(reg);
+            block.setRs2("x0");
+            block.setLabel(peekToken(3).value);
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
+        }
+        return false;
+    }
+
+    // bltz
+    else if (currentToken().value == "bltz")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::LABEL_REF &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
+        {
+            ICUnit block;
+            block.setOpcode("blt");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            std::string reg;
+            reg = reg_alias_to_name.at(peekToken(1).value);
+            block.setRs1(reg);
+            block.setRs2("x0");
+            block.setLabel(peekToken(3).value);
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
+        }
+        return false;
+    }
+
+    // bgtz
+    else if (currentToken().value == "bgtz")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::LABEL_REF &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
+        {
+            ICUnit block;
+            block.setOpcode("blt");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            std::string reg;
+            reg = reg_alias_to_name.at(peekToken(1).value);
+            block.setRs1("x0");
+            block.setRs2(reg);
+            block.setLabel(peekToken(3).value);
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
+        }
+        return false;
+    }
+
+    // bgt
+    else if (currentToken().value == "bgt")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::GP_REGISTER &&
+            peekToken(4).line_number == currentToken().line_number &&
+            peekToken(4).type == TokenType::COMMA &&
+            peekToken(5).line_number == currentToken().line_number &&
+            peekToken(5).type == TokenType::LABEL_REF &&
+            (peekToken(6).type == TokenType::EOF_ ||
+             peekToken(6).line_number != currentToken().line_number))
+        {
+            ICUnit block;
+            block.setOpcode("blt");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            std::string reg1, reg2;
+            reg1 = reg_alias_to_name.at(peekToken(1).value);
+            reg2 = reg_alias_to_name.at(peekToken(3).value);
+            block.setRs1(reg2);
+            block.setRs2(reg1);
+            block.setLabel(peekToken(5).value);
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
+        }
+        return false;
+    }
+
+    // ble
+    else if (currentToken().value == "ble")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::GP_REGISTER &&
+            peekToken(4).line_number == currentToken().line_number &&
+            peekToken(4).type == TokenType::COMMA &&
+            peekToken(5).line_number == currentToken().line_number &&
+            peekToken(5).type == TokenType::LABEL_REF &&
+            (peekToken(6).type == TokenType::EOF_ ||
+             peekToken(6).line_number != currentToken().line_number))
+        {
+            ICUnit block;
+            block.setOpcode("bge");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            std::string reg1, reg2;
+            reg1 = reg_alias_to_name.at(peekToken(1).value);
+            reg2 = reg_alias_to_name.at(peekToken(3).value);
+            block.setRs1(reg2);
+            block.setRs2(reg1);
+            block.setLabel(peekToken(5).value);
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
         }
 
-        // beqz
-        else if (currentToken().value == "beqz")
+        return false;
+    }
+
+    // bgtu
+    else if (currentToken().value == "bgtu")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::GP_REGISTER &&
+            peekToken(4).line_number == currentToken().line_number &&
+            peekToken(4).type == TokenType::COMMA &&
+            peekToken(5).line_number == currentToken().line_number &&
+            peekToken(5).type == TokenType::LABEL_REF &&
+            (peekToken(6).type == TokenType::EOF_ ||
+             peekToken(6).line_number != currentToken().line_number))
         {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::GP_REGISTER &&
-                peekToken(2).line_number == currentToken().line_number &&
-                peekToken(2).type == TokenType::COMMA &&
-                peekToken(3).line_number == currentToken().line_number &&
-                peekToken(3).type == TokenType::LABEL_REF &&
-                (peekToken(4).type == TokenType::EOF_ ||
-                 peekToken(4).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("beq");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                std::string reg;
-                reg = reg_alias_to_name.at(peekToken(1).value);
-                block.setRs1(reg);
-                block.setRs2("x0");
-                block.setLabel(peekToken(3).value);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-            return false;
+            ICUnit block;
+            block.setOpcode("bltu");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            std::string reg1, reg2;
+            reg1 = reg_alias_to_name.at(peekToken(1).value);
+            reg2 = reg_alias_to_name.at(peekToken(3).value);
+            block.setRs1(reg2);
+            block.setRs2(reg1);
+            block.setLabel(peekToken(5).value);
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
         }
 
-        // bnez
-        else if (currentToken().value == "bnez")
+        return false;
+    }
+
+    // bleu
+    else if (currentToken().value == "bleu")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::GP_REGISTER &&
+            peekToken(4).line_number == currentToken().line_number &&
+            peekToken(4).type == TokenType::COMMA &&
+            peekToken(5).line_number == currentToken().line_number &&
+            peekToken(5).type == TokenType::LABEL_REF &&
+            (peekToken(6).type == TokenType::EOF_ ||
+             peekToken(6).line_number != currentToken().line_number))
         {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::GP_REGISTER &&
-                peekToken(2).line_number == currentToken().line_number &&
-                peekToken(2).type == TokenType::COMMA &&
-                peekToken(3).line_number == currentToken().line_number &&
-                peekToken(3).type == TokenType::LABEL_REF &&
-                (peekToken(4).type == TokenType::EOF_ ||
-                 peekToken(4).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("bne");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                std::string reg;
-                reg = reg_alias_to_name.at(peekToken(1).value);
-                block.setRs1(reg);
-                block.setRs2("x0");
-                block.setLabel(peekToken(3).value);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-            return false;
+            ICUnit block;
+            block.setOpcode("bgeu");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            std::string reg1, reg2;
+            reg1 = reg_alias_to_name.at(peekToken(1).value);
+            reg2 = reg_alias_to_name.at(peekToken(3).value);
+            block.setRs1(reg2);
+            block.setRs2(reg1);
+            block.setLabel(peekToken(5).value);
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
         }
 
-        // blez
-        else if (currentToken().value == "blez")
+        return false;
+    }
+
+    // j
+    else if (currentToken().value == "j")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::LABEL_REF &&
+            (peekToken(2).type == TokenType::EOF_ ||
+             peekToken(2).line_number != currentToken().line_number))
         {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::GP_REGISTER &&
-                peekToken(2).line_number == currentToken().line_number &&
-                peekToken(2).type == TokenType::COMMA &&
-                peekToken(3).line_number == currentToken().line_number &&
-                peekToken(3).type == TokenType::LABEL_REF &&
-                (peekToken(4).type == TokenType::EOF_ ||
-                 peekToken(4).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("bge");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                std::string reg;
-                reg = reg_alias_to_name.at(peekToken(1).value);
-                block.setRs1("x0");
-                block.setRs2(reg);
-                block.setLabel(peekToken(3).value);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-            return false;
+            ICUnit block;
+            block.setOpcode("jal");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            block.setRd("x0");
+            block.setLabel(peekToken(1).value);
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
         }
 
-        // bgez
-        else if (currentToken().value == "bgez")
+        return false;
+    }
+
+    // jal // this might need looking into
+    else if (currentToken().value == "jal")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::LABEL_REF &&
+            (peekToken(2).type == TokenType::EOF_ ||
+             peekToken(2).line_number != currentToken().line_number))
         {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::GP_REGISTER &&
-                peekToken(2).line_number == currentToken().line_number &&
-                peekToken(2).type == TokenType::COMMA &&
-                peekToken(3).line_number == currentToken().line_number &&
-                peekToken(3).type == TokenType::LABEL_REF &&
-                (peekToken(4).type == TokenType::EOF_ ||
-                 peekToken(4).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("bge");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                std::string reg;
-                reg = reg_alias_to_name.at(peekToken(1).value);
-                block.setRs1(reg);
-                block.setRs2("x0");
-                block.setLabel(peekToken(3).value);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-            return false;
+            ICUnit block;
+            block.setOpcode("jal");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            block.setRd("x1");
+            block.setLabel(peekToken(1).value);
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
         }
 
-        // bltz
-        else if (currentToken().value == "bltz")
+        return false;
+    }
+
+    // jr
+    else if (currentToken().value == "jr")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            (peekToken(2).type == TokenType::EOF_ ||
+             peekToken(2).line_number != currentToken().line_number))
         {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::GP_REGISTER &&
-                peekToken(2).line_number == currentToken().line_number &&
-                peekToken(2).type == TokenType::COMMA &&
-                peekToken(3).line_number == currentToken().line_number &&
-                peekToken(3).type == TokenType::LABEL_REF &&
-                (peekToken(4).type == TokenType::EOF_ ||
-                 peekToken(4).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("blt");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                std::string reg;
-                reg = reg_alias_to_name.at(peekToken(1).value);
-                block.setRs1(reg);
-                block.setRs2("x0");
-                block.setLabel(peekToken(3).value);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-            return false;
+            ICUnit block;
+            block.setOpcode("jalr");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            block.setRd("x0");
+            std::string reg = reg_alias_to_name.at(peekToken(1).value);
+            block.setRs1(reg);
+            block.setImm("0");
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
         }
 
-        // bgtz
-        else if (currentToken().value == "bgtz")
+        return false;
+    }
+
+    // jalr
+    else if (currentToken().value == "jalr")
+    {
+        if (peekToken(1).line_number == currentToken().line_number &&
+            peekToken(1).type == TokenType::GP_REGISTER &&
+            peekToken(2).line_number == currentToken().line_number &&
+            peekToken(2).type == TokenType::COMMA &&
+            peekToken(3).line_number == currentToken().line_number &&
+            peekToken(3).type == TokenType::NUM &&
+            (peekToken(4).type == TokenType::EOF_ ||
+             peekToken(4).line_number != currentToken().line_number))
         {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::GP_REGISTER &&
-                peekToken(2).line_number == currentToken().line_number &&
-                peekToken(2).type == TokenType::COMMA &&
-                peekToken(3).line_number == currentToken().line_number &&
-                peekToken(3).type == TokenType::LABEL_REF &&
-                (peekToken(4).type == TokenType::EOF_ ||
-                 peekToken(4).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("blt");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                std::string reg;
-                reg = reg_alias_to_name.at(peekToken(1).value);
-                block.setRs1("x0");
-                block.setRs2(reg);
-                block.setLabel(peekToken(3).value);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-            return false;
+            ICUnit block;
+            block.setOpcode("jalr");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            block.setRd("x1");
+            std::string reg = reg_alias_to_name.at(peekToken(1).value);
+            block.setRs1(reg);
+            block.setImm(peekToken(3).value);
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
         }
 
-        // bgt
-        else if (currentToken().value == "bgt")
+        return false;
+    }
+
+    // ret
+    else if (currentToken().value == "ret")
+    {
+        if (peekToken(1).type == TokenType::EOF_ ||
+            peekToken(1).line_number != currentToken().line_number)
         {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::GP_REGISTER &&
-                peekToken(2).line_number == currentToken().line_number &&
-                peekToken(2).type == TokenType::COMMA &&
-                peekToken(3).line_number == currentToken().line_number &&
-                peekToken(3).type == TokenType::GP_REGISTER &&
-                peekToken(4).line_number == currentToken().line_number &&
-                peekToken(4).type == TokenType::COMMA &&
-                peekToken(5).line_number == currentToken().line_number &&
-                peekToken(5).type == TokenType::LABEL_REF &&
-                (peekToken(6).type == TokenType::EOF_ ||
-                 peekToken(6).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("blt");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                std::string reg1, reg2;
-                reg1 = reg_alias_to_name.at(peekToken(1).value);
-                reg2 = reg_alias_to_name.at(peekToken(3).value);
-                block.setRs1(reg2);
-                block.setRs2(reg1);
-                block.setLabel(peekToken(5).value);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-            return false;
+            ICUnit block;
+            block.setOpcode("jalr");
+            block.setLineNumber(currentToken().line_number);
+            block.setInstructionIndex(instruction_index_);
+            block.setRd("x0");
+            block.setRs1("x1");
+            block.setImm("0");
+            intermediate_code_.emplace_back(block, true);
+            instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+            instruction_index_++;
+            skipCurrentLine();
+            return true;
         }
 
-        // ble
-        else if (currentToken().value == "ble")
-        {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::GP_REGISTER &&
-                peekToken(2).line_number == currentToken().line_number &&
-                peekToken(2).type == TokenType::COMMA &&
-                peekToken(3).line_number == currentToken().line_number &&
-                peekToken(3).type == TokenType::GP_REGISTER &&
-                peekToken(4).line_number == currentToken().line_number &&
-                peekToken(4).type == TokenType::COMMA &&
-                peekToken(5).line_number == currentToken().line_number &&
-                peekToken(5).type == TokenType::LABEL_REF &&
-                (peekToken(6).type == TokenType::EOF_ ||
-                 peekToken(6).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("bge");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                std::string reg1, reg2;
-                reg1 = reg_alias_to_name.at(peekToken(1).value);
-                reg2 = reg_alias_to_name.at(peekToken(3).value);
-                block.setRs1(reg2);
-                block.setRs2(reg1);
-                block.setLabel(peekToken(5).value);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-
-            return false;
-        }
-
-        // bgtu
-        else if (currentToken().value == "bgtu")
-        {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::GP_REGISTER &&
-                peekToken(2).line_number == currentToken().line_number &&
-                peekToken(2).type == TokenType::COMMA &&
-                peekToken(3).line_number == currentToken().line_number &&
-                peekToken(3).type == TokenType::GP_REGISTER &&
-                peekToken(4).line_number == currentToken().line_number &&
-                peekToken(4).type == TokenType::COMMA &&
-                peekToken(5).line_number == currentToken().line_number &&
-                peekToken(5).type == TokenType::LABEL_REF &&
-                (peekToken(6).type == TokenType::EOF_ ||
-                 peekToken(6).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("bltu");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                std::string reg1, reg2;
-                reg1 = reg_alias_to_name.at(peekToken(1).value);
-                reg2 = reg_alias_to_name.at(peekToken(3).value);
-                block.setRs1(reg2);
-                block.setRs2(reg1);
-                block.setLabel(peekToken(5).value);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-
-            return false;
-        }
-
-        // bleu
-        else if (currentToken().value == "bleu")
-        {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::GP_REGISTER &&
-                peekToken(2).line_number == currentToken().line_number &&
-                peekToken(2).type == TokenType::COMMA &&
-                peekToken(3).line_number == currentToken().line_number &&
-                peekToken(3).type == TokenType::GP_REGISTER &&
-                peekToken(4).line_number == currentToken().line_number &&
-                peekToken(4).type == TokenType::COMMA &&
-                peekToken(5).line_number == currentToken().line_number &&
-                peekToken(5).type == TokenType::LABEL_REF &&
-                (peekToken(6).type == TokenType::EOF_ ||
-                 peekToken(6).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("bgeu");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                std::string reg1, reg2;
-                reg1 = reg_alias_to_name.at(peekToken(1).value);
-                reg2 = reg_alias_to_name.at(peekToken(3).value);
-                block.setRs1(reg2);
-                block.setRs2(reg1);
-                block.setLabel(peekToken(5).value);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-
-            return false;
-        }
-
-        // j
-        else if (currentToken().value == "j")
-        {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::LABEL_REF &&
-                (peekToken(2).type == TokenType::EOF_ ||
-                 peekToken(2).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("jal");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                block.setRd("x0");
-                block.setLabel(peekToken(1).value);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-
-            return false;
-        }
-
-        // jal // this might need looking into
-        else if (currentToken().value == "jal")
-        {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::LABEL_REF &&
-                (peekToken(2).type == TokenType::EOF_ ||
-                 peekToken(2).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("jal");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                block.setRd("x1");
-                block.setLabel(peekToken(1).value);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-
-            return false;
-        }
-
-        // jr
-        else if (currentToken().value == "jr")
-        {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::GP_REGISTER &&
-                (peekToken(2).type == TokenType::EOF_ ||
-                 peekToken(2).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("jalr");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                block.setRd("x0");
-                std::string reg = reg_alias_to_name.at(peekToken(1).value);
-                block.setRs1(reg);
-                block.setImm("0");
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-
-            return false;
-        }
-
-        // jalr
-        else if (currentToken().value == "jalr")
-        {
-            if (peekToken(1).line_number == currentToken().line_number &&
-                peekToken(1).type == TokenType::GP_REGISTER &&
-                peekToken(2).line_number == currentToken().line_number &&
-                peekToken(2).type == TokenType::COMMA &&
-                peekToken(3).line_number == currentToken().line_number &&
-                peekToken(3).type == TokenType::NUM &&
-                (peekToken(4).type == TokenType::EOF_ ||
-                 peekToken(4).line_number != currentToken().line_number))
-            {
-                ICUnit block;
-                block.setOpcode("jalr");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                block.setRd("x1");
-                std::string reg = reg_alias_to_name.at(peekToken(1).value);
-                block.setRs1(reg);
-                block.setImm(peekToken(3).value);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-
-            return false;
-        }
-
-        // ret
-        else if (currentToken().value == "ret")
-        {
-            if (peekToken(1).type == TokenType::EOF_ ||
-                peekToken(1).line_number != currentToken().line_number)
-            {
-                ICUnit block;
-                block.setOpcode("jalr");
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                block.setRd("x0");
-                block.setRs1("x1");
-                block.setImm("0");
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
-                instruction_index_++;
-                skipCurrentLine();
-                return true;
-            }
-
-            return false;
-        }
-
+        return false;
     } // call
+    return false;
 }

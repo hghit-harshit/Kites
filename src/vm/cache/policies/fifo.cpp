@@ -17,7 +17,8 @@ size_t FIFOReplacementPolicy::chooseVictim(std::span<const CacheLineView> lines,
     // The FIFO queue is maintained in the cache metadata for each set.
     // The victim is the line at the front of the queue (the oldest line).
     // If there are invalid lines, we can use them first before evicting any valid lines.
-
+    (void)request;
+    (void)context;
     // First check for any invalid lines
     for (size_t i = 0; i < lines.size(); ++i)
     {
@@ -46,6 +47,9 @@ void FIFOReplacementPolicy::onAccess(const CacheLineView &line, const CacheReque
                                      const CacheContextView &context)
 {
     // No internal state to update on access for FIFO
+    (void)line;
+    (void)request;
+    (void)context;
 }
 
 void FIFOReplacementPolicy::onInsert(const CacheLineView &line, const CacheRequestView &request,
@@ -53,6 +57,9 @@ void FIFOReplacementPolicy::onInsert(const CacheLineView &line, const CacheReque
 {
     // No internal state to update on insert for FIFO since we maintain the FIFO queue in the cache
     // metadata
+    (void)line;
+    (void)request;
+    (void)context;
 }
 
 void FIFOReplacementPolicy::onEvict(const CacheLineView &line, const CacheRequestView &request,
@@ -60,4 +67,7 @@ void FIFOReplacementPolicy::onEvict(const CacheLineView &line, const CacheReques
 {
     // No internal state to update on evict for FIFO since we maintain the FIFO queue in the cache
     // metadata
+    (void)line;
+    (void)request;
+    (void)context;
 }

@@ -14,11 +14,13 @@ MemoryModel::MemoryModel(QObject *parent, MemoryController *memoryController)
 
 int MemoryModel::rowCount(const QModelIndex &parent) const
 {
+    Q_UNUSED(parent); // to remove the unused parameter warning
     return m_rowsVisible;
 }
 
 int MemoryModel::columnCount(const QModelIndex &parent) const
 {
+    Q_UNUSED(parent);
     return 10; // address + 8 bytes + full double word
 }
 

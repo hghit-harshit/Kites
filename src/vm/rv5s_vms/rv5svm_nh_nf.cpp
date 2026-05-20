@@ -93,9 +93,9 @@ void RV5StageVM_NH_NF::SetActiveWireNames()
 
     // Memory stage activity (EX/MEM)
     // the intruction executed in this cycle was branch/jal/jalr
-    if (ex_mem_reg_.instruction & 0b1111111 == 0b1100011 ||
-        ex_mem_reg_.instruction & 0b1111111 == 0b1100111 ||
-        ex_mem_reg_.instruction & 0b1111111 == 0b1101111)
+    if ((ex_mem_reg_.instruction & 0b1111111) == 0b1100011 ||
+        (ex_mem_reg_.instruction & 0b1111111) == 0b1100111 ||
+        (ex_mem_reg_.instruction & 0b1111111) == 0b1101111)
     {
         active_wires_.append("ALU_zerores_to_P3");
         active_wires_.append("ALU2_to_P3");
@@ -105,9 +105,9 @@ void RV5StageVM_NH_NF::SetActiveWireNames()
         active_wires_.append("ALU_to_P3");
     }
 
-    if (mem_wb_reg_.instruction & 0b11111111 == 0b1100011 ||
-        mem_wb_reg_.instruction & 0b11111111 == 0b1100111 ||
-        mem_wb_reg_.instruction & 0b11111111 == 0b1101111)
+    if ((mem_wb_reg_.instruction & 0b11111111) == 0b1100011 ||
+        (mem_wb_reg_.instruction & 0b11111111) == 0b1100111 ||
+        (mem_wb_reg_.instruction & 0b11111111) == 0b1101111)
     {
         active_wires_.append("ANDGate_lower_entry");
         active_wires_.append("P3_to_PCMux");

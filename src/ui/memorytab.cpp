@@ -42,14 +42,14 @@ MemoryTab::MemoryTab(QWidget *parent, MemoryController *memoryController)
             });
 
     connect(ui->searchButton, &QPushButton::clicked, this,
-            [=]
+            [this]
             {
                 QString searchText = ui->searchBar->text();
                 // int displayType = ui->displayTypeComboBox->currentIndex();
                 m_memoryModel->setCentralAddress(searchText.toULongLong(nullptr, 16));
             });
     connect(ui->comboBox, &QComboBox::currentTextChanged, this,
-            [=](const QString &text)
+            [this](const QString &text)
             {
                 if (text == "Hex")
                 {

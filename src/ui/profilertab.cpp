@@ -96,11 +96,11 @@ void ProfilerTab::updateInstructionTypes(const std::map<int, std::string> &instr
 
 void ProfilerTab::updateStatistics(const std::map<std::string, int> &statistics)
 {
-    const auto getOrDefault = [&statistics](const char *key) -> int
-    {
-        const auto it = statistics.find(key);
-        return it != statistics.end() ? it->second : 0;
-    };
+    // const auto getOrDefault = [&statistics](const char *key) -> int
+    // {
+    //     const auto it = statistics.find(key);
+    //     return it != statistics.end() ? it->second : 0;
+    // };
 
     // ui->CycleslineEdit->setText(QString::number(getOrDefault("Cycles")));
     // ui->IPClineEdit->setText(QString::number(getOrDefault("IPC")));

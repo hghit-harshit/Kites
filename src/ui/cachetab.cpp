@@ -7,7 +7,7 @@
 namespace Kites
 {
 CacheTab::CacheTab(QWidget *parent, MemoryController *memoryController)
-    : KitesTab(parent), ui(new Ui::CacheTab), m_memoryController(memoryController)
+    : KitesTab(parent), m_memoryController(memoryController),ui(new Ui::CacheTab)
 {
     ui->setupUi(this);
     m_cacheModels.resize(CacheLevel::CacheLevelCount);

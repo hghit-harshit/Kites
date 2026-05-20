@@ -606,8 +606,8 @@ void MainWindow::setUpPalettes()
     }
 
     // ── Dark ──────────────────────────────────────────────────────────────
-    {
-        QPalette &p = m_palettes[Theme::Dark];
+    //{
+        //QPalette &p = m_palettes[Theme::Dark];
 
         // p.setColor(QPalette::Window,          QColor(0x35, 0x35, 0x35));
         // p.setColor(QPalette::WindowText,      QColor(0xF0, 0xF0, 0xF0));
@@ -629,7 +629,7 @@ void MainWindow::setUpPalettes()
         // p.setColor(QPalette::Disabled, QPalette::Text,       QColor(0x78, 0x78, 0x78));
         // p.setColor(QPalette::Disabled, QPalette::Button,     QColor(0x46, 0x46, 0x46));
         // p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(0x78, 0x78, 0x78));
-    }
+    //}
 }
 
 QString loadStyleSheet(const QString &path)

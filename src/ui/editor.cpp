@@ -261,7 +261,7 @@ void Editor::lineNumberAreaMousePressEvent(QMouseEvent *event)
 
     auto toggleBreakpointAtLine = [this, event]()
     {
-        QPoint clickPos = viewport()->mapFromGlobal(event->globalPos());
+        QPoint clickPos = viewport()->mapFromGlobal(event->globalPosition().toPoint());
         QTextCursor cursor = cursorForPosition(clickPos);
 
         QTextBlock block = cursor.block();
@@ -299,7 +299,7 @@ void Editor::lineNumberAreaMousePressEvent(QMouseEvent *event)
         QAction *action1 = menu.addAction("Toggle Breakpoint");
         QAction *action2 = menu.addAction("Remove All Breakpoints");
 
-        QAction *selectedAction = menu.exec(event->globalPos());
+        QAction *selectedAction = menu.exec(event->globalPosition().toPoint());
         if (selectedAction == action1)
         {
             toggleBreakpointAtLine();

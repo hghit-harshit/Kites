@@ -23,8 +23,8 @@ class MemoryController : public QObject
     Q_OBJECT
   private:
     Memory memory_;           ///< The main memory object.
-    Cache l1_cache_;          ///< The cache object for faster memory access.
     Cache l2_cache_;          ///< The second level cache object for even faster memory access.
+    Cache l1_cache_;          ///< The cache object for faster memory access. 
     Cache instruction_cache_; ///< The cache object for instructions.
 
   public:

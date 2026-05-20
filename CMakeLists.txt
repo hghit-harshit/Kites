@@ -47,6 +47,11 @@ file(GLOB LUA_SRC_FILES CONFIGURE_DEPENDS "${EXTERNAL_DIR}/lua-5.5.0/src/*.c")
 list(FILTER LUA_SRC_FILES EXCLUDE REGEX ".*[\\/]lua[.]c$")
 list(FILTER LUA_SRC_FILES EXCLUDE REGEX ".*[\\/]luac[.]c$")
 
+set_source_files_properties(${LUA_SRC_FILES}
+    PROPERTIES
+    COMPILE_OPTIONS "-Wno-pedantic"
+)
+
 
 file(GLOB_RECURSE SRC_FILES "${SRC_DIR}/*.cpp")
 file(GLOB_RECURSE TEST_FILES "${TEST_DIR}/*.cpp")
@@ -98,7 +103,16 @@ target_include_directories(${PROJECT_NAME}
     ${EXTERNAL_DIR}/lua-5.5.0/src
 )
 
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -frounding-math -ffloat-store -g -O3)
+target_compile_options(${PROJECT_NAME} PRIVATE 
+    -Wall 
+    -Wextra 
+    -pedantic 
+    -frounding-math 
+    -ffloat-store 
+    -g 
+    -O3
+)
+
 target_link_libraries(RISC_V_Simulator
     PRIVATE
         Qt::Core
