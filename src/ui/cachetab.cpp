@@ -62,11 +62,11 @@ CacheTab::CacheTab(QWidget *parent, MemoryController *memoryController)
     if (m_memoryController)
     {
         connect(m_memoryController->GetL1Cache(), &Cache::CacheStatsUpdatedSignal, ui->L1Config,
-                CacheConfigWidget::CacheStatsUpdated);
+                &CacheConfigWidget::CacheStatsUpdated);
         connect(m_memoryController->GetL2Cache(), &Cache::CacheStatsUpdatedSignal, ui->L2Config,
-                CacheConfigWidget::CacheStatsUpdated);
+                &CacheConfigWidget::CacheStatsUpdated);
         connect(m_memoryController->GetInstructionCache(), &Cache::CacheStatsUpdatedSignal,
-                ui->InstructionConfig, CacheConfigWidget::CacheStatsUpdated);
+                ui->InstructionConfig, &CacheConfigWidget::CacheStatsUpdated);
 
         connect(ui->L1Config, &CacheConfigWidget::customPolicyScriptSelected,
                 m_memoryController->GetL1Cache(), &Cache::LoadCustomPolicyScript);
@@ -76,11 +76,11 @@ CacheTab::CacheTab(QWidget *parent, MemoryController *memoryController)
                 m_memoryController->GetInstructionCache(), &Cache::LoadCustomPolicyScript);
 
         connect(m_memoryController->GetL1Cache(), &Cache::CustomPolicyScriptLoadedSignal,
-                ui->L1Config, CacheConfigWidget::CustomPolicyScriptLoaded);
+                ui->L1Config, &CacheConfigWidget::CustomPolicyScriptLoaded);
         connect(m_memoryController->GetL2Cache(), &Cache::CustomPolicyScriptLoadedSignal,
-                ui->L2Config, CacheConfigWidget::CustomPolicyScriptLoaded);
+                ui->L2Config, &CacheConfigWidget::CustomPolicyScriptLoaded);
         connect(m_memoryController->GetInstructionCache(), &Cache::CustomPolicyScriptLoadedSignal,
-                ui->InstructionConfig, CacheConfigWidget::CustomPolicyScriptLoaded);
+                ui->InstructionConfig, &CacheConfigWidget::CustomPolicyScriptLoaded);
     }
 
     connect(this, &CacheTab::cacheConfigChanged, this,
@@ -145,18 +145,18 @@ void CacheTab::changeMemoryController(MemoryController *memoryController)
             m_memoryController->GetInstructionCache(), &Cache::LoadCustomPolicyScript);
 
     connect(m_memoryController->GetL1Cache(), &Cache::CacheStatsUpdatedSignal, ui->L1Config,
-            CacheConfigWidget::CacheStatsUpdated);
+            &CacheConfigWidget::CacheStatsUpdated);
     connect(m_memoryController->GetL2Cache(), &Cache::CacheStatsUpdatedSignal, ui->L2Config,
-            CacheConfigWidget::CacheStatsUpdated);
+            &CacheConfigWidget::CacheStatsUpdated);
     connect(m_memoryController->GetInstructionCache(), &Cache::CacheStatsUpdatedSignal,
-            ui->InstructionConfig, CacheConfigWidget::CacheStatsUpdated);
+            ui->InstructionConfig, &CacheConfigWidget::CacheStatsUpdated);
 
     connect(m_memoryController->GetL1Cache(), &Cache::CustomPolicyScriptLoadedSignal, ui->L1Config,
-            CacheConfigWidget::CustomPolicyScriptLoaded);
+            &CacheConfigWidget::CustomPolicyScriptLoaded);
     connect(m_memoryController->GetL2Cache(), &Cache::CustomPolicyScriptLoadedSignal, ui->L2Config,
-            CacheConfigWidget::CustomPolicyScriptLoaded);
+            &CacheConfigWidget::CustomPolicyScriptLoaded);
     connect(m_memoryController->GetInstructionCache(), &Cache::CustomPolicyScriptLoadedSignal,
-            ui->InstructionConfig, CacheConfigWidget::CustomPolicyScriptLoaded);
+            ui->InstructionConfig, &CacheConfigWidget::CustomPolicyScriptLoaded);
 }
 
 void CacheTab::connectSignals(std::string cacheName, CacheConfigWidget *configWidget)
