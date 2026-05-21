@@ -1,4 +1,4 @@
-#include <cstdint>
+#include <cstddef>
 #pragma once
 enum class WritePolicy
 {
