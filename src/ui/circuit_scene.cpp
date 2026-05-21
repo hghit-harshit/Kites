@@ -17,6 +17,7 @@
 #include <QJsonArray>
 #include <QLineEdit>
 #include <QTimer>
+#include <QJsonDocument>
 
 namespace Kites
 {
