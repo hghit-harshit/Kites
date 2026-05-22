@@ -112,7 +112,7 @@ void Cache::WriteByteToNextLevel(uint64_t address, uint8_t value)
     }
 }
 
-size_t Cache::SizeofNextLevel() const
+uint64_t Cache::SizeofNextLevel() const
 {
     if (next_level_cache_)
     {
