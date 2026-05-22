@@ -13,23 +13,16 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Network)
 # set(CMAKE_PREFIX_PATH "/home/atharv/Qt/6.10.0/gcc_64")
 # set(Qt6_DIR "/home/atharv/Qt/6.10.0/gcc_64/lib/cmake/Qt6")
 # find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+# tests
+option(ENABLE_TESTS "Build tests" OFF)
+if(ENABLE_TESTS)
+    include(FetchContent)
 
-
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-)
-
-# FetchContent_Declare(
-#     vsrtl
-#     GIT_REPOSITORY https://github.com/mortbopet/VSRTL.git
-# )
-# This makes GTest's targets (like GTest::gtest_main) available
-FetchContent_MakeAvailable(googletest) #vsrtl)
-
-set(VSRTL_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(VSRTL_BUILD_APP OFF CACHE BOOL "" FORCE)
+    FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+    )
+    FetchContent_MakeAvailable(googletest)
 
 qt_standard_project_setup()
 
@@ -138,8 +131,7 @@ install(TARGETS RISC_V_Simulator
 
 
 
-# tests
-option(ENABLE_TESTS "Build tests" OFF)
+
 
 if(ENABLE_TESTS)
     #find_package(GTest REQUIRED)
