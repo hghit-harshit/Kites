@@ -23,7 +23,7 @@ if(ENABLE_TESTS)
     URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
     )
     FetchContent_MakeAvailable(googletest)
-
+endif()
 qt_standard_project_setup()
 
 set(CMAKE_AUTOMOC ON)
