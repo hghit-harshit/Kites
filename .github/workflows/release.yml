@@ -18,18 +18,21 @@ jobs:
           # ---------------- LINUX ----------------
           - os: ubuntu-22.04
             qt_version: '6.6.3'
+            qt_arch: gcc_64
             archive: kites-linux.zip
             executable_path: build/Kites
 
           # ---------------- WINDOWS ----------------
           - os: windows-latest
             qt_version: '6.6.3'
+            qt_arch: win64_mingw
             archive: kites-windows.zip
-            executable_path: build/Release/Kites.exe
+            executable_path: build/Kites.exe
 
           # ---------------- MACOS ----------------
           - os: macos-latest
             qt_version: '6.6.3'
+            qt_arch: clang_64
             archive: kites-macos.zip
             executable_path: build/Kites.app
 
@@ -49,12 +52,28 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ matrix.qt_version }}
+          arch: ${{ matrix.qt_arch }}
+
+      # --------------------------------------------
+      # Install MinGW + Ninja (Windows)
+      # --------------------------------------------
+      - name: Install MinGW and Ninja
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-ninja
+          msystem: MINGW64
 
       # --------------------------------------------
       # Configure CMake
       # --------------------------------------------
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+        run: >-
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          ${{ runner.os == 'Windows' && '-G "Ninja" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++' || '' }}
 
       # --------------------------------------------
       # Build
@@ -108,14 +127,14 @@ jobs:
         if: runner.os == 'Windows'
         shell: cmd
         run: |
-          windeployqt build\Release\Kites.exe
+          windeployqt build\Kites.exe
 
       - name: Zip Windows Package
         if: runner.os == 'Windows'
         shell: powershell
         run: |
           Compress-Archive `
-            -Path build/Release/* `
+            -Path build/* `
             -DestinationPath ${{ matrix.archive }}
 
       # ============================================
