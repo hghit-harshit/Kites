@@ -65,7 +65,10 @@ QVariant VMStateTableModel::data(const QModelIndex &index, int role) const
             switch (static_cast<VMStateKey>(index.row()))
             {
                 case VMStateKey::ProgramCounter:
-                    return m_vmManager->getProgramCounter();
+                    return QVariant::fromValue(
+                        static_cast<qulonglong>(m_vmManager->getProgramCounter()));
+                    // we need  to cast this explicitly because QVariant does not have an overload  
+                    //for uint64_t and it will treat it as a double 
                 case VMStateKey::Cycles:
                     return m_vmManager->getCycles();
                 case VMStateKey::InstructionsRetired:
