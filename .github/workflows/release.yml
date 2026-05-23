@@ -101,6 +101,7 @@ jobs:
         run: |
           mkdir -p AppDir/usr/bin
           cp build/Kites AppDir/usr/bin/
+          cp resources/icons/kite.png AppDir/Kites.png
 
           cat > AppDir/Kites.desktop <<EOF
           [Desktop Entry]
