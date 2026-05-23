@@ -39,36 +39,46 @@ QVariant VMStateTableModel::data(const QModelIndex &index, int role) const
     static const QStringList keys = {
         "ProgramCounter",      "Cycles", "InstructionsRetired", "CPI", "IPC", "StallCycles",
         "BranchMispredictions"};
-
-    static const QList<std::function<QVariant()>> valueGetters = {
-        [this]() { return m_vmManager->getProgramCounter(); },
-        [this]() { return m_vmManager->getCycles(); },
-        [this]() { return m_vmManager->getInstructionsRetired(); },
-        [this]() { return m_vmManager->getCPI(); },
-        [this]() { return m_vmManager->getIPC(); },
-        [this]() { return m_vmManager->getStallCycles(); },
-        [this]() { return m_vmManager->getBranchMispredictions(); }};
-
+    enum class VMStateKey
+    {
+        ProgramCounter,
+        Cycles,
+        InstructionsRetired,
+        CPI,
+        IPC,
+        StallCycles,
+        BranchMispredictions
+    };
+  
     if (!m_vmManager)
         return QVariant{};
 
     if (role == Qt::DisplayRole)
     {
-        // Get the VM state map from the VMManager
-        //  const QMap<QString, QVariant>& vmState = m_vmManager->getVMStateMap();
-        //  if (index.row() < 0 || index.row() >= vmState.size())
-        //      return QVariant{};
-
-        // auto it = vmState.constBegin();
-        // std::advance(it, index.row());
-
+        
         if (index.column() == 0)
         {
             return keys[index.row()];
         }
         else if (index.column() == 1)
         {
-            return valueGetters[index.row()]();
+            switch (static_cast<VMStateKey>(index.row()))
+            {
+                case VMStateKey::ProgramCounter:
+                    return m_vmManager->getProgramCounter();
+                case VMStateKey::Cycles:
+                    return m_vmManager->getCycles();
+                case VMStateKey::InstructionsRetired:
+                    return m_vmManager->getInstructionsRetired();
+                case VMStateKey::CPI:
+                    return m_vmManager->getCPI();
+                case VMStateKey::IPC:
+                    return m_vmManager->getIPC();
+                case VMStateKey::StallCycles:
+                    return m_vmManager->getStallCycles();
+                case VMStateKey::BranchMispredictions:
+                    return m_vmManager->getBranchMispredictions();
+            }
         }
     }
     return QVariant{};
