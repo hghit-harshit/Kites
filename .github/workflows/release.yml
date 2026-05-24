@@ -48,12 +48,20 @@ jobs:
       # --------------------------------------------
       # Install Qt
       # --------------------------------------------
-      - name: Install Qt
+      - name: Install Qt (Windows)
+        if: runner.os == 'Windows'
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ matrix.qt_version }}
           arch: ${{ matrix.qt_arch }}
           tools: 'tools_mingw'
+
+      - name: Install Qt (Non-Windows)
+        if: runner.os != 'Windows'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ matrix.qt_version }}
+          arch: ${{ matrix.qt_arch }}
 
       # --------------------------------------------
       # Use Qt MinGW toolchain (Windows)
