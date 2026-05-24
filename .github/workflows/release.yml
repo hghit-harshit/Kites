@@ -55,17 +55,24 @@ jobs:
           arch: ${{ matrix.qt_arch }}
 
       # --------------------------------------------
-      # Install MinGW + Ninja (Windows)
+      # Use Qt MinGW toolchain (Windows)
       # --------------------------------------------
-      - name: Install MinGW and Ninja
+      - name: Setup Qt MinGW toolchain
         if: runner.os == 'Windows'
-        uses: msys2/setup-msys2@v2
-        with:
-          update: true
-          install: >-
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-ninja
-          msystem: MINGW64
+        shell: pwsh
+        run: |
+          if (-not $env:QT_ROOT_DIR) {
+            throw "QT_ROOT_DIR is not set by install-qt-action"
+          }
+          $qtBase = Split-Path -Parent (Split-Path -Parent $env:QT_ROOT_DIR)
+          $toolsDir = Join-Path $qtBase "Tools"
+          $mingwDir = Get-ChildItem -Path $toolsDir -Directory -Filter "mingw*" | Select-Object -First 1
+          if (-not $mingwDir) {
+            throw "Qt MinGW tools not found under $toolsDir"
+          }
+          $mingwBin = Join-Path $mingwDir.FullName "bin"
+          "Using MinGW from: $mingwBin"
+          Add-Content -Path $env:GITHUB_PATH -Value $mingwBin
 
       # --------------------------------------------
       # Configure CMake
@@ -73,7 +80,7 @@ jobs:
       - name: Configure
         run: >-
           cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON
-          ${{ runner.os == 'Windows' && '-G "Ninja" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++' || '' }}
+          ${{ runner.os == 'Windows' && '-G "MinGW Makefiles"' || '' }}
 
       # --------------------------------------------
       # Build
