@@ -53,6 +53,7 @@ jobs:
         with:
           version: ${{ matrix.qt_version }}
           arch: ${{ matrix.qt_arch }}
+          tools: 'tools_mingw'
 
       # --------------------------------------------
       # Use Qt MinGW toolchain (Windows)
