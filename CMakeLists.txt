@@ -96,15 +96,24 @@ target_include_directories(${PROJECT_NAME}
     ${EXTERNAL_DIR}/lua-5.5.0/src
 )
 
-target_compile_options(${PROJECT_NAME} PRIVATE 
-    -Wall 
-    -Wextra 
-    -pedantic 
-    -frounding-math 
-    -ffloat-store 
-    -g 
-    -O3
-)
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE 
+        /W4
+        /permissive- 
+        /Zc:__cplusplus 
+        /experimental:c11atomics
+    )
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE 
+        -Wall 
+        -Wextra 
+        -pedantic 
+        -frounding-math 
+        -ffloat-store 
+        -g 
+        -O3
+    )
+endif()
 
 target_link_libraries(RISC_V_Simulator
     PRIVATE
