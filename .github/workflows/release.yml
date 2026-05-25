@@ -82,7 +82,7 @@ jobs:
       # --------------------------------------------
       - name: Configure
         run: >-
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON 
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON 
 
       # --------------------------------------------
       # Build
@@ -145,6 +145,7 @@ jobs:
       # --------------------------------------------------------
 
       - name: Copy MinGW Runtime DLLs
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $gccPath = Split-Path (Get-Command g++.exe).Source
