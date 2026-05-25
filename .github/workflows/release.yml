@@ -24,7 +24,7 @@ jobs:
 
           # ---------------- WINDOWS ----------------
           - os: windows-latest
-            qt_version: '6.6.3'
+            qt_version: '6.8.3'
             qt_arch: win64_msvc2022_64
             archive: kites-windows.zip
             executable_path: build/Kites.exe
