@@ -25,7 +25,7 @@ jobs:
           # ---------------- WINDOWS ----------------
           - os: windows-latest
             qt_version: '6.8.3'
-            qt_arch: win64_msvc2022_64
+            qt_arch: win64_mingw
             archive: kites-windows.zip
             executable_path: build/Kites.exe
 
@@ -45,12 +45,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      #---------------------------------------------
-      #Setup MSVC (Windows)
-      #---------------------------------------------
-      - name: Setup MSVC
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
       # --------------------------------------------
       # Install Qt
       # --------------------------------------------
@@ -92,13 +86,12 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release `
           -DCMAKE_CXX_STANDARD=20 `
           -DCMAKE_CXX_STANDARD_REQUIRED=ON `
-          ${{ runner.os == 'Windows' && '-G "Visual Studio 17 2022" -A x64' || '' }}
 
       # --------------------------------------------
       # Build
       # --------------------------------------------
       - name: Build
-        run: cmake --build build --config Release
+        run: cmake --build build -j12
 
       # ============================================
       # LINUX PACKAGING
@@ -148,6 +141,20 @@ jobs:
         shell: cmd
         run: |
           windeployqt build\Kites.exe
+
+
+      # --------------------------------------------------------
+      # Copy MinGW Runtime DLLs
+      # --------------------------------------------------------
+
+      - name: Copy MinGW Runtime DLLs
+        shell: pwsh
+        run: |
+          $gccPath = Split-Path (Get-Command g++.exe).Source
+
+          Copy-Item "$gccPath\libgcc_s_seh-1.dll" build\
+          Copy-Item "$gccPath\libstdc++-6.dll" build\
+          Copy-Item "$gccPath\libwinpthread-1.dll" build\
 
       - name: Zip Windows Package
         if: runner.os == 'Windows'
