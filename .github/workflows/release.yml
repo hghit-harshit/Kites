@@ -19,6 +19,7 @@ jobs:
           - os: ubuntu-22.04
             qt_version: '6.6.3'
             qt_arch: gcc_64
+            qt_tools: ''
             archive: kites-linux.zip
             executable_path: build/Kites
 
@@ -26,6 +27,7 @@ jobs:
           - os: windows-latest
             qt_version: '6.6.3'
             qt_arch: win64_mingw
+            qt_tools: 'tools_mingw1310'
             archive: kites-windows.zip
             executable_path: build/Kites.exe
 
@@ -33,6 +35,7 @@ jobs:
           - os: macos-latest
             qt_version: '6.6.3'
             qt_arch: clang_64
+            qt_tools: ''
             archive: kites-macos.zip
             executable_path: build/Kites.app
 
@@ -53,6 +56,7 @@ jobs:
         with:
           version: ${{ matrix.qt_version }}
           arch: ${{ matrix.qt_arch }}
+          tools: ${{ matrix.qt_tools }}
 
       # --------------------------------------------
       # Ensure Qt bin is on PATH (Windows)
