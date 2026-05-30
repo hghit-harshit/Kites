@@ -24,7 +24,7 @@ jobs:
 
           # ---------------- WINDOWS ----------------
           - os: windows-latest
-            qt_version: '6.8.3'
+            qt_version: '6.6.3'
             qt_arch: win64_mingw
             archive: kites-windows.zip
             executable_path: build/Kites.exe
@@ -46,17 +46,15 @@ jobs:
         uses: actions/checkout@v4
 
       # --------------------------------------------
+      # Install Ninja
+      # --------------------------------------------
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v1
+
+      # --------------------------------------------
       # Install Qt
       # --------------------------------------------
-      - name: Install Qt (Windows)
-        if: runner.os == 'Windows'
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: ${{ matrix.qt_version }}
-          arch: ${{ matrix.qt_arch }}
-
-      - name: Install Qt (Non-Windows)
-        if: runner.os != 'Windows'
+      - name: Install Qt 
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ matrix.qt_version }}
@@ -65,18 +63,20 @@ jobs:
       # --------------------------------------------
       # Ensure Qt bin is on PATH (Windows)
       # --------------------------------------------
-      - name: Add Qt bin to PATH
+      - name: SetUp MinGW Path(Windows)
         if: runner.os == 'Windows'
-        shell: pwsh
+        shell: powershell
         run: |
-          if (-not $env:QT_ROOT_DIR) {
-            throw "QT_ROOT_DIR is not set by install-qt-action"
-          }
-          $qtBin = Join-Path $env:QT_ROOT_DIR "bin"
-          "Using Qt bin: $qtBin"
-          Add-Content -Path $env:GITHUB_PATH -Value $qtBin
+          $qToolsPath = "${{ env.QT_DIR }}\..\..\Tools"
+          $mingwBin = Get-ChildItem -Path $qToolsPath -Directory | Sort-Object Name -Descending | Select-Object -First 1 |
+                      ForEach-Object { "$($_.FullName)\bin" }
+          Write-Host "Found MinGW bin: $mingwBin"
+          
+          echo "${{ env.QT_DIR }}\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "$mingwBin"             | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      
+          Write-Host "Added to GITHUB_PATH successfully"
+    
       # --------------------------------------------
       # Configure CMake
       # --------------------------------------------
@@ -103,10 +103,13 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
-          chmod +x linuxdeployqt-continuous-x86_64.AppImage
+          wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeployqt-continuous-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
 
       - name: Create Linux AppImage
         if: runner.os == 'Linux'
+        env:
+          QMAKE : ${{ env.QT_DIR }}/bin/qmake
         run: |
           mkdir -p AppDir/usr/bin
           cp build/Kites AppDir/usr/bin/
