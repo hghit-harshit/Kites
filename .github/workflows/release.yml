@@ -59,23 +59,6 @@ jobs:
           tools: ${{ matrix.qt_tools }}
 
       # --------------------------------------------
-      # Ensure Qt bin is on PATH (Windows)
-      # --------------------------------------------
-      - name: SetUp MinGW Path(Windows)
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: |
-          $qToolsPath = "${{ env.QT_DIR }}\..\..\Tools"
-          $mingwBin = Get-ChildItem -Path $qToolsPath -Directory | Sort-Object Name -Descending | Select-Object -First 1 |
-                      ForEach-Object { "$($_.FullName)\bin" }
-          Write-Host "Found MinGW bin: $mingwBin"
-          
-          echo "${{ env.QT_DIR }}\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          echo "$mingwBin"             | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-          Write-Host "Added to GITHUB_PATH successfully"
-    
-      # --------------------------------------------
       # Configure CMake
       # --------------------------------------------
       - name: Configure
