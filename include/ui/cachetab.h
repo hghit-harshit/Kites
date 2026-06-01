@@ -34,10 +34,10 @@ class CacheTab : public KitesTab
     void connectSignals(std::string cacheName, CacheConfigWidget *configWidget);
     bool enforceL2AtLeastL1();
 
-    std::vector<CacheModel *> m_cacheModels{};
-    MemoryController *m_memoryController = nullptr;
-    CacheGridDelegate *m_l1Delegate = nullptr;
-    CacheGridDelegate *m_l2Delegate = nullptr;
+    std::vector<CacheModel*> m_cacheModels{};
+    MemoryController  *m_memoryController    = nullptr;
+    CacheGridDelegate *m_l1Delegate          = nullptr;
+    CacheGridDelegate *m_l2Delegate          = nullptr;
     CacheGridDelegate *m_instructionDelegate = nullptr;
 
     bool m_enforcingConstraint = false;
