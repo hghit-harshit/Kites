@@ -20,6 +20,7 @@
 VMManager::VMManager(QObject *parent, VMType vmType) : QObject(parent)
 {
     // first we register all the VMs
+    m_profiler = std::make_unique<Profiler>();
 
     VMFactory::RegisterVM<RVSSVM>(VMType::RVSS);
     VMFactory::RegisterVM<RV5StageVM_NH_NF>(VMType::RV5Stage_NH_NF);
@@ -34,6 +35,9 @@ VMManager::VMManager(QObject *parent, VMType vmType) : QObject(parent)
             &VMManager::vmPausedAtBreakpointSignal, Qt::DirectConnection);
     // here we connect the vm state changed signal to the vm manager signal
     // and this will be further connected to the mainwindow slot to update the ui
+
+    connect(m_currentVM.get(), &VmBase::vmStateChangedSignal, m_profiler.get(),
+            &Profiler::onVMStateChanged, Qt::DirectConnection);
 }
 
 void VMManager::changeVM(VMType vmType)
@@ -133,17 +137,17 @@ void VMManager::setBreakpoints(const std::vector<uint64_t> &breakpoints)
     m_currentVM->SetBreakpoints(breakpoints);
 }
 
-RegisterFile *VMManager::getRegisterFile()
+RegisterFile *VMManager::getRegisterFile() const
 {
     return &m_currentVM->registers_;
 }
 
-MemoryController *VMManager::getMemoryController()
+MemoryController *VMManager::getMemoryController() const
 {
     return &m_currentVM->memory_controller_;
 }
 
-Kites::CircuitScene *VMManager::getCircuitScene()
+Kites::CircuitScene *VMManager::getCircuitScene() const
 {
     return m_currentVM->circuit_scene_.get();
 }
@@ -158,9 +162,14 @@ VMType VMManager::getVMType()
     return m_currentVMType;
 }
 
-QMap<QString, QVariant> &VMManager::getVMStateMap()
+QMap<QString, QVariant>& VMManager::getVMStateMap() const
 {
     return m_currentVM->vm_state_;
+}
+
+Profiler* VMManager::getProfiler() const
+{
+    return m_profiler.get();
 }
 
 uint64_t VMManager::getProgramCounter() const

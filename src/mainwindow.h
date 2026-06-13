@@ -1,7 +1,7 @@
 #pragma once
 #include "ui/kitestab.h"
 #include "ui/registercontainer.h"
-#include "vm/profiler_manager.h"
+#include "vm/profiler.h"
 #include "vm/vm_manager.h"
 #include <QColor>
 #include <QListWidget>
@@ -67,15 +67,15 @@ class MainWindow : public QMainWindow
     Ui::MainWindow *ui;
 
     // QToolBar *m_mainToolbar = nullptr;
-    QListWidget *m_sidebar = nullptr;
-    QStackedWidget *m_stackedTabs = nullptr;
+    QListWidget       *m_sidebar           = nullptr;
+    QStackedWidget    *m_stackedTabs       = nullptr;
     RegisterContainer *m_registerContainer = nullptr;
+    VMManager         *m_vmManager         = nullptr;
+    QThread           *m_vmThread          = nullptr;
+    TabIndex           m_currentTabIndex   = TabIndex::EditorTabIndex;
+
     std::map<TabIndex, KitesTab *> m_tabs;
-    TabIndex m_currentTabIndex = TabIndex::EditorTabIndex;
-    VMManager *m_vmManager = nullptr;
-    ProfilerManager *m_profilerManager = nullptr;
-    QThread *m_vmThread = nullptr;
-    std::map<Theme, QPalette> m_palettes;
+    std::map<Theme, QPalette>      m_palettes;
   public slots:
     void vmChanged(const VMType &vmType); // this will catch the signal from processor dialog
     void runFinishedSlot();

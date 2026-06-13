@@ -1225,51 +1225,55 @@ std::string getExpectedSyntaxes(const std::string &opcode)
     return syntaxes;
 }
 
-std::string getInstructionType(const std::string &instruction)
+InstructionType getInstructionType(const std::string &instruction)
 {
     // Check each instruction type
     if (isValidRTypeInstruction(instruction))
-        return "R-Type";
+        return InstructionType::R_TYPE;
     if (isValidI1TypeInstruction(instruction))
-        return "I1-Type";
+        return InstructionType::I_TYPE;
     if (isValidI2TypeInstruction(instruction))
-        return "I2-Type";
+        return InstructionType::I_TYPE;
     if (isValidI3TypeInstruction(instruction))
-        return "I3-Type";
+        return InstructionType::I_TYPE;
     if (isValidSTypeInstruction(instruction))
-        return "S-Type";
+        return InstructionType::S_TYPE;
     if (isValidBTypeInstruction(instruction))
-        return "B-Type";
+        return InstructionType::B_TYPE;
     if (isValidUTypeInstruction(instruction))
-        return "U-Type";
+        return InstructionType::U_TYPE;
     if (isValidJTypeInstruction(instruction))
-        return "J-Type";
-    if (isValidPseudoInstruction(instruction))
-        return "Pseudo";
-    if (isValidCSRRTypeInstruction(instruction))
-        return "CSR-R";
-    if (isValidCSRITypeInstruction(instruction))
-        return "CSR-I";
+        return InstructionType::J_TYPE;
+    // if (isValidPseudoInstruction(instruction))
+    //     return InstructionType::PSEUDO;
+    // if (isValidCSRRTypeInstruction(instruction))
+    //     return InstructionType::CSR_R_TYPE;
+    // if (isValidCSRITypeInstruction(instruction))
+    //     return InstructionType::CSR_I_TYPE;
     if (isValidFDRTypeInstruction(instruction))
-        return "F/D-R";
+        return InstructionType::F_TYPE;
     if (isValidFDR1TypeInstruction(instruction))
-        return "F/D-R1";
+        return InstructionType::F_TYPE;
     if (isValidFDR2TypeInstruction(instruction))
-        return "F/D-R2";
+        return InstructionType::F_TYPE;
     if (isValidFDR3TypeInstruction(instruction))
-        return "F/D-R3";
+        return InstructionType::F_TYPE;
     if (isValidFDR4TypeInstruction(instruction))
-        return "F/D-R4";
+        return InstructionType::F_TYPE;
     if (isValidFDITypeInstruction(instruction))
-        return "F/D-I";
+        return InstructionType::F_TYPE;
     if (isValidFDSTypeInstruction(instruction))
-        return "F/D-S";
-    if (isValidBaseExtensionInstruction(instruction))
-        return "Base-Ext";
+        return InstructionType::F_TYPE;
+    // if (isValidBaseExtensionInstruction(instruction))
+    //     return InstructionType::BASE_EXT;
 
-    return "Unknown";
+    return InstructionType::UNKNOWN;
 }
 
+
+/*TODO
+remove this ugly function we will store the original instruction line in ICUnit during parsing
+and use it in the proccessor ui*/
 std::string disassemble(uint32_t instruction)
 {
     if (instruction == 0 || instruction == 0x13)

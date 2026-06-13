@@ -12,7 +12,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-
+#include "instruction_types.h"
 
 namespace instruction_set
 {
@@ -518,7 +518,7 @@ std::string getExpectedSyntaxes(const std::string &opcode);
  * @param instruction The instruction mnemonic (e.g., "add", "addi", "sw", "beq")
  * @return A string describing the instruction type (e.g., "R-Type", "I-Type", "S-Type", "Pseudo")
  */
-std::string getInstructionType(const std::string &instruction);
+InstructionType getInstructionType(const std::string &instruction);
 /**
  * @brief Disassembles a 32-bit instruction into its string representation.
  *

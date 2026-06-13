@@ -34,26 +34,26 @@ ProfilerEditor::ProfilerEditor(QWidget *parent) : QPlainTextEdit(parent)
     setReadOnly(true);
     setLineWrapMode(QPlainTextEdit::NoWrap);
 
-    m_lineNumberArea = new ProfilerEditorHelpers::LineNumberArea(this);
-    m_countArea = new ProfilerEditorHelpers::CountArea(this);
-    m_typeArea = new ProfilerEditorHelpers::TypeArea(this);
+    m_lineNumberArea      = new ProfilerEditorHelpers::LineNumberArea(this);
+    m_ExecutionCountArea  = new ProfilerEditorHelpers::ExecutionCountArea(this);
+    m_instructionTypeArea = new ProfilerEditorHelpers::InstructionTypeArea(this);
 
     connect(this, &QPlainTextEdit::blockCountChanged, this, &ProfilerEditor::updateAreaWidths);
     connect(this, &QPlainTextEdit::updateRequest, this, &ProfilerEditor::updateAreas);
     updateAreaWidths();
 }
 
-void ProfilerEditor::setHitCount(const std::map<int, int> &hitCounts)
+void ProfilerEditor::setExecutionCount(const std::map<int, int> &hitCounts)
 {
-    m_hitCounts = hitCounts;
-    m_maxHitCount = 0;
-    for (const auto &pair : m_hitCounts)
+    m_line_number_execution_count_mapping = hitCounts;
+    m_maxExecutionCount = 0;
+    for (const auto &pair : m_line_number_execution_count_mapping)
     {
-        m_maxHitCount = std::max(m_maxHitCount, pair.second);
+        m_maxExecutionCount = std::max(m_maxExecutionCount, pair.second);
     }
 
     QList<QTextEdit::ExtraSelection> selections;
-    for (const auto &pair : m_hitCounts)
+    for (const auto &pair : m_line_number_execution_count_mapping)
     {
         const int lineNumber = pair.first;
         const int hits = pair.second;
@@ -78,42 +78,42 @@ void ProfilerEditor::setHitCount(const std::map<int, int> &hitCounts)
     setExtraSelections(selections);
 
     m_lineNumberArea->update();
-    m_countArea->update();
-    m_typeArea->update();
+    m_ExecutionCountArea->update();
+    m_instructionTypeArea->update();
 }
 
 void ProfilerEditor::setInstructionTypes(const std::map<int, std::string> &instructionTypes)
 {
     m_instructionTypes = instructionTypes;
-    m_typeArea->update();
+    m_instructionTypeArea->update();
 }
 
-void ProfilerEditor::clearHitCount()
+void ProfilerEditor::clearExecutionCount()
 {
-    m_hitCounts.clear();
-    m_maxHitCount = 0;
+    m_line_number_execution_count_mapping.clear();
+    m_maxExecutionCount = 0;
     setExtraSelections({});
     m_lineNumberArea->update();
-    m_countArea->update();
-    m_typeArea->update();
+    m_ExecutionCountArea->update();
+    m_instructionTypeArea->update();
 }
 
 int ProfilerEditor::lineNumberAreaWidth() const
 {
     int digits = QString::number(qMax(1, blockCount())).length();
-    return 10 + fontMetrics().horizontalAdvance(QLatin1Char('9')) * digits;
+    return fontMetrics().horizontalAdvance(QLatin1Char('9')) * digits;
 }
 
 int ProfilerEditor::countAreaWidth() const
 {
-    int digits = m_maxHitCount > 0 ? QString::number(m_maxHitCount).length() : 1;
+    int digits = m_maxExecutionCount > 0 ? QString::number(m_maxExecutionCount).length() : 1;
     return fontMetrics().horizontalAdvance(QLatin1Char('9')) * (digits + 1) + 10;
 }
 
 int ProfilerEditor::typeAreaWidth() const
 {
     // Estimate width for instruction type display (e.g., "R-Type", "Pseudo", "F/D-R4")
-    return fontMetrics().horizontalAdvance(QLatin1String("F/D-R4")) + 10;
+    return fontMetrics().horizontalAdvance(QLatin1String("R-Type")) + 10;
 }
 
 void ProfilerEditor::updateAreaWidths()
@@ -131,12 +131,12 @@ void ProfilerEditor::resizeEvent(QResizeEvent *event)
     int scrollbarWidth = verticalScrollBar()->isVisible() ? verticalScrollBar()->width() : 0;
 
     // Position count area
-    m_countArea->setGeometry(QRect(cr.right() - countAreaWidth() - typeAreaWidth() - scrollbarWidth,
-                                   cr.top(), countAreaWidth(), cr.height()));
+    m_ExecutionCountArea->setGeometry(QRect(cr.right() - countAreaWidth() - typeAreaWidth() - scrollbarWidth,
+                                           cr.top(), countAreaWidth(), cr.height()));
 
     // Position type area
-    m_typeArea->setGeometry(QRect(cr.right() - typeAreaWidth() - scrollbarWidth, cr.top(),
-                                  typeAreaWidth(), cr.height()));
+    m_instructionTypeArea->setGeometry(QRect(cr.right() - typeAreaWidth() - scrollbarWidth, cr.top(),
+                                           typeAreaWidth(), cr.height()));
 }
 
 void ProfilerEditor::updateAreas(const QRect &rect, int dy)
@@ -144,14 +144,14 @@ void ProfilerEditor::updateAreas(const QRect &rect, int dy)
     if (dy)
     {
         m_lineNumberArea->scroll(0, dy);
-        m_countArea->scroll(0, dy);
-        m_typeArea->scroll(0, dy);
+        m_ExecutionCountArea->scroll(0, dy);
+        m_instructionTypeArea->scroll(0, dy);
     }
     else
     {
         m_lineNumberArea->update(0, rect.y(), m_lineNumberArea->width(), rect.height());
-        m_countArea->update(0, rect.y(), m_countArea->width(), rect.height());
-        m_typeArea->update(0, rect.y(), m_typeArea->width(), rect.height());
+        m_ExecutionCountArea->update(0, rect.y(), m_ExecutionCountArea->width(), rect.height());
+        m_instructionTypeArea->update(0, rect.y(), m_instructionTypeArea->width(), rect.height());
     }
 
     if (rect.contains(viewport()->rect()))
@@ -176,7 +176,7 @@ void ProfilerEditor::paintLineNumberArea(QPaintEvent *event)
         {
             QString number = QString::number(blockNumber + 1); // +1 for 1-based line numbers
             painter.setPen(Qt::black);
-            painter.drawText(0, top, lineNumberAreaWidth() - 5, fontMetrics().height(),
+            painter.drawText(0, top, lineNumberAreaWidth() - 2, fontMetrics().height(),
                              Qt::AlignRight, number);
         }
 
@@ -189,8 +189,8 @@ void ProfilerEditor::paintLineNumberArea(QPaintEvent *event)
 
 void ProfilerEditor::paintCountArea(QPaintEvent *event)
 {
-    QPainter painter(m_countArea);
-    painter.fillRect(event->rect(), palette().color(QPalette::AlternateBase));
+    QPainter painter(m_ExecutionCountArea);
+    painter.fillRect(event->rect(), palette().color(QPalette::Base));
 
     QTextBlock block = firstVisibleBlock();
     int blockNumber = block.blockNumber();
@@ -203,7 +203,8 @@ void ProfilerEditor::paintCountArea(QPaintEvent *event)
         {
             const int lineNumber = blockNumber + 1;
             int hits;
-            hits = m_hitCounts.count(lineNumber) > 0 ? m_hitCounts[lineNumber] : 0;
+            hits = m_line_number_execution_count_mapping.count(lineNumber) > 0 ? 
+            m_line_number_execution_count_mapping[lineNumber] : 0;
 
             if (hits > 0)
             {
@@ -222,8 +223,8 @@ void ProfilerEditor::paintCountArea(QPaintEvent *event)
 
 void ProfilerEditor::paintTypeArea(QPaintEvent *event)
 {
-    QPainter painter(m_typeArea);
-    painter.fillRect(event->rect(), palette().color(QPalette::AlternateBase));
+    QPainter painter(m_instructionTypeArea);
+    painter.fillRect(event->rect(), palette().color(QPalette::Base));
     const QColor textColor = palette().color(QPalette::Text);
 
     QTextBlock block = firstVisibleBlock();
@@ -254,10 +255,10 @@ void ProfilerEditor::paintTypeArea(QPaintEvent *event)
 
 QColor ProfilerEditor::heatColor(int hitCount) const
 {
-    if (m_maxHitCount == 0 || hitCount == 0)
+    if (m_maxExecutionCount == 0 || hitCount == 0)
         return Qt::transparent;
 
-    double t = (double)hitCount / m_maxHitCount;
+    double t = (double)hitCount / m_maxExecutionCount;
     if (t > 0.80)
         return QColor("#D85A30");
     if (t > 0.50)
@@ -269,12 +270,12 @@ QColor ProfilerEditor::heatColor(int hitCount) const
 
 QColor ProfilerEditor::heatBackgroundColor(int hitCount) const
 {
-    if (m_maxHitCount == 0 || hitCount == 0)
+    if (m_maxExecutionCount == 0 || hitCount == 0)
         return Qt::transparent;
 
-    if (m_maxHitCount == 0 || hitCount == 0)
+    if (m_maxExecutionCount == 0 || hitCount == 0)
         return Qt::transparent;
-    double t = (double)hitCount / m_maxHitCount;
+    double t = (double)hitCount / m_maxExecutionCount;
     int alpha = static_cast<int>(12 + t * 40);
     return QColor(216, 90, 48, alpha);
 }

@@ -8,7 +8,7 @@
 #include <string>
 
 
-class ProfilerManager;
+class Profiler; // Forward declaration to avoid including profiler header
 
 namespace Kites
 {
@@ -22,19 +22,19 @@ class ProfilerTab : public KitesTab
     Q_OBJECT
 
   public:
-    explicit ProfilerTab(QWidget *parent = nullptr, ProfilerManager *profilerManager = nullptr);
+    explicit ProfilerTab(QWidget *parent = nullptr, Profiler *profiler = nullptr);
     ~ProfilerTab();
 
   public slots:
     void setSourceText(const QString &sourceText);
-    void updateLineExecutionCounts(const std::map<int, int> &lineExecutionCounts);
-    void updateInstructionTypes(const std::map<int, std::string> &instructionTypes);
+    void updateLineExecutionCount(const std::map<int, int> &lineExecutionCounts);
+    void updateLineInstructionType(const std::map<int, std::string> &lineInstructionTypes);
     void updateStatistics(const std::map<std::string, int> &statistics);
     void resetProfilerView();
 
   private:
     Ui::ProfilerTab *ui;
-    ProfilerManager *profiler_manager_ = nullptr;
+    Profiler *m_profiler = nullptr;
 };
 } // namespace Kites
 #endif // PROFILERTAB_H

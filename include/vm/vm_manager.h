@@ -8,6 +8,7 @@
 #include "config.h"
 #include "ui/circuit_scene.h"
 #include "vm/vm_base.h"
+#include "profiler.h"
 #include "vm_asm_mw.h"
 #include "vm_types.h"
 #include <QObject>
@@ -58,10 +59,11 @@ class VMManager : public QObject
 
     void setBreakpoints(const std::vector<uint64_t> &breakpoints);
 
-    RegisterFile *getRegisterFile();
-    MemoryController *getMemoryController();
-    Kites::CircuitScene *getCircuitScene();
-    QMap<QString, QVariant> &getVMStateMap();
+    RegisterFile *getRegisterFile() const;
+    MemoryController *getMemoryController() const;
+    Kites::CircuitScene *getCircuitScene() const;
+    QMap<QString, QVariant> &getVMStateMap() const;
+    Profiler* getProfiler() const;
 
     // these are kinda ununsed for now
     uint64_t getProgramCounter() const;
@@ -73,8 +75,9 @@ class VMManager : public QObject
     unsigned int getInstructionsRetired() const;
 
   private:
-    std::unique_ptr<VmBase> m_currentVM;
+    std::unique_ptr<VmBase> m_currentVM{};
     VMType m_currentVMType;
+    std::unique_ptr<Profiler> m_profiler{};
     // we need this as when we chage vm we need preserve the step delay
     unsigned int m_stepDelayMs{1000};
   public slots:

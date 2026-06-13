@@ -12,8 +12,8 @@ namespace Kites
 namespace ProfilerEditorHelpers
 {
 class LineNumberArea;
-class CountArea;
-class TypeArea;
+class ExecutionCountArea;
+class InstructionTypeArea;
 } // namespace ProfilerEditorHelpers
 
 class ProfilerEditor : public QPlainTextEdit
@@ -24,10 +24,12 @@ class ProfilerEditor : public QPlainTextEdit
     ~ProfilerEditor() {};
 
     // called everytime profiler data is updated
-    void setHitCount(const std::map<int, int> &hitCounts); // line number to hit count mapping
+    void setExecutionCount(const std::map<int, int> &hitCounts); // line number to hit count mapping
+    void setLineExecutionCount(const int &lineNumber, const int &hitCount); // update hit count for a 
+                                                                      //specific line
     void setInstructionTypes(const std::map<int, std::string>
                                  &instructionTypes); // line number to instruction type mapping
-    void clearHitCount();
+    void clearExecutionCount();
 
     int lineNumberAreaWidth() const;
     int countAreaWidth() const;
@@ -45,12 +47,14 @@ class ProfilerEditor : public QPlainTextEdit
 
   private:
     ProfilerEditorHelpers::LineNumberArea *m_lineNumberArea;
-    ProfilerEditorHelpers::CountArea *m_countArea;
-    ProfilerEditorHelpers::TypeArea *m_typeArea;
+    ProfilerEditorHelpers::ExecutionCountArea *m_ExecutionCountArea;
+    ProfilerEditorHelpers::InstructionTypeArea *m_instructionTypeArea;
+    
     SyntaxHighlighter *m_syntaxHighlighter = nullptr;
-    std::map<int, int> m_hitCounts;                // line number to hit count mapping
+    std::map<int, int> m_line_number_execution_count_mapping; // line number to 
+                                                              //execution count mapping
     std::map<int, std::string> m_instructionTypes; // line number to instruction type mapping
-    int m_maxHitCount = 0;                         // to determine the color intensity for heatmap
+    int m_maxExecutionCount = 0; // to determine the color intensity for heatmap
 
     QColor heatColor(int hitCount) const; // Helper function to determine color based on hit count
     QColor heatBackgroundColor(
@@ -79,10 +83,10 @@ class ProfilerEditorHelpers::LineNumberArea : public QWidget
     ProfilerEditor *m_profilerEditor;
 };
 
-class ProfilerEditorHelpers::CountArea : public QWidget
+class ProfilerEditorHelpers::ExecutionCountArea : public QWidget
 {
   public:
-    CountArea(ProfilerEditor *editor) : QWidget(editor), m_profilerEditor(editor)
+    ExecutionCountArea(ProfilerEditor *editor) : QWidget(editor), m_profilerEditor(editor)
     {
     }
 
@@ -101,10 +105,10 @@ class ProfilerEditorHelpers::CountArea : public QWidget
     ProfilerEditor *m_profilerEditor;
 };
 
-class ProfilerEditorHelpers::TypeArea : public QWidget
+class ProfilerEditorHelpers::InstructionTypeArea : public QWidget
 {
   public:
-    TypeArea(ProfilerEditor *editor) : QWidget(editor), m_profilerEditor(editor)
+    InstructionTypeArea(ProfilerEditor *editor) : QWidget(editor), m_profilerEditor(editor)
     {
     }
 

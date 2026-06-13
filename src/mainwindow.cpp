@@ -37,8 +37,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     toggleTheme(Theme::Dark);
     setupVmStateDirectory();
 
-    m_profilerManager = new ProfilerManager(this);
-
     // well run the vm in a separate thread to keep the ui responsive
     m_vmManager = new VMManager();
     m_vmThread = new QThread(this);
@@ -62,8 +60,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
                         "releases.");
             });
 
-    connect(m_vmManager, &VMManager::vmStageChangedSignal, m_profilerManager,
-            &ProfilerManager::OnVMStateChanged);
 
     connect(m_vmManager, &VMManager::vmStageChangedSignal, this,
             [this](const QMap<QString, QVariant> &vmState)
@@ -288,7 +284,8 @@ void MainWindow::setUpMenubar()
     QMenu *helpMenu = menuBar()->addMenu("&Help");
 
     QMenu *preferencesMenu = new QMenu("Preferences", this);
-    QMenu *processorMenu = new QMenu("Processor", this);
+    QMenu *processorMenu   = new QMenu("Processor", this);
+    
     QAction *openAction = new QAction("Open", this);
     QAction *saveAction = new QAction("Save", this);
     QAction *exitAction = new QAction("Exit", this);
@@ -396,12 +393,12 @@ void MainWindow::setUpMenubar()
 
 void MainWindow::setUpTabs()
 {
-    m_tabs[TabIndex::EditorTabIndex] = new EditorTab(this);
-    m_tabs[TabIndex::MemoryTabIndex] = new MemoryTab(this, m_vmManager->getMemoryController());
-    m_tabs[TabIndex::ProcessorTabIndex] = new ProcessorTab(this, m_vmManager); // will add later
-    m_tabs[TabIndex::CacheTabIndex] = new CacheTab(this, m_vmManager->getMemoryController());
-    m_tabs[TabIndex::CompilerTabIndex] = new CompilerTab(this);
-    m_tabs[TabIndex::ProfilerTabIndex] = new ProfilerTab(this, m_profilerManager);
+    m_tabs[TabIndex::EditorTabIndex]    = new EditorTab(this);
+    m_tabs[TabIndex::MemoryTabIndex]    = new MemoryTab(this, m_vmManager->getMemoryController());
+    m_tabs[TabIndex::ProcessorTabIndex] = new ProcessorTab(this, m_vmManager);                      
+    m_tabs[TabIndex::CacheTabIndex]     = new CacheTab(this, m_vmManager->getMemoryController());
+    m_tabs[TabIndex::CompilerTabIndex]  = new CompilerTab(this);
+    m_tabs[TabIndex::ProfilerTabIndex]  = new ProfilerTab(this, m_vmManager->getProfiler());
     // a little experiment
     connect(this, &MainWindow::vmChangedSignal,
             dynamic_cast<ProcessorTab *>(m_tabs[TabIndex::ProcessorTabIndex]),
@@ -419,12 +416,11 @@ bool MainWindow::tryParseAndLoadProgram()
 {
     auto editor = dynamic_cast<EditorTab *>(m_tabs[TabIndex::EditorTabIndex]);
     auto profilerTab = dynamic_cast<ProfilerTab *>(m_tabs[TabIndex::ProfilerTabIndex]);
-    editor
-        ->switchToExpandedView(); // switch to the expanded view to show expanded pseudoinstructions
+    editor->switchToExpandedView(); // switch to the expanded view 
+                                    //to show expanded pseudoinstructions
     editor->resetErrorLines();    // we reset previous error lines
     editor->setCanWrite(false);   // we disable writing in editor while vm is running
     m_vmManager->reset();
-    m_profilerManager->Reset();
     // reset register container and memory view as well
     try
     {
@@ -433,36 +429,18 @@ bool MainWindow::tryParseAndLoadProgram()
         std::ofstream out(globals::temporary_assembly_file_path);
         out << rawText;
         out.close();
-        AssembledProgram assembledProgram =
-            assemble(globals::temporary_assembly_file_path.string());
+        /**TODO 
+         * Make AssembledProgram a const variable here
+        */
+        AssembledProgram assembledProgram = assemble(globals::temporary_assembly_file_path.string());
         DumpDisasssembly(globals::disassembly_file_path, assembledProgram);
         std::ifstream in(globals::disassembly_file_path);
         std::stringstream buffer;
         buffer << in.rdbuf();
+
         editor->updateDisassemblyView(buffer.str());
-        m_profilerManager->SetInstructionLineMapping(
-            assembledProgram.instruction_number_line_number_mapping);
-
-        // Build instruction mnemonic map from intermediate code.
-        // The boolean in intermediate_code is parser state (e.g., backpatch), not data/non-data.
-        std::map<unsigned int, std::string> instructionMnemonics;
-        for (const auto &[icUnit, _] : assembledProgram.intermediate_code)
-        {
-            const auto instructionIndex = icUnit.getInstructionIndex();
-            const auto mnemonic = icUnit.getOpcode();
-            if (!mnemonic.empty())
-            {
-                instructionMnemonics[instructionIndex] = mnemonic;
-            }
-        }
-        m_profilerManager->SetInstructionInfo(instructionMnemonics);
-
-        if (profilerTab)
-        {
-            profilerTab->setSourceText(QString::fromStdString(rawText));
-            // Update instruction types in profiler UI
-            profilerTab->updateInstructionTypes(m_profilerManager->GetLineInstructionTypes());
-        }
+        profilerTab->setSourceText(QString::fromStdString(rawText));
+        
         m_vmManager->loadProgram(assembledProgram);
         m_vmManager->setBreakpoints(editor->getBreakpoints());
         return true;
@@ -515,7 +493,6 @@ void MainWindow::vmChanged(const VMType &vmType)
     //  this looks kinda ugly but well its better than emitting multiple signals
     qDebug() << "VM Changed to " << static_cast<int>(vmType);
     m_vmManager->changeVM(vmType);
-    m_profilerManager->Reset();
     m_registerContainer->setRegisterFile(m_vmManager->getRegisterFile());
     auto *memtab = dynamic_cast<MemoryTab *>(m_tabs[TabIndex::MemoryTabIndex]);
     if (memtab)
@@ -605,31 +582,6 @@ void MainWindow::setUpPalettes()
         p.setColor(QPalette::Inactive, QPalette::HighlightedText, Qt::black);
     }
 
-    // ── Dark ──────────────────────────────────────────────────────────────
-    //{
-        //QPalette &p = m_palettes[Theme::Dark];
-
-        // p.setColor(QPalette::Window,          QColor(0x35, 0x35, 0x35));
-        // p.setColor(QPalette::WindowText,      QColor(0xF0, 0xF0, 0xF0));
-        // p.setColor(QPalette::Base,            QColor(0x19, 0x19, 0x19));
-        // p.setColor(QPalette::AlternateBase,   QColor(0x25, 0x25, 0x25));
-        // p.setColor(QPalette::ToolTipBase,     QColor(0x45, 0x45, 0x45));
-        // p.setColor(QPalette::ToolTipText,     QColor(0xF0, 0xF0, 0xF0));
-        // p.setColor(QPalette::Text,            QColor(0xF0, 0xF0, 0xF0));
-        // p.setColor(QPalette::Button,          QColor(0x45, 0x45, 0x45));
-        // p.setColor(QPalette::ButtonText,      QColor(0xF0, 0xF0, 0xF0));
-        // p.setColor(QPalette::Highlight,       QColor(0x2A, 0x82, 0xDA));
-        // p.setColor(QPalette::HighlightedText, QColor(0x00, 0x00, 0x00));
-        // p.setColor(QPalette::Link,            QColor(0x2A, 0x82, 0xDA));
-
-        // // Disabled group
-        // p.setColor(QPalette::Disabled, QPalette::Window,     QColor(0x2A, 0x2A, 0x2A));
-        // p.setColor(QPalette::Disabled, QPalette::WindowText, QColor(0x78, 0x78, 0x78));
-        // p.setColor(QPalette::Disabled, QPalette::Base,       QColor(0x2A, 0x2A, 0x2A));
-        // p.setColor(QPalette::Disabled, QPalette::Text,       QColor(0x78, 0x78, 0x78));
-        // p.setColor(QPalette::Disabled, QPalette::Button,     QColor(0x46, 0x46, 0x46));
-        // p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(0x78, 0x78, 0x78));
-    //}
 }
 
 QString loadStyleSheet(const QString &path)
