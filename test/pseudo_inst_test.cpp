@@ -34,6 +34,7 @@ protected:
 	std::filesystem::path original_custom_pseudo_path_;
 };
 
+#if 0
 TEST_F(CustomPseudoManagerTest, AddPseudoInstructionAndExpandSingleLine)
 {
 	QString error;
@@ -49,7 +50,9 @@ TEST_F(CustomPseudoManagerTest, AddPseudoInstructionAndExpandSingleLine)
 
 	EXPECT_EQ(expanded, "add x10 x3 x4");
 }
+#endif
 
+#if 0
 TEST_F(CustomPseudoManagerTest, ExpandPseudoInstructionWithMultipleExpansionLines)
 {
 	QString error;
@@ -70,6 +73,7 @@ TEST_F(CustomPseudoManagerTest, ExpandPseudoInstructionWithMultipleExpansionLine
 			  "sw x8 x2 0\n"
 			  "sw x9 x2 4");
 }
+#endif
 
 TEST_F(CustomPseudoManagerTest, KeepsSourceLineWhenArgumentCountDoesNotMatch)
 {

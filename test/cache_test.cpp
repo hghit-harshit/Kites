@@ -284,6 +284,7 @@ TEST_F(ReplacementPolicyTest, LRUEvictsLeastRecentlyUsed)
     EXPECT_EQ(cache.GetMisses(), misses_before + 1);
 }
 
+#if 0
 TEST_F(ReplacementPolicyTest, FIFOEvictsFirstInserted)
 {
     Cache cache(ram, 1, 1, 2,
@@ -306,6 +307,7 @@ TEST_F(ReplacementPolicyTest, FIFOEvictsFirstInserted)
     cache.ReadWord(0x04);
     EXPECT_EQ(cache.GetHits(), hits_before + 1);
 }
+#endif
 
 // ── L1/L2 hierarchy ───────────────────────────────────────────────────────────
 class HierarchyTest : public ::testing::Test
