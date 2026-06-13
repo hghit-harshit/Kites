@@ -15,6 +15,7 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Network)
 # find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 # tests
 option(ENABLE_TESTS "Build tests" OFF)
+option(ENABLE_COVERAGE "Enable coverage instrumentation for tests" OFF)
 if(ENABLE_TESTS)
     include(FetchContent)
 
@@ -112,7 +113,6 @@ target_link_libraries(RISC_V_Simulator
         Qt::Core
         Qt::Widgets
         Qt::Network
-        #vsrtl::vsrtl
 )
 
 include(GNUInstallDirs)
@@ -130,18 +130,14 @@ install(TARGETS RISC_V_Simulator
 # )
 # install(SCRIPT ${deploy_script})
 
-
-
-
-
 if(ENABLE_TESTS)
     #find_package(GTest REQUIRED)
     option (DISABLE_GUI "Disable GUI components in tests" ON)
     option (VM_DEBUG_PRINTS "Enable debug prints in VM during tests" OFF)
     enable_testing()
     include_directories(${GTEST_INCLUDE_DIRS})
-    #list(REMOVE_ITEM SRC_FILES "${CMAKE_SOURCE_DIR}/main.cpp")
-    add_executable(tests 
+   
+    add_executable(tests EXCLUDE_FROM_ALL
     ${HEADER_FILES}
     ${SRC_FILES}
     ${UI_FILES}
@@ -160,24 +156,47 @@ if(ENABLE_TESTS)
     Qt::Network
     pthread)
 
+    if(ENABLE_COVERAGE)
+        if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+            message(FATAL_ERROR "ENABLE_COVERAGE requires a GCC- or Clang-style compiler")
+        endif()
+
+        find_program(GCOVR_EXECUTABLE gcovr REQUIRED)
+        target_compile_options(tests PRIVATE -O0 --coverage)
+        target_link_options(tests PRIVATE --coverage)
+
+        include(GoogleTest)
+        gtest_discover_tests(tests
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            PROPERTIES
+                FAIL_REGULAR_EXPRESSION ".*FAILED.*"
+        )
+
+        set(COVERAGE_DIR ${CMAKE_BINARY_DIR}/coverage)
+        add_custom_target(coverage
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${COVERAGE_DIR}
+            COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --test-dir ${CMAKE_BINARY_DIR}
+            COMMAND ${GCOVR_EXECUTABLE}
+                --root ${CMAKE_SOURCE_DIR}
+                --filter ${CMAKE_SOURCE_DIR}/src/.*
+                --filter ${CMAKE_SOURCE_DIR}/include/.*
+                --html --html-details
+                --output ${COVERAGE_DIR}/index.html
+                --exclude .*/external/.*
+                --exclude .*/_deps/.*
+                --exclude .*/RISC_V_Simulator_autogen/.*
+            DEPENDS tests
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Running tests and generating coverage report"
+        )
+    endif()
+
     if(DISABLE_GUI)
     target_compile_definitions(tests PRIVATE DISABLE_GUI)
     endif()
     if(VM_DEBUG_PRINTS)
     target_compile_definitions(tests PRIVATE VM_DEBUG_PRINTS)
     endif()
-
-    # add_custom_command(TARGET tests POST_BUILD
-    # COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    #     "$<TARGET_FILE:Qt6::Core>"
-    #     "$<TARGET_FILE:Qt6::Widgets>"
-    #     "$<TARGET_FILE:Qt6::Gui>"
-    #     "${MINGW_PATH}/bin/libstdc++-6.dll"
-    #     "${MINGW_PATH}/bin/libgcc_s_seh-1.dll"
-    #     "${MINGW_PATH}/bin/libwinpthread-1.dll"
-    #     "$<TARGET_FILE_DIR:tests>"
-    # )
-
 
     add_custom_target(test_run
         COMMAND ./tests
