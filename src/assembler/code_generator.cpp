@@ -5,14 +5,15 @@
  * @author Vishank Singh, https://github.com/VishankSingh
  */
 
-#include "assembler/code_generator.h"
+#include "code_generator.h"
 #include "common/instructions.h"
 
 #include <stdexcept>
 #include <string>
 #include <vector>
 
-
+namespace Kites
+{
 std::vector<std::string>
 printIntermediateCode(const std::vector<std::pair<ICUnit, bool>> &IntermediateCode)
 {
@@ -441,3 +442,4 @@ generateMachineCode(const std::vector<std::pair<ICUnit, bool>> &IntermediateCode
     }
     return machine_code;
 }
+}// namespace Kites

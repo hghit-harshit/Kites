@@ -6,9 +6,11 @@
  */
 /** @endcond */
 
-#include "assembler/assembler.h"
-#include "globals.h"
-#include "utils.h"
+#include "assembler.h"
+#include "code_generator.h"
+#include "common/globals.h"
+#include "utils/utils.h"
+
 
 
 #include <algorithm>
@@ -19,6 +21,8 @@
 #include <string>
 #include <vector>
 
+namespace Kites
+{
 
 AssembledProgram assemble(const std::string &filename)
 {
@@ -101,3 +105,4 @@ AssembledProgram assemble(const std::string &filename)
 
     return program;
 }
+}//namespace Kites

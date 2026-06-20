@@ -3,6 +3,8 @@
 
 #include <stdexcept>
 
+namespace Kites
+{
 CustomReplacementPolicy::CustomReplacementPolicy()
     : m_engine_(std::make_unique<CustomPolicyEngine>())
 {
@@ -89,3 +91,4 @@ std::string CustomReplacementPolicy::getScriptPath() const
 {
     return custom_policy_script_path_;
 }
+}//namespace Kites

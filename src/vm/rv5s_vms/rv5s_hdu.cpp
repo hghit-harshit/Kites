@@ -13,6 +13,8 @@
 
 #include "vm/pipeline_registers.h"
 
+namespace Kites
+{
 // Define stall count constants
 constexpr int STALL_NONE = 0;
 constexpr int STALL_ONE_CYCLE = 1;
@@ -116,3 +118,4 @@ int check_data_hazard(const IF_ID_Register &if_id_reg, const ID_EX_Register &id_
 
     return STALL_NONE;
 }
+}//namespace Kites

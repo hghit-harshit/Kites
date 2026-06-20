@@ -10,6 +10,8 @@
 #include <cstdint>
 #include <cstring>
 
+namespace Kites
+{
 namespace alu
 {
 
@@ -17,7 +19,7 @@ namespace alu
 {
     switch (op)
     {
-    case AluOp::kAdd:
+    case AluOp::ADD:
     {
         auto sa = static_cast<int64_t>(a);
         auto sb = static_cast<int64_t>(b);
@@ -25,7 +27,7 @@ namespace alu
         bool overflow = __builtin_add_overflow(sa, sb, &result);
         return {static_cast<uint64_t>(result), overflow};
     }
-    case AluOp::kAddw:
+    case AluOp::ADDW:
     {
         auto sa = static_cast<int32_t>(a);
         auto sb = static_cast<int32_t>(b);
@@ -33,7 +35,7 @@ namespace alu
         bool overflow = __builtin_add_overflow(sa, sb, &result);
         return {static_cast<uint64_t>(static_cast<int32_t>(result)), overflow};
     }
-    case AluOp::kSub:
+    case AluOp::SUB:
     {
         auto sa = static_cast<int64_t>(a);
         auto sb = static_cast<int64_t>(b);
@@ -41,7 +43,7 @@ namespace alu
         bool overflow = __builtin_sub_overflow(sa, sb, &result);
         return {static_cast<uint64_t>(result), overflow};
     }
-    case AluOp::kSubw:
+    case AluOp::SUBW:
     {
         auto sa = static_cast<int32_t>(a);
         auto sb = static_cast<int32_t>(b);
@@ -49,7 +51,7 @@ namespace alu
         bool overflow = __builtin_sub_overflow(sa, sb, &result);
         return {static_cast<uint64_t>(static_cast<int32_t>(result)), overflow};
     }
-    case AluOp::kMul:
+    case AluOp::MUL:
     {
         auto sa = static_cast<int64_t>(a);
         auto sb = static_cast<int64_t>(b);
@@ -57,7 +59,7 @@ namespace alu
         bool overflow = __builtin_mul_overflow(sa, sb, &result);
         return {static_cast<uint64_t>(result), overflow};
     }
-    case AluOp::kMulh:
+    case AluOp::MULH:
     {
         auto sa = static_cast<int64_t>(a);
         auto sb = static_cast<int64_t>(b);
@@ -71,7 +73,7 @@ namespace alu
 
         return {static_cast<uint64_t>(high_result), false};
     }
-    case AluOp::kMulhsu:
+    case AluOp::MULHSU:
     {
         auto sa = static_cast<int64_t>(a);
         auto sb = static_cast<uint64_t>(b);
@@ -84,7 +86,7 @@ namespace alu
 
         return {static_cast<uint64_t>(high_result), false};
     }
-    case AluOp::kMulhu:
+    case AluOp::MULHU:
     {
         auto ua = static_cast<uint64_t>(a);
         auto ub = static_cast<uint64_t>(b);
@@ -97,7 +99,7 @@ namespace alu
 
         return {static_cast<uint64_t>(high_result), false};
     }
-    case AluOp::kMulw:
+    case AluOp::MULW:
     {
         auto sa = static_cast<int32_t>(a);
         auto sb = static_cast<int32_t>(b);
@@ -106,7 +108,7 @@ namespace alu
         bool overflow = (result != static_cast<int64_t>(static_cast<int32_t>(result)));
         return {static_cast<uint64_t>(lower_result), overflow};
     }
-    case AluOp::kDiv:
+    case AluOp::DIV:
     {
         auto sa = static_cast<int64_t>(a);
         auto sb = static_cast<int64_t>(b);
@@ -121,7 +123,7 @@ namespace alu
         int64_t result = sa / sb;
         return {static_cast<uint64_t>(result), false};
     }
-    case AluOp::kDivw:
+    case AluOp::DIVW:
     {
         auto sa = static_cast<int32_t>(a);
         auto sb = static_cast<int32_t>(b);
@@ -136,7 +138,7 @@ namespace alu
         int32_t result = sa / sb;
         return {static_cast<uint64_t>(result), false};
     }
-    case AluOp::kDivu:
+    case AluOp::DIVU:
     {
         if (b == 0)
         {
@@ -145,7 +147,7 @@ namespace alu
         uint64_t result = a / b;
         return {result, false};
     }
-    case AluOp::kDivuw:
+    case AluOp::DIVUW:
     {
         if (b == 0)
         {
@@ -154,7 +156,7 @@ namespace alu
         uint64_t result = static_cast<uint32_t>(a) / static_cast<uint32_t>(b);
         return {static_cast<uint64_t>(result), false};
     }
-    case AluOp::kRem:
+    case AluOp::REM:
     {
         if (b == 0)
         {
@@ -163,7 +165,7 @@ namespace alu
         int64_t result = static_cast<int64_t>(a) % static_cast<int64_t>(b);
         return {static_cast<uint64_t>(result), false};
     }
-    case AluOp::kRemw:
+    case AluOp::REMW:
     {
         if (b == 0)
         {
@@ -172,7 +174,7 @@ namespace alu
         int32_t result = static_cast<int32_t>(a) % static_cast<int32_t>(b);
         return {static_cast<uint64_t>(result), false};
     }
-    case AluOp::kRemu:
+    case AluOp::REMU:
     {
         if (b == 0)
         {
@@ -181,7 +183,7 @@ namespace alu
         uint64_t result = a % b;
         return {result, false};
     }
-    case AluOp::kRemuw:
+    case AluOp::REMUW:
     {
         if (b == 0)
         {
@@ -190,59 +192,59 @@ namespace alu
         uint64_t result = static_cast<uint32_t>(a) % static_cast<uint32_t>(b);
         return {static_cast<uint64_t>(result), false};
     }
-    case AluOp::kAnd:
+    case AluOp::AND:
     {
         return {static_cast<uint64_t>(a & b), false};
     }
-    case AluOp::kOr:
+    case AluOp::OR:
     {
         return {static_cast<uint64_t>(a | b), false};
     }
-    case AluOp::kXor:
+    case AluOp::XOR:
     {
         return {static_cast<uint64_t>(a ^ b), false};
     }
-    case AluOp::kSll:
+    case AluOp::SLL:
     {
         uint64_t result = a << (b & 63);
         return {result, false};
     }
-    case AluOp::kSllw:
+    case AluOp::SLLW:
     {
         auto sa = static_cast<uint32_t>(a);
         auto sb = static_cast<uint32_t>(b);
         uint32_t result = sa << (sb & 31);
         return {static_cast<uint64_t>(static_cast<int32_t>(result)), false};
     }
-    case AluOp::kSrl:
+    case AluOp::SRL:
     {
         uint64_t result = a >> (b & 63);
         return {result, false};
     }
-    case AluOp::kSrlw:
+    case AluOp::SRLW:
     {
         auto sa = static_cast<uint32_t>(a);
         auto sb = static_cast<uint32_t>(b);
         uint32_t result = sa >> (sb & 31);
         return {static_cast<uint64_t>(static_cast<int32_t>(result)), false};
     }
-    case AluOp::kSra:
+    case AluOp::SRA:
     {
         auto sa = static_cast<int64_t>(a);
         return {static_cast<uint64_t>(sa >> (b & 63)), false};
     }
-    case AluOp::kSraw:
+    case AluOp::SRAW:
     {
         auto sa = static_cast<int32_t>(a);
         return {static_cast<uint64_t>(sa >> (b & 31)), false};
     }
-    case AluOp::kSlt:
+    case AluOp::SLT:
     {
         auto sa = static_cast<int64_t>(a);
         auto sb = static_cast<int64_t>(b);
         return {static_cast<uint64_t>(sa < sb), false};
     }
-    case AluOp::kSltu:
+    case AluOp::SLTU:
     {
         return {static_cast<uint64_t>(a < b), false};
     }
@@ -291,7 +293,7 @@ namespace alu
 
     switch (op)
     {
-    case AluOp::kAdd:
+    case AluOp::ADD:
     {
         auto sa = static_cast<int64_t>(ina);
         auto sb = static_cast<int64_t>(inb);
@@ -299,22 +301,22 @@ namespace alu
         // bool overflow = __builtin_add_overflow(sa, sb, &res); // TODO: check this
         return {static_cast<uint64_t>(res), 0};
     }
-    case AluOp::kFmadd_s:
+    case AluOp::FMADD_S:
     {
         result = std::fma(a, b, c);
         break;
     }
-    case AluOp::kFmsub_s:
+    case AluOp::FMSUB_S:
     {
         result = std::fma(a, b, -c);
         break;
     }
-    case AluOp::kFnmadd_s:
+    case AluOp::FNMADD_S:
     {
         result = std::fma(-a, b, -c);
         break;
     }
-    case AluOp::kFnmsub_s:
+    case AluOp::FNMSUB_S:
     {
         result = std::fma(-a, b, c);
         break;
@@ -670,7 +672,7 @@ namespace alu
 
     switch (op)
     {
-    case AluOp::kAdd:
+    case AluOp::ADD:
     {
         auto sa = static_cast<int64_t>(ina);
         auto sb = static_cast<int64_t>(inb);
@@ -1033,3 +1035,4 @@ void Alu::setFlags(bool carry, bool zero, bool negative, bool overflow)
 }
 
 } // namespace alu
+}//namespace Kites

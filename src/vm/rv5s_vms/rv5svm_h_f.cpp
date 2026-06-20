@@ -10,8 +10,8 @@
  */
 #include "vm/rv5s_vms/rv5svm_h_f.h" // Assuming this header now defines RV5StageVM_H_F
 #include "common/instructions.h"
-#include "config.h"
-#include "ui/processor_designs/rv5svm_h_f_circuit_scene.h"
+#include "config/config.h"
+#include "ui/processor/processor_designs/rv5svm_h_f_circuit_scene.h"
 #include "vm/alu.h"
 #include "vm/pipeline_registers.h"
 #include "vm/vm_base.h"
@@ -21,7 +21,8 @@
 #include <thread>
 #include <tuple>
 
-
+namespace Kites
+{
 // NOP instruction: ADDI x0, x0, 0 (Used for flushing)
 constexpr uint32_t NOP = 0x00000013;
 
@@ -699,3 +700,4 @@ uint64_t RV5StageVM_H_F::pipeline_execute_double()
 
     return alu_result;
 }
+}//namespace Kites

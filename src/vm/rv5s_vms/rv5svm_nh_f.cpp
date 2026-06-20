@@ -9,8 +9,8 @@
  */
 #include "vm/rv5s_vms/rv5svm_nh_f.h"
 #include "common/instructions.h"
-#include "config.h"
-#include "ui/processor_designs/rv5svm_nh_f_circuit_scene.h"
+#include "config/config.h"
+#include "ui/processor/processor_designs/rv5svm_nh_f_circuit_scene.h"
 #include "vm/alu.h"
 #include "vm/vm_base.h" // For ImmGenerator, etc.
 #include <algorithm>
@@ -19,7 +19,8 @@
 #include <thread>
 #include <tuple>
 
-
+namespace Kites
+{
 // NOP instruction: ADDI x0, x0, 0
 constexpr uint32_t NOP = 0x00000013;
 
@@ -654,3 +655,4 @@ void RV5StageVM_NH_F::handle_syscall()
         DumpState("vm_state.json");
     }
 }
+}//namespace Kites

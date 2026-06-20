@@ -6,11 +6,12 @@
 
 #include "assembler/parser.h"
 #include "common/instructions.h"
-#include "utils.h"
+#include "utils/utils.h"
 #include "vm/registers.h"
 
 #include <string>
-
+namespace Kites
+{
 bool Parser::parse_O_GPR_C_CSR_C_GPR()
 {
     if (peekToken(1).line_number == currentToken().line_number &&
@@ -98,3 +99,4 @@ bool Parser::parse_O_GPR_C_CSR_C_I()
     }
     return false;
 }
+}// namespace Kites

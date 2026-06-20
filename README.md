@@ -5,7 +5,7 @@ Kites support I,M,D and F extenstion in single cyle mod and I,M extension in 5 S
 
 ## Downloading and Installation
 
-Prebuilt libraries are available for Linux,Windows on [Release Page]()
+Prebuilt libraries are available for Linux,Windows on [Release Page](https://github.com/hghit-harshit/Kites/releases)
 
 ### Ubuntu 
 - Run chmod +x for the Kites AppImage.

@@ -6,8 +6,8 @@
 
 #include "vm/vm_base.h"
 
-#include "config.h"
-#include "globals.h"
+#include "config/config.h"
+#include "common/globals.h"
 
 
 #include <algorithm>
@@ -19,6 +19,8 @@
 #include <iostream>
 #include <thread>
 
+namespace Kites
+{
 
 VmBase::VmBase()
 {
@@ -390,3 +392,4 @@ void VmBase::ModifyRegister(const std::string &reg_name, uint64_t value)
 {
     registers_.ModifyRegister(reg_name, value);
 }
+}//namespace Kites

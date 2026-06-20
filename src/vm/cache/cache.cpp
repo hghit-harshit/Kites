@@ -4,6 +4,8 @@
 #include "vm/cache/policies/lru.h"
 #include <span>
 
+namespace Kites
+{
 static std::unique_ptr<CacheReplacementPolicy>
 CreatePolicy(ReplacementPolicy policy_type, const std::string &custom_policy_script_path)
 {
@@ -602,127 +604,5 @@ void Cache::LoadCustomPolicyScript(const std::string &path)
                                 old_script_path); // revert to old policy on failure
     }
 }
+}//namespace Kites
 
-// uint8_t Cache::Read(uint64_t address)
-// {
-//     if(address >= vm_config::config.getMemorySize())
-//     {
-//         throw std::out_of_range(std::string("Cache read address out of range: ") +
-//         std::to_string(address));
-//     }
-//     CacheLine& line = GetCacheLine(address);
-//     // since this function will only be called by the generic and that to
-// when line exists and is valid, we can skip the check for valid and tag match
-//     return line.data[GetOffset(address)];
-
-// }
-
-// void Cache::BringInCache(uint64_t address)
-// {
-//     if(address >= vm_config::config.getMemorySize())
-//     {
-//         throw std::out_of_range(std::string("Cache bring in address out of range: ") +
-//         std::to_string(address));
-//     }
-
-//     uint64_t block_start_address = address - GetOffset(address);
-//     CacheLine& line = GetCacheLine(address);
-//     if(line.valid && line.dirty && line.tag != GetTag(address) && write_policy_ ==
-//     WritePolicy::WriteBack)
-//     {
-//         //write back to memory
-//         uint64_t block_start_address = (line.tag * LINE_SIZE);
-//         for(size_t i = 0; i < LINE_SIZE; ++i)
-//         {
-//             memory_.WriteByte(block_start_address + i, line.data[i]);
-//         }
-//     }
-//     line.valid = true;
-//     line.dirty = false;
-//     line.tag = GetTag(address);
-//     for(size_t i = 0; i < LINE_SIZE; ++i)
-//     {
-//         line.data[i] = memory_.ReadByte(block_start_address + i);
-//     }
-// }
-
-// uint8_t Cache::ReadByte(uint64_t address)
-// {
-//     CacheLine& line = GetCacheLine(address);
-//     if(line.valid && line.tag == GetTag(address))
-//     {
-//         hits_++;
-//         return Read(address);
-//     }
-//     else
-//     {
-//         misses_++;
-//         uint8_t value = memory_.ReadByte(address);
-//         BringInCache(address);
-//         return value;
-//     }
-// }
-
-// uint16_t Cache::ReadHalfWord(uint64_t address)
-// {
-//     // Implementation of half-word read from cache
-//     CacheLine& line = GetCacheLine(address);
-//     if(line.valid && line.tag == GetTag(address))
-//     {
-//         hits_++;
-//         return ReadGeneric<uint16_t>(address);
-//     }
-//     else
-//     {
-//         misses_++;
-//         uint16_t value = memory_.ReadHalfWord(address);
-//         BringInCache(address);
-//         return value;
-//     }
-// }
-
-// uint32_t Cache::ReadWord(uint64_t address)
-// {
-//     CacheLine& line = GetCacheLine(address);
-//     if(line.valid && line.tag == GetTag(address))
-//     {
-//         hits_++;
-//         return ReadGeneric<uint32_t>(address);
-//     }
-//     else
-//     {
-//         misses_++;
-//         uint32_t value = memory_.ReadWord(address);
-//         BringInCache(address);
-//         return value;
-//     }
-// }
-
-// uint64_t Cache::ReadDoubleWord(uint64_t address)
-// {
-//     CacheLine& line = GetCacheLine(address);
-//     if(line.valid && line.tag == GetTag(address))
-//     {
-//         hits_++;
-//         return ReadGeneric<uint64_t>(address);
-//     }
-//     else
-//     {
-//         misses_++;
-//         uint64_t value = memory_.ReadDoubleWord(address);
-//         BringInCache(address);
-//         return value;
-//     }
-// }
-
-// void Cache::Reset()
-// {
-//     for (auto& line : cache_lines_)
-//     {
-//         line.valid = false;
-//         line.dirty = false;
-//         std::fill(std::begin(line.data), std::end(line.data), 0);
-//     }
-//     hits_ = 0;
-//     misses_ = 0;
-// }

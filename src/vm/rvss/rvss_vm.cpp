@@ -7,10 +7,10 @@
 #include "vm/rvss/rvss_vm.h"
 
 #include "common/instructions.h"
-#include "config.h"
-#include "globals.h"
-#include "ui/processor_designs/rvss_circuit_scene.h"
-#include "utils.h"
+#include "config/config.h"
+#include "common/globals.h"
+#include "ui/processor/processor_designs/rvss_circuit_scene.h"
+#include "utils/utils.h"
 #include <QDebug>
 #include <algorithm>
 #include <atomic>
@@ -24,6 +24,8 @@
 #include <thread>
 #include <tuple>
 
+namespace Kites
+{
 RVSSVM::RVSSVM() : VmBase()
 {
     DumpRegisters(globals::registers_dump_file_path, registers_);
@@ -1380,3 +1382,4 @@ void RVSSVM::Reset()
     undo_stack_ = std::stack<StepDelta>();
     redo_stack_ = std::stack<StepDelta>();
 }
+}//namespaace Kites

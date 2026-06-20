@@ -5,7 +5,6 @@
  */
 
 #include "vm/registers.h"
-#include "../mainwindow.h"
 #include <QDebug>
 #include <array>
 #include <cstdint>
@@ -14,6 +13,8 @@
 #include <unordered_set>
 #include <vector>
 
+namespace Kites
+{
 RegisterFile::RegisterFile(QObject *parent) : QObject(parent)
 {
 }
@@ -189,3 +190,4 @@ bool IsValidCsr(const std::string &reg)
 {
     return valid_csr_registers.find(reg) != valid_csr_registers.end();
 }
+}//namespace Kites

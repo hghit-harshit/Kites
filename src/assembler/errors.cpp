@@ -11,7 +11,8 @@
 #include <iomanip>
 #include <ostream>
 
-
+namespace Kites
+{
 namespace errors
 {
 
@@ -119,3 +120,4 @@ std::ostream &operator<<(std::ostream &os, const InvalidRegisterError &error)
 }
 
 } // namespace errors
+} // namespace Kites

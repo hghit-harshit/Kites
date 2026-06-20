@@ -6,12 +6,13 @@
 
 #include "assembler/parser.h"
 #include "common/instructions.h"
-#include "utils.h"
+#include "utils/utils.h"
 #include "vm/registers.h"
 
 
 #include <string>
-
+namespace Kites
+{
 bool Parser::parse_O()
 {
     if (peekToken(1).type == TokenType::EOF_ ||
@@ -567,3 +568,4 @@ bool Parser::parse_O_GPR_C_I_LP_GPR_RP()
     }
     return false;
 }
+}// namespace Kites

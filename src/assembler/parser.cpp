@@ -8,7 +8,7 @@
 #include "assembler/parser.h"
 
 #include "common/instructions.h"
-#include "utils.h"
+#include "utils/utils.h"
 #include "vm/registers.h"
 
 
@@ -16,6 +16,8 @@
 #include <iostream>
 #include <vector>
 
+namespace Kites
+{
 Token Parser::prevToken()
 {
     if (pos_ > 0)
@@ -896,3 +898,4 @@ const std::map<unsigned int, unsigned int> &Parser::getInstructionNumberLineNumb
 {
     return instruction_number_line_number_mapping_;
 }
+}//namespace Kites

@@ -6,12 +6,13 @@
 
 #include "assembler/parser.h"
 #include "common/instructions.h"
-#include "config.h"
-#include "utils.h"
+#include "config/config.h"
+#include "utils/utils.h"
 #include "vm/registers.h"
 
 #include <string>
-
+namespace Kites
+{
 bool Parser::parse_pseudo()
 {
     if (currentToken().value == "la")
@@ -943,3 +944,4 @@ bool Parser::parse_pseudo()
     } // call
     return false;
 }
+}// namespace Kites

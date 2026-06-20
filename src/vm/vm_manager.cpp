@@ -16,7 +16,8 @@
 #include "vm/rvss/rvss_vm.h"
 #include "vm/vm_factory.h"
 
-
+namespace Kites
+{
 VMManager::VMManager(QObject *parent, VMType vmType) : QObject(parent)
 {
     // first we register all the VMs
@@ -206,3 +207,4 @@ unsigned int VMManager::getInstructionsRetired() const
 {
     return m_currentVM->instructions_retired_;
 }
+}//namespace Kites

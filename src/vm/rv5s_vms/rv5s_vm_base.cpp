@@ -1,10 +1,11 @@
 #include "vm/rv5s_vms/rv5s_vm_base.h"
 constexpr uint32_t NOP = 0x00000013;
 #include "common/instructions.h"
-#include "debug_colors.h"
+#include "common/debug_colors.h"
 #include <thread>
 
-
+namespace Kites
+{
 void RV5StageVM_Base::Run()
 {
     ClearStop();
@@ -574,10 +575,10 @@ void RV5StageVM_Base::pipeline_memory()
         if (is_F_Instruction)
         { // FSW
             auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
-            std::cout << RED << "For float store we are writing:" << (int)ex_mem_reg_.freg2_data
+            std::cout << debug_color::red << "For float store we are writing:" << (int)ex_mem_reg_.freg2_data
                       << std::endl
                       << "To address:" << (int)ex_mem_reg_.alu_result << std::endl
-                      << RESET;
+                      << debug_color::reset;
             memory_controller_.WriteWord(ex_mem_reg_.alu_result,
                                          ex_mem_reg_.freg2_data & 0xFFFFFFFF);
             auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
@@ -1058,3 +1059,4 @@ void RV5StageVM_Base::print_pipeline_registers_debug()
 
     std::cout << "└──────────────────────────────────────────────────────────┘\n";
 }
+}//namespace Kites

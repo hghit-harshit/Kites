@@ -1,7 +1,7 @@
-#include "src/mainwindow.h"
+#include "ui/mainwindow/mainwindow.h"
 //#define DEBUG
 #ifdef DEBUG
-    #include "ui/debug/log_panel.h"
+    #include "ui/log_panel/log_panel.h"
 #endif
 
 #include <QApplication>

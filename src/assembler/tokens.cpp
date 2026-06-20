@@ -11,6 +11,8 @@
 #include <iostream>
 #include <string>
 
+namespace Kites
+{
 std::ostream &operator<<(std::ostream &os, const Token &token)
 {
     os << "Token(Type: " << tokenTypeToString(token.type) << ", Value: \"" << token.value
@@ -62,3 +64,4 @@ std::string tokenTypeToString(TokenType type)
         return "UNKNOWN     ";
     }
 }
+}// namespace Kites

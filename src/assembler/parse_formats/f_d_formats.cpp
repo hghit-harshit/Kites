@@ -7,12 +7,13 @@
 #include "assembler/parser.h"
 #include "common/instructions.h"
 #include "common/rounding_modes.h"
-#include "utils.h"
+#include "utils/utils.h"
 #include "vm/registers.h"
 
 
 #include <string>
-
+namespace Kites
+{
 bool Parser::parse_O_FPR_C_FPR_C_FPR_C_FPR()
 {
     if (peekToken(1).line_number == currentToken().line_number &&
@@ -502,3 +503,4 @@ bool Parser::parse_O_FPR_C_I_LP_GPR_RP()
     }
     return false;
 }
+}//namespace Kites

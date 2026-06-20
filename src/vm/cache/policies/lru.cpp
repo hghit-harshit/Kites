@@ -1,5 +1,7 @@
 #include "vm/cache/policies/lru.h"
 
+namespace Kites
+{
 std::string_view LRUReplacementPolicy::name() const
 {
     return "LRU";
@@ -60,3 +62,4 @@ void LRUReplacementPolicy::onEvict(const CacheLineView &line, const CacheRequest
     (void)request;
     (void)context;
 }
+}//namespace Kites

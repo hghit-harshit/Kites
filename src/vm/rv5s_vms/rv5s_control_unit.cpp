@@ -9,6 +9,8 @@
 
 #include <cstdint>
 
+namespace Kites
+{
 void RV5SControlUnit::SetControlSignals(uint32_t instruction)
 {
     // This is the "Main Control Unit" logic. It runs in the Decode stage.
@@ -114,7 +116,7 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
     switch (alu_op_)
     {
     case 0: // ALUOp=0 -> Must be ADD (for Loads, Stores, JALR, LUI, AUIPC).
-        return alu::AluOp::kAdd;
+        return alu::AluOp::ADD;
 
     case 1: // ALUOp=1 -> Decode for Branch comparison or I-type ALU.
         if (opcode == 0b1100011)
@@ -122,19 +124,19 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
             switch (funct3)
             {
             case 0b000:
-                return alu::AluOp::kSub; // BEQ, BNE
+                return alu::AluOp::SUB; // BEQ, BNE
             case 0b001:
-                return alu::AluOp::kSub;
+                return alu::AluOp::SUB;
             case 0b100:
-                return alu::AluOp::kSlt; // BLT
+                return alu::AluOp::SLT; // BLT
             case 0b101:
-                return alu::AluOp::kSlt; // BGE
+                return alu::AluOp::SLT; // BGE
             case 0b110:
-                return alu::AluOp::kSltu; // BLTU
+                return alu::AluOp::SLTU; // BLTU
             case 0b111:
-                return alu::AluOp::kSltu; // BGEU
+                return alu::AluOp::SLTU; // BGEU
             default:
-                return alu::AluOp::kNone;
+                return alu::AluOp::NONE;
             }
         }
         else
@@ -142,25 +144,25 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
             switch (funct3)
             {
             case 0b000:
-                return alu::AluOp::kAdd; // ADDI
+                return alu::AluOp::ADD; // ADDI
             case 0b010:
-                return alu::AluOp::kSlt; // SLTI
+                return alu::AluOp::SLT; // SLTI
             case 0b011:
-                return alu::AluOp::kSltu; // SLTIU
+                return alu::AluOp::SLTU; // SLTIU
             case 0b100:
-                return alu::AluOp::kXor; // XORI
+                return alu::AluOp::XOR; // XORI
             case 0b110:
-                return alu::AluOp::kOr; // ORI
+                return alu::AluOp::OR; // ORI
             case 0b111:
-                return alu::AluOp::kAnd; // ANDI
+                return alu::AluOp::AND; // ANDI
             case 0b001:
-                return alu::AluOp::kSll; // SLLI
+                return alu::AluOp::SLL; // SLLI
             case 0b101:                  // For SRAI/SRLI, we need to check funct7
                 if (funct7 == 0b0100000)
-                    return alu::AluOp::kSra; // SRAI
-                return alu::AluOp::kSrl;     // SRLI
+                    return alu::AluOp::SRA; // SRAI
+                return alu::AluOp::SRL;     // SRLI
             default:
-                return alu::AluOp::kNone;
+                return alu::AluOp::NONE;
             }
         }
         break;
@@ -172,31 +174,31 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
             {
             case 0b000:
                 if (opcode == 0b0011011)
-                    return alu::AluOp::kAddw; // ADDIW
+                    return alu::AluOp::ADDW; // ADDIW
                 if (funct7 == 0b0000001)
-                    return alu::AluOp::kMulw;
+                    return alu::AluOp::MULW;
                 if (funct7 == 0b0100000)
-                    return alu::AluOp::kSubw;
-                return alu::AluOp::kAddw;
+                    return alu::AluOp::SUBW;
+                return alu::AluOp::ADDW;
             case 0b001:
-                return alu::AluOp::kSllw; // SLLIW, SLLW
+                return alu::AluOp::SLLW; // SLLIW, SLLW
             case 0b100:
                 if (funct7 == 0b0000001)
-                    return alu::AluOp::kDivw;
+                    return alu::AluOp::DIVW;
                 break;
             case 0b101:
                 if (funct7 == 0b0000001)
-                    return alu::AluOp::kDivuw;
+                    return alu::AluOp::DIVUW;
                 if (funct7 == 0b0100000)
-                    return alu::AluOp::kSraw;
-                return alu::AluOp::kSrlw;
+                    return alu::AluOp::SRAW;
+                return alu::AluOp::SRLW;
             case 0b110:
                 if (funct7 == 0b0000001)
-                    return alu::AluOp::kRemw;
+                    return alu::AluOp::REMW;
                 break;
             case 0b111:
                 if (funct7 == 0b0000001)
-                    return alu::AluOp::kRemuw;
+                    return alu::AluOp::REMUW;
                 break;
             }
         }
@@ -205,40 +207,40 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
         {
         case 0b000: // ADD, SUB, MUL
             if (funct7 == 0b0000001)
-                return alu::AluOp::kMul;
+                return alu::AluOp::MUL;
             if (funct7 == 0b0100000)
-                return alu::AluOp::kSub;
-            return alu::AluOp::kAdd;
+                return alu::AluOp::SUB;
+            return alu::AluOp::ADD;
         case 0b001: // SLL, MULH
             if (funct7 == 0b0000001)
-                return alu::AluOp::kMulh;
-            return alu::AluOp::kSll;
+                return alu::AluOp::MULH;
+            return alu::AluOp::SLL;
         case 0b010: // SLT, MULHSU
             if (funct7 == 0b0000001)
-                return alu::AluOp::kMulhsu;
-            return alu::AluOp::kSlt;
+                return alu::AluOp::MULHSU;
+            return alu::AluOp::SLT;
         case 0b011: // SLTU, MULHU
             if (funct7 == 0b0000001)
-                return alu::AluOp::kMulhu;
-            return alu::AluOp::kSltu;
+                return alu::AluOp::MULHU;
+            return alu::AluOp::SLTU;
         case 0b100: // XOR, DIV
             if (funct7 == 0b0000001)
-                return alu::AluOp::kDiv;
-            return alu::AluOp::kXor;
+                return alu::AluOp::DIV;
+            return alu::AluOp::XOR;
         case 0b101: // SRL, SRA, DIVU
             if (funct7 == 0b0000001)
-                return alu::AluOp::kDivu;
+                return alu::AluOp::DIVU;
             if (funct7 == 0b0100000)
-                return alu::AluOp::kSra;
-            return alu::AluOp::kSrl;
+                return alu::AluOp::SRA;
+            return alu::AluOp::SRL;
         case 0b110: // OR, REM
             if (funct7 == 0b0000001)
-                return alu::AluOp::kRem;
-            return alu::AluOp::kOr;
+                return alu::AluOp::REM;
+            return alu::AluOp::OR;
         case 0b111: // AND, REMU
             if (funct7 == 0b0000001)
-                return alu::AluOp::kRemu;
-            return alu::AluOp::kAnd;
+                return alu::AluOp::REMUW;
+            return alu::AluOp::AND;
         }
         break;
 
@@ -376,16 +378,17 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
         switch (opcode)
         {
         case 0b1000011:
-            return (funct2 == 0b00) ? alu::AluOp::kFmadd_s : alu::AluOp::FMADD_D;
+            return (funct2 == 0b00) ? alu::AluOp::FMADD_S : alu::AluOp::FMADD_D;
         case 0b1000111:
-            return (funct2 == 0b00) ? alu::AluOp::kFmsub_s : alu::AluOp::FMSUB_D;
+            return (funct2 == 0b00) ? alu::AluOp::FMSUB_S : alu::AluOp::FMSUB_D;
         case 0b1001011:
-            return (funct2 == 0b00) ? alu::AluOp::kFnmadd_s : alu::AluOp::FNMADD_D;
+            return (funct2 == 0b00) ? alu::AluOp::FNMADD_S : alu::AluOp::FNMADD_D;
         case 0b1001111:
-            return (funct2 == 0b00) ? alu::AluOp::kFnmsub_s : alu::AluOp::FNMSUB_D;
+            return (funct2 == 0b00) ? alu::AluOp::FNMSUB_S : alu::AluOp::FNMSUB_D;
         }
         break;
     }
 
-    return alu::AluOp::kNone; // Safety default
+    return alu::AluOp::NONE; // Safety default
 }
+}//namespace Kites

@@ -30,11 +30,11 @@ qt_standard_project_setup()
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(SRC_DIR "src")
-set(INCLUDE_DIR "include")
+# set(INCLUDE_DIR "include")
 set(TEST_DIR "test")
 set(EXTERNAL_DIR "external")
 
-set(CMAKE_AUTOUIC_SEARCH_PATHS ${INCLUDE_DIR} ${SRC_DIR}/ui)
+set(CMAKE_AUTOUIC_SEARCH_PATHS  ${SRC_DIR}/ui)
 
 file(GLOB LUA_SRC_FILES CONFIGURE_DEPENDS "${EXTERNAL_DIR}/lua-5.5.0/src/*.c")
 # Exclude the standalone interpreter/compiler entry points.
@@ -51,7 +51,7 @@ file(GLOB_RECURSE SRC_FILES "${SRC_DIR}/*.cpp")
 file(GLOB_RECURSE TEST_FILES "${TEST_DIR}/*.cpp")
 file(GLOB_RECURSE UI_FILES "${SRC_DIR}/*.ui")
 file(GLOB_RECURSE HEADER_FILES
-    "${INCLUDE_DIR}/*.h"
+    # "${INCLUDE_DIR}/*.h"
     "${SRC_DIR}/*.h")
 
 list(APPEND SRC_FILES ${LUA_SRC_FILES})
@@ -74,9 +74,6 @@ endif()
 qt_add_executable(RISC_V_Simulator
     WIN32 MACOSX_BUNDLE
     main.cpp
-    src/ui/editortab.cpp
-    src/ui/kitestab.cpp
-    src/ui/registercontainer.cpp
     ${HEADER_FILES}
     ${SRC_FILES}
     ${UI_FILES}
@@ -92,9 +89,10 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE
 
 target_include_directories(${PROJECT_NAME} 
     PRIVATE 
-        ${INCLUDE_DIR} 
+        # ${INCLUDE_DIR} 
         "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_autogen/include"
-    ${EXTERNAL_DIR}/lua-5.5.0/src
+        ${SRC_DIR}
+        ${EXTERNAL_DIR}/lua-5.5.0/src
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE 
@@ -144,7 +142,7 @@ if(ENABLE_TESTS)
     ${TEST_FILES})
 
     target_include_directories(tests PRIVATE 
-    ${INCLUDE_DIR} 
+    # ${INCLUDE_DIR} 
     "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_autogen/include"
     ${EXTERNAL_DIR}/lua-5.5.0/src)
 
@@ -208,4 +206,3 @@ if(ENABLE_TESTS)
     )
     #add_test(NAME AllTests COMMAND test_run)
 endif()
-

@@ -8,6 +8,9 @@
 
 #include <cstdint>
 
+namespace Kites
+{
+
 bool ControlUnit::GetAluSrc() const
 {
     return alu_src_;
@@ -42,3 +45,4 @@ bool ControlUnit::GetBranch() const
 {
     return branch_;
 }
+}//namespace Kites

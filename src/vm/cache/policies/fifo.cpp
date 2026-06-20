@@ -1,5 +1,7 @@
 #include "vm/cache/policies/fifo.h"
 
+namespace Kites
+{
 std::string_view FIFOReplacementPolicy::name() const
 {
     return "FIFO";
@@ -71,3 +73,4 @@ void FIFOReplacementPolicy::onEvict(const CacheLineView &line, const CacheReques
     (void)request;
     (void)context;
 }
+}// namespace Kites

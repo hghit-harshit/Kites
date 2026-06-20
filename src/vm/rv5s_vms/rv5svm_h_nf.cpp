@@ -9,8 +9,8 @@
  */
 #include "vm/rv5s_vms/rv5svm_h_nf.h"
 #include "common/instructions.h"
-#include "config.h"
-#include "ui/processor_designs/rv5svm_h_nf_circuit_scene.h"
+#include "config/config.h"
+#include "ui/processor/processor_designs/rv5svm_h_nf_circuit_scene.h"
 #include "vm/alu.h"
 #include "vm/pipeline_registers.h"
 #include "vm/vm_base.h"
@@ -20,7 +20,8 @@
 #include <thread>
 #include <tuple>
 
-
+namespace Kites
+{
 // NOP instruction: ADDI x0, x0, 0
 constexpr uint32_t NOP = 0x00000013;
 
@@ -431,3 +432,4 @@ uint64_t RV5StageVM_H_NF::pipeline_execute_double()
     registers_.WriteCsr(0x003, fcsr_status);
     return alu_result;
 }
+}//namespace Kites

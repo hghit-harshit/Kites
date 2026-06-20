@@ -18,7 +18,8 @@
 #include <string>
 #include <utility>
 
-
+namespace Kites
+{
 Lexer::Lexer(std::string filename)
     : filename_(std::move(filename)), line_number_(0), column_number_(0), pos_(0)
 {
@@ -423,3 +424,4 @@ std::vector<Token> Lexer::getTokenList()
     tokens_.emplace_back(TokenType::EOF_, "", line_number_, column_number_);
     return tokens_;
 }
+}// namespace Kites

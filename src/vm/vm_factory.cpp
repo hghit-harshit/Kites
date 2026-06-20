@@ -10,6 +10,8 @@
 
 #include "vm/vm_factory.h"
 
+namespace Kites
+{
 std::unique_ptr<VmBase> VMFactory::createVM(VMType type)
 {
     auto &instance = getInstance();
@@ -20,3 +22,4 @@ std::unique_ptr<VmBase> VMFactory::createVM(VMType type)
     }
     throw std::runtime_error("VMFactory: Unknown VMType");
 }
+}//namespace Kites

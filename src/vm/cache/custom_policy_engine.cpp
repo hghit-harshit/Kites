@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <string_view>
 
+namespace Kites
+{
 extern "C"
 {
 #include "lauxlib.h"
@@ -287,3 +289,4 @@ void CustomPolicyEngine::callOptionalVoidFunction(const char *functionName,
                                  "' failed: " + message);
     }
 }
+}//namespace Kites

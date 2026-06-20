@@ -5,7 +5,7 @@
  */
 
 #include "vm/main_memory.h"
-#include "globals.h"
+#include "common/globals.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -18,7 +18,8 @@
 #include <stdexcept>
 #include <vector>
 
-
+namespace Kites
+{
 uint8_t Memory::Read(uint64_t address)
 {
     if (address >= memory_size_)
@@ -357,3 +358,4 @@ void Memory::printMemoryUsage() const
         }
     }
 }
+}//namespace Kites
