@@ -1,6 +1,7 @@
 #pragma once
 #include "ui/common/kitestab.h"
 #include "ui/register_table/registercontainer.h"
+#include "ui/theme/theme_manager.h"
 #include "profiler/profiler.h"
 #include "vm/vm_manager.h"
 #include <QColor>
@@ -37,14 +38,10 @@ class MainWindow : public QMainWindow
         ProcessorTabIndex,
         CacheTabIndex,
         CompilerTabIndex,
-        ProfilerTabIndex
-    };
+        ProfilerTabIndex,
+        TabCount
 
-    enum class Theme
-    {
-        Light,
-        Dark
-    }; // for now only two can add more in future
+    };
 
   public:
     MainWindow(QWidget *parent = nullptr);
@@ -58,9 +55,7 @@ class MainWindow : public QMainWindow
     void setUpSidebar();
     void setUpMenubar();
     void setUpTabs();
-    void setUpPalettes();
-    void disableToolBarButtons();
-    void toggleTheme(Theme theme);
+    void toggleTheme(ThemeType theme);
     bool tryParseAndLoadProgram();
     void run();
     void processorChangeDialog();
@@ -75,10 +70,10 @@ class MainWindow : public QMainWindow
     TabIndex           m_currentTabIndex   = TabIndex::EditorTabIndex;
 
     std::map<TabIndex, KitesTab *> m_tabs;
-    std::map<Theme, QPalette>      m_palettes;
   public slots:
     void vmChanged(const VMType &vmType); // this will catch the signal from processor dialog
     void runFinishedSlot();
+    void themeChangedSlot([[maybe_unused]]ThemeType theme);
     // void runErrorSlot();
   signals:
     void vmChangedSignal();

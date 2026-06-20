@@ -1,5 +1,4 @@
 #include "mainwindow.h"
-
 #include "assembler/assembler.h"
 #include "assembler/code_generator.h"
 #include "custom_pseudo_manager/custom_pseudo_manager.h"
@@ -17,6 +16,7 @@
 #include "ui_mainwindow.h"
 #include "vm/vm_base.h"
 #include "vm/vm_manager.h"
+#include "ui/theme/icon_manager.h"
 #include <QActionGroup>
 #include <QFileDialog>
 #include <QHBoxLayout>
@@ -33,8 +33,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     // ui->setuoUi(this);
     setWindowTitle("Kites RISC-V Simulator");
     setWindowIcon(QIcon(":/icons/kite.png"));
-    setUpPalettes();
-    toggleTheme(Theme::Dark);
+    toggleTheme(ThemeType::Dark);
     setupVmStateDirectory();
 
     // well run the vm in a separate thread to keep the ui responsive
@@ -64,12 +63,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(m_vmManager, &VMManager::vmStageChangedSignal, this,
             [this](const QMap<QString, QVariant> &vmState)
             {
-                // forward the signal to the processor tab and editor tab to highliht pc line
-                /* auto processorTab =
-                dynamic_cast<ProcessorTab*>(m_tabs[TabIndex::ProcessorTabIndex]); if(processorTab)
-                {
-                    processorTab->updateVMState(vmState);
-                } */
                 qDebug() << "MainWindow received vm state change signal";
                 auto editorTab = dynamic_cast<EditorTab *>(m_tabs[TabIndex::EditorTabIndex]);
                 if (editorTab)
@@ -81,7 +74,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
                     editorTab->highlightLines(editorLines, disassemblyLines);
                 }
             });
-
+    connect(&ThemeManager::getInstance(), &ThemeManager::themeChangedSignal, this, &MainWindow::themeChangedSlot);
     m_registerContainer = new RegisterContainer(this, m_vmManager->getRegisterFile());
     QWidget *central = new QWidget(this);
     QHBoxLayout *mainLayout = new QHBoxLayout(central);
@@ -134,11 +127,11 @@ void MainWindow::setUpToolBar()
     redoAction->setDisabled(true);
 
     // set toolbar icons (resources in :/icons)
-    runAction->setIcon(QIcon(":/icons/play.svg"));
-    pauseAction->setIcon(QIcon(":/icons/pause.svg"));
-    undoAction->setIcon(QIcon(":/icons/undo-dot.svg"));
-    redoAction->setIcon(QIcon(":/icons/redo-dot.svg"));
-    stepAction->setIcon(QIcon(":/icons/step.svg"));
+    runAction->setIcon(IconManager::getInstance().getIcon(Icon::Play));
+    pauseAction->setIcon(IconManager::getInstance().getIcon(Icon::Pause));
+    undoAction->setIcon(IconManager::getInstance().getIcon(Icon::Undo));
+    redoAction->setIcon(IconManager::getInstance().getIcon(Icon::Redo));
+    stepAction->setIcon(IconManager::getInstance().getIcon(Icon::Step));
     // tooltips for accessibility
     processorAction->setToolTip("Processor settings");
     runAction->setToolTip("Run program");
@@ -179,7 +172,7 @@ void MainWindow::setUpToolBar()
                     processorAction->setDisabled(true);
                     pauseAction->setEnabled(true);
                     runAction->setText("Stop");
-                    runAction->setIcon(QIcon(":/icons/stop.svg"));
+                    runAction->setIcon(IconManager::getInstance().getIcon(Icon::Stop));
                     runAction->setToolTip("Stop execution");
                     this->run();
                 }
@@ -187,7 +180,7 @@ void MainWindow::setUpToolBar()
                 {
                     // emit stopSignal();
                     runAction->setText("Run");
-                    runAction->setIcon(QIcon(":/icons/play.svg"));
+                    runAction->setIcon(IconManager::getInstance().getIcon(Icon::Play));
                     runAction->setToolTip("Run program");
                     m_vmManager->stop();
                 }
@@ -223,7 +216,7 @@ void MainWindow::setUpToolBar()
                 if (pauseAction->text() == "Pause")
                 {
                     pauseAction->setText("Resume");
-                    pauseAction->setIcon(QIcon(":/icons/resume.svg"));
+                    pauseAction->setIcon(IconManager::getInstance().getIcon(Icon::Resume));
                     pauseAction->setToolTip("Resume execution");
                     undoAction->setEnabled(true);
                     redoAction->setEnabled(true);
@@ -232,7 +225,7 @@ void MainWindow::setUpToolBar()
                 else
                 {
                     pauseAction->setText("Pause");
-                    pauseAction->setIcon(QIcon(":/icons/pause.svg"));
+                    pauseAction->setIcon(IconManager::getInstance().getIcon(Icon::Pause));
                     pauseAction->setToolTip("Pause execution");
                     undoAction->setDisabled(true);
                     redoAction->setDisabled(true);
@@ -245,7 +238,7 @@ void MainWindow::setUpToolBar()
             [this, pauseAction]()
             {
                 pauseAction->setText("Resume");
-                pauseAction->setIcon(QIcon(":/icons/resume.svg"));
+                pauseAction->setIcon(IconManager::getInstance().getIcon(Icon::Resume));
                 pauseAction->setToolTip("Resume execution");
             });
 
@@ -271,6 +264,7 @@ void MainWindow::setUpSidebar()
 
     QPalette p = m_sidebar->palette();
 
+    // TODO : get this from theme manager
     p.setColor(QPalette::Highlight, QColor("#2ecc71"));
     p.setColor(QPalette::HighlightedText, Qt::white);
 
@@ -340,8 +334,8 @@ void MainWindow::setUpMenubar()
     ///////////Help Menu///////////////////
     helpMenu->addAction(aboutAction);
 
-    connect(lightThemeAction, &QAction::triggered, this, [this]() { toggleTheme(Theme::Light); });
-    connect(darkThemeAction, &QAction::triggered, this, [this]() { toggleTheme(Theme::Dark); });
+    connect(lightThemeAction, &QAction::triggered, this, [this]() { toggleTheme(ThemeType::Light); });
+    connect(darkThemeAction, &QAction::triggered, this, [this]() { toggleTheme(ThemeType::Dark); });
 
     connect(openAction, &QAction::triggered, this,
             [this]()
@@ -529,14 +523,14 @@ void MainWindow::runFinishedSlot()
         if (action->text() == "Stop")
         {
             action->setText("Run");
-            action->setIcon(QIcon(":/icons/play.svg"));
+            action->setIcon(IconManager::getInstance().getIcon(Icon::Play));
             action->setToolTip("Run program");
             // when the program finishes we set the run button text back to run
         }
         if (action->text() == "Resume")
         {
             action->setText("Pause");
-            action->setIcon(QIcon(":/icons/pause.svg"));
+            action->setIcon(IconManager::getInstance().getIcon(Icon::Pause));
             action->setToolTip("Pause execution");
             // in case we stop while paused
         }
@@ -550,59 +544,50 @@ void MainWindow::runFinishedSlot()
     // we also reset the
 }
 
-void MainWindow::setUpPalettes()
+
+void MainWindow::toggleTheme(ThemeType theme)
 {
-
-    {
-        QPalette &p = m_palettes[Theme::Light];
-
-        // Active / normal groups
-        p.setColor(QPalette::Window, QColor(0xFF, 0xFF, 0xFF));
-        p.setColor(QPalette::WindowText, QColor(0x1A, 0x1A, 0x1A));
-        p.setColor(QPalette::Base, QColor(0xF5, 0xF5, 0xF5));
-        p.setColor(QPalette::AlternateBase, QColor(0xFF, 0xFF, 0xFF));
-        p.setColor(QPalette::ToolTipBase, QColor(0xFF, 0xFF, 0xFF));
-        p.setColor(QPalette::ToolTipText, QColor(0x1A, 0x1A, 0x1A));
-        p.setColor(QPalette::Text, QColor(0x1A, 0x1A, 0x1A));
-        p.setColor(QPalette::Button, QColor(0xF0, 0xF0, 0xF0));
-        p.setColor(QPalette::ButtonText, QColor(0x1A, 0x1A, 0x1A));
-        p.setColor(QPalette::Highlight, QColor(0x2A, 0x82, 0xDA));
-        p.setColor(QPalette::HighlightedText, QColor(0xFF, 0xFF, 0xFF));
-        p.setColor(QPalette::Link, QColor(0x2A, 0x82, 0xDA));
-
-        // Disabled group
-        p.setColor(QPalette::Disabled, QPalette::Window, QColor(0xEC, 0xEC, 0xEC));
-        p.setColor(QPalette::Disabled, QPalette::WindowText, QColor(0x96, 0x96, 0x96));
-        p.setColor(QPalette::Disabled, QPalette::Base, QColor(0xEC, 0xEC, 0xEC));
-        p.setColor(QPalette::Disabled, QPalette::Text, QColor(0x96, 0x96, 0x96));
-        p.setColor(QPalette::Disabled, QPalette::Button, QColor(0xDC, 0xDC, 0xDC));
-        p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(0x96, 0x96, 0x96));
-
-        p.setColor(QPalette::Inactive, QPalette::Highlight, Qt::transparent);
-        p.setColor(QPalette::Inactive, QPalette::HighlightedText, Qt::black);
-    }
-
+    ThemeManager::getInstance().setTheme(theme);
 }
 
-QString loadStyleSheet(const QString &path)
+void MainWindow::themeChangedSlot([[maybe_unused]]ThemeType theme)
 {
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    // we will update the icons here based on the theme
+    auto *toolbar = this->findChild<QToolBar *>();
+    if (toolbar)
     {
-        qWarning() << "ThemeManager: failed to load stylesheet:" << path;
-        return {};
+        for (QAction *action : toolbar->actions())
+        {
+            if (action->text() == "Run")
+            {
+                action->setIcon(IconManager::getInstance().getIcon(Icon::Play));
+            }
+            else if (action->text() == "Pause")
+            {
+                action->setIcon(IconManager::getInstance().getIcon(Icon::Pause));
+            }
+            else if (action->text() == "Resume")
+            {
+                action->setIcon(IconManager::getInstance().getIcon(Icon::Resume));
+            }
+            else if (action->text() == "Stop")
+            {
+                action->setIcon(IconManager::getInstance().getIcon(Icon::Stop));
+            }
+            else if (action->text() == "Undo")
+            {
+                action->setIcon(IconManager::getInstance().getIcon(Icon::Undo));
+            }
+            else if (action->text() == "Redo")
+            {
+                action->setIcon(IconManager::getInstance().getIcon(Icon::Redo));
+            }
+            else if (action->text() == "Step")
+            {
+                action->setIcon(IconManager::getInstance().getIcon(Icon::Step));
+            }
+        }
     }
-    return QString::fromUtf8(file.readAll());
-}
-
-void MainWindow::toggleTheme(Theme theme)
-{
-    QApplication::setPalette(m_palettes[theme]);
-
-    const QString path = (theme == Theme::Dark) ? QStringLiteral(":/themes/elegant_dark.qss")
-                                                : QStringLiteral(":/themes/aqua_light.qss");
-
-    qApp->setStyleSheet(loadStyleSheet(path));
 }
 
 MainWindow::~MainWindow()
