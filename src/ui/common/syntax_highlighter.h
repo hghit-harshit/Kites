@@ -2,8 +2,7 @@
 #include <QRegularExpression>
 #include <QSyntaxHighlighter>
 #include <QTextCharFormat>
-
-
+#include "ui/theme/theme_manager.h"
 namespace Kites
 {
 class SyntaxHighlighter : public QSyntaxHighlighter
@@ -14,14 +13,17 @@ class SyntaxHighlighter : public QSyntaxHighlighter
 
   protected:
     void highlightBlock(const QString &text) override;
-    void setTheme(bool isDarkMode);
-
+  public slots:
+    void themeChangedSlot([[maybe_unused]] ThemeType theme);
+    
   private:
     void setHighlightingRules();
+    void setInstructionHighlightingRules();
+    void setRegisterHighlightingRules();
     struct HighlightRule
     {
-        QRegularExpression pattern;
-        QTextCharFormat format;
+      QRegularExpression pattern;
+      SyntaxStyle style;
     };
 
     QVector<HighlightRule> m_highlightRules;

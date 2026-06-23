@@ -43,6 +43,11 @@ QColor ThemeManager::getTextColor() const
     return m_themes[static_cast<size_t>(m_currentThemeType)].textColor;
 }
 
+QTextCharFormat ThemeManager::getSyntaxFormat(SyntaxStyle style) const
+{
+    return m_themes[static_cast<size_t>(m_currentThemeType)].syntaxFormats[static_cast<int>(style)];
+}
+
 QString ThemeManager::loadStyleSheet(const QString &path)
 {
     QFile file(path);
@@ -93,6 +98,21 @@ void ThemeManager::setUpThemes()
         p.setColor(QPalette::Disabled, QPalette::Text,       QColor("#8E8E93"));
         p.setColor(QPalette::Disabled, QPalette::Button,     QColor("#F5F5F5"));
         p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor("#8E8E93"));
+
+        auto& syntaxFormats = theme.syntaxFormats;
+        syntaxFormats[static_cast<int>(SyntaxStyle::R32Instruction)].setForeground(QColor("#0000FF"));  // Blue
+        syntaxFormats[static_cast<int>(SyntaxStyle::R32Instruction)].setFontWeight(QFont::Bold);
+        syntaxFormats[static_cast<int>(SyntaxStyle::R64Instruction)].setForeground(QColor("#00FFFF"));  // Cyan
+        syntaxFormats[static_cast<int>(SyntaxStyle::R64Instruction)].setFontWeight(QFont::Bold);
+        syntaxFormats[static_cast<int>(SyntaxStyle::FInstruction)].setForeground(QColor("#FF00FF"));  // Magenta
+        syntaxFormats[static_cast<int>(SyntaxStyle::FInstruction)].setFontWeight(QFont::Bold);
+        syntaxFormats[static_cast<int>(SyntaxStyle::DInstruction)].setForeground(QColor("#FFFF00"));  // Yellow
+        syntaxFormats[static_cast<int>(SyntaxStyle::DInstruction)].setFontWeight(QFont::Bold);
+        syntaxFormats[static_cast<int>(SyntaxStyle::Register)].setForeground(QColor("#800080"));
+        syntaxFormats[static_cast<int>(SyntaxStyle::Comment)].setForeground(QColor("#008000"));  // Green
+        syntaxFormats[static_cast<int>(SyntaxStyle::Label)].setForeground(QColor("#FF4500"));  // OrangeRed
+        syntaxFormats[static_cast<int>(SyntaxStyle::NumberLiteral)].setForeground(QColor("#FF0000"));  // Red
+        syntaxFormats[static_cast<int>(SyntaxStyle::PseudoInstruction)].setForeground(QColor("#FF8C00"));  // DarkOrange
     }
     {
         ThemeData &theme = m_themes[static_cast<size_t>(ThemeType::Dark)];
@@ -128,29 +148,20 @@ void ThemeManager::setUpThemes()
         p.setColor(QPalette::Disabled, QPalette::Button,     QColor("#151515"));
         p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor("#808080"));
 
-        // p.setColor(QPalette::Window, QColor("#FFFFFF"));
-        // p.setColor(QPalette::WindowText, QColor("#1A1A1A"));
-        // p.setColor(QPalette::Base, QColor("#F5F5F5"));
-        // p.setColor(QPalette::AlternateBase, QColor("#FFFFFF"));
-        // p.setColor(QPalette::ToolTipBase, QColor("#FFFFFF"));
-        // p.setColor(QPalette::ToolTipText, QColor("#1A1A1A"));
-        // p.setColor(QPalette::Text, QColor("#1A1A1A"));
-        // p.setColor(QPalette::Button, QColor("#F0F0F0"));
-        // p.setColor(QPalette::ButtonText, QColor("#1A1A1A"));
-        // p.setColor(QPalette::Highlight, QColor("#2A82DA"));
-        // p.setColor(QPalette::HighlightedText, QColor("#FFFFFF"));
-        // p.setColor(QPalette::Link, QColor("#2A82DA"));
-
-        // // Disabled group
-        // p.setColor(QPalette::Disabled, QPalette::Window, QColor("#ECECEC"));
-        // p.setColor(QPalette::Disabled, QPalette::WindowText, QColor("#969696"));
-        // p.setColor(QPalette::Disabled, QPalette::Base, QColor("#ECECEC"));
-        // p.setColor(QPalette::Disabled, QPalette::Text, QColor("#969696"));
-        // p.setColor(QPalette::Disabled, QPalette::Button, QColor("#DCDCDC"));
-        // p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor("#969696"));
-
-        // p.setColor(QPalette::Inactive, QPalette::Highlight, Qt::transparent);
-        // p.setColor(QPalette::Inactive, QPalette::HighlightedText, Qt::black);
+        auto& syntaxFormats = theme.syntaxFormats;
+        syntaxFormats[static_cast<int>(SyntaxStyle::R32Instruction)].setForeground(QColor("#569CD6")); // Blue
+        syntaxFormats[static_cast<int>(SyntaxStyle::R32Instruction)].setFontWeight(QFont::Bold);
+        syntaxFormats[static_cast<int>(SyntaxStyle::R64Instruction)].setForeground(QColor("#4FC1FF")); // Light Cyan
+        syntaxFormats[static_cast<int>(SyntaxStyle::R64Instruction)].setFontWeight(QFont::Bold);
+        syntaxFormats[static_cast<int>(SyntaxStyle::FInstruction)].setForeground(QColor("#C586C0")); // Purple
+        syntaxFormats[static_cast<int>(SyntaxStyle::FInstruction)].setFontWeight(QFont::Bold);
+        syntaxFormats[static_cast<int>(SyntaxStyle::DInstruction)].setForeground(QColor("#DCDCAA")); // Soft Yellow
+        syntaxFormats[static_cast<int>(SyntaxStyle::DInstruction)].setFontWeight(QFont::Bold);
+        syntaxFormats[static_cast<int>(SyntaxStyle::Register)].setForeground(QColor("#9CDCFE")); // Light Blue
+        syntaxFormats[static_cast<int>(SyntaxStyle::Comment)].setForeground(QColor("#6A9955")); // Green
+        syntaxFormats[static_cast<int>(SyntaxStyle::Label)].setForeground(QColor("#D7BA7D")); // Gold
+        syntaxFormats[static_cast<int>(SyntaxStyle::NumberLiteral)].setForeground(QColor("#B5CEA8")); // Pale Green
+        syntaxFormats[static_cast<int>(SyntaxStyle::PseudoInstruction)].setForeground(QColor("#FF8C00")); // Dark Orange
     }
 }
 

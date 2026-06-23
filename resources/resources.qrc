@@ -4,5 +4,6 @@
         <file>circuit_designs/circuit_designs.qrc</file>
         <file>fonts/fonts.qrc</file>
         <file>themes/themes.qrc</file>
+        <file>instructions/instructions.qrc</file>
     </qresource>
 </RCC>

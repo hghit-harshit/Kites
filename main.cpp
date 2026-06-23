@@ -1,6 +1,5 @@
 #include "ui/mainwindow/mainwindow.h"
-//#define DEBUG
-#ifdef DEBUG
+#ifdef LOG_PANEL
     #include "ui/log_panel/log_panel.h"
 #endif
 
@@ -21,7 +20,7 @@ int main(int argc, char *argv[])
     // Register Qt metatype for queued signal/slot delivery of QList<QString>
     qRegisterMetaType<QList<QString>>("QList<QString>");
 
-    #ifdef DEBUG
+    #ifdef LOG_PANEL
     qRegisterMetaType<QtMsgType>("QtMsgType");
     auto logPanel = new Kites::LogPanel();
     qInstallMessageHandler(Kites::LogPanel::logHandler);

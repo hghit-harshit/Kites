@@ -4,6 +4,7 @@
 #include <QString>
 #include <QColor>
 #include <array>
+#include <QTextCharFormat>
 namespace Kites
 {
 
@@ -13,6 +14,28 @@ enum class ThemeType
     Dark,
     ThemeTypeCount
 };
+
+#define ENUM_FROM_STRING_LIST \
+X(R32Instruction, "R32Instruction")\
+X(R64Instruction, "R64Instruction")\
+X(MInstruction, "MInstruction")\
+X(FInstruction, "FInstruction")\
+X(DInstruction, "DInstruction")\
+X(PseudoInstruction, "PseudoInstruction")\
+
+enum class SyntaxStyle
+{
+    #define X(enumValue, stringValue) enumValue,
+    ENUM_FROM_STRING_LIST 
+    //wow this magic!!
+    #undef X
+    Register,
+    Comment,
+    Label,
+    NumberLiteral,
+    SyntaxStyleCount
+};
+
 
 struct ThemeData
 {
@@ -27,6 +50,8 @@ struct ThemeData
 
     QColor cacheHitColor;
     QColor cacheMissColor;
+
+    std::array<QTextCharFormat, static_cast<int>(SyntaxStyle::SyntaxStyleCount)> syntaxFormats;
 };
 
 /**
@@ -45,6 +70,7 @@ public:
     void setTheme(ThemeType theme);
     QColor getIconColor()const;
     QColor getTextColor()const;
+    QTextCharFormat getSyntaxFormat(SyntaxStyle style)const;
 signals:
     void themeChangedSignal(ThemeType theme);
 
