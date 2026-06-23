@@ -16,6 +16,7 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Network)
 # tests
 option(ENABLE_TESTS "Build tests" OFF)
 option(ENABLE_COVERAGE "Enable coverage instrumentation for tests" OFF)
+option(LOG_PANEL "Enable LogPanel mode" OFF) # will enable log_panel
 if(ENABLE_TESTS)
     include(FetchContent)
 
@@ -63,6 +64,7 @@ resources/circuit_designs/circuit_designs.qrc
 resources/icons/icons.qrc
 resources/fonts/fonts.qrc
 resources/themes/themes.qrc
+resources/instructions/instructions.qrc
 )
 ##############################################
 
@@ -112,6 +114,10 @@ target_link_libraries(RISC_V_Simulator
         Qt::Widgets
         Qt::Network
 )
+
+if(LOG_PANEL)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE LOG_PANEL)
+endif()
 
 include(GNUInstallDirs)
 

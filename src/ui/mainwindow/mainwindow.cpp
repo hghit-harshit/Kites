@@ -74,7 +74,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
                     editorTab->highlightLines(editorLines, disassemblyLines);
                 }
             });
-    connect(&ThemeManager::getInstance(), &ThemeManager::themeChangedSignal, this, &MainWindow::themeChangedSlot);
+    connect(&ThemeManager::getInstance(), &ThemeManager::themeChangedSignal, 
+            this, &MainWindow::themeChangedSlot);
+            
     m_registerContainer = new RegisterContainer(this, m_vmManager->getRegisterFile());
     QWidget *central = new QWidget(this);
     QHBoxLayout *mainLayout = new QHBoxLayout(central);
