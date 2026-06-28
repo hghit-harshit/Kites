@@ -213,7 +213,7 @@ void RVSSVM::Run()
 
 void RVSSVM::Fetch()
 {
-    current_instruction_ = memory_controller_.ReadInstruction(program_counter_);
+    current_instruction_ = memory_controller_.readInstruction(program_counter_);
     UpdateProgramCounter(4);
 }
 
@@ -580,21 +580,21 @@ void RVSSVM::HandleSyscall()
 
             for (size_t i = 0; i < length; ++i)
             {
-                old_bytes_vec[i] = memory_controller_.ReadByte(buffer_address + i);
+                old_bytes_vec[i] = memory_controller_.readByte(buffer_address + i);
             }
 
             for (size_t i = 0; i < input.size() && i < length; ++i)
             {
-                memory_controller_.WriteByte(buffer_address + i, static_cast<uint8_t>(input[i]));
+                memory_controller_.writeByte(buffer_address + i, static_cast<uint8_t>(input[i]));
             }
             if (input.size() < length)
             {
-                memory_controller_.WriteByte(buffer_address + input.size(), '\0');
+                memory_controller_.writeByte(buffer_address + input.size(), '\0');
             }
 
             for (size_t i = 0; i < length; ++i)
             {
-                new_bytes_vec[i] = memory_controller_.ReadByte(buffer_address + i);
+                new_bytes_vec[i] = memory_controller_.readByte(buffer_address + i);
             }
 
             current_delta_.memory_changes.push_back({buffer_address, old_bytes_vec, new_bytes_vec});
@@ -629,7 +629,7 @@ void RVSSVM::HandleSyscall()
             uint64_t bytes_printed = 0;
             for (uint64_t i = 0; i < length; ++i)
             {
-                char c = memory_controller_.ReadByte(buffer_address + i);
+                char c = memory_controller_.readByte(buffer_address + i);
                 // if (c == '\0') {
                 //     break;
                 // }
@@ -692,39 +692,39 @@ void RVSSVM::WriteMemory()
         {
         case 0b000:
         { // LB
-            memory_result_ = static_cast<int8_t>(memory_controller_.ReadByte(execution_result_));
+            memory_result_ = static_cast<int8_t>(memory_controller_.readByte(execution_result_));
             break;
         }
         case 0b001:
         { // LH
             memory_result_ =
-                static_cast<int16_t>(memory_controller_.ReadHalfWord(execution_result_));
+                static_cast<int16_t>(memory_controller_.readHalfWord(execution_result_));
             break;
         }
         case 0b010:
         { // LW
-            memory_result_ = static_cast<int32_t>(memory_controller_.ReadWord(execution_result_));
+            memory_result_ = static_cast<int32_t>(memory_controller_.readWord(execution_result_));
             break;
         }
         case 0b011:
         { // LD
-            memory_result_ = memory_controller_.ReadDoubleWord(execution_result_);
+            memory_result_ = memory_controller_.readDoubleWord(execution_result_);
             break;
         }
         case 0b100:
         { // LBU
-            memory_result_ = static_cast<uint8_t>(memory_controller_.ReadByte(execution_result_));
+            memory_result_ = static_cast<uint8_t>(memory_controller_.readByte(execution_result_));
             break;
         }
         case 0b101:
         { // LHU
             memory_result_ =
-                static_cast<uint16_t>(memory_controller_.ReadHalfWord(execution_result_));
+                static_cast<uint16_t>(memory_controller_.readHalfWord(execution_result_));
             break;
         }
         case 0b110:
         { // LWU
-            memory_result_ = static_cast<uint32_t>(memory_controller_.ReadWord(execution_result_));
+            memory_result_ = static_cast<uint32_t>(memory_controller_.readWord(execution_result_));
             break;
         }
         }
@@ -743,9 +743,9 @@ void RVSSVM::WriteMemory()
         case 0b000:
         { // SB
             addr = execution_result_;
-            old_bytes_vec.push_back(memory_controller_.ReadByte(addr));
-            memory_controller_.WriteByte(execution_result_, registers_.ReadGpr(rs2) & 0xFF);
-            new_bytes_vec.push_back(memory_controller_.ReadByte(addr));
+            old_bytes_vec.push_back(memory_controller_.readByte(addr));
+            memory_controller_.writeByte(execution_result_, registers_.ReadGpr(rs2) & 0xFF);
+            new_bytes_vec.push_back(memory_controller_.readByte(addr));
             break;
         }
         case 0b001:
@@ -753,12 +753,12 @@ void RVSSVM::WriteMemory()
             addr = execution_result_;
             for (size_t i = 0; i < 2; ++i)
             {
-                old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+                old_bytes_vec.push_back(memory_controller_.readByte(addr + i));
             }
-            memory_controller_.WriteHalfWord(execution_result_, registers_.ReadGpr(rs2) & 0xFFFF);
+            memory_controller_.writeHalfWord(execution_result_, registers_.ReadGpr(rs2) & 0xFFFF);
             for (size_t i = 0; i < 2; ++i)
             {
-                new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+                new_bytes_vec.push_back(memory_controller_.readByte(addr + i));
             }
             break;
         }
@@ -767,12 +767,12 @@ void RVSSVM::WriteMemory()
             addr = execution_result_;
             for (size_t i = 0; i < 4; ++i)
             {
-                old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+                old_bytes_vec.push_back(memory_controller_.readByte(addr + i));
             }
-            memory_controller_.WriteWord(execution_result_, registers_.ReadGpr(rs2) & 0xFFFFFFFF);
+            memory_controller_.writeWord(execution_result_, registers_.ReadGpr(rs2) & 0xFFFFFFFF);
             for (size_t i = 0; i < 4; ++i)
             {
-                new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+                new_bytes_vec.push_back(memory_controller_.readByte(addr + i));
             }
             break;
         }
@@ -781,13 +781,13 @@ void RVSSVM::WriteMemory()
             addr = execution_result_;
             for (size_t i = 0; i < 8; ++i)
             {
-                old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+                old_bytes_vec.push_back(memory_controller_.readByte(addr + i));
             }
-            memory_controller_.WriteDoubleWord(execution_result_,
+            memory_controller_.writeDoubleWord(execution_result_,
                                                registers_.ReadGpr(rs2) & 0xFFFFFFFFFFFFFFFF);
             for (size_t i = 0; i < 8; ++i)
             {
-                new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+                new_bytes_vec.push_back(memory_controller_.readByte(addr + i));
             }
             break;
         }
@@ -806,7 +806,7 @@ void RVSSVM::WriteMemoryFloat()
 
     if (control_unit_.GetMemRead())
     { // FLW
-        memory_result_ = memory_controller_.ReadWord(execution_result_);
+        memory_result_ = memory_controller_.readWord(execution_result_);
     }
 
     uint64_t addr = 0;
@@ -818,14 +818,14 @@ void RVSSVM::WriteMemoryFloat()
         addr = execution_result_;
         for (size_t i = 0; i < 4; ++i)
         {
-            old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+            old_bytes_vec.push_back(memory_controller_.readByte(addr + i));
         }
         uint32_t val = registers_.ReadFpr(rs2) & 0xFFFFFFFF;
-        memory_controller_.WriteWord(execution_result_, val);
+        memory_controller_.writeWord(execution_result_, val);
         // new_bytes_vec.push_back(memory_controller_.ReadByte(addr));
         for (size_t i = 0; i < 4; ++i)
         {
-            new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+            new_bytes_vec.push_back(memory_controller_.readByte(addr + i));
         }
     }
 
@@ -841,7 +841,7 @@ void RVSSVM::WriteMemoryDouble()
 
     if (control_unit_.GetMemRead())
     { // FLD
-        memory_result_ = memory_controller_.ReadDoubleWord(execution_result_);
+        memory_result_ = memory_controller_.readDoubleWord(execution_result_);
     }
 
     uint64_t addr = 0;
@@ -853,12 +853,12 @@ void RVSSVM::WriteMemoryDouble()
         addr = execution_result_;
         for (size_t i = 0; i < 8; ++i)
         {
-            old_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+            old_bytes_vec.push_back(memory_controller_.readByte(addr + i));
         }
-        memory_controller_.WriteDoubleWord(execution_result_, registers_.ReadFpr(rs2));
+        memory_controller_.writeDoubleWord(execution_result_, registers_.ReadFpr(rs2));
         for (size_t i = 0; i < 8; ++i)
         {
-            new_bytes_vec.push_back(memory_controller_.ReadByte(addr + i));
+            new_bytes_vec.push_back(memory_controller_.readByte(addr + i));
         }
     }
 
@@ -1266,7 +1266,7 @@ void RVSSVM::Undo()
     {
         for (size_t i = 0; i < change.old_bytes_vec.size(); ++i)
         {
-            memory_controller_.WriteByte(change.address + i, change.old_bytes_vec[i]);
+            memory_controller_.writeByte(change.address + i, change.old_bytes_vec[i]);
         }
     }
 
@@ -1338,7 +1338,7 @@ void RVSSVM::Redo()
     {
         for (size_t i = 0; i < change.new_bytes_vec.size(); ++i)
         {
-            memory_controller_.WriteByte(change.address + i, change.new_bytes_vec[i]);
+            memory_controller_.writeByte(change.address + i, change.new_bytes_vec[i]);
         }
     }
 
@@ -1363,7 +1363,7 @@ void RVSSVM::Reset()
     cycle_s_ = 0;
     last_breakpoint_pc_ = UINT64_MAX; // Clear breakpoint tracking on reset
     registers_.Reset();
-    memory_controller_.Reset();
+    memory_controller_.reset();
     control_unit_.Reset();
     branch_flag_ = false;
     next_pc_ = 0;

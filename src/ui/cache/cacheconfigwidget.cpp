@@ -83,15 +83,15 @@ void CacheConfigWidget::OnCustomPolicyClicked()
 CacheConfig CacheConfigWidget::GetConfig() const
 {
     CacheConfig config;
-    config.num_lines = 1ULL << ui->linesSpinBox->value();
-    config.block_size = 1ULL << ui->wordsSpinBox->value();
-    config.num_ways = 1ULL << ui->waysSpinBox->value();
-    config.write_policy = ui->writeHitComboBox->currentIndex() == 0 ? WritePolicy::WriteThrough
+    config.lineCount = 1ULL << ui->linesSpinBox->value();
+    config.lineSizeInBytes = 1ULL << ui->wordsSpinBox->value();
+    config.wayCount = 1ULL << ui->waysSpinBox->value();
+    config.writePolicy = ui->writeHitComboBox->currentIndex() == 0 ? WritePolicy::WriteThrough
                                                                     : WritePolicy::WriteBack;
-    config.allocation_policy = ui->writeMissComboBox->currentIndex() == 0
+    config.allocationPolicy = ui->writeMissComboBox->currentIndex() == 0
                                    ? AllocationPolicy::WriteAllocate
                                    : AllocationPolicy::NoWriteAllocate;
-    config.replacement_policy = static_cast<ReplacementPolicy>(ui->repPolComboBox->currentIndex());
+    config.replacementPolicy = static_cast<ReplacementPolicy>(ui->repPolComboBox->currentIndex());
     return config;
 }
 
@@ -154,12 +154,12 @@ void CacheConfigWidget::CacheStatsUpdated(CacheStats newStats)
                         (size_t(1) << ui->wordsSpinBox->value()) *
                         (size_t(1) << ui->waysSpinBox->value());
     ui->sizeLineEdit->setText(QString::number(size) + " bytes");
-    ui->hitsLineEdit->setText(QString::number(newStats.hits));
-    ui->missesLineEdit->setText(QString::number(newStats.misses));
-    ui->writeBackLineEdit->setText(QString::number(newStats.writeBacks));
-    const size_t totalAccesses = newStats.hits + newStats.misses;
+    ui->hitsLineEdit->setText(QString::number(newStats.hitCount));
+    ui->missesLineEdit->setText(QString::number(newStats.missCount));
+    ui->writeBackLineEdit->setText(QString::number(newStats.writeBackCount));
+    const size_t totalAccesses = newStats.hitCount + newStats.missCount;
     const double hitrate =
-        totalAccesses > 0 ? static_cast<double>(newStats.hits) / totalAccesses * 100.0 : 0.0;
+        totalAccesses > 0 ? static_cast<double>(newStats.hitCount) / totalAccesses * 100.0 : 0.0;
     ui->hitrateLineEdit->setText(QString::number(hitrate, 'f', 2) + " %");
 }
 

@@ -13,173 +13,154 @@
 #include "policies/custom_policy.h"
 #include "vm/main_memory.h"
 #include <QObject>
-
+#include "vm/memory_device.h"
 
 namespace Kites
 {
-class DirectMapCache;
-
-static constexpr size_t LINE_SIZE = 8;                      // 8 bytes per cache line
-static constexpr size_t CACHE_SIZE = 2;                     // 128 bytes of cache
-static constexpr size_t NUM_LINES = CACHE_SIZE / LINE_SIZE; // Number of cache lines
 
 struct CacheLine
 {
-    bool valid = false;
-    bool dirty = false;
-    uint64_t tag = 0;
+    bool     valid = false;
+    bool     dirty = false;
+    uint64_t tag   = 0;
 
     // to be used by replacement policies
-    uint64_t age = 0;        // incremented on each access; used by policies
-    uint64_t insertTime = 0; // set when line is brought in
-    uint64_t lastAccess = 0; // updated on every access
-    uint64_t frequency = 0;  // access frequency counter
+    uint64_t age        = 0;  // incremented on each access; used by policies
+    uint64_t insertTime = 0;  // set when line is brought in
+    uint64_t lastAccess = 0;  // updated on every access
+    uint64_t frequency  = 0;  // access frequency counter
 
     std::vector<uint8_t> data{};
 
-    explicit CacheLine(size_t block_size) : data(block_size * 4, 0)
+    explicit CacheLine(size_t lineSizeInBytes) : data(lineSizeInBytes, 0)
     {
     }
 };
 
-class Cache : public QObject
+//default values for cache configuration
+//maybe we will move its location later on 
+namespace default_cache_config
+{
+    constexpr size_t lineSizeinBytes              = 64;
+    constexpr size_t setCount                     = 1;
+    constexpr size_t wayCount                     = 4;
+    constexpr WritePolicy writePolicy             = WritePolicy::WriteThrough;
+    constexpr AllocationPolicy allocationPolicy   = AllocationPolicy::WriteAllocate;
+    constexpr ReplacementPolicy replacementPolicy = ReplacementPolicy::LRU;
+}
+
+class Cache : public QObject, public MemoryDevice
 {
     Q_OBJECT
-  public:
+public:
     // When next level is memory
-    Cache(Memory &memory, size_t num_sets = 1, size_t block_size = 4, size_t num_ways = 1,
-          WritePolicy write_policy = WritePolicy::WriteThrough,
-          AllocationPolicy allocation_policy = AllocationPolicy::WriteAllocate,
-          ReplacementPolicy replacement_policy = ReplacementPolicy::LRU);
+    Cache(MemoryDevice &memory, size_t setCount = default_cache_config::setCount, 
+		size_t lineSizeInBytes = default_cache_config::lineSizeinBytes, 
+		size_t wayCount = default_cache_config::wayCount,
+        WritePolicy writePolicy = default_cache_config::writePolicy,
+        AllocationPolicy allocationPolicy = default_cache_config::allocationPolicy,
+        ReplacementPolicy replacementPolicy = default_cache_config::replacementPolicy);
+        
+    Cache (const Cache &) = delete; // explicitly delete copy constructor
 
-    // When next level is another cache
-    Cache(Cache &next_level_cache, size_t num_sets = 1, size_t block_size = 4, size_t num_ways = 1,
-          WritePolicy write_policy = WritePolicy::WriteThrough,
-          AllocationPolicy allocation_policy = AllocationPolicy::WriteAllocate,
-          ReplacementPolicy replacement_policy = ReplacementPolicy::LRU);
 
-    void Reconfigure(CacheConfig new_config);
+    void reconfigure(CacheConfig newConfig);
 
     // void BringInCache(uint64_t address);
 
     // public read write interface
-    void WriteByte(uint64_t address, uint8_t value);
-    void WriteHalfWord(uint64_t address, uint16_t value);
-    void WriteWord(uint64_t address, uint32_t value);
-    void WriteDoubleWord(uint64_t address, uint64_t value);
+    void writeByte(uint64_t address, uint8_t value) override;
+    void writeHalfWord(uint64_t address, uint16_t value) override;
+    void writeWord(uint64_t address, uint32_t value) override;
+    void writeDoubleWord(uint64_t address, uint64_t value) override;
 
-    uint8_t ReadByte(uint64_t address);
-    uint16_t ReadHalfWord(uint64_t address);
-    uint32_t ReadWord(uint64_t address);
-    uint64_t ReadDoubleWord(uint64_t address);
+    //void writeFloat(uint64_t address, float value) override;
+    //void writeDouble(uint64_t address, double value) override;
 
-    void Reset();
-    void Flush(); // write back all dirty lines to memory and and invalidate all lines in cache
+    uint8_t readByte(uint64_t address);
+    uint16_t readHalfWord(uint64_t address);
+    uint32_t readWord(uint64_t address);
+    uint64_t readDoubleWord(uint64_t address);
+    
+    float readFloat(uint64_t address);
+    double readDouble(uint64_t address);
+    void reset();
+    void flush(); // write back all dirty lines to memory and and invalidate all lines in cache
 
     // Statistics
-    size_t GetHits() const
-    {
-        return hits_;
-    }
-    size_t GetMisses() const
-    {
-        return misses_;
-    }
-    double GetHitRate() const
-    {
-        size_t total = hits_ + misses_;
-        return total > 0 ? static_cast<double>(hits_) / total : 0.0;
-    }
-    double GetMissRate() const
-    {
-        size_t total = hits_ + misses_;
-        return total > 0 ? static_cast<double>(misses_) / total : 0.0;
-    }
-    void UpdateStats();
+    [[nodiscard]]size_t getHitCount()  const;
+    [[nodiscard]]size_t getMissCount() const;
+    [[nodiscard]]double getHitRate()   const;
+    [[nodiscard]]double getMissRate()  const;
+    [[nodiscard]]size_t getSetCount()  const;
+    [[nodiscard]]size_t getWayCount()  const;
+    [[nodiscard]]size_t getLineSizeInBytes() const;
 
-    size_t GetNumSets() const
-    {
-        return num_sets_;
-    }
-    size_t GetNumWays() const
-    {
-        return num_ways_;
-    }
-    size_t GetBlockSize() const
-    {
-        return block_size_;
-    }
+    void updateStats();
 
-    const CacheLine &GetCacheLine(size_t set_index, size_t way_index) const;
-  public slots:
-    void LoadCustomPolicyScript(const std::string &path);
+    const CacheLine &getCacheLine(size_t setIndex, size_t wayIndex) const;
+public slots:
+    void loadCustomPolicyScript(const std::string &path);
 
-  private:
+private:
     // Next Level Helper Functions
-    uint8_t ReadFromNextLevel(uint64_t address);
-    void WriteByteToNextLevel(uint64_t address, uint8_t value);
-    uint64_t SizeofNextLevel() const;
-
+    // std::vector<uint8_t> getLineFromNextLevel(uint64_t address) const;
+    // void writeLineToNextLevel(uint64_t address, const std::vector<uint8_t>& data) const;
+    
+    std::span<const uint8_t> readLine(uint64_t address, size_t lineSize) override;
+    void writeLine(uint64_t address, std::span<const uint8_t> data) override;
+    
     // Address Decomposition Helper Functions
-    inline uint64_t GetTag(uint64_t address) const
-    {
-        return address >> (offset_bits_ + set_bits_);
-    }
-    inline size_t GetSetIndex(uint64_t address) const
-    {
-        return static_cast<size_t>(address >> offset_bits_) & set_mask_;
-    }
-    inline size_t GetOffset(uint64_t address) const
-    {
-        return static_cast<size_t>(address & offset_mask_);
-    }
+    uint64_t getTag(uint64_t address) const;
+    size_t getSetIndex(uint64_t address) const;
+    size_t getOffset(uint64_t address) const;
 
     // Cache Operations Helper Functions
-    size_t FindWay(size_t set_index, uint64_t tag) const;
-    void TouchWay(size_t set_index, size_t way_index);
-    size_t EvictWay(size_t set_index);
-    void WriteBack(size_t set_index, size_t way_index);
-    void BringIn(uint64_t address, size_t set_index, size_t way_index);
-    bool ReadByteAccess(uint64_t address, uint8_t &value, bool count_stats);
-    bool WriteByteAccess(uint64_t address, uint8_t value, bool count_stats);
-
-    uint8_t Read(uint64_t address);
-    template <typename T> T ReadGeneric(uint64_t address);
-    template <typename T> void WriteCacheGeneric(uint64_t address, T value);
+    size_t findWay(size_t setIndex, uint64_t tag) const;
+    void touchWay(size_t setIndex, size_t wayIndex);
+    size_t evictCacheLine(size_t setIndex);
+    void writeBack(size_t setIndex, size_t wayIndex);
+    void bringIn(uint64_t address, size_t setIndex, size_t wayIndex);
+    // These functions are used to read and write
+    uint8_t getByteFromCache(uint64_t address);  
+    void putByteInCache(uint64_t address, uint8_t value);
+    template <typename T> bool isHit(uint64_t address) const;
+    template <typename T> void touchLines(uint64_t address);
+    template <typename T> void bringInLines(uint64_t address);
+    template <typename T> T readGeneric(uint64_t address);
+    template <typename T> void writeGeneric(uint64_t address, T value);
 
     // Data Members
-    Memory *memory_;          // Reference to the main memory
-    Cache *next_level_cache_; // Pointer to the next level cache (if any)
+    MemoryDevice& m_nextLevelMemoryRef; //either memory or next level cache
+    
+    std::vector<std::vector<CacheLine>> m_sets; // each set contains wayCount cache lines
+    uint64_t m_timestampCounter {0};           // cache-wide clock for replacement metadata
 
-    std::vector<std::vector<CacheLine>> sets_; // each set contains num_ways cache lines
-    uint64_t timestamp_counter_ = 0;           // cache-wide clock for replacement metadata
-
-    size_t num_ways_;
-    size_t block_size_; // no of words per cache line
-    size_t num_sets_;
-    WritePolicy write_policy_;
-    AllocationPolicy allocation_policy_;
-    std::unique_ptr<CacheReplacementPolicy> m_policy;
-    std::string custom_policy_script_path_;
+    size_t m_wayCount;
+    size_t m_lineSizeInBytes;
+    size_t m_setCount;
+    WritePolicy m_writePolicy;
+    AllocationPolicy m_allocationPolicy;
+    std::unique_ptr<CacheReplacementPolicy> m_ReplacementPolicy;
+    std::string m_customPolicyScriptPath;
 
     // precomputed bit masks for tag, index and offset
-    size_t offset_bits_;
-    size_t set_bits_;
-    uint64_t offset_mask_;
-    uint64_t set_mask_;
+    size_t m_offsetBits;
+    size_t m_setBits;
+    uint64_t m_offsetMask;
+    uint64_t m_setMask;
 
     // Statistics
-    size_t hits_ = 0;
-    size_t misses_ = 0;
-
-    void SetupCache(size_t cache_size, size_t block_size,
-                    size_t num_ways); // common setup function for both constructors
-  signals:
-    void CacheMissSignal(uint64_t address);
-    void CacheHitSignal(uint64_t address);
-    void CacheLineUpdatedSignal(uint64_t address);
-    void CacheReconfiguredSignal(CacheConfig newConfig);
-    void CacheStatsUpdatedSignal(CacheStats newStats);
-    void CustomPolicyScriptLoadedSignal(bool success, const std::string &errorMessage = "");
+    size_t m_hitCount  {0};
+    size_t m_missCount {0};
+    // common setup function 
+    void setupCache(size_t cache_size, size_t lineSizeInBytes,size_t wayCount); 
+signals:
+    void cacheMissSignal(uint64_t address);
+    void cacheHitSignal(uint64_t address);
+    void cacheLineUpdatedSignal(uint64_t address);
+    void cacheReconfiguredSignal(CacheConfig newConfig);
+    void cacheStatsUpdatedSignal(CacheStats newStats);
+    void customPolicyScriptLoadedSignal(bool success, const std::string &errorMessage = "");
 };
 }//namespace Kites

@@ -5,13 +5,13 @@ namespace Kites
 {
 enum class WritePolicy
 {
-    WriteThrough,
+    WriteThrough = 0,
     WriteBack
 };
 
 enum class AllocationPolicy
 {
-    WriteAllocate,
+    WriteAllocate = 0,
     NoWriteAllocate
 };
 
@@ -24,18 +24,18 @@ enum class ReplacementPolicy : size_t
 
 struct CacheConfig
 {
-    size_t num_lines;
-    size_t block_size;
-    size_t num_ways;
-    WritePolicy write_policy;
-    AllocationPolicy allocation_policy;
-    ReplacementPolicy replacement_policy;
+    size_t lineCount;
+    size_t lineSizeInBytes;
+    size_t wayCount;
+    WritePolicy writePolicy;
+    AllocationPolicy allocationPolicy;
+    ReplacementPolicy replacementPolicy;
 };
 
 struct CacheStats
 {
-    size_t hits = 0;
-    size_t misses = 0;
-    size_t writeBacks = 0;
+    size_t hitCount       = 0;
+    size_t missCount      = 0;
+    size_t writeBackCount = 0;
 };
 }//namespace Kites

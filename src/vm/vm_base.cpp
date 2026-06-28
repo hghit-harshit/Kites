@@ -59,7 +59,7 @@ void VmBase::LoadProgram(const AssembledProgram &program)
     unsigned int counter = 0;
     for (const auto &instruction : program.text_buffer)
     {
-        memory_controller_.WriteWord_d(counter, instruction);
+        memory_controller_.writeWord_d(counter, instruction);
         counter += 4;
     }
     program_size_ = counter;
@@ -82,28 +82,28 @@ void VmBase::LoadProgram(const AssembledProgram &program)
                 if constexpr (std::is_same_v<T, uint8_t>)
                 {
                     align(1);
-                    memory_controller_.WriteByte_d(base_data_address + data_counter,
+                    memory_controller_.writeByte_d(base_data_address + data_counter,
                                                    value); // Write a byte
                     data_counter += 1;
                 }
                 else if constexpr (std::is_same_v<T, uint16_t>)
                 {
                     align(2);
-                    memory_controller_.WriteHalfWord_d(base_data_address + data_counter,
+                    memory_controller_.writeHalfWord_d(base_data_address + data_counter,
                                                        value); // Write a halfword (16 bits)
                     data_counter += 2;
                 }
                 else if constexpr (std::is_same_v<T, uint32_t>)
                 {
                     align(4);
-                    memory_controller_.WriteWord_d(base_data_address + data_counter,
+                    memory_controller_.writeWord_d(base_data_address + data_counter,
                                                    value); // Write a word (32 bits)
                     data_counter += 4;
                 }
                 else if constexpr (std::is_same_v<T, uint64_t>)
                 {
                     align(8);
-                    memory_controller_.WriteDoubleWord_d(base_data_address + data_counter,
+                    memory_controller_.writeDoubleWord_d(base_data_address + data_counter,
                                                          value); // Write a double word (64 bits)
                     data_counter += 8;
                 }
@@ -112,7 +112,7 @@ void VmBase::LoadProgram(const AssembledProgram &program)
                     align(4);
                     uint32_t float_as_int;
                     std::memcpy(&float_as_int, &value, sizeof(float));
-                    memory_controller_.WriteWord_d(base_data_address + data_counter,
+                    memory_controller_.writeWord_d(base_data_address + data_counter,
                                                    float_as_int); // Write the float as a word
                     data_counter += 4;
                 }
@@ -121,7 +121,7 @@ void VmBase::LoadProgram(const AssembledProgram &program)
                     align(8);
                     uint64_t double_as_int;
                     std::memcpy(&double_as_int, &value, sizeof(double));
-                    memory_controller_.WriteDoubleWord_d(
+                    memory_controller_.writeDoubleWord_d(
                         base_data_address + data_counter,
                         double_as_int); // Write the double as a double word
                     data_counter += 8;
@@ -131,7 +131,7 @@ void VmBase::LoadProgram(const AssembledProgram &program)
                     align(1);
                     for (size_t i = 0; i < value.size(); i++)
                     {
-                        memory_controller_.WriteByte_d(
+                        memory_controller_.writeByte_d(
                             base_data_address + data_counter,
                             static_cast<uint8_t>(value[i])); // Write each byte of the string
                         data_counter += 1;
@@ -338,7 +338,7 @@ void VmBase::PrintString(uint64_t address)
 {
     while (true)
     {
-        char c = memory_controller_.ReadByte(address);
+        char c = memory_controller_.readByte(address);
         if (c == '\0')
             break;
         std::cout << c;

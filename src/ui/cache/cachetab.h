@@ -24,7 +24,7 @@ class CacheTab : public KitesTab
     void changeMemoryController(MemoryController *memoryController);
 
   private:
-    enum CacheLevel : size_t
+    enum CacheLevel
     {
         L1 = 0,
         L2,
@@ -35,10 +35,10 @@ class CacheTab : public KitesTab
     bool enforceL2AtLeastL1();
 
     std::vector<CacheModel*> m_cacheModels{};
-    MemoryController  *m_memoryController    = nullptr;
-    CacheGridDelegate *m_l1Delegate          = nullptr;
-    CacheGridDelegate *m_l2Delegate          = nullptr;
-    CacheGridDelegate *m_instructionDelegate = nullptr;
+    MemoryController  *m_memoryController    {nullptr};
+    CacheGridDelegate *m_l1Delegate          {nullptr};
+    CacheGridDelegate *m_l2Delegate          {nullptr};
+    CacheGridDelegate *m_instructionDelegate {nullptr};
 
     bool m_enforcingConstraint = false;
     Ui::CacheTab *ui;

@@ -93,7 +93,7 @@ void RV5StageVM_Base::Reset()
     last_breakpoint_pc_ = UINT64_MAX; // Clear breakpoint tracking on reset
 
     registers_.Reset();
-    memory_controller_.Reset();
+    memory_controller_.reset();
     control_unit_.Reset();
 
     if_id_reg_.reset();
@@ -305,7 +305,7 @@ void RV5StageVM_Base::memory_writeback()
         bytes.reserve(byte_count);
         for (size_t i = 0; i < byte_count; ++i)
         {
-            bytes.push_back(memory_controller_.ReadByte(addr + i));
+            bytes.push_back(memory_controller_.readByte(addr + i));
         }
         return bytes;
     };
@@ -315,7 +315,7 @@ void RV5StageVM_Base::memory_writeback()
     case 0b000:
     { // SB
         auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 1);
-        memory_controller_.WriteByte(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data & 0xFF);
+        memory_controller_.writeByte(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data & 0xFF);
         auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 1);
         if (old_bytes_vec != new_bytes_vec)
         {
@@ -327,7 +327,7 @@ void RV5StageVM_Base::memory_writeback()
     case 0b001:
     { // SH
         auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 2);
-        memory_controller_.WriteHalfWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data & 0xFFFF);
+        memory_controller_.writeHalfWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data & 0xFFFF);
         auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 2);
         if (old_bytes_vec != new_bytes_vec)
         {
@@ -339,7 +339,7 @@ void RV5StageVM_Base::memory_writeback()
     case 0b010:
     { // SW
         auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
-        memory_controller_.WriteWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data & 0xFFFFFFFF);
+        memory_controller_.writeWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data & 0xFFFFFFFF);
         auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
         if (old_bytes_vec != new_bytes_vec)
         {
@@ -353,7 +353,7 @@ void RV5StageVM_Base::memory_writeback()
         auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 8);
         std::cout << "Storing double word at address:" << (int)ex_mem_reg_.alu_result << std::endl;
         std::cout << "Data to store:" << (int)ex_mem_reg_.reg2_data << std::endl;
-        memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result,
+        memory_controller_.writeDoubleWord(ex_mem_reg_.alu_result,
                                            ex_mem_reg_.reg2_data & 0xFFFFFFFFFFFFFFFF);
         auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 8);
         if (old_bytes_vec != new_bytes_vec)
@@ -375,42 +375,42 @@ void RV5StageVM_Base::memory_read()
     case 0b000:
     { // LB
         mem_wb_reg_.memory_data =
-            static_cast<int8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
+            static_cast<int8_t>(memory_controller_.readByte(ex_mem_reg_.alu_result));
         break;
     }
     case 0b001:
     { // LH
         mem_wb_reg_.memory_data =
-            static_cast<int16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
+            static_cast<int16_t>(memory_controller_.readHalfWord(ex_mem_reg_.alu_result));
         break;
     }
     case 0b010:
     { // LW
         mem_wb_reg_.memory_data =
-            static_cast<int32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+            static_cast<int32_t>(memory_controller_.readWord(ex_mem_reg_.alu_result));
         break;
     }
     case 0b011:
     { // LD
-        mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+        mem_wb_reg_.memory_data = memory_controller_.readDoubleWord(ex_mem_reg_.alu_result);
         break;
     }
     case 0b100:
     { // LBU
         mem_wb_reg_.memory_data =
-            static_cast<uint8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
+            static_cast<uint8_t>(memory_controller_.readByte(ex_mem_reg_.alu_result));
         break;
     }
     case 0b101:
     { // LHU
         mem_wb_reg_.memory_data =
-            static_cast<uint16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
+            static_cast<uint16_t>(memory_controller_.readHalfWord(ex_mem_reg_.alu_result));
         break;
     }
     case 0b110:
     { // LWU
         mem_wb_reg_.memory_data =
-            static_cast<uint32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+            static_cast<uint32_t>(memory_controller_.readWord(ex_mem_reg_.alu_result));
         break;
     }
     }
@@ -501,12 +501,12 @@ void RV5StageVM_Base::pipeline_memory()
         { // FLW
 
             mem_wb_reg_.memory_data =
-                static_cast<int32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+                static_cast<int32_t>(memory_controller_.readWord(ex_mem_reg_.alu_result));
             mem_wb_reg_.f_memory_data = mem_wb_reg_.memory_data;
         }
         else if (is_D_Instruction)
         { // FLD
-            mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+            mem_wb_reg_.memory_data = memory_controller_.readDoubleWord(ex_mem_reg_.alu_result);
             mem_wb_reg_.f_memory_data = mem_wb_reg_.memory_data;
         }
         else
@@ -516,42 +516,42 @@ void RV5StageVM_Base::pipeline_memory()
             case 0b000:
             { // LB
                 mem_wb_reg_.memory_data =
-                    static_cast<int8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
+                    static_cast<int8_t>(memory_controller_.readByte(ex_mem_reg_.alu_result));
                 break;
             }
             case 0b001:
             { // LH
                 mem_wb_reg_.memory_data =
-                    static_cast<int16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
+                    static_cast<int16_t>(memory_controller_.readHalfWord(ex_mem_reg_.alu_result));
                 break;
             }
             case 0b010:
             { // LW
                 mem_wb_reg_.memory_data =
-                    static_cast<int32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+                    static_cast<int32_t>(memory_controller_.readWord(ex_mem_reg_.alu_result));
                 break;
             }
             case 0b011:
             { // LD
-                mem_wb_reg_.memory_data = memory_controller_.ReadDoubleWord(ex_mem_reg_.alu_result);
+                mem_wb_reg_.memory_data = memory_controller_.readDoubleWord(ex_mem_reg_.alu_result);
                 break;
             }
             case 0b100:
             { // LBU
                 mem_wb_reg_.memory_data =
-                    static_cast<uint8_t>(memory_controller_.ReadByte(ex_mem_reg_.alu_result));
+                    static_cast<uint8_t>(memory_controller_.readByte(ex_mem_reg_.alu_result));
                 break;
             }
             case 0b101:
             { // LHU
                 mem_wb_reg_.memory_data =
-                    static_cast<uint16_t>(memory_controller_.ReadHalfWord(ex_mem_reg_.alu_result));
+                    static_cast<uint16_t>(memory_controller_.readHalfWord(ex_mem_reg_.alu_result));
                 break;
             }
             case 0b110:
             { // LWU
                 mem_wb_reg_.memory_data =
-                    static_cast<uint32_t>(memory_controller_.ReadWord(ex_mem_reg_.alu_result));
+                    static_cast<uint32_t>(memory_controller_.readWord(ex_mem_reg_.alu_result));
                 break;
             }
             }
@@ -566,7 +566,7 @@ void RV5StageVM_Base::pipeline_memory()
             bytes.reserve(byte_count);
             for (size_t i = 0; i < byte_count; ++i)
             {
-                bytes.push_back(memory_controller_.ReadByte(addr + i));
+                bytes.push_back(memory_controller_.readByte(addr + i));
             }
             return bytes;
         };
@@ -579,7 +579,7 @@ void RV5StageVM_Base::pipeline_memory()
                       << std::endl
                       << "To address:" << (int)ex_mem_reg_.alu_result << std::endl
                       << debug_color::reset;
-            memory_controller_.WriteWord(ex_mem_reg_.alu_result,
+            memory_controller_.writeWord(ex_mem_reg_.alu_result,
                                          ex_mem_reg_.freg2_data & 0xFFFFFFFF);
             auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
             if (old_bytes_vec != new_bytes_vec)
@@ -591,7 +591,7 @@ void RV5StageVM_Base::pipeline_memory()
         else if (is_D_Instruction)
         { // FSD
             auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 8);
-            memory_controller_.WriteDoubleWord(ex_mem_reg_.alu_result,
+            memory_controller_.writeDoubleWord(ex_mem_reg_.alu_result,
                                                ex_mem_reg_.freg2_data & 0xFFFFFFFFFFFFFFFF);
             auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 8);
             if (old_bytes_vec != new_bytes_vec)
@@ -905,7 +905,7 @@ void RV5StageVM_Base::Undo()
         const auto &change = *it;
         for (size_t i = 0; i < change.old_bytes_vec.size(); ++i)
         {
-            memory_controller_.WriteByte(change.address + i, change.old_bytes_vec[i]);
+            memory_controller_.writeByte(change.address + i, change.old_bytes_vec[i]);
         }
     }
 
@@ -967,7 +967,7 @@ void RV5StageVM_Base::Redo()
     {
         for (size_t i = 0; i < change.new_bytes_vec.size(); ++i)
         {
-            memory_controller_.WriteByte(change.address + i, change.new_bytes_vec[i]);
+            memory_controller_.writeByte(change.address + i, change.new_bytes_vec[i]);
         }
     }
 

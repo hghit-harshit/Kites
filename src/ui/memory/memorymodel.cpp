@@ -176,13 +176,13 @@ QVariant MemoryModel::data(const QModelIndex &index, int role) const
         }
         case 1: // Double Word
         {
-            uint64_t doubleWord = m_memoryController->ReadDoubleWord(alignedAddress);
+            uint64_t doubleWord = m_memoryController->readDoubleWord(alignedAddress);
             return QString("%1%2").arg(prefix).arg(
                 QString::number(doubleWord, static_cast<int>(m_displayBase)).toUpper());
         }
         default:
         {
-            uint8_t byte = m_memoryController->ReadByte(alignedAddress + (index.column() - 2));
+            uint8_t byte = m_memoryController->readByte(alignedAddress + (index.column() - 2));
             return QString("%1%2").arg(prefix).arg(
                 QString::number(byte, static_cast<int>(m_displayBase)).toUpper());
         }

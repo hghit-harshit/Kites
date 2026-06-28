@@ -19,27 +19,27 @@ void CacheModel::AttachCache(Cache *cache)
     beginResetModel();
     if (m_cache)
     {
-        disconnect(m_cache, &Cache::CacheLineUpdatedSignal, this, &CacheModel::updateCacheData);
+        disconnect(m_cache, &Cache::cacheLineUpdatedSignal, this, &CacheModel::updateCacheData);
     }
     m_cache = cache;
     if (m_cache)
     {
-        m_num_sets = m_cache->GetNumSets();
-        m_num_ways = m_cache->GetNumWays();
-        m_block_size = m_cache->GetBlockSize();
+        m_num_sets = m_cache->getSetCount();
+        m_num_ways = m_cache->getWayCount();
+        m_block_size = m_cache->getLineSizeInBytes();
 
-        connect(m_cache, &Cache::CacheLineUpdatedSignal, this, &CacheModel::updateCacheData);
-        connect(m_cache, &Cache::CacheReconfiguredSignal, this,
+        connect(m_cache, &Cache::cacheLineUpdatedSignal, this, &CacheModel::updateCacheData);
+        connect(m_cache, &Cache::cacheReconfiguredSignal, this,
                 [this]()
                 {
                     beginResetModel();
-                    m_num_sets = m_cache->GetNumSets();
-                    m_num_ways = m_cache->GetNumWays();
-                    m_block_size = m_cache->GetBlockSize();
+                    m_num_sets = m_cache->getSetCount();
+                    m_num_ways = m_cache->getWayCount();
+                    m_block_size = m_cache->getLineSizeInBytes();
                     endResetModel();
                 });
-        connect(m_cache, &Cache::CacheMissSignal, this, &CacheModel::onCacheMiss);
-        connect(m_cache, &Cache::CacheHitSignal, this, &CacheModel::onCacheHit);
+        connect(m_cache, &Cache::cacheMissSignal, this, &CacheModel::onCacheMiss);
+        connect(m_cache, &Cache::cacheHitSignal, this, &CacheModel::onCacheHit);
     }
 
     endResetModel();
@@ -66,7 +66,7 @@ QVariant CacheModel::data(const QModelIndex &index, int role) const
     size_t set_index = RowToSetIndex(index.row());
     size_t way_index = RowToWayIndex(index.row());
 
-    const CacheLine &line = m_cache->GetCacheLine(set_index, way_index);
+    const CacheLine &line = m_cache->getCacheLine(set_index, way_index);
 
     if (role == Qt::BackgroundRole)
     {
@@ -217,7 +217,7 @@ int CacheModel::AddressToHitRow(uint64_t address) const
 
     for (size_t way_index = 0; way_index < m_num_ways; ++way_index)
     {
-        const CacheLine &line = m_cache->GetCacheLine(set_index, way_index);
+        const CacheLine &line = m_cache->getCacheLine(set_index, way_index);
         if (line.valid && line.tag == tag)
         {
             return static_cast<int>(set_index * m_num_ways + way_index);
@@ -230,8 +230,8 @@ int CacheModel::AddressToHitRow(uint64_t address) const
 void CacheModel::updateCacheData(uint64_t address)
 {
     Q_UNUSED(address);
-    if (!m_cache || m_cache->GetNumSets() != m_num_sets || m_cache->GetNumWays() != m_num_ways ||
-        m_cache->GetBlockSize() != m_block_size)
+    if (!m_cache || m_cache->getSetCount() != m_num_sets || m_cache->getWayCount() != m_num_ways ||
+        m_cache->getLineSizeInBytes() != m_block_size)
     {
         AttachCache(m_cache);
         return;
@@ -248,9 +248,9 @@ void CacheModel::updateCacheData(uint64_t address)
 void CacheModel::updateCacheConfig(CacheConfig newConfig)
 {
     beginResetModel();
-    m_num_sets = newConfig.num_lines;
-    m_num_ways = newConfig.num_ways;
-    m_block_size = newConfig.block_size;
+    m_num_sets = newConfig.lineCount;
+    m_num_ways = newConfig.wayCount;
+    m_block_size = newConfig.lineSizeInBytes;
     endResetModel();
 }
 

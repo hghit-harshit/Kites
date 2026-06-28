@@ -212,7 +212,7 @@ void RV5StageVM_NH_F::pipeline_fetch()
     if (program_counter_ < program_size_)
     {
         // Latch the instruction and PC for the next stage (IF/ID register)
-        if_id_reg_.instruction = memory_controller_.ReadInstruction(program_counter_);
+        if_id_reg_.instruction = memory_controller_.readInstruction(program_counter_);
         if_id_reg_.pc = program_counter_;
     }
     else

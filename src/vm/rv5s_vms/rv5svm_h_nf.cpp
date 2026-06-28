@@ -223,7 +223,7 @@ void RV5StageVM_H_NF::pipeline_fetch()
 
     if (program_counter_ < program_size_)
     {
-        if_id_reg_.instruction = memory_controller_.ReadInstruction(program_counter_);
+        if_id_reg_.instruction = memory_controller_.readInstruction(program_counter_);
         if_id_reg_.pc = program_counter_;
     }
     else
