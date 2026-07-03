@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <QMetaType>
 #pragma once
 
 namespace Kites
@@ -34,8 +35,16 @@ struct CacheConfig
 
 struct CacheStats
 {
-    size_t hitCount       = 0;
-    size_t missCount      = 0;
-    size_t writeBackCount = 0;
+    size_t hitCount         = 0;
+    size_t missCount        = 0;
+    size_t writeBackCount   = 0;
+    double hitRate          = 0.0;
+    size_t cacheSizeInBytes = 0;
 };
+
 }//namespace Kites
+
+//for making the enums usable in Qt's combo box
+Q_DECLARE_METATYPE(Kites::WritePolicy)
+Q_DECLARE_METATYPE(Kites::AllocationPolicy)
+Q_DECLARE_METATYPE(Kites::ReplacementPolicy)

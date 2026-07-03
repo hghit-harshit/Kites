@@ -11,31 +11,25 @@ CacheModel::CacheModel(QObject *parent, Cache *cache) : QAbstractTableModel(pare
     }
 
     // m_cache = cache;
-    AttachCache(cache);
+    attachCache(cache);
 }
 
-void CacheModel::AttachCache(Cache *cache)
+void CacheModel::attachCache(Cache *cache)
 {
     beginResetModel();
     if (m_cache)
     {
-        disconnect(m_cache, &Cache::cacheLineUpdatedSignal, this, &CacheModel::updateCacheData);
+        //disconnect everything from the old cache
+        disconnect(m_cache,nullptr , this, nullptr);
     }
     m_cache = cache;
     if (m_cache)
     {
-        m_num_sets = m_cache->getSetCount();
-        m_num_ways = m_cache->getWayCount();
-        m_block_size = m_cache->getLineSizeInBytes();
-
         connect(m_cache, &Cache::cacheLineUpdatedSignal, this, &CacheModel::updateCacheData);
         connect(m_cache, &Cache::cacheReconfiguredSignal, this,
                 [this]()
                 {
                     beginResetModel();
-                    m_num_sets = m_cache->getSetCount();
-                    m_num_ways = m_cache->getWayCount();
-                    m_block_size = m_cache->getLineSizeInBytes();
                     endResetModel();
                 });
         connect(m_cache, &Cache::cacheMissSignal, this, &CacheModel::onCacheMiss);
@@ -48,13 +42,14 @@ void CacheModel::AttachCache(Cache *cache)
 int CacheModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-    return static_cast<int>(m_num_sets * m_num_ways);
+    return static_cast<int>(m_cache->getSetCount() * m_cache->getWayCount());
 }
 
 int CacheModel::columnCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-    return 4 + NumberOfWordColumns(); // Index, Valid, Dirty, Tag + Data columns
+    return static_cast<int>(Column::DataStart) + 
+    static_cast<int>(m_cache->getLineSizeInBytes() / sizeof(uint32_t));
 }
 
 QVariant CacheModel::data(const QModelIndex &index, int role) const
@@ -63,9 +58,19 @@ QVariant CacheModel::data(const QModelIndex &index, int role) const
         index.column() >= columnCount())
         return QVariant();
 
-    size_t set_index = RowToSetIndex(index.row());
-    size_t way_index = RowToWayIndex(index.row());
-
+    size_t set_index = rowToSetIndex(index.row());
+    size_t way_index = rowToWayIndex(index.row());
+    if(role == Qt::UserRole + 1)
+    {
+        if (way_index == m_cache->getWayCount() - 1)
+        {
+            return 1; // last way in the set, draw a solid line
+        }
+        else
+        {
+            return 0; // not the last way, draw a dotted line
+        }
+    }
     const CacheLine &line = m_cache->getCacheLine(set_index, way_index);
 
     if (role == Qt::BackgroundRole)
@@ -97,15 +102,16 @@ QVariant CacheModel::data(const QModelIndex &index, int role) const
 
     if (role == Qt::DisplayRole)
     {
-        switch (index.column())
+        Column column = static_cast<Column>(index.column());
+        switch (column)
         {
-        case COL_INDEX:
+        case Column::Index:
             return QString("%1").arg(set_index);
-        case COL_VALID:
+        case Column::Valid:
             return line.valid ? "1" : "0";
-        case COL_DIRTY:
+        case Column::Dirty:
             return line.dirty ? "1" : "0";
-        case COL_TAG:
+        case Column::Tag:
             if (!line.valid)
                 return "0";
             else
@@ -117,15 +123,15 @@ QVariant CacheModel::data(const QModelIndex &index, int role) const
                 return "0";
             }
 
-            int word_index = index.column() - COL_DATA_START;
+            int word_index = index.column() - static_cast<int>(Column::DataStart);
             size_t byte_offset = static_cast<size_t>(word_index) * 4; // 4 bytes per word
 
-            if (byte_offset < m_block_size * 4)
+            if (byte_offset < m_cache->getLineSizeInBytes())
             {
                 uint32_t word_data = 0;
                 for (int i = 0; i < 4; ++i)
                 {
-                    if (byte_offset + i < m_block_size * 4)
+                    if (byte_offset + i < m_cache->getLineSizeInBytes())
                     {
                         word_data |= static_cast<uint32_t>(line.data[byte_offset + i]) << (8 * i);
                     }
@@ -140,7 +146,7 @@ QVariant CacheModel::data(const QModelIndex &index, int role) const
         }
     }
 
-    if (role == Qt::ToolTipRole && index.column() >= COL_DATA_START)
+    if (role == Qt::ToolTipRole && index.column() >= static_cast<int>(Column::DataStart))
     {
         QString tooltip = QString("Set: %1, Way: %2\n").arg(set_index).arg(way_index);
         tooltip += line.valid ? "Valid\n" : "Invalid\n";
@@ -149,7 +155,7 @@ QVariant CacheModel::data(const QModelIndex &index, int role) const
         {
             tooltip += QString("Tag: 0x%1\n").arg(line.tag, 0, 16).toUpper();
             tooltip += "Data: ";
-            for (size_t i = 0; i < m_block_size * 4; ++i)
+            for (size_t i = 0; i < m_cache->getLineSizeInBytes(); ++i)
             {
                 tooltip += QString("%1 ").arg(line.data[i], 2, 16, QChar('0')).toUpper();
             }
@@ -164,20 +170,21 @@ QVariant CacheModel::headerData(int section, Qt::Orientation orientation, int ro
 {
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
     {
-        switch (section)
+        Column column = static_cast<Column>(section);
+        switch (column)
         {
-        case COL_INDEX:
+        case Column::Index:
             return "Index";
-        case COL_VALID:
+        case Column::Valid:
             return "Valid";
-        case COL_DIRTY:
+        case Column::Dirty:
             return "Dirty";
-        case COL_TAG:
+        case Column::Tag:
             return "Tag";
         default:
-            if (section >= COL_DATA_START)
+            if (section >= static_cast<int>(Column::DataStart))
             {
-                int word_index = section - COL_DATA_START;
+                int word_index = section - static_cast<int>(Column::DataStart);
                 return QString("Data%1").arg(word_index);
             }
             else
@@ -189,68 +196,42 @@ QVariant CacheModel::headerData(int section, Qt::Orientation orientation, int ro
     return QVariant();
 }
 
-int CacheModel::AddressToRow(uint64_t address) const
+int CacheModel::addressToRow(uint64_t address) const
 {
-    if (m_block_size == 0 || m_num_ways == 0)
-        return -1;
-
-    size_t block_offset_bits =
-        static_cast<size_t>(std::log2(m_block_size * 4)); // block size in bytes
-    size_t set_index_bits = static_cast<size_t>(std::log2(m_num_sets));
-
-    size_t set_index = (address >> block_offset_bits) & ((1 << set_index_bits) - 1);
 
     // We will highlight the first way of the set on a miss for simplicity
-    return static_cast<int>(set_index * m_num_ways);
+    return static_cast<int>(m_cache->getSetIndex(address) * m_cache->getWayCount());
 }
 
-int CacheModel::AddressToHitRow(uint64_t address) const
+int CacheModel::addressToHitRow(uint64_t address) const
 {
-    if (!m_cache || m_block_size == 0 || m_num_ways == 0 || m_num_sets == 0)
-        return -1;
-
-    size_t block_offset_bits = static_cast<size_t>(std::log2(m_block_size * 4));
-    size_t set_index_bits = static_cast<size_t>(std::log2(m_num_sets));
-
-    size_t set_index = (address >> block_offset_bits) & ((1ULL << set_index_bits) - 1);
-    uint64_t tag = address >> (block_offset_bits + set_index_bits);
-
-    for (size_t way_index = 0; way_index < m_num_ways; ++way_index)
+    size_t setIndex = m_cache->getSetIndex(address);
+    uint64_t tag = m_cache->getTag(address);
+    for (size_t wayIndex = 0; wayIndex < m_cache->getWayCount(); ++wayIndex)
     {
-        const CacheLine &line = m_cache->getCacheLine(set_index, way_index);
+        const CacheLine &line = m_cache->getCacheLine(setIndex, wayIndex);
         if (line.valid && line.tag == tag)
         {
-            return static_cast<int>(set_index * m_num_ways + way_index);
+            return static_cast<int>(setIndex * m_cache->getWayCount() + wayIndex);
         }
     }
 
-    return static_cast<int>(set_index * m_num_ways);
+    return static_cast<int>(setIndex * m_cache->getWayCount());
 }
 
 void CacheModel::updateCacheData(uint64_t address)
 {
     Q_UNUSED(address);
-    if (!m_cache || m_cache->getSetCount() != m_num_sets || m_cache->getWayCount() != m_num_ways ||
-        m_cache->getLineSizeInBytes() != m_block_size)
-    {
-        AttachCache(m_cache);
-        return;
-    }
-
     if (rowCount() == 0 || columnCount() == 0)
     {
         return;
     }
-
     emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
 }
 
 void CacheModel::updateCacheConfig(CacheConfig newConfig)
 {
     beginResetModel();
-    m_num_sets = newConfig.lineCount;
-    m_num_ways = newConfig.wayCount;
-    m_block_size = newConfig.lineSizeInBytes;
     endResetModel();
 }
 
@@ -259,7 +240,7 @@ void CacheModel::onCacheMiss(uint64_t address)
     if (!m_cache)
         return;
 
-    m_last_miss_row = AddressToRow(address);
+    m_last_miss_row = addressToRow(address);
     beginResetModel();
     endResetModel();
 }
@@ -269,8 +250,17 @@ void CacheModel::onCacheHit(uint64_t address)
     if (!m_cache)
         return;
 
-    m_last_hit_row = AddressToHitRow(address);
+    m_last_hit_row = addressToHitRow(address);
     beginResetModel();
     endResetModel();
+}
+
+size_t CacheModel::rowToSetIndex(int row) const
+{
+    return row / m_cache->getWayCount();
+}
+size_t CacheModel::rowToWayIndex(int row) const
+{
+    return row % m_cache->getWayCount();
 }
 } // namespace Kites

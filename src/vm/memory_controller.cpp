@@ -4,7 +4,7 @@ namespace Kites
 {
     
 MemoryController::MemoryController() : 
-l2_cache_(memory_), 
+l2_cache_(static_cast<MemoryDevice&>(memory_)), 
 l1_cache_(static_cast<MemoryDevice&>(l2_cache_)), 
 instruction_cache_(static_cast<MemoryDevice&>(l2_cache_)) // casting needed here otherwise
 {}                                                        // compiler think we are calling 

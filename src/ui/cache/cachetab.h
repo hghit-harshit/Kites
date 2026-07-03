@@ -18,12 +18,12 @@ class CacheTab : public KitesTab
 {
     Q_OBJECT
 
-  public:
+public:
     explicit CacheTab(QWidget *parent = nullptr, MemoryController *memoryController = nullptr);
     ~CacheTab();
     void changeMemoryController(MemoryController *memoryController);
 
-  private:
+private:
     enum CacheLevel
     {
         L1 = 0,
@@ -31,18 +31,13 @@ class CacheTab : public KitesTab
         Instruction,
         CacheLevelCount
     };
-    void connectSignals(std::string cacheName, CacheConfigWidget *configWidget);
+	//void updateCacheConfig(CacheLevel cacheLevel, CacheConfig newConfig);
     bool enforceL2AtLeastL1();
 
-    std::vector<CacheModel*> m_cacheModels{};
+    std::array<CacheModel*, CacheLevelCount> m_cacheModels{};
     MemoryController  *m_memoryController    {nullptr};
-    CacheGridDelegate *m_l1Delegate          {nullptr};
-    CacheGridDelegate *m_l2Delegate          {nullptr};
-    CacheGridDelegate *m_instructionDelegate {nullptr};
-
-    bool m_enforcingConstraint = false;
     Ui::CacheTab *ui;
-  signals:
-    void cacheConfigChanged(std::string cacheName, CacheConfig newConfig);
+signals:
+    void cacheConfigChangedSignal(CacheLevel cacheLevel, CacheConfig newConfig);
 };
 } // namespace Kites

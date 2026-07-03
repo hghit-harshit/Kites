@@ -362,7 +362,8 @@ T Cache::readGeneric(uint64_t address)
     // The issue here is that if we read byte wise the hits count will increase for every byte
     // but we want it to count when all the byte are in the cache for the
     // word/half-word/double-word access
-    if(isHit<T>(address))
+    bool hit = isHit<T>(address);
+    if(hit)
     {
         ++m_hitCount;
         touchLines<T>(address);
@@ -379,10 +380,22 @@ T Cache::readGeneric(uint64_t address)
         uint8_t byte = getByteFromCache(address + i);
         value |= static_cast<T>(byte) << (8 * i);
     }
+
+    if(hit)
+    {
+        emit cacheHitSignal(address);
+    }
+    else
+    {
+        emit cacheMissSignal(address);
+    }
+    emit cacheLineUpdatedSignal(address);
+    updateStats();
     return value;
 }
 
-template <typename T> void Cache::writeGeneric(uint64_t address, T value)
+template <typename T> 
+void Cache::writeGeneric(uint64_t address, T value)
 {
     if (address >= vm_config::config.getMemorySize() - (sizeof(T) - 1))
     {
@@ -390,7 +403,8 @@ template <typename T> void Cache::writeGeneric(uint64_t address, T value)
                                 std::to_string(address));
     }
 
-    if(isHit<T>(address))
+    bool hit = isHit<T>(address);
+    if(hit)
     {
         ++m_hitCount;
         touchLines<T>(address);
@@ -428,138 +442,57 @@ template <typename T> void Cache::writeGeneric(uint64_t address, T value)
         putByteInCache(address + i, byte);
     }
 
+    if(hit)
+    {
+        emit cacheHitSignal(address);
+    }
+    else
+    {
+        emit cacheMissSignal(address);
+    }
+    emit cacheLineUpdatedSignal(address);
+    updateStats();
+
 }
 
 uint8_t Cache::readByte(uint64_t address)
 {
-    const size_t misses_before = m_missCount;
-    const uint8_t value        = readGeneric<uint8_t>(address);
-    if (m_missCount > misses_before)
-    {
-        emit cacheMissSignal(address);
-    }
-    else
-    {
-        emit cacheHitSignal(address);
-    }
-    emit cacheLineUpdatedSignal(address);
-    updateStats();
-    return value;
+    return readGeneric<uint8_t>(address);
 }
 
 uint16_t Cache::readHalfWord(uint64_t address)
 {
-    const size_t misses_before = m_missCount;
-    const uint16_t value       = readGeneric<uint16_t>(address);
-    if (m_missCount > misses_before)
-    {
-        emit cacheMissSignal(address);
-    }
-    else
-    {
-        emit cacheHitSignal(address);
-    }
-    emit cacheLineUpdatedSignal(address);
-    updateStats();
-    return value;
+    return readGeneric<uint16_t>(address);
 }
 
 uint32_t Cache::readWord(uint64_t address)
 {
-    const size_t misses_before = m_missCount;
-    const uint32_t value       = readGeneric<uint32_t>(address);
-    if (m_missCount > misses_before)
-    {
-        emit cacheMissSignal(address);
-    }
-    else
-    {
-        emit cacheHitSignal(address);
-    }
-    emit cacheLineUpdatedSignal(address);
-    updateStats();
-    return value;
+    return readGeneric<uint32_t>(address);
 }
 
 uint64_t Cache::readDoubleWord(uint64_t address)
 {
-    const size_t misses_before = m_missCount;
-    const uint64_t value       = readGeneric<uint64_t>(address);
-    if (m_missCount > misses_before)
-    {
-        emit cacheMissSignal(address);
-    }
-    else
-    {
-        emit cacheHitSignal(address);
-    }
-    emit cacheLineUpdatedSignal(address);
-    updateStats();
-    return value;
+    return readGeneric<uint64_t>(address);
 }
 
 void Cache::writeByte(uint64_t address, uint8_t value)
 {
-    const size_t misses_before = m_missCount;
     writeGeneric<uint8_t>(address, value);
-    if (m_missCount > misses_before)
-    {
-        emit cacheMissSignal(address);
-    }
-    else
-    {
-        emit cacheHitSignal(address);
-    }
-    emit cacheLineUpdatedSignal(address);
-    updateStats();
 }
 
 void Cache::writeHalfWord(uint64_t address, uint16_t value)
 {
-    const size_t misses_before = m_missCount;
     writeGeneric<uint16_t>(address, value);
-    if (m_missCount > misses_before)
-    {
-        emit cacheMissSignal(address);
-    }
-    else
-    {
-        emit cacheHitSignal(address);
-    }
-    emit cacheLineUpdatedSignal(address);
-    updateStats();
 }
 
 void Cache::writeWord(uint64_t address, uint32_t value)
 {
-    const size_t misses_before = m_missCount;
     writeGeneric<uint32_t>(address, value);
-    if (m_missCount > misses_before)
-    {
-        emit cacheMissSignal(address);
-    }
-    else
-    {
-        emit cacheHitSignal(address);
-    }
-    emit cacheLineUpdatedSignal(address);
-    updateStats();
 }
 
 void Cache::writeDoubleWord(uint64_t address, uint64_t value)
 {
-    const size_t misses_before = m_missCount;
     writeGeneric<uint64_t>(address, value);
-    if (m_missCount > misses_before)
-    {
-        emit cacheMissSignal(address);
-    }
-    else
-    {
-        emit cacheHitSignal(address);
-    }
-    emit cacheLineUpdatedSignal(address);
-    updateStats();
 }
 
 void Cache::reset()
@@ -600,8 +533,12 @@ void Cache::flush()
 void Cache::updateStats()
 {
     CacheStats stats;
-    stats.hitCount = m_hitCount;
-    stats.missCount = m_missCount;
+    stats.hitCount         = m_hitCount;
+    stats.missCount        = m_missCount;
+    stats.writeBackCount   = m_writeBackCount;
+    stats.hitRate          = m_hitCount + m_missCount > 0 ?
+                             static_cast<double>(m_hitCount) / (m_hitCount + m_missCount): 0.0;
+    stats.cacheSizeInBytes = m_setCount * m_wayCount * m_lineSizeInBytes;
     // For write-backs, we would need to track them in the WriteBack function
     // stats.writeBacks = write_backs_;
     emit cacheStatsUpdatedSignal(stats);
@@ -660,18 +597,33 @@ size_t Cache::getLineSizeInBytes() const
 {
     return m_lineSizeInBytes;
 }
+size_t Cache::getCacheSizeInBytes() const
+{
+    return m_setCount * m_wayCount * m_lineSizeInBytes;
+}
 // Address Decomposition Helper Functions
-inline uint64_t Cache::getTag(uint64_t address) const
+uint64_t Cache::getTag(uint64_t address) const
 {
     return address >> (m_offsetBits + m_setBits);
 }
-inline size_t Cache::getSetIndex(uint64_t address) const
+size_t Cache::getSetIndex(uint64_t address) const
 {
     return static_cast<size_t>(address >> m_offsetBits) & m_setMask;
 }
-inline size_t Cache::getOffset(uint64_t address) const
+size_t Cache::getOffset(uint64_t address) const
 {
     return static_cast<size_t>(address & m_offsetMask);
+}
+CacheConfig Cache::getConfig() const
+{
+    return CacheConfig{
+        .lineCount = m_setCount,
+        .lineSizeInBytes = m_lineSizeInBytes,
+        .wayCount = m_wayCount,
+        .writePolicy = m_writePolicy,
+        .allocationPolicy = m_allocationPolicy,
+        .replacementPolicy = m_ReplacementPolicy->type()
+    };
 }
 }//namespace Kites
 
