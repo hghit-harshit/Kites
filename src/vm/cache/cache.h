@@ -41,9 +41,9 @@ struct CacheLine
 //maybe we will move its location later on 
 namespace default_cache_config
 {
-    constexpr size_t lineSizeinBytes              = 32;
+    constexpr size_t lineSizeinBytes              = 16;
     constexpr size_t setCount                     = 1;
-    constexpr size_t wayCount                     = 4;
+    constexpr size_t wayCount                     = 2;
     constexpr WritePolicy writePolicy             = WritePolicy::WriteThrough;
     constexpr AllocationPolicy allocationPolicy   = AllocationPolicy::WriteAllocate;
     constexpr ReplacementPolicy replacementPolicy = ReplacementPolicy::LRU;

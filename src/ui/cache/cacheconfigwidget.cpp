@@ -73,7 +73,7 @@ CacheConfig CacheConfigWidget::getConfig() const
 {
     CacheConfig config;
     config.lineCount = 1ULL << ui->linesSpinBox->value();
-    config.lineSizeInBytes = 1ULL << ui->wordsSpinBox->value();
+    config.lineSizeInBytes = (1ULL <<ui->wordsSpinBox->value())* sizeof(uint32_t);
     config.wayCount = 1ULL << ui->waysSpinBox->value();
     config.writePolicy = ui->writeHitComboBox->currentData().value<WritePolicy>();
     config.allocationPolicy = ui->writeMissComboBox->currentData().value<AllocationPolicy>();
@@ -116,7 +116,7 @@ void CacheConfigWidget::setConfig(CacheConfig config)
     QSignalBlocker blocker(this);
     ui->linesSpinBox->setValue(static_cast<int>(std::log2(config.lineCount)));
     ui->waysSpinBox->setValue(static_cast<int>(std::log2(config.wayCount)));
-    ui->wordsSpinBox->setValue(static_cast<int>(std::log2(config.lineSizeInBytes)));
+    ui->wordsSpinBox->setValue(static_cast<int>(std::log2(config.lineSizeInBytes/sizeof(uint32_t))));
     ui->writeHitComboBox->setCurrentIndex(static_cast<int>(config.writePolicy));
     ui->writeMissComboBox->setCurrentIndex(static_cast<int>(config.allocationPolicy));
     ui->repPolComboBox->setCurrentIndex(static_cast<int>(config.replacementPolicy));

@@ -90,7 +90,7 @@ std::span<const uint8_t> Cache::readLine(uint64_t address, size_t lineSize)
     size_t setIndex = getSetIndex(address);
     uint64_t tag    = getTag(address);
     size_t wayIndex = findWay(setIndex, tag);
-
+    bool hit = false;
     if (wayIndex >= m_wayCount)
     {
         ++m_missCount;
@@ -99,6 +99,7 @@ std::span<const uint8_t> Cache::readLine(uint64_t address, size_t lineSize)
     }
     else 
     {
+        hit = true;
         ++m_hitCount;
         touchWay(setIndex, wayIndex);
     }
@@ -107,6 +108,9 @@ std::span<const uint8_t> Cache::readLine(uint64_t address, size_t lineSize)
                                        //with the address of the start of the line
                                        // and if size of this cache is larger than calling cache
                                        // address will not align
+    if(hit)emit cacheHitSignal(address);
+    else emit cacheMissSignal(address);
+    updateStats();
     return std::span<const uint8_t>(m_sets[setIndex][wayIndex].data.data() + offset, lineSize);
 }
 
@@ -115,7 +119,7 @@ void Cache::writeLine(uint64_t address, std::span<const uint8_t> data)
     size_t setIndex = getSetIndex(address);
     uint64_t tag    = getTag(address);
     size_t wayIndex = findWay(setIndex, tag);
-
+    bool hit = false;
     if (wayIndex >= m_wayCount)
     {
         m_missCount++;
@@ -132,6 +136,7 @@ void Cache::writeLine(uint64_t address, std::span<const uint8_t> data)
     }
     else
     {
+        hit = true;
         ++m_hitCount;
         touchWay(setIndex, wayIndex);
     }
@@ -147,6 +152,9 @@ void Cache::writeLine(uint64_t address, std::span<const uint8_t> data)
     {
         line.dirty = true;
     }
+    if(hit)emit cacheHitSignal(address);
+    else emit cacheMissSignal(address);
+    updateStats();
     
 }
 /**
@@ -240,6 +248,7 @@ void Cache::writeBack(size_t setIndex, size_t wayIndex)
 
         m_nextLevelMemoryRef.writeLine(lineStartAddress, std::span<const uint8_t>(line.data));
         line.dirty = false; 
+        ++m_writeBackCount;
     }
 }
 
@@ -513,6 +522,8 @@ void Cache::reset()
     m_timestampCounter = 0;
     m_hitCount = 0;
     m_missCount = 0;
+    m_writeBackCount = 0;
+    updateStats();
 }
 
 void Cache::flush()

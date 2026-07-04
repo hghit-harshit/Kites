@@ -23,19 +23,22 @@ class CacheGridDelegate : public QStyledItemDelegate
         QStyledItemDelegate::paint(painter, option, index);
 
         painter->save();
+        // QColor stableLineColor = (option.palette.window().color().value() < 128) 
+        //                  ? QColor(255, 255, 255)  // If background is dark, force white
+        //                  : QColor(0, 0, 0);
         int borderType = index.model()->data(index, Qt::UserRole + 1).toInt();
         if (borderType == 1)
         {
-            QPen pen(option.palette.color(QPalette::Text), 1.5);
+            QPen pen(QColor(255, 255, 255), 1);
             painter->setPen(pen);
         }
         else
         {
-            QPen pen(option.palette.color(QPalette::Mid), 0.5);
+            QPen pen(QColor(255, 255, 255), 1);
             pen.setStyle(Qt::DotLine);
-            painter->setPen(pen);
+            painter->setPen(pen);   
         }
-        painter->drawLine(option.rect.topLeft(), option.rect.topRight());
+        painter->drawLine(option.rect.bottomLeft(), option.rect.bottomRight());
         painter->restore();
     }
 

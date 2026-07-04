@@ -66,9 +66,9 @@ QVariant CacheModel::data(const QModelIndex &index, int role) const
         {
             return 1; // last way in the set, draw a solid line
         }
-        else
+        else 
         {
-            return 0; // not the last way, draw a dotted line
+            return 0; // not the first way, draw a dotted line
         }
     }
     const CacheLine &line = m_cache->getCacheLine(set_index, way_index);
