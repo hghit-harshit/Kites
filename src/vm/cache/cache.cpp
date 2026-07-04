@@ -6,8 +6,13 @@
 
 namespace Kites
 {
-static std::unique_ptr<CacheReplacementPolicy>
-CreatePolicy(ReplacementPolicy policy_type, const std::string &custom_policy_script_path)
+/**TODO
+ * Look if we can make this a factory class for better testability?
+ */
+namespace
+{
+std::unique_ptr<CacheReplacementPolicy>
+createPolicy(ReplacementPolicy policy_type, const std::string &custom_policy_script_path)
 {
     switch (policy_type)
     {
@@ -21,143 +26,169 @@ CreatePolicy(ReplacementPolicy policy_type, const std::string &custom_policy_scr
         return std::make_unique<LRUReplacementPolicy>(); // default fallback
     }
 }
+}
 
-void Cache::SetupCache(size_t num_sets, size_t block_size, size_t num_ways)
+
+void Cache::setupCache(size_t setCount, size_t lineSize, size_t wayCount)
 {
-
-    // assert(cache_size % (block_size * num_ways) == 0 && "Cache size must be divisible by block
+    // assert(cache_size % (block_size * wayCount) == 0 && "Cache size must be divisible by block
     // size times number of ways");
 
-    num_sets_ = num_sets;
-    block_size_ = block_size;
-    num_ways_ = num_ways;
+    m_setCount        = setCount;
+    m_lineSizeInBytes = lineSize;
+    m_wayCount        = wayCount;
+    m_offsetBits      = std::countr_zero( lineSize);
+    m_setBits         = std::countr_zero(m_setCount);
+    m_offsetMask      = (lineSize) - 1;
+    m_setMask         = m_setCount - 1;
 
-    offset_bits_ = std::countr_zero(
-        block_size *
-        4); // number of bytes in a cache line, assuming block_size is in words (4 bytes)
-    set_bits_ = std::countr_zero(num_sets_);
-    offset_mask_ = (block_size * 4) - 1;
-    set_mask_ = num_sets_ - 1;
-
-    sets_.clear();
-    timestamp_counter_ = 0;
-    sets_.reserve(num_sets_);
-    for (size_t i = 0; i < num_sets_; ++i)
+    m_sets.clear();
+    m_timestampCounter = 0;
+    m_sets.reserve(m_setCount);
+    for (size_t i = 0; i < m_setCount; ++i)
     {
-        sets_.emplace_back(num_ways_, CacheLine(block_size_));
+        m_sets.emplace_back(m_wayCount, CacheLine(m_lineSizeInBytes));
     }
 }
 
-Cache::Cache(Memory &memory, size_t num_sets, size_t block_size, size_t num_ways,
-             WritePolicy write_policy, AllocationPolicy allocation_policy,
-             ReplacementPolicy replacement_policy)
-    : QObject(nullptr),memory_(&memory), next_level_cache_(nullptr), write_policy_(write_policy),
-      allocation_policy_(allocation_policy),
-      m_policy(CreatePolicy(replacement_policy, std::string{}))
+Cache::Cache(MemoryDevice &memory, size_t setCount, size_t lineSize, size_t wayCount,
+             WritePolicy writePolicy, AllocationPolicy allocationPolicy,
+             ReplacementPolicy replacementPolicy)
+    : QObject(nullptr), m_nextLevelMemoryRef(memory), m_writePolicy(writePolicy),
+      m_allocationPolicy(allocationPolicy),
+      m_ReplacementPolicy(createPolicy(replacementPolicy, std::string{}))
 {
-    SetupCache(num_sets, block_size, num_ways);
+    setupCache(setCount, lineSize, wayCount);
 }
 
-Cache::Cache(Cache &next_level_cache, size_t num_sets, size_t block_size, size_t num_ways,
-             WritePolicy write_policy, AllocationPolicy allocation_policy,
-             ReplacementPolicy replacement_policy)
-    : QObject(nullptr),memory_(nullptr), next_level_cache_(&next_level_cache), write_policy_(write_policy),
-      allocation_policy_(allocation_policy),
-      m_policy(CreatePolicy(replacement_policy, std::string{}))
+void Cache::reconfigure(CacheConfig newConfig)
 {
-    SetupCache(num_sets, block_size, num_ways);
+    flush(); // write back all dirty lines to memory and invalidate cache before reconfiguring
+    m_writePolicy       = newConfig.writePolicy;
+    m_allocationPolicy  = newConfig.allocationPolicy;
+    m_ReplacementPolicy = createPolicy(newConfig.replacementPolicy, m_customPolicyScriptPath);
+    setupCache(newConfig.lineCount, newConfig.lineSizeInBytes, newConfig.wayCount);
+    emit cacheReconfiguredSignal(newConfig);
 }
 
-void Cache::Reconfigure(CacheConfig new_config)
+const CacheLine &Cache::getCacheLine(size_t setIndex,size_t wayIndex) const
 {
-    Flush(); // write back all dirty lines to memory and invalidate cache before reconfiguring
-    write_policy_ = new_config.write_policy;
-    allocation_policy_ = new_config.allocation_policy;
-    m_policy = CreatePolicy(new_config.replacement_policy, custom_policy_script_path_);
-    SetupCache(new_config.num_lines, new_config.block_size, new_config.num_ways);
-    emit CacheReconfiguredSignal(new_config);
-}
-
-const CacheLine &Cache::GetCacheLine(size_t set_index, size_t way_index) const
-{
-    if (set_index >= num_sets_ || way_index >= num_ways_)
+    if (setIndex >= m_setCount || wayIndex >= m_wayCount)
     {
-        throw std::out_of_range(std::string("Cache line index out of range: set_index=") +
-                                std::to_string(set_index) +
-                                ", way_index=" + std::to_string(way_index));
+        throw std::out_of_range(std::string("Cache line index out of range: setIndex=") +
+                                std::to_string(setIndex) +
+                                ", wayIndex=" + std::to_string(wayIndex));
     }
-    return sets_[set_index][way_index];
+    return m_sets[setIndex][wayIndex];
 }
 
-// Next Leve Helper Functions
-uint8_t Cache::ReadFromNextLevel(uint64_t address)
+std::span<const uint8_t> Cache::readLine(uint64_t address, size_t lineSize)
 {
-    if (next_level_cache_)
+    // a higher level cache will call this
+    // if the line requested is not present we bring it from lower level memory devices
+    assert(lineSize <= m_lineSizeInBytes && "Requested line size exceeds cache line size.");
+    size_t setIndex = getSetIndex(address);
+    uint64_t tag    = getTag(address);
+    size_t wayIndex = findWay(setIndex, tag);
+    bool hit = false;
+    if (wayIndex >= m_wayCount)
     {
-        return next_level_cache_->ReadByte(address);
+        ++m_missCount;
+        wayIndex = evictCacheLine(setIndex);
+        bringIn(address, setIndex, wayIndex);
+    }
+    else 
+    {
+        hit = true;
+        ++m_hitCount;
+        touchWay(setIndex, wayIndex);
+    }
+    size_t offset = getOffset(address); // get offset for this level of cache
+                                       // as the higher leve will always call this function
+                                       //with the address of the start of the line
+                                       // and if size of this cache is larger than calling cache
+                                       // address will not align
+    if(hit)emit cacheHitSignal(address);
+    else emit cacheMissSignal(address);
+    updateStats();
+    return std::span<const uint8_t>(m_sets[setIndex][wayIndex].data.data() + offset, lineSize);
+}
+
+void Cache::writeLine(uint64_t address, std::span<const uint8_t> data)
+{
+    size_t setIndex = getSetIndex(address);
+    uint64_t tag    = getTag(address);
+    size_t wayIndex = findWay(setIndex, tag);
+    bool hit = false;
+    if (wayIndex >= m_wayCount)
+    {
+        m_missCount++;
+        if(m_allocationPolicy == AllocationPolicy::NoWriteAllocate)
+        {
+            m_nextLevelMemoryRef.writeLine(address, data);
+            return;
+        }
+        else
+        {
+            wayIndex = evictCacheLine(setIndex);
+            bringIn(address, setIndex, wayIndex);
+        }
     }
     else
     {
-        return memory_->ReadByte(address);
+        hit = true;
+        ++m_hitCount;
+        touchWay(setIndex, wayIndex);
     }
-}
+    size_t offset = getOffset(address); 
+    auto &line = m_sets[setIndex][wayIndex];
+    std::memcpy(line.data.data() + offset, data.data(), data.size());
 
-void Cache::WriteByteToNextLevel(uint64_t address, uint8_t value)
-{
-    if (next_level_cache_)
+    if(m_writePolicy == WritePolicy::WriteThrough)
     {
-        next_level_cache_->WriteByte(address, value);
+        m_nextLevelMemoryRef.writeLine(address, data);
     }
-    else
+    else if(m_writePolicy == WritePolicy::WriteBack)
     {
-        memory_->WriteByte(address, value);
+        line.dirty = true;
     }
+    if(hit)emit cacheHitSignal(address);
+    else emit cacheMissSignal(address);
+    updateStats();
+    
 }
-
-uint64_t Cache::SizeofNextLevel() const
-{
-    if (next_level_cache_)
-    {
-        return next_level_cache_->SizeofNextLevel();
-    }
-    else
-    {
-        return vm_config::config.getMemorySize();
-    }
-}
-
 /**
  * @brief  Returns the way index of the cache line in the specified set that matches the given tag.
- * If no such line exists, returns num_ways_ to indicate a miss.
+ * If no such line exists, returns m_wayCount to indicate a miss.
  */
-size_t Cache::FindWay(size_t set_index, uint64_t tag) const
+size_t Cache::findWay(size_t setIndex, uint64_t tag) const
 {
-    const auto &set = sets_[set_index];
-    for (size_t way = 0; way < num_ways_; ++way)
+    const auto &set = m_sets[setIndex];
+    for (size_t way = 0; way < m_wayCount; ++way)
     {
         if (set[way].valid && set[way].tag == tag)
         {
             return way;
         }
     }
-    return num_ways_; // not found
+    return m_wayCount; // not found
 }
 
-void Cache::TouchWay(size_t set_index, size_t way_index)
+void Cache::touchWay(size_t setIndex, size_t wayIndex)
 {
-    auto &line = sets_[set_index][way_index];
+    auto &line = m_sets[setIndex][wayIndex];
 
-    // Update line age and lastAccess
-    line.lastAccess = ++timestamp_counter_;
-    line.age = line.lastAccess;
+      // Update line age and lastAccess
+    line.lastAccess = ++m_timestampCounter;
+    line.age        = line.lastAccess;
     line.frequency++;
 
     // Notify policy of access
     CacheLineView view = {line.valid,      line.tag,        line.age,  line.frequency,
                           line.insertTime, line.lastAccess, line.dirty};
-    CacheRequestView request = {0, set_index, way_index, 0, 1, false, line.tag};
-    CacheContextView context = {num_sets_, num_ways_, block_size_, timestamp_counter_};
-    m_policy->onAccess(view, request, context);
+    CacheRequestView request = {0, setIndex, wayIndex, 0, 1, false, line.tag};
+    CacheContextView context = {m_setCount, m_wayCount, m_lineSizeInBytes, m_timestampCounter};
+    m_ReplacementPolicy->onAccess(view, request, context);
 }
 
 /**
@@ -166,12 +197,12 @@ void Cache::TouchWay(size_t set_index, size_t way_index)
  * index of the evicted line. If there is an invalid line, it will be chosen for eviction without
  * considering the replacement policy.
  */
-size_t Cache::EvictWay(size_t set_index)
+size_t Cache::evictCacheLine(size_t setIndex)
 {
-    auto &ways = sets_[set_index];
+    auto &ways = m_sets[setIndex];
 
     // always prefer to evict an invalid line if available
-    for (size_t way = 0; way < num_ways_; ++way)
+    for (size_t way = 0; way < m_wayCount; ++way)
     {
         if (!ways[way].valid)
         {
@@ -181,153 +212,154 @@ size_t Cache::EvictWay(size_t set_index)
 
     // Build views for all valid lines in the set
     std::vector<CacheLineView> line_views;
-    for (size_t way = 0; way < num_ways_; ++way)
+    for (size_t way = 0; way < m_wayCount; ++way)
     {
         const auto &line = ways[way];
         line_views.push_back({line.valid, line.tag, line.age, line.frequency, line.insertTime,
                               line.lastAccess, line.dirty});
     }
 
-    CacheRequestView request = {0, set_index, 0, 0, 1, false, 0};
-    CacheContextView context = {num_sets_, num_ways_, block_size_, timestamp_counter_};
+    CacheRequestView request = {0, setIndex, 0, 0, 1, false, 0};
+    CacheContextView context = {m_setCount, m_wayCount, m_lineSizeInBytes, m_timestampCounter};
 
     // Ask policy to choose victim
-    size_t victim = m_policy->chooseVictim(std::span(line_views), request, context);
+    size_t victim = m_ReplacementPolicy->chooseVictim(std::span(line_views), request, context);
 
     // Notify policy of eviction and write back if dirty
     CacheLineView victim_view = line_views[victim];
-    m_policy->onEvict(victim_view, request, context);
+    m_ReplacementPolicy->onEvict(victim_view, request, context);
 
-    if (ways[victim].dirty && write_policy_ == WritePolicy::WriteBack)
+    if (ways[victim].dirty && m_writePolicy == WritePolicy::WriteBack)
     {
-        WriteBack(set_index, victim);
+        writeBack(setIndex, victim);
     }
 
     ways[victim].valid = false; // invalidate the line before bringing in new data
     return victim;
 }
 
-void Cache::WriteBack(size_t set_index, size_t way_index)
+void Cache::writeBack(size_t setIndex, size_t wayIndex)
 {
-    CacheLine &line = sets_[set_index][way_index];
+    CacheLine &line = m_sets[setIndex][wayIndex];
     if (line.valid && line.dirty)
     {
-        uint64_t block_start_address =
-            (line.tag << (set_bits_ + offset_bits_)) | (set_index << offset_bits_);
-        for (size_t i = 0; i < block_size_ * 4; ++i)
-        {
-            WriteByteToNextLevel(block_start_address + i, line.data[i]);
-        }
-        line.dirty = false;
+        uint64_t lineStartAddress = 
+                            (line.tag << (m_setBits + m_offsetBits)) | (setIndex << m_offsetBits);
+
+        m_nextLevelMemoryRef.writeLine(lineStartAddress, std::span<const uint8_t>(line.data));
+        line.dirty = false; 
+        ++m_writeBackCount;
     }
 }
 
-void Cache::BringIn(uint64_t address, size_t set_index, size_t way_index)
+void Cache::bringIn(uint64_t address, size_t setIndex, size_t wayIndex)
 {
-    CacheLine &line = sets_[set_index][way_index];
-    uint64_t block_start_address = address & ~(offset_mask_); // align address to block boundary
+    CacheLine &line = m_sets[setIndex][wayIndex];
+    uint64_t lineStartAddress = address & ~(m_offsetMask); // align address to block boundary
 
-    line.valid = true;
-    line.dirty = false;
-    line.tag = GetTag(address);
-    line.insertTime = ++timestamp_counter_;
+    line.valid      = true;
+    line.dirty      = false;
+    line.tag        = getTag(address);
+    line.insertTime = ++m_timestampCounter;
     line.lastAccess = line.insertTime;
-    line.age = line.insertTime;
-    line.frequency = 0;
+    line.age        = line.insertTime;
+    line.frequency  = 0;
 
-    for (size_t i = 0; i < block_size_ * 4; ++i)
-    {
-        line.data[i] = ReadFromNextLevel(block_start_address + i);
-    }
+    std::span<const uint8_t> lineFromNextLevel = m_nextLevelMemoryRef.readLine(lineStartAddress, 
+                                                                                m_lineSizeInBytes);
+    std::memcpy(line.data.data(), lineFromNextLevel.data(), m_lineSizeInBytes);
+
 
     // Notify policy of insertion
     CacheLineView view = {line.valid,      line.tag,        line.age,  line.frequency,
                           line.insertTime, line.lastAccess, line.dirty};
-    CacheRequestView request = {address, set_index, way_index, GetOffset(address),
+    CacheRequestView request = {address, setIndex, wayIndex, getOffset(address),
                                 1,       false,     line.tag};
-    CacheContextView context = {num_sets_, num_ways_, block_size_, timestamp_counter_};
-    m_policy->onInsert(view, request, context);
+    CacheContextView context = {m_setCount, m_wayCount, m_lineSizeInBytes, m_timestampCounter};
+    m_ReplacementPolicy->onInsert(view, request, context);
 }
 
-bool Cache::ReadByteAccess(uint64_t address, uint8_t &value, bool count_stats)
+uint8_t Cache::getByteFromCache(uint64_t address)
 {
-    size_t set_index = GetSetIndex(address);
-    uint64_t tag = GetTag(address);
-    size_t way_index = FindWay(set_index, tag);
-
-    const bool hit = way_index < num_ways_;
-    if (hit)
-    {
-        if (count_stats)
-        {
-            ++hits_;
-        }
-        TouchWay(set_index, way_index);
-    }
-    else
-    {
-        if (count_stats)
-        {
-            ++misses_;
-        }
-        way_index = EvictWay(set_index);
-        BringIn(address, set_index, way_index);
-    }
-
-    value = sets_[set_index][way_index].data[GetOffset(address)];
-    return hit;
+    size_t   setIndex = getSetIndex(address);
+    uint64_t tag      = getTag(address);
+    size_t   wayIndex = findWay(setIndex, tag);
+    assert(wayIndex < m_wayCount && "getByteFromCache called on a cache line that is not present!");
+    return m_sets[setIndex][wayIndex].data[getOffset(address)];
 }
 
-bool Cache::WriteByteAccess(uint64_t address, uint8_t value, bool count_stats)
+void Cache::putByteInCache(uint64_t address, uint8_t value)
 {
-    size_t set_index = GetSetIndex(address);
-    uint64_t tag = GetTag(address);
-    size_t offset = GetOffset(address);
-    size_t way_index = FindWay(set_index, tag);
+    size_t   setIndex = getSetIndex(address);
+    uint64_t tag      = getTag(address);
+    size_t   wayIndex = findWay(setIndex, tag);
+    CacheLine &line = m_sets[setIndex][wayIndex];
+    line.data[getOffset(address)] = value;
 
-    const bool hit = way_index < num_ways_;
-    if (!hit)
+    if (m_writePolicy == WritePolicy::WriteThrough)
     {
-        if (count_stats)
-        {
-            ++misses_;
-        }
-
-        if (allocation_policy_ == AllocationPolicy::NoWriteAllocate)
-        {
-            WriteByteToNextLevel(address, value);
-            return false;
-        }
-
-        way_index = EvictWay(set_index);
-        BringIn(address, set_index, way_index);
-    }
-    else
-    {
-        if (count_stats)
-        {
-            ++hits_;
-        }
-        TouchWay(set_index, way_index);
-    }
-
-    CacheLine &line = sets_[set_index][way_index];
-    line.data[offset] = value;
-
-    if (write_policy_ == WritePolicy::WriteThrough)
-    {
-        WriteByteToNextLevel(address, value);
+        // writeByteToNextLevel(address, value);
         line.dirty = false;
     }
     else
     {
         line.dirty = true;
     }
-
-    return hit;
 }
 
-template <typename T> T Cache::ReadGeneric(uint64_t address)
+template<typename T>
+bool Cache::isHit(uint64_t address) const
+{
+    uint64_t currentAddress = address;
+    uint64_t endAddress = address + sizeof(T) - 1;
+    // we check if all the line that the data access will touch are in the cache
+    // because the data can be split across multiple cache lines
+    while(currentAddress <= endAddress)
+    {
+        size_t   setIndex = getSetIndex(currentAddress);
+        uint64_t tag      = getTag(currentAddress);
+        size_t   wayIndex = findWay(setIndex, tag);
+        if (wayIndex >= m_wayCount)
+        {
+            return false;
+        }
+        currentAddress += m_lineSizeInBytes - getOffset(currentAddress); // move to the next cache line
+    }
+    return true;
+}
+
+template<typename T>
+void Cache::touchLines(uint64_t address)
+{
+    uint64_t currentAddress = address;
+    uint64_t endAddress = address + sizeof(T) - 1;
+    while(currentAddress <= endAddress)
+    {
+        size_t   setIndex = getSetIndex(currentAddress);
+        uint64_t tag      = getTag(currentAddress);
+        size_t   wayIndex = findWay(setIndex, tag);
+        touchWay(setIndex, wayIndex); // we know its a cache hit because we 
+                                      // check it before calling this function
+        currentAddress += m_lineSizeInBytes - getOffset(currentAddress);
+    }
+}
+
+template<typename T>
+void Cache::bringInLines(uint64_t address)
+{
+    uint64_t currentAddress = address;
+    uint64_t endAddress = address + sizeof(T) - 1;
+    while(currentAddress <= endAddress)
+    {
+        size_t   setIndex = getSetIndex(currentAddress);
+        size_t   wayIndex = evictCacheLine(setIndex);
+        bringIn(currentAddress, setIndex, wayIndex);
+        currentAddress += m_lineSizeInBytes - getOffset(currentAddress);
+    }
+}
+
+template <typename T> 
+T Cache::readGeneric(uint64_t address)
 {
     if (address >= vm_config::config.getMemorySize() - (sizeof(T) - 1))
     {
@@ -336,41 +368,43 @@ template <typename T> T Cache::ReadGeneric(uint64_t address)
     }
 
     // Multi-byte accesses can cross cache-line boundaries; handle them byte-wise.
-
-    // The issue here is that if we read byte wise the hits cournt will increase for every bit
-    // but we want it tom counte when all the byte are in the cache for the
+    // The issue here is that if we read byte wise the hits count will increase for every byte
+    // but we want it to count when all the byte are in the cache for the
     // word/half-word/double-word access
-    if constexpr (sizeof(T) > 1)
+    bool hit = isHit<T>(address);
+    if(hit)
     {
-        T value = 0;
-        bool all_hit = true;
-        for (size_t i = 0; i < sizeof(T); ++i)
-        {
-            uint8_t byte = 0;
-            all_hit = ReadByteAccess(address + i, byte, false) && all_hit;
-            value |= static_cast<T>(byte) << (8 * i);
-        }
-
-        if (all_hit)
-        {
-            ++hits_;
-        }
-        else
-        {
-            ++misses_;
-        }
-
-        return value;
+        ++m_hitCount;
+        touchLines<T>(address);
     }
     else
     {
-        uint8_t byte = 0;
-        ReadByteAccess(address, byte, true);
-        return static_cast<T>(byte);
+        ++m_missCount;
+        bringInLines<T>(address);
     }
+
+    T value = 0;
+    for(size_t i = 0; i < sizeof(T); ++i)
+    {
+        uint8_t byte = getByteFromCache(address + i);
+        value |= static_cast<T>(byte) << (8 * i);
+    }
+
+    if(hit)
+    {
+        emit cacheHitSignal(address);
+    }
+    else
+    {
+        emit cacheMissSignal(address);
+    }
+    emit cacheLineUpdatedSignal(address);
+    updateStats();
+    return value;
 }
 
-template <typename T> void Cache::WriteCacheGeneric(uint64_t address, T value)
+template <typename T> 
+void Cache::writeGeneric(uint64_t address, T value)
 {
     if (address >= vm_config::config.getMemorySize() - (sizeof(T) - 1))
     {
@@ -378,231 +412,229 @@ template <typename T> void Cache::WriteCacheGeneric(uint64_t address, T value)
                                 std::to_string(address));
     }
 
-    // Multi-byte accesses can cross cache-line boundaries; handle them byte-wise.
-    if constexpr (sizeof(T) > 1)
+    bool hit = isHit<T>(address);
+    if(hit)
     {
-        bool all_hit = true;
-        for (size_t i = 0; i < sizeof(T); ++i)
+        ++m_hitCount;
+        touchLines<T>(address);
+    }
+    else
+    {
+        ++m_missCount;
+        
+        if(m_allocationPolicy == AllocationPolicy::NoWriteAllocate)
         {
-            all_hit = WriteByteAccess(address + i, static_cast<uint8_t>((value >> (8 * i)) & 0xFF),
-                                      false) &&
-                      all_hit;
+            if constexpr(std::is_same_v<T, uint8_t>)
+            {
+                m_nextLevelMemoryRef.writeByte(address, static_cast<uint8_t>(value));
+            }
+            else if constexpr(std::is_same_v<T, uint16_t>)
+            {
+                m_nextLevelMemoryRef.writeHalfWord(address, static_cast<uint16_t>(value));
+            }
+            else if constexpr(std::is_same_v<T, uint32_t>)
+            {
+                m_nextLevelMemoryRef.writeWord(address, static_cast<uint32_t>(value));
+            }
+            else if constexpr(std::is_same_v<T, uint64_t>)
+            {
+                m_nextLevelMemoryRef.writeDoubleWord(address, static_cast<uint64_t>(value));
+            }
+            return;
         }
+        bringInLines<T>(address);
+    }
 
-        if (all_hit)
-        {
-            ++hits_;
-        }
-        else
-        {
-            ++misses_;
-        }
+    for(size_t i = 0; i < sizeof(T); ++i)
+    {
+        uint8_t byte = static_cast<uint8_t>((value >> (8 * i)) & 0xFF);
+        putByteInCache(address + i, byte);
+    }
 
-        return;
+    if(hit)
+    {
+        emit cacheHitSignal(address);
     }
     else
     {
-        WriteByteAccess(address, static_cast<uint8_t>(value), true);
+        emit cacheMissSignal(address);
     }
+    emit cacheLineUpdatedSignal(address);
+    updateStats();
+
 }
 
-uint8_t Cache::ReadByte(uint64_t address)
+uint8_t Cache::readByte(uint64_t address)
 {
-    const size_t misses_before = misses_;
-    const uint8_t value = ReadGeneric<uint8_t>(address);
-    if (misses_ > misses_before)
-    {
-        emit CacheMissSignal(address);
-    }
-    else
-    {
-        emit CacheHitSignal(address);
-    }
-    emit CacheLineUpdatedSignal(address);
-    UpdateStats();
-    return value;
+    return readGeneric<uint8_t>(address);
 }
 
-uint16_t Cache::ReadHalfWord(uint64_t address)
+uint16_t Cache::readHalfWord(uint64_t address)
 {
-    const size_t misses_before = misses_;
-    const uint16_t value = ReadGeneric<uint16_t>(address);
-    if (misses_ > misses_before)
-    {
-        emit CacheMissSignal(address);
-    }
-    else
-    {
-        emit CacheHitSignal(address);
-    }
-    emit CacheLineUpdatedSignal(address);
-    UpdateStats();
-    return value;
+    return readGeneric<uint16_t>(address);
 }
 
-uint32_t Cache::ReadWord(uint64_t address)
+uint32_t Cache::readWord(uint64_t address)
 {
-    const size_t misses_before = misses_;
-    const uint32_t value = ReadGeneric<uint32_t>(address);
-    if (misses_ > misses_before)
-    {
-        emit CacheMissSignal(address);
-    }
-    else
-    {
-        emit CacheHitSignal(address);
-    }
-    emit CacheLineUpdatedSignal(address);
-    UpdateStats();
-    return value;
+    return readGeneric<uint32_t>(address);
 }
 
-uint64_t Cache::ReadDoubleWord(uint64_t address)
+uint64_t Cache::readDoubleWord(uint64_t address)
 {
-    const size_t misses_before = misses_;
-    const uint64_t value = ReadGeneric<uint64_t>(address);
-    if (misses_ > misses_before)
-    {
-        emit CacheMissSignal(address);
-    }
-    else
-    {
-        emit CacheHitSignal(address);
-    }
-    emit CacheLineUpdatedSignal(address);
-    UpdateStats();
-    return value;
+    return readGeneric<uint64_t>(address);
 }
 
-void Cache::WriteByte(uint64_t address, uint8_t value)
+void Cache::writeByte(uint64_t address, uint8_t value)
 {
-    const size_t misses_before = misses_;
-    WriteCacheGeneric<uint8_t>(address, value);
-    if (misses_ > misses_before)
-    {
-        emit CacheMissSignal(address);
-    }
-    else
-    {
-        emit CacheHitSignal(address);
-    }
-    emit CacheLineUpdatedSignal(address);
-    UpdateStats();
+    writeGeneric<uint8_t>(address, value);
 }
 
-void Cache::WriteHalfWord(uint64_t address, uint16_t value)
+void Cache::writeHalfWord(uint64_t address, uint16_t value)
 {
-    const size_t misses_before = misses_;
-    WriteCacheGeneric<uint16_t>(address, value);
-    if (misses_ > misses_before)
-    {
-        emit CacheMissSignal(address);
-    }
-    else
-    {
-        emit CacheHitSignal(address);
-    }
-    emit CacheLineUpdatedSignal(address);
-    UpdateStats();
+    writeGeneric<uint16_t>(address, value);
 }
 
-void Cache::WriteWord(uint64_t address, uint32_t value)
+void Cache::writeWord(uint64_t address, uint32_t value)
 {
-    const size_t misses_before = misses_;
-    WriteCacheGeneric<uint32_t>(address, value);
-    if (misses_ > misses_before)
-    {
-        emit CacheMissSignal(address);
-    }
-    else
-    {
-        emit CacheHitSignal(address);
-    }
-    emit CacheLineUpdatedSignal(address);
-    UpdateStats();
+    writeGeneric<uint32_t>(address, value);
 }
 
-void Cache::WriteDoubleWord(uint64_t address, uint64_t value)
+void Cache::writeDoubleWord(uint64_t address, uint64_t value)
 {
-    const size_t misses_before = misses_;
-    WriteCacheGeneric<uint64_t>(address, value);
-    if (misses_ > misses_before)
-    {
-        emit CacheMissSignal(address);
-    }
-    else
-    {
-        emit CacheHitSignal(address);
-    }
-    emit CacheLineUpdatedSignal(address);
-    UpdateStats();
+    writeGeneric<uint64_t>(address, value);
 }
 
-void Cache::Reset()
+void Cache::reset()
 {
-    for (auto &set : sets_)
+    for (auto &set : m_sets)
     {
         for (auto &line : set)
         {
-            line.valid = false;
-            line.dirty = false;
-            line.age = 0;
+            line.valid      = false;
+            line.dirty      = false;
+            line.age        = 0;
             line.insertTime = 0;
             line.lastAccess = 0;
-            line.frequency = 0;
+            line.frequency  = 0;
             std::fill(std::begin(line.data), std::end(line.data), 0);
         }
     }
-    timestamp_counter_ = 0;
-    hits_ = 0;
-    misses_ = 0;
+    m_timestampCounter = 0;
+    m_hitCount = 0;
+    m_missCount = 0;
+    m_writeBackCount = 0;
+    updateStats();
 }
 
-void Cache::Flush()
+void Cache::flush()
 {
-    for (size_t set_index = 0; set_index < num_sets_; ++set_index)
+    for (size_t setIndex = 0; setIndex < m_setCount; ++setIndex)
     {
-        for (size_t way_index = 0; way_index < num_ways_; ++way_index)
+        for (size_t wayIndex = 0; wayIndex < m_wayCount; ++wayIndex)
         {
-            if (sets_[set_index][way_index].valid && sets_[set_index][way_index].dirty)
+            if (m_sets[setIndex][wayIndex].valid && m_sets[setIndex][wayIndex].dirty)
             {
-                WriteBack(set_index, way_index);
+                writeBack(setIndex, wayIndex);
             }
         }
     }
-    Reset();
+    reset();
 }
 
-void Cache::UpdateStats()
+void Cache::updateStats()
 {
     CacheStats stats;
-    stats.hits = hits_;
-    stats.misses = misses_;
+    stats.hitCount         = m_hitCount;
+    stats.missCount        = m_missCount;
+    stats.writeBackCount   = m_writeBackCount;
+    stats.hitRate          = m_hitCount + m_missCount > 0 ?
+                             static_cast<double>(m_hitCount) / (m_hitCount + m_missCount): 0.0;
+    stats.cacheSizeInBytes = m_setCount * m_wayCount * m_lineSizeInBytes;
     // For write-backs, we would need to track them in the WriteBack function
     // stats.writeBacks = write_backs_;
-    emit CacheStatsUpdatedSignal(stats);
+    emit cacheStatsUpdatedSignal(stats);
 }
 
-void Cache::LoadCustomPolicyScript(const std::string &path)
+void Cache::loadCustomPolicyScript(const std::string &path)
 {
-    custom_policy_script_path_ = path;
-    ReplacementPolicy old_replacement_policy = m_policy->type();
+    m_customPolicyScriptPath = path;
+    ReplacementPolicy old_replacement_policy = m_ReplacementPolicy->type();
     std::string old_script_path;
     if (old_replacement_policy == ReplacementPolicy::Custom)
     {
-        old_script_path = dynamic_cast<CustomReplacementPolicy *>(m_policy.get())->getScriptPath();
+        old_script_path = dynamic_cast<CustomReplacementPolicy*>(m_ReplacementPolicy.get())->getScriptPath();
     }
     try
     {
-        m_policy = CreatePolicy(ReplacementPolicy::Custom, custom_policy_script_path_);
-        emit CustomPolicyScriptLoadedSignal(true, custom_policy_script_path_);
+        m_ReplacementPolicy = createPolicy(ReplacementPolicy::Custom, m_customPolicyScriptPath);
+        emit customPolicyScriptLoadedSignal(true, m_customPolicyScriptPath);
     }
     catch (const std::exception &e)
     {
-        emit CustomPolicyScriptLoadedSignal(false, e.what());
-        m_policy = CreatePolicy(old_replacement_policy,
+        emit customPolicyScriptLoadedSignal(false, e.what());
+        m_ReplacementPolicy = createPolicy(old_replacement_policy,
                                 old_script_path); // revert to old policy on failure
     }
+}
+
+// Statistics
+size_t Cache::getHitCount() const
+{
+    return m_hitCount;
+}
+size_t Cache::getMissCount() const
+{
+    return m_missCount;
+}
+double Cache::getHitRate() const
+{
+    size_t total = m_hitCount + m_missCount;
+    return total > 0 ? static_cast<double>(m_hitCount) / total : 0.0;
+}
+double Cache::getMissRate() const
+{
+    size_t total = m_hitCount + m_missCount;
+    return total > 0 ? static_cast<double>(m_missCount) / total : 0.0;
+}
+size_t Cache::getSetCount() const
+{
+    return m_setCount;
+}
+size_t Cache::getWayCount() const
+{
+    return m_wayCount;
+}
+size_t Cache::getLineSizeInBytes() const
+{
+    return m_lineSizeInBytes;
+}
+size_t Cache::getCacheSizeInBytes() const
+{
+    return m_setCount * m_wayCount * m_lineSizeInBytes;
+}
+// Address Decomposition Helper Functions
+uint64_t Cache::getTag(uint64_t address) const
+{
+    return address >> (m_offsetBits + m_setBits);
+}
+size_t Cache::getSetIndex(uint64_t address) const
+{
+    return static_cast<size_t>(address >> m_offsetBits) & m_setMask;
+}
+size_t Cache::getOffset(uint64_t address) const
+{
+    return static_cast<size_t>(address & m_offsetMask);
+}
+CacheConfig Cache::getConfig() const
+{
+    return CacheConfig{
+        .lineCount = m_setCount,
+        .lineSizeInBytes = m_lineSizeInBytes,
+        .wayCount = m_wayCount,
+        .writePolicy = m_writePolicy,
+        .allocationPolicy = m_allocationPolicy,
+        .replacementPolicy = m_ReplacementPolicy->type()
+    };
 }
 }//namespace Kites
 

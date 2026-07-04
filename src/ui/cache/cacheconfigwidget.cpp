@@ -2,7 +2,7 @@
 #include "ui_cacheconfigwidget.h"
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QSignalBlocker>
+
 
 namespace Kites
 {
@@ -20,53 +20,42 @@ CacheConfigWidget::CacheConfigWidget(QWidget *parent)
     ui->customPolicyScriptlineEdit->setReadOnly(true);
 
     connect(ui->linesSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this,
-            &CacheConfigWidget::configChanged);
+            &CacheConfigWidget::configChangedSignal);
     connect(ui->waysSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this,
-            &CacheConfigWidget::configChanged);
+            &CacheConfigWidget::configChangedSignal);
     connect(ui->wordsSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this,
-            &CacheConfigWidget::configChanged);
-
-    connect(ui->linesSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this,
-            &CacheConfigWidget::UpdateSize);
-    connect(ui->waysSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this,
-            &CacheConfigWidget::UpdateSize);
-    connect(ui->wordsSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this,
-            &CacheConfigWidget::UpdateSize);
+            &CacheConfigWidget::configChangedSignal);
 
     connect(ui->writeHitComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-            &CacheConfigWidget::configChanged);
+            &CacheConfigWidget::configChangedSignal);
     connect(ui->writeMissComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-            &CacheConfigWidget::configChanged);
+            &CacheConfigWidget::configChangedSignal);
     connect(ui->repPolComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-            [this]
-            {
-                if (static_cast<ReplacementPolicy>(ui->repPolComboBox->currentIndex()) ==
-                    ReplacementPolicy::Custom)
-                {
-                    OnCustomPolicyClicked();
-                }
-                else
-                {
-                    ui->customPolicyScriptlineEdit->clear();
-                    m_lastSelectedPolicy =
-                        static_cast<ReplacementPolicy>(ui->repPolComboBox->currentIndex());
-                    emit CacheConfigWidget::configChanged();
-                }
-            });
-    // connect(ui->browsePushButton, &QPushButton::clicked, this,
-    // &CacheConfigWidget::OnBrowseClicked); connect(ui->applyPushButton, &QPushButton::clicked,
-    // this, &CacheConfigWidget::onApplyClicked);
-    UpdateSize();
+    [this]
+    {
+        if (ui->repPolComboBox->currentData().value<ReplacementPolicy>() == 
+        ReplacementPolicy::Custom)
+        {
+            onCustomPolicyClicked();
+        }
+        else
+        {
+            ui->customPolicyScriptlineEdit->clear();
+            m_lastSelectedPolicy =
+                static_cast<ReplacementPolicy>(ui->repPolComboBox->currentIndex());
+            emit CacheConfigWidget::configChangedSignal();
+        }
+    });
 }
 
-void CacheConfigWidget::OnCustomPolicyClicked()
+void CacheConfigWidget::onCustomPolicyClicked()
 {
     QString fileName = QFileDialog::getOpenFileName(
         this, tr("Select Custom Replacement Policy Script"), "", tr("lua Scripts (*.lua)"));
     if (!fileName.isEmpty())
     {
         // ui->customPolicyScriptlineEdit->setText(fileName);
-        emit customPolicyScriptSelected(fileName.toStdString());
+        emit customPolicyScriptSelectedSignal(fileName.toStdString());
     }
     else
     {
@@ -80,90 +69,69 @@ void CacheConfigWidget::OnCustomPolicyClicked()
 }
 //
 
-CacheConfig CacheConfigWidget::GetConfig() const
+CacheConfig CacheConfigWidget::getConfig() const
 {
     CacheConfig config;
-    config.num_lines = 1ULL << ui->linesSpinBox->value();
-    config.block_size = 1ULL << ui->wordsSpinBox->value();
-    config.num_ways = 1ULL << ui->waysSpinBox->value();
-    config.write_policy = ui->writeHitComboBox->currentIndex() == 0 ? WritePolicy::WriteThrough
-                                                                    : WritePolicy::WriteBack;
-    config.allocation_policy = ui->writeMissComboBox->currentIndex() == 0
-                                   ? AllocationPolicy::WriteAllocate
-                                   : AllocationPolicy::NoWriteAllocate;
-    config.replacement_policy = static_cast<ReplacementPolicy>(ui->repPolComboBox->currentIndex());
+    config.lineCount = 1ULL << ui->linesSpinBox->value();
+    config.lineSizeInBytes = (1ULL <<ui->wordsSpinBox->value())* sizeof(uint32_t);
+    config.wayCount = 1ULL << ui->waysSpinBox->value();
+    config.writePolicy = ui->writeHitComboBox->currentData().value<WritePolicy>();
+    config.allocationPolicy = ui->writeMissComboBox->currentData().value<AllocationPolicy>();
+    config.replacementPolicy = ui->repPolComboBox->currentData().value<ReplacementPolicy>();
     return config;
 }
 
-int CacheConfigWidget::GetLinesExponent() const
+int CacheConfigWidget::getLinesExponent() const
 {
     return ui->linesSpinBox->value();
 }
 
-int CacheConfigWidget::GetWaysExponent() const
+int CacheConfigWidget::getWaysExponent() const
 {
     return ui->waysSpinBox->value();
 }
 
-int CacheConfigWidget::GetWordsExponent() const
+int CacheConfigWidget::getWordsExponent() const
 {
     return ui->wordsSpinBox->value();
 }
 
-void CacheConfigWidget::SetLinesExponent(int value, bool notify)
+void CacheConfigWidget::setLinesExponent(int value)
 {
-    if (notify)
-    {
-        ui->linesSpinBox->setValue(value);
-        return;
-    }
-
-    // blocking signal as we are changing the value programmatically
-    // and don't want to trigger configChanged signal
-    QSignalBlocker blocker(ui->linesSpinBox);
     ui->linesSpinBox->setValue(value);
 }
 
-void CacheConfigWidget::SetWaysExponent(int value, bool notify)
+void CacheConfigWidget::setWaysExponent(int value)
 {
-    if (notify)
-    {
-        ui->waysSpinBox->setValue(value);
-        return;
-    }
-
-    QSignalBlocker blocker(ui->waysSpinBox);
     ui->waysSpinBox->setValue(value);
 }
 
-void CacheConfigWidget::SetWordsExponent(int value, bool notify)
+void CacheConfigWidget::setWordsExponent(int value)
 {
-    if (notify)
-    {
-        ui->wordsSpinBox->setValue(value);
-        return;
-    }
-
-    QSignalBlocker blocker(ui->wordsSpinBox);
     ui->wordsSpinBox->setValue(value);
 }
 
-void CacheConfigWidget::CacheStatsUpdated(CacheStats newStats)
+void CacheConfigWidget::setConfig(CacheConfig config)
 {
-    const size_t size = (size_t(1) << ui->linesSpinBox->value()) *
-                        (size_t(1) << ui->wordsSpinBox->value()) *
-                        (size_t(1) << ui->waysSpinBox->value());
-    ui->sizeLineEdit->setText(QString::number(size) + " bytes");
-    ui->hitsLineEdit->setText(QString::number(newStats.hits));
-    ui->missesLineEdit->setText(QString::number(newStats.misses));
-    ui->writeBackLineEdit->setText(QString::number(newStats.writeBacks));
-    const size_t totalAccesses = newStats.hits + newStats.misses;
-    const double hitrate =
-        totalAccesses > 0 ? static_cast<double>(newStats.hits) / totalAccesses * 100.0 : 0.0;
-    ui->hitrateLineEdit->setText(QString::number(hitrate, 'f', 2) + " %");
+    QSignalBlocker blocker(this);
+    ui->linesSpinBox->setValue(static_cast<int>(std::log2(config.lineCount)));
+    ui->waysSpinBox->setValue(static_cast<int>(std::log2(config.wayCount)));
+    ui->wordsSpinBox->setValue(static_cast<int>(std::log2(config.lineSizeInBytes/sizeof(uint32_t))));
+    ui->writeHitComboBox->setCurrentIndex(static_cast<int>(config.writePolicy));
+    ui->writeMissComboBox->setCurrentIndex(static_cast<int>(config.allocationPolicy));
+    ui->repPolComboBox->setCurrentIndex(static_cast<int>(config.replacementPolicy));
 }
 
-void CacheConfigWidget::CustomPolicyScriptLoaded(bool success, const std::string &message)
+void CacheConfigWidget::cacheStatsUpdatedSlot(CacheStats newStats)
+{
+    ui->sizeLineEdit->setText(QString::number(newStats.cacheSizeInBytes) + " bytes");
+    ui->hitsLineEdit->setText(QString::number(newStats.hitCount));
+    ui->missesLineEdit->setText(QString::number(newStats.missCount));
+    ui->writeBackLineEdit->setText(QString::number(newStats.writeBackCount));
+    ui->hitrateLineEdit->setText(QString::number(newStats.hitRate, 'f', 2) + " %");
+}
+
+void CacheConfigWidget::customPolicyScriptLoadedSlot(bool success, const std::string &message)
 {
     QString messageStr = QString::fromStdString(message);
     if (success)
@@ -182,13 +150,13 @@ void CacheConfigWidget::CustomPolicyScriptLoaded(bool success, const std::string
     }
 }
 
-void CacheConfigWidget::UpdateSize()
-{
-    const size_t size = (size_t(1) << ui->linesSpinBox->value()) *
-                        (size_t(1) << ui->wordsSpinBox->value()) *
-                        (size_t(1) << ui->waysSpinBox->value());
-    ui->sizeLineEdit->setText(QString::number(size) + " bytes");
-}
+// void CacheConfigWidget::UpdateSize()
+// {
+//     const size_t size = (size_t(1) << ui->linesSpinBox->value()) *
+//                         (size_t(1) << ui->wordsSpinBox->value()) *
+//                         (size_t(1) << ui->waysSpinBox->value());
+//     ui->sizeLineEdit->setText(QString::number(size) + " bytes");
+// }
 
 CacheConfigWidget::~CacheConfigWidget()
 {

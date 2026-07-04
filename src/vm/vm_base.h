@@ -33,13 +33,13 @@ namespace Kites
 
 enum SyscallCode
 {
-    SYSCALL_PRINT_INT = 1,
-    SYSCALL_PRINT_FLOAT = 2,
+    SYSCALL_PRINT_INT    = 1,
+    SYSCALL_PRINT_FLOAT  = 2,
     SYSCALL_PRINT_DOUBLE = 3,
     SYSCALL_PRINT_STRING = 4,
-    SYSCALL_EXIT = 10,
-    SYSCALL_READ = 63,
-    SYSCALL_WRITE = 64,
+    SYSCALL_EXIT         = 10,
+    SYSCALL_READ         = 63,
+    SYSCALL_WRITE        = 64,
 };
 
 struct RegisterChange
@@ -68,7 +68,7 @@ class VmBase : public QObject
     ~VmBase() = default;
 
     AssembledProgram program_;
-    std::atomic<bool> stop_requested_ = false;
+    std::atomic<bool> stop_requested_  = false;
     std::atomic<bool> pause_requested_ = false;
 
     QMutex pause_mutex_;
@@ -110,7 +110,7 @@ class VmBase : public QObject
     // todo make every file under kites namespace
     // make just make this a raw pointer later
     //  qt is anyways handling the memory management of widgets
-    std::unique_ptr<Kites::CircuitScene> circuit_scene_; // Circuit scene for visualization
+    std::unique_ptr<CircuitScene> circuit_scene_; // Circuit scene for visualization
 
     void LoadProgram(const AssembledProgram &program);
     uint64_t program_size_ = 0;
@@ -144,12 +144,12 @@ class VmBase : public QObject
     // void HandleSyscall();
     void PrintString(uint64_t address);
 
-    virtual void Run() = 0;
+    virtual void Run()      = 0;
     virtual void DebugRun() = 0;
-    virtual void Step() = 0;
-    virtual void Undo() = 0;
-    virtual void Redo() = 0;
-    virtual void Reset() = 0;
+    virtual void Step()     = 0;
+    virtual void Undo()     = 0;
+    virtual void Redo()     = 0;
+    virtual void Reset()    = 0;
     void DumpState(const std::filesystem::path &filename);
 
     void ModifyRegister(const std::string &reg_name, uint64_t value);

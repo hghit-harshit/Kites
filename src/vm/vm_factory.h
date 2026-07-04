@@ -34,6 +34,7 @@ class VMFactory
     }
 
   private:
+    VMFactory() = default;
     static VMFactory &getInstance()
     {
         static VMFactory instance;
