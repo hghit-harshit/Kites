@@ -134,7 +134,6 @@ QVariant MemoryModel::data(const QModelIndex &index, int role) const
 
     if (role == Qt::DisplayRole || role == Qt::ToolTipRole)
     {
-        // if(!m_memoryController) return QString("hello");
         int offsetAddress = ((((m_rowsVisible * 8) / 2) / 8) * 8) - (index.row() * 8);
         // protecting against overflows
         if ((offsetAddress < 0 && abs(offsetAddress) > m_currentCentralAddress) ||
@@ -176,13 +175,13 @@ QVariant MemoryModel::data(const QModelIndex &index, int role) const
         }
         case 1: // Double Word
         {
-            uint64_t doubleWord = m_memoryController->readDoubleWord(alignedAddress);
+            uint64_t doubleWord = m_memoryController->readDoubleWord_d(alignedAddress);
             return QString("%1%2").arg(prefix).arg(
                 QString::number(doubleWord, static_cast<int>(m_displayBase)).toUpper());
         }
         default:
         {
-            uint8_t byte = m_memoryController->readByte(alignedAddress + (index.column() - 2));
+            uint8_t byte = m_memoryController->readByte_d(alignedAddress + (index.column() - 2));
             return QString("%1%2").arg(prefix).arg(
                 QString::number(byte, static_cast<int>(m_displayBase)).toUpper());
         }
