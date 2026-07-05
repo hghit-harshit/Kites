@@ -11,17 +11,6 @@ ProcessorTab::ProcessorTab(QWidget *parent, VMManager *vmManager)
     : KitesTab(parent), ui(new Ui::ProcessorTab), m_vmManager(vmManager)
 {
     ui->setupUi(this);
-    // Create your circuit design
-    // auto* scene = new BaseProcessorDesign();
-
-    // Create the visualization widget
-    // auto* vsrtlWidget = new vsrtl::VSRTLWidget(this);
-    // vsrtlWidget->setDesign(design); // Important: builds the visual scen
-    // Add it to your layout
-    // QHBoxLayout *design_layout = new QHBoxLayout(ui->design_display);
-    // design_layout->addWidget();
-    // auto *scene = new CircuitScene(this);
-    // scene->loadScene("C:/Users/hghit/Desktop/NH_NF_Processor.json");
     m_vmStateTableModel = new VMStateTableModel(this, m_vmManager);
     ui->graphicsView->setScene(m_vmManager->getCircuitScene());
     ui->tableView->setModel(m_vmStateTableModel);

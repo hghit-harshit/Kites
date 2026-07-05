@@ -124,7 +124,7 @@ void CircuitScene::fitTableToCircuit(const QString &vmType)
     int totalWidth = (int)(colWidth * m_columnKeys.size());
     m_instructionTable->setFixedWidth(totalWidth + 4);
     m_instructionTable->setFixedHeight(m_instructionTable->horizontalHeader()->height() +
-                                       m_instructionTable->rowHeight(0) + 10);
+                                       m_instructionTable->rowHeight(0));
 
     // ── 4. Position above circuit ──
     for (QGraphicsItem *item : items())

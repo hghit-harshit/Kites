@@ -59,7 +59,7 @@ class Profiler : public QObject
     std::map<int, int>                   m_line_to_execution_counts{}; 
     std::map<int, instruction_set::InstructionType>       m_line_number_instruction_type_mapping{};
 
-    InstructionTypeCounts m_instruction_type_counts{};
+    InstructionTypeCounts m_instructionTypeCounts{};
     
 };
 }//namespace Kites

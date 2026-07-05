@@ -41,5 +41,6 @@ class KitesEditor : public QPlainTextEdit
     void lineNumberAreaPaintEvent(QPaintEvent *event);
     void highlightCurrentLine();
     void resizeEvent(QResizeEvent *event) override;
+	void changeEvent(QEvent *event) override;
 };
 } // namespace Kites

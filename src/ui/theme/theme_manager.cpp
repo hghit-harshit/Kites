@@ -5,7 +5,7 @@
 namespace Kites
 {
 
-ThemeManager::ThemeManager() : m_currentThemeType(ThemeType::Dark)
+ThemeManager::ThemeManager()
 {
     setUpThemes();
 }
@@ -28,8 +28,8 @@ void ThemeManager::setTheme(ThemeType theme)
 
     m_currentThemeType = theme;
     QApplication::setPalette(m_themes[static_cast<size_t>(theme)].palette);
-
-    qApp->setStyleSheet(loadStyleSheet(m_themes[static_cast<size_t>(theme)].stylesheetPath));
+    if (!m_themes[static_cast<size_t>(theme)].stylesheetPath.isEmpty())
+        qApp->setStyleSheet(loadStyleSheet(m_themes[static_cast<size_t>(theme)].stylesheetPath));
     emit themeChangedSignal(theme);
 }
 
@@ -69,7 +69,7 @@ void ThemeManager::setUpThemes()
         ThemeData &theme = m_themes[static_cast<size_t>(ThemeType::Light)];
         theme.type           = ThemeType::Light;
         theme.name           = "Light";
-        theme.stylesheetPath = ":/themes/aqua_light.qss";
+        theme.stylesheetPath = "";
         theme.iconColor      = QColor("#1A1A1A");
         theme.textColor      = QColor("#1A1A1A");
         theme.cacheHitColor  = QColor("#2ada5c");
@@ -118,7 +118,7 @@ void ThemeManager::setUpThemes()
         ThemeData &theme = m_themes[static_cast<size_t>(ThemeType::Dark)];
         theme.type           = ThemeType::Dark;
         theme.name           = "Dark";
-        theme.stylesheetPath = ":/themes/elegant_dark.qss";
+        theme.stylesheetPath = "";
         theme.iconColor      = QColor("#FFFFFF");
         theme.textColor      = QColor("#FFFFFF");
         theme.cacheHitColor  = QColor("#2ADA5C");

@@ -37,10 +37,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     setupVmStateDirectory();
 
     // well run the vm in a separate thread to keep the ui responsive
+    // do not touch these 4 line unless you really know what you are doing
     m_vmManager = new VMManager();
     m_vmThread = new QThread(this);
     m_vmManager->moveToThread(m_vmThread);
     m_vmThread->start();
+
+    m_sharedContext.vmManager = m_vmManager;
+    m_
 
     connect(this, &MainWindow::runVMSignal, m_vmManager, &VMManager::runSlot);
     // well temporarily disable the toolbar buttons when vm is running
@@ -92,7 +96,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     // m_registerContainer = new RegisterContainer(this);
     mainLayout->addWidget(m_sidebar);
-
+    mainLayout->setSpacing(0);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
     splitter->addWidget(m_stackedTabs);
     splitter->addWidget(m_registerContainer);
     splitter->widget(1)->setMaximumWidth(350);

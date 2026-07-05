@@ -90,6 +90,8 @@ void KitesEditor::highlightCurrentLine()
     {
         QTextEdit::ExtraSelection selection;
 
+        //TODO : improve this not working for light theme
+        // gett this value from theme manager
         QColor lineColor = palette().color(QPalette::Base).lighter(115);
 
         selection.format.setBackground(lineColor);
@@ -108,5 +110,15 @@ void KitesEditor::resizeEvent(QResizeEvent *event)
 
     QRect cr = contentsRect();
     m_lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
+}
+
+void KitesEditor::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::PaletteChange)
+    {
+        // Update the line number area when the palette changes
+        highlightCurrentLine();
+    }
+    QPlainTextEdit::changeEvent(event);
 }
 } // namespace Kites

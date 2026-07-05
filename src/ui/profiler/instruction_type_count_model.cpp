@@ -8,7 +8,7 @@ InstructionTypeCountModel::InstructionTypeCountModel(
     QObject *parent, 
     const std::array<size_t, static_cast<size_t>(instr::InstructionType::INSTRUCTION_TYPE_COUNT)> 
     &instruction_type_counts)
-    : QAbstractTableModel(parent), m_instruction_type_counts(instruction_type_counts)
+    : QAbstractTableModel(parent), m_instructionTypeCounts(instruction_type_counts)
 {}
 
 int InstructionTypeCountModel::columnCount(const QModelIndex &parent) const
@@ -52,18 +52,16 @@ QVariant InstructionTypeCountModel::data(const QModelIndex &index, int role) con
         return QVariant();
     }
     Column column = static_cast<Column>(index.column());
-    if (column == Column::INSTRUCTION_TYPE)
+    if (column == Column::InstructionType)
     {
-        // Return the instruction type name
-        
         std::string typeName = instr::instructionTypeNames[static_cast<size_t>(index.row())];
         return QString::fromStdString(typeName);
         
     }
-    else if (column == Column::COUNT)
+    else if (column == Column::InstructionCount)
     {
         // Return the count
-        size_t count = m_instruction_type_counts[static_cast<size_t>(index.row())];
+        size_t count = m_instructionTypeCounts[static_cast<size_t>(index.row())];
         return QString::number(count);
     }
 

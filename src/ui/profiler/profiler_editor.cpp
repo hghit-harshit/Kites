@@ -101,7 +101,7 @@ void ProfilerEditor::clearExecutionCount()
 int ProfilerEditor::lineNumberAreaWidth() const
 {
     int digits = QString::number(qMax(1, blockCount())).length();
-    return fontMetrics().horizontalAdvance(QLatin1Char('9')) * digits;
+    return fontMetrics().horizontalAdvance(QLatin1Char('9')) * digits + 4;
 }
 
 int ProfilerEditor::countAreaWidth() const

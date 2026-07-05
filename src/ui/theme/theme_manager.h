@@ -79,7 +79,7 @@ private:
     QString loadStyleSheet(const QString &path);
     void setUpThemes();
 
-    ThemeType m_currentThemeType;
+    ThemeType m_currentThemeType{ThemeType::ThemeTypeCount}; // no theme selected initiallys
     std::array<ThemeData, static_cast<int>(ThemeType::ThemeTypeCount)> m_themes;
 
 };

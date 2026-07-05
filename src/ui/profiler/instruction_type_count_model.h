@@ -24,12 +24,12 @@ class InstructionTypeCountModel : public QAbstractTableModel
 
     enum class Column
     {
-        INSTRUCTION_TYPE = 0,
-        COUNT = 1
+        InstructionType = 0,
+        InstructionCount = 1
     };
     // using const here because the model should not modify the counts, 
     // it should only display them
-    const InstructionTypeCounts &m_instruction_type_counts;
+    const InstructionTypeCounts &m_instructionTypeCounts;
 };  
 } // namespace kites
 

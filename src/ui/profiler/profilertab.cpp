@@ -15,6 +15,7 @@ ProfilerTab::ProfilerTab(QWidget *parent, Profiler *profiler)
     
     ui->instructionTypeCountTableView->horizontalHeader()->
     setSectionResizeMode(QHeaderView::Stretch);
+    ui->instructionTypeCountTableView->verticalHeader()->setVisible(false);
     if (m_profiler)
     {   
         InstructionTypeCountModel *model = new InstructionTypeCountModel(this, 

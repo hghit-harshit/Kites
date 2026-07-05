@@ -13,7 +13,7 @@ Profiler::Profiler(QObject *parent) : QObject(parent)
 void Profiler::Reset()
 {
     m_line_to_execution_counts.clear();
-    m_instruction_type_counts.fill(0);
+    m_instructionTypeCounts.fill(0);
     emit profilerReset();
 }
 
@@ -24,7 +24,7 @@ void Profiler::setInstructionToLineMapping(const AssembledProgram &program)
 
 const InstructionTypeCounts& Profiler::getInstructionTypeCounts() const
 {
-    return m_instruction_type_counts;
+    return m_instructionTypeCounts;
 }
 
 int Profiler::getExecutionCountForLine(int lineNumber) const
@@ -61,7 +61,7 @@ void Profiler::onVMStateChanged(const QMap<QString, QVariant> &vmState)
     }
 
     ++m_line_to_execution_counts[sourceLine];
-    ++m_instruction_type_counts[static_cast<size_t>(getInstructionTypeForLine(sourceLine))];
+    ++m_instructionTypeCounts[static_cast<size_t>(getInstructionTypeForLine(sourceLine))];
     //emit lineExecutionCountsUpdated(m_line_to_execution_counts);
     //emit lineExecutionCountIncrementSignal(sourceLine);
 }
