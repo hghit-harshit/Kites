@@ -1,5 +1,6 @@
 # Coding Conventions
-
+## IMPORTANT BUGS
+* DO NOT REFORMAT THE UI FILES IT WILL BREAK THINGS UNEXPECTEDLY
 ## Naming
 
 | Item              | Convention    | Example                       |
@@ -14,6 +15,9 @@
 | Enums             | `PascalCase`  | `enum class InstructionTypes` |
 | Enum Values       | `PascalCase`  | `PipelineState::RType`        |
 | Macros            | `ALL_CAPS`    | `KITES_VERSION`               |
+
+* When naming variables that store count of something prefer nameCount 
+  eg. prefer m_wayCount instead of m_numWays
 
 ## Exceptions
 * The Enum Value for AluOP are named using ALL_CAPS as they align better with
