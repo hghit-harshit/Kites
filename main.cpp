@@ -1,4 +1,5 @@
 #include "ui/mainwindow/mainwindow.h"
+#include "ui/theme/app_style.hpp"
 #ifdef LOG_PANEL
     #include "ui/log_panel/log_panel.h"
 #endif
@@ -32,7 +33,8 @@ int main(int argc, char *argv[])
     qInfo() << "This is an info message";
     #endif
 
-    a.setStyle(QStyleFactory::create("Fusion"));
+    a.setStyle(new Kites::AppStyle(QStyleFactory::create("Fusion")));
+    
     Kites::MainWindow w;
     w.setWindowState(Qt::WindowMaximized);
     w.show();
