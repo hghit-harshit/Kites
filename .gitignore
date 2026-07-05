@@ -15,4 +15,6 @@ TODO.md
 CMakeLists.txt.user
 /vm_state
 .cph
+gtest_filter.
+.vs/
 gtest_filter.py
