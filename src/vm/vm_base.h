@@ -79,7 +79,7 @@ class VmBase : public QObject
     std::queue<std::string> input_queue_;
 
     std::vector<uint64_t> breakpoints_;
-    uint64_t last_breakpoint_pc_ = UINT64_MAX; // Track last PC where we paused at breakpoint
+    std::optional<uint64_t> last_breakpoint_pc_{}; // Track last PC where we paused at breakpoint
     // This is to prevent multiple pause signals when we are paused at a breakpoint and the user
     // tries to resume but the PC hasn't moved yet
 
@@ -89,8 +89,8 @@ class VmBase : public QObject
     unsigned int step_delay_{1000}; // well change it later to get it from config
     unsigned int cycle_s_{};
     unsigned int instructions_retired_{};
-    float cpi_{};
-    float ipc_{};
+    double cpi_{};
+    double ipc_{};
     unsigned int stall_cycles_{};
     unsigned int branch_mispredictions_{};
 
@@ -107,9 +107,7 @@ class VmBase : public QObject
     // the list of wire that will be active in this cycle of vm
     // well send this to the gui to highlight those wires
 
-    // todo make every file under kites namespace
-    // make just make this a raw pointer later
-    //  qt is anyways handling the memory management of widgets
+
     std::unique_ptr<CircuitScene> circuit_scene_; // Circuit scene for visualization
 
     void LoadProgram(const AssembledProgram &program);

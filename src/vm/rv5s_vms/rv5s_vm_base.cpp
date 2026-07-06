@@ -11,9 +11,10 @@ void RV5StageVM_Base::Run()
     ClearStop();
     while (!stop_requested_ && (program_counter_ < program_size_ || !is_pipeline_drained()))
     {
-        if (last_breakpoint_pc_ != UINT64_MAX && program_counter_ != last_breakpoint_pc_)
+        //TODO : replace this sentinal with std::optional
+        if (last_breakpoint_pc_ && program_counter_ != *last_breakpoint_pc_)
         {
-            last_breakpoint_pc_ = UINT64_MAX;
+            last_breakpoint_pc_.reset();
         }
 
         // if we hit a break point (and it's a new PC), we pause execution
@@ -108,29 +109,29 @@ void RV5StageVM_Base::Reset()
 
 void RV5StageVM_Base::begin_step_delta()
 {
-    current_delta_ = RV5StageStepDelta{};
-    current_delta_.old_pc = program_counter_;
-    current_delta_.old_cycle = cycle_s_;
-    current_delta_.old_instructions_retired = instructions_retired_;
-    current_delta_.old_stall_cycles = stall_cycles_;
+    current_delta_                           = RV5StageStepDelta{};
+    current_delta_.old_pc                    = program_counter_;
+    current_delta_.old_cycle                 = cycle_s_;
+    current_delta_.old_stall_cycles          = stall_cycles_;
+    current_delta_.old_instructions_retired  = instructions_retired_;
     current_delta_.old_branch_mispredictions = branch_mispredictions_;
 
-    current_delta_.pipeline_register_change.old_if_id_reg = if_id_reg_;
-    current_delta_.pipeline_register_change.old_id_ex_reg = id_ex_reg_;
+    current_delta_.pipeline_register_change.old_if_id_reg  = if_id_reg_;
+    current_delta_.pipeline_register_change.old_id_ex_reg  = id_ex_reg_;
     current_delta_.pipeline_register_change.old_ex_mem_reg = ex_mem_reg_;
     current_delta_.pipeline_register_change.old_mem_wb_reg = mem_wb_reg_;
 }
 
 void RV5StageVM_Base::finalize_step_delta()
 {
-    current_delta_.new_pc = program_counter_;
-    current_delta_.new_cycle = cycle_s_;
-    current_delta_.new_instructions_retired = instructions_retired_;
-    current_delta_.new_stall_cycles = stall_cycles_;
+    current_delta_.new_pc                    = program_counter_;
+    current_delta_.new_cycle                 = cycle_s_;
+     current_delta_.new_stall_cycles          = stall_cycles_;
+    current_delta_.new_instructions_retired  = instructions_retired_;
     current_delta_.new_branch_mispredictions = branch_mispredictions_;
 
-    current_delta_.pipeline_register_change.new_if_id_reg = if_id_reg_;
-    current_delta_.pipeline_register_change.new_id_ex_reg = id_ex_reg_;
+    current_delta_.pipeline_register_change.new_if_id_reg  = if_id_reg_;
+    current_delta_.pipeline_register_change.new_id_ex_reg  = id_ex_reg_;
     current_delta_.pipeline_register_change.new_ex_mem_reg = ex_mem_reg_;
     current_delta_.pipeline_register_change.new_mem_wb_reg = mem_wb_reg_;
 
