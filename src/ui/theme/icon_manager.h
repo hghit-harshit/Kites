@@ -2,6 +2,7 @@
 //#include <QObject>
 #include <QIcon>
 #include <array>
+#include "utils/to_index.hpp"
 namespace Kites
 {
 enum class Icon
@@ -27,6 +28,6 @@ private:
     IconManager();
     // using size for futue proofing this fucntion.
     void setUpIconPaths();
-    std::array<QString, static_cast<size_t>(Icon::IconCount)> m_iconPaths;
+    std::array<QString, toIndex(Icon::IconCount)> m_iconPaths;
 };
 }//namespace Kites

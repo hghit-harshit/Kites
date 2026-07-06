@@ -17,6 +17,7 @@
 #include <QWidget>
 #include <map>
 #include <memory>
+#include "utils/to_index.hpp"
 
 namespace Kites
 {
@@ -78,7 +79,7 @@ class MainWindow : public QMainWindow
     TabIndex           m_currentTabIndex   {TabIndex::EditorTabIndex};
     VMState            m_vmState           {VMState::Stopped};
 
-    std::array<KitesTab*, static_cast<size_t>(TabIndex::TabCount)> m_tabs;
+    std::array<KitesTab*, toIndex(TabIndex::TabCount)> m_tabs;
   public slots:
     void vmChanged(const VMType &vmType); // this will catch the signal from processor dialog
     void runFinishedSlot();

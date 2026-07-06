@@ -43,9 +43,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_vmManager->moveToThread(m_vmThread);
     m_vmThread->start();
 
-    m_sharedContext.vmManager = m_vmManager;
-    m_
-
     connect(this, &MainWindow::runVMSignal, m_vmManager, &VMManager::runSlot);
     // well temporarily disable the toolbar buttons when vm is running
     connect(m_vmManager, &VMManager::runFinishedSignal, this, &MainWindow::runFinishedSlot);

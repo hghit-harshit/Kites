@@ -5,6 +5,7 @@
 #include <QColor>
 #include <array>
 #include <QTextCharFormat>
+#include "utils/to_index.hpp"
 namespace Kites
 {
 
@@ -51,7 +52,7 @@ struct ThemeData
     QColor cacheHitColor;
     QColor cacheMissColor;
 
-    std::array<QTextCharFormat, static_cast<int>(SyntaxStyle::SyntaxStyleCount)> syntaxFormats;
+    std::array<QTextCharFormat, toIndex(SyntaxStyle::SyntaxStyleCount)> syntaxFormats;
 };
 
 /**
@@ -80,7 +81,7 @@ private:
     void setUpThemes();
 
     ThemeType m_currentThemeType{ThemeType::ThemeTypeCount}; // no theme selected initiallys
-    std::array<ThemeData, static_cast<int>(ThemeType::ThemeTypeCount)> m_themes;
+    std::array<ThemeData, toIndex(ThemeType::ThemeTypeCount)> m_themes;
 
 };
 }//namespace Kites

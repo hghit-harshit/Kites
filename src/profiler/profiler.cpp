@@ -12,14 +12,14 @@ Profiler::Profiler(QObject *parent) : QObject(parent)
 
 void Profiler::Reset()
 {
-    m_line_to_execution_counts.clear();
+    m_lineNumberToExecutionCounts.clear();
     m_instructionTypeCounts.fill(0);
     emit profilerReset();
 }
 
 void Profiler::setInstructionToLineMapping(const AssembledProgram &program)
 {
-    m_instruction_number_line_number_mapping = program.instruction_number_line_number_mapping;
+    m_instructionNumberToLineNumber = program.instruction_number_line_number_mapping;
 } 
 
 const InstructionTypeCounts& Profiler::getInstructionTypeCounts() const
@@ -29,8 +29,8 @@ const InstructionTypeCounts& Profiler::getInstructionTypeCounts() const
 
 int Profiler::getExecutionCountForLine(int lineNumber) const
 {
-    const auto it = m_line_to_execution_counts.find(lineNumber);
-    if (it != m_line_to_execution_counts.end())
+    const auto it = m_lineNumberToExecutionCounts.find(lineNumber);
+    if (it != m_lineNumberToExecutionCounts.end())
     {
         return it->second;
     }
@@ -39,7 +39,7 @@ int Profiler::getExecutionCountForLine(int lineNumber) const
 
 void Profiler::setLineNumberToInstructionTypeMapping(const AssembledProgram &program)
 {
-    m_line_number_instruction_type_mapping.clear();
+    m_lineNumberToinstructionType.clear();
     for (const auto &[icUnit, _] : program.intermediate_code)
     {
         const auto lineNumber = icUnit.getLineNumber();
@@ -47,7 +47,7 @@ void Profiler::setLineNumberToInstructionTypeMapping(const AssembledProgram &pro
         if (!mnemonic.empty())
         {
             instr::InstructionType instrType = instr::getInstructionType(mnemonic);
-            m_line_number_instruction_type_mapping[lineNumber] = instrType;
+            m_lineNumberToinstructionType[lineNumber] = instrType;
         }
     }
 }
@@ -60,8 +60,8 @@ void Profiler::onVMStateChanged(const QMap<QString, QVariant> &vmState)
         return;
     }
 
-    ++m_line_to_execution_counts[sourceLine];
-    ++m_instructionTypeCounts[static_cast<size_t>(getInstructionTypeForLine(sourceLine))];
+    ++m_lineNumberToExecutionCounts[sourceLine];
+    ++m_instructionTypeCounts[toIndex(getInstructionTypeForLine(sourceLine))];
     //emit lineExecutionCountsUpdated(m_line_to_execution_counts);
     //emit lineExecutionCountIncrementSignal(sourceLine);
 }
@@ -74,36 +74,11 @@ int Profiler::resolveSourceLineFromState(const QMap<QString, QVariant> &vmState)
     const qulonglong pc = pcVariant.toULongLong(&ok);
     if (ok)
     {
-        const auto mappingIt = m_instruction_number_line_number_mapping.find(
+        const auto mappingIt = m_instructionNumberToLineNumber.find(
             static_cast<unsigned int>(pc / 4));
-        if (mappingIt != m_instruction_number_line_number_mapping.end())
+        if (mappingIt != m_instructionNumberToLineNumber.end())
         {
             return static_cast<int>(mappingIt->second);
-        }
-    }
-
-    // Fallback for states where only EditorLines is populated.
-    // it shoudl never come to this 
-    //todo remove this piece of code and make sure all the vm states are populating the pc field 
-    //correctly
-    const QVariantMap editorLines = vmState.value("EditorLines").toMap();
-    if (editorLines.contains("CI"))
-    {
-        bool ciOk = false;
-        const int ciLine = editorLines.value("CI").toInt(&ciOk);
-        if (ciOk)
-        {
-            return ciLine;
-        }
-    }
-
-    if (editorLines.contains("."))
-    {
-        bool dotOk = false;
-        const int dotLine = editorLines.value(".").toInt(&dotOk);
-        if (dotOk)
-        {
-            return dotLine;
         }
     }
 
@@ -112,8 +87,8 @@ int Profiler::resolveSourceLineFromState(const QMap<QString, QVariant> &vmState)
 
 instr::InstructionType Profiler::getInstructionTypeForLine(int lineNumber) const
 {
-    const auto it = m_line_number_instruction_type_mapping.find(lineNumber);
-    if (it != m_line_number_instruction_type_mapping.end())
+    const auto it = m_lineNumberToinstructionType.find(lineNumber);
+    if (it != m_lineNumberToinstructionType.end())
     {
         return it->second;
     }

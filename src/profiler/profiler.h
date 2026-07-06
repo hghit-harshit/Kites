@@ -7,12 +7,14 @@
 #include <string>
 #include "common/assembled_program.h"
 #include "common/instruction_types.h"
+#include "utils/to_index.hpp"
 
 namespace Kites
 {
 
-using InstructionTypeCounts = std::array<size_t,static_cast<size_t>
-                            (instruction_set::InstructionType::INSTRUCTION_TYPE_COUNT)>;
+using InstructionTypeCounts = std::array<size_t, 
+                            toIndex(instruction_set::InstructionType::INSTRUCTION_TYPE_COUNT)>;
+                            
 class Profiler : public QObject
 {
     Q_OBJECT
@@ -47,17 +49,15 @@ class Profiler : public QObject
     // Get all instruction types mapped by line number
     const std::map<int, instruction_set::InstructionType> getLineInstructionTypes() const
     {
-      return m_line_number_instruction_type_mapping;
+      return m_lineNumberToinstructionType;
     }
 
   private:
     int resolveSourceLineFromState(const QMap<QString, QVariant> &vmState) const;
-
-    // std::map<unsigned int, unsigned int> m_instruction_to_line_mapping{}; 
-    // std::map<unsigned int, std::string>  m_instruction_index_to_mnemonics_mapping{};   
-    std::map<unsigned int, unsigned int> m_instruction_number_line_number_mapping{};       
-    std::map<int, int>                   m_line_to_execution_counts{}; 
-    std::map<int, instruction_set::InstructionType>       m_line_number_instruction_type_mapping{};
+   
+    std::map<unsigned int, unsigned int> m_instructionNumberToLineNumber{};       
+    std::map<int, int>                   m_lineNumberToExecutionCounts{}; 
+    std::map<int, instruction_set::InstructionType>       m_lineNumberToinstructionType{};
 
     InstructionTypeCounts m_instructionTypeCounts{};
     

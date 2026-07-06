@@ -27,25 +27,25 @@ void ThemeManager::setTheme(ThemeType theme)
         return;
 
     m_currentThemeType = theme;
-    QApplication::setPalette(m_themes[static_cast<size_t>(theme)].palette);
-    if (!m_themes[static_cast<size_t>(theme)].stylesheetPath.isEmpty())
-        qApp->setStyleSheet(loadStyleSheet(m_themes[static_cast<size_t>(theme)].stylesheetPath));
+    QApplication::setPalette(m_themes[toIndex(theme)].palette);
+    if (!m_themes[toIndex(theme)].stylesheetPath.isEmpty())
+        qApp->setStyleSheet(loadStyleSheet(m_themes[toIndex(theme)].stylesheetPath));
     emit themeChangedSignal(theme);
 }
 
 QColor ThemeManager::getIconColor() const
 {
-    return m_themes[static_cast<size_t>(m_currentThemeType)].iconColor;
+    return m_themes[toIndex(m_currentThemeType)].iconColor;
 }
 
 QColor ThemeManager::getTextColor() const
 {
-    return m_themes[static_cast<size_t>(m_currentThemeType)].textColor;
+    return m_themes[toIndex(m_currentThemeType)].textColor;
 }
 
 QTextCharFormat ThemeManager::getSyntaxFormat(SyntaxStyle style) const
 {
-    return m_themes[static_cast<size_t>(m_currentThemeType)].syntaxFormats[static_cast<int>(style)];
+    return m_themes[toIndex(m_currentThemeType)].syntaxFormats[static_cast<int>(style)];
 }
 
 QString ThemeManager::loadStyleSheet(const QString &path)
@@ -66,7 +66,7 @@ void ThemeManager::setUpThemes()
      * depend only on qss to get the colors and styles for the widgets.
      */
     {
-        ThemeData &theme = m_themes[static_cast<size_t>(ThemeType::Light)];
+        ThemeData &theme = m_themes[toIndex(ThemeType::Light)];
         theme.type           = ThemeType::Light;
         theme.name           = "Light";
         theme.stylesheetPath = "";
@@ -115,7 +115,7 @@ void ThemeManager::setUpThemes()
         syntaxFormats[static_cast<int>(SyntaxStyle::PseudoInstruction)].setForeground(QColor("#FF8C00"));  // DarkOrange
     }
     {
-        ThemeData &theme = m_themes[static_cast<size_t>(ThemeType::Dark)];
+        ThemeData &theme = m_themes[toIndex(ThemeType::Dark)];
         theme.type           = ThemeType::Dark;
         theme.name           = "Dark";
         theme.stylesheetPath = "";
