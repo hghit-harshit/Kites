@@ -10,7 +10,7 @@
 #include "processor/processor_base.h"
 #include "processor_types.h"
 #include "profiler/profiler.h"
-#include "ui/processor/circuit_scene.h"
+#include "ui/processor_tab/circuit_scene.h"
 #include <QObject>
 #include <memory>
 #include <sstream>

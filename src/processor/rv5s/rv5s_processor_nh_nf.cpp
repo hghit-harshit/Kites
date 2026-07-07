@@ -12,7 +12,7 @@
 #include "common/instructions.h"
 #include "config/config.h"
 #include "common/debug_colors.h"
-#include "ui/processor/processor_designs/rv5s_processor_nh_nf_circuit_scene.h"
+#include "ui/processor_tab/processor_designs/rv5s_processor_nh_nf_circuit_scene.h"
 #include "processor/alu.h"
 #include "processor/vm_base.h" // For ImmGenerator, etc.
 

@@ -11,7 +11,7 @@
 #include "processor/rv5s/rv5s_processor_h_f.h" // Assuming this header now defines RV5StageVM_H_F
 #include "common/instructions.h"
 #include "config/config.h"
-#include "ui/processor/processor_designs/rv5s_processor_h_f_circuit_scene.h"
+#include "ui/processor_tab/processor_designs/rv5s_processor_h_f_circuit_scene.h"
 #include "processor/alu.h"
 #include "processor/pipeline_registers.h"
 #include "processor/processor_base.h"

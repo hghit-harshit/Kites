@@ -11,7 +11,7 @@
 #include "memory_controller.h"
 #include "processor/processor_state.h"
 #include "processor/registers.h"
-#include "ui/processor/circuit_scene.h"
+#include "ui/processor_tab/circuit_scene.h"
 #include <QList>
 #include <QMap>
 #include <QMutex>

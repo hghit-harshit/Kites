@@ -9,7 +9,7 @@
 #include "common/instructions.h"
 #include "config/config.h"
 #include "common/globals.h"
-#include "ui/processor/processor_designs/rvss_circuit_scene.h"
+#include "ui/processor_tab/processor_designs/rvss_circuit_scene.h"
 #include "utils/utils.h"
 #include <QDebug>
 #include <algorithm>
