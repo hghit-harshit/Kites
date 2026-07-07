@@ -61,12 +61,12 @@ struct MemoryChange
 /**
  * @brief Base class for the virtual machine.
  */
-class VmBase : public QObject
+class ProcessorBase : public QObject
 {
     Q_OBJECT
   public:
-    VmBase();
-    ~VmBase() = default;
+    ProcessorBase();
+    ~ProcessorBase() = default;
 
     AssembledProgram program_;
     std::atomic<bool> stop_requested_ {false};
@@ -134,13 +134,7 @@ class VmBase : public QObject
     void ClearStop();
     virtual void SetActiveWireNames() = 0;
     virtual void SetVMStateMap() = 0;
-    // void fetchInstruction();
-    // void decodeInstruction();
-    // void executeInstruction();
-    // void memoryAccess();
-    // void writeback();
 
-    // void HandleSyscall();
     void PrintString(uint64_t address);
 
     virtual void Run()      = 0;
@@ -161,12 +155,12 @@ class VmBase : public QObject
 
   signals:
     // vm state will have all the info like pc,cycles, control signals
-    void vmStateChangedSignal(const VMState &vmState);
+    void processorStateChangedSignal(const VMState &vmState);
     // this will send the list of wire that have to
     void updateCircuitStateSignal(const QList<QString> &wireList);
     // we emit this signal when vm is paused at breakpoint
     //  so that gui can chane paued button to resume
-    void vmPausedAtBreakpointSignal();
+    void processorPausedAtBreakpointSignal();
 };
 
 }  // namespace Kites

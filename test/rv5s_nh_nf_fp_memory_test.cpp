@@ -4,11 +4,11 @@
 #include "../include/utils.h"
 #include "../include/processor/rv5s/rv5s_processor_nh_nf.h"
 
-static std::unique_ptr<RV5StageVM_NH_NF> runNhNfProgramMemory(const std::string& filename)
+static std::unique_ptr<RV5StageProcessorNHNF> runNhNfProgramMemory(const std::string& filename)
 {
     setupVmStateDirectory();
 
-    auto vm = std::make_unique<RV5StageVM_NH_NF>();
+    auto vm = std::make_unique<RV5StageProcessorNHNF>();
     AssembledProgram program = assemble(filename);
     vm->LoadProgram(program);
     vm->DebugRun();

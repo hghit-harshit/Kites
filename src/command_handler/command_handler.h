@@ -58,7 +58,7 @@ struct Command
 
 Command ParseCommand(const std::string &input);
 
-void ExecuteCommand(const Command &command, RVSSVM &vm);
+void ExecuteCommand(const Command &command, RVSSProcessor &vm);
 
 } // namespace command_handler
 }//namespace Kites

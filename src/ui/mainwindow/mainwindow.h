@@ -74,14 +74,14 @@ class MainWindow : public QMainWindow
     QListWidget       *m_sidebar           {nullptr};
     QStackedWidget    *m_stackedTabs       {nullptr};
     RegisterContainer *m_registerContainer {nullptr};
-    VMManager         *m_vmManager         {nullptr};
+    ProcessorManager         *m_vmManager         {nullptr};
     QThread           *m_vmThread          {nullptr};
     TabIndex           m_currentTabIndex   {TabIndex::EditorTabIndex};
     VMState            m_vmState           {VMState::Stopped};
 
     std::array<KitesTab*, toIndex(TabIndex::TabCount)> m_tabs;
   public slots:
-    void vmChanged(const VMType &vmType); // this will catch the signal from processor dialog
+    void vmChanged(const ProcessorType &vmType); // this will catch the signal from processor dialog
     void runFinishedSlot();
     void themeChangedSlot([[maybe_unused]]ThemeType theme);
     // void runErrorSlot();

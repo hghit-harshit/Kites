@@ -27,7 +27,7 @@ struct StepDelta
     std::vector<MemoryChange> memory_changes;
 };
 
-class RVSSVM : public VmBase
+class RVSSProcessor : public ProcessorBase
 {
   public:
     RVSSControlUnit control_unit_;
@@ -78,8 +78,8 @@ class RVSSVM : public VmBase
     void WriteBackDouble();
     void WriteBackCsr();
 
-    RVSSVM();
-    ~RVSSVM();
+    RVSSProcessor();
+    ~RVSSProcessor();
 
     void Run() override;
     void DebugRun() override;

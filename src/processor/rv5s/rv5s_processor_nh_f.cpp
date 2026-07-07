@@ -27,14 +27,14 @@ constexpr uint32_t NOP = 0x00000013;
 using namespace alu;
 
 // --- VmBase Pure Virtual Method Implementations (Run, DebugRun, Reset, Step) ---
-RV5StageVM_NH_F::RV5StageVM_NH_F() : RV5StageVM_Base()
+RV5StageProcessorNHF::RV5StageProcessorNHF() : RV5StageVM_Base()
 {
 // Reset components and history
 #ifndef DISABLE_GUI
     circuit_scene_ = std::make_unique<Kites::RV5StageVM_NH_F_CircuitScene>();
-    connect(this, &VmBase::updateCircuitStateSignal, circuit_scene_.get(),
+    connect(this, &ProcessorBase::updateCircuitStateSignal, circuit_scene_.get(),
             &Kites::RV5StageVM_NH_F_CircuitScene::updateCircuitState);
-    connect(this, &VmBase::vmStateChangedSignal, circuit_scene_.get(),
+    connect(this, &ProcessorBase::processorStateChangedSignal, circuit_scene_.get(),
             &Kites::RV5StageVM_NH_F_CircuitScene::vmStateChangedSlot);
 #endif
     Reset();
@@ -72,7 +72,7 @@ RV5StageVM_NH_F::RV5StageVM_NH_F() : RV5StageVM_Base()
     always_active_wires_count_ = active_wires_.size();
 }
 
-void RV5StageVM_NH_F::SetActiveWireNames()
+void RV5StageProcessorNHF::SetActiveWireNames()
 {
     // Clear current dynamic list and populate canonical always-active wires first
     active_wires_.erase(active_wires_.begin() + always_active_wires_count_, active_wires_.end());
@@ -170,12 +170,12 @@ void RV5StageVM_NH_F::SetActiveWireNames()
     }
 }
 
-void RV5StageVM_NH_F::Reset()
+void RV5StageProcessorNHF::Reset()
 {
     RV5StageVM_Base::Reset();
 }
 
-void RV5StageVM_NH_F::Step()
+void RV5StageProcessorNHF::Step()
 {
     // Capture PC before potential redirection in EX/MEM stages
     uint64_t old_pc_before_redirect = program_counter_;
@@ -207,7 +207,7 @@ void RV5StageVM_NH_F::Step()
 
 // --- Pipeline Stage Implementations (Full Proof Control + Forwarding) ---
 
-void RV5StageVM_NH_F::pipeline_fetch()
+void RV5StageProcessorNHF::pipeline_fetch()
 {
     if (program_counter_ < program_size_)
     {
@@ -222,7 +222,7 @@ void RV5StageVM_NH_F::pipeline_fetch()
     }
 }
 
-void RV5StageVM_NH_F::pipeline_execute()
+void RV5StageProcessorNHF::pipeline_execute()
 {
 
     uint32_t instruction = id_ex_reg_.instruction;
@@ -429,7 +429,7 @@ void RV5StageVM_NH_F::pipeline_execute()
     }
 }
 
-uint64_t RV5StageVM_NH_F::pipeline_execute_float()
+uint64_t RV5StageProcessorNHF::pipeline_execute_float()
 {
     uint32_t instruction = id_ex_reg_.instruction;
     uint8_t opcode = instruction & 0b1111111;
@@ -539,7 +539,7 @@ uint64_t RV5StageVM_NH_F::pipeline_execute_float()
     return alu_result;
 }
 
-uint64_t RV5StageVM_NH_F::pipeline_execute_double()
+uint64_t RV5StageProcessorNHF::pipeline_execute_double()
 {
     uint32_t instruction = id_ex_reg_.instruction;
     uint8_t opcode = instruction & 0b1111111;
@@ -645,7 +645,7 @@ uint64_t RV5StageVM_NH_F::pipeline_execute_double()
     return alu_result;
 }
 
-void RV5StageVM_NH_F::handle_syscall()
+void RV5StageProcessorNHF::handle_syscall()
 {
     if ((id_ex_reg_.instruction & 0x7F) == 0b1110011 &&
         ((id_ex_reg_.instruction >> 12) & 0x7) == 0b000)

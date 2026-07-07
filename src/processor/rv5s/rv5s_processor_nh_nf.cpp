@@ -29,15 +29,15 @@ namespace Kites
 constexpr uint32_t NOP = 0x00000013;
 
 // --- VmBase Pure Virtual Method Implementations (Run, DebugRun, Reset, Step) ---
-RV5StageVM_NH_NF::RV5StageVM_NH_NF() : RV5StageVM_Base()
+RV5StageProcessorNHNF::RV5StageProcessorNHNF() : RV5StageVM_Base()
 {
 
 // Reset components and history
 #ifndef DISABLE_GUI
     circuit_scene_ = std::make_unique<Kites::RV5StageVM_NH_NF_CircuitScene>();
-    connect(this, &VmBase::updateCircuitStateSignal, circuit_scene_.get(),
+    connect(this, &ProcessorBase::updateCircuitStateSignal, circuit_scene_.get(),
             &Kites::RV5StageVM_NH_NF_CircuitScene::updateCircuitState);
-    connect(this, &VmBase::vmStateChangedSignal, circuit_scene_.get(),
+    connect(this, &ProcessorBase::processorStateChangedSignal, circuit_scene_.get(),
             &Kites::RV5StageVM_NH_NF_CircuitScene::vmStateChangedSlot);
 #endif
     Reset();
@@ -77,7 +77,7 @@ RV5StageVM_NH_NF::RV5StageVM_NH_NF() : RV5StageVM_Base()
     always_active_wires_count_ = active_wires_.size();
 }
 
-void RV5StageVM_NH_NF::SetActiveWireNames()
+void RV5StageProcessorNHNF::SetActiveWireNames()
 {
     // Clear and populate canonical wires for the NH_NF circuit (no forwarding)
     active_wires_.erase(active_wires_.begin() + always_active_wires_count_, active_wires_.end());
@@ -164,12 +164,12 @@ void RV5StageVM_NH_NF::SetActiveWireNames()
     // The scene reads `active_wires_` when callers emit `updateCircuitStateSignal`.
 }
 
-void RV5StageVM_NH_NF::Reset()
+void RV5StageProcessorNHNF::Reset()
 {
     RV5StageVM_Base::Reset();
 }
 
-void RV5StageVM_NH_NF::Step()
+void RV5StageProcessorNHNF::Step()
 {
     // Capture PC before potential redirection in EX/MEM stages
     uint64_t old_pc_before_redirect = program_counter_;
@@ -197,7 +197,7 @@ void RV5StageVM_NH_NF::Step()
     finalize_step_delta();
 }
 
-void RV5StageVM_NH_NF::pipeline_fetch()
+void RV5StageProcessorNHNF::pipeline_fetch()
 {
     if (program_counter_ < program_size_)
     {
@@ -212,7 +212,7 @@ void RV5StageVM_NH_NF::pipeline_fetch()
     }
 }
 
-void RV5StageVM_NH_NF::pipeline_execute()
+void RV5StageProcessorNHNF::pipeline_execute()
 {
     uint32_t instruction = id_ex_reg_.instruction;
     uint8_t opcode = instruction & 0b1111111;
@@ -348,7 +348,7 @@ void RV5StageVM_NH_NF::pipeline_execute()
 
 // --- Undo/Redo Implementations ---
 
-void RV5StageVM_NH_NF::handle_syscall()
+void RV5StageProcessorNHNF::handle_syscall()
 {
     if ((id_ex_reg_.instruction & 0x7F) == 0b1110011 &&
         ((id_ex_reg_.instruction >> 12) & 0x7) == 0b000)
@@ -361,7 +361,7 @@ void RV5StageVM_NH_NF::handle_syscall()
 
 // --- FP Execute Handlers ---
 
-uint64_t RV5StageVM_NH_NF::pipeline_execute_float()
+uint64_t RV5StageProcessorNHNF::pipeline_execute_float()
 {
     uint32_t instruction = id_ex_reg_.instruction;
     uint8_t opcode = instruction & 0b1111111;
@@ -399,7 +399,7 @@ uint64_t RV5StageVM_NH_NF::pipeline_execute_float()
     return alu_result;
 }
 
-uint64_t RV5StageVM_NH_NF::pipeline_execute_double()
+uint64_t RV5StageProcessorNHNF::pipeline_execute_double()
 {
     uint32_t instruction = id_ex_reg_.instruction;
     uint8_t opcode = instruction & 0b1111111;

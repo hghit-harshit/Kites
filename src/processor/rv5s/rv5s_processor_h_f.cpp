@@ -8,7 +8,7 @@
  * * Control Hazards (JAL/JALR, B-Type) are AUTOMATICALLY handled by flush/redirect.
  * @author Atharva and Harshit
  */
-#include "processor/rv5s/rv5s_processor_h_f.h" // Assuming this header now defines RV5StageVM_H_F
+#include "processor/rv5s/rv5s_processor_h_f.h" // Assuming this header now defines RV5StageProcessorHF
 #include "common/instructions.h"
 #include "config/config.h"
 #include "ui/processor_tab/processor_designs/rv5s_processor_h_f_circuit_scene.h"
@@ -32,11 +32,11 @@ using namespace alu;
 // constexpr int STALL_NONE = 0;
 // constexpr int STALL_ONE_CYCLE = 1;
 
-// --- RV5StageVM_H_F Class Implementation ---
+// --- RV5StageProcessorHF Class Implementation ---
 
-RV5StageVM_H_F::RV5StageVM_H_F() : RV5StageVM_Base()
+RV5StageProcessorHF::RV5StageProcessorHF() : RV5StageVM_Base()
 {
-    // Initialize VmBase members
+    // Initialize ProcessorBase members
     // program_counter_ = 0;
     // instructions_retired_ = 0;
     // cycle_s_ = 0;
@@ -48,9 +48,9 @@ RV5StageVM_H_F::RV5StageVM_H_F() : RV5StageVM_Base()
     // Reset components and history
 #ifndef DISABLE_GUI
     circuit_scene_ = std::make_unique<Kites::RV5StageVM_H_F_CircuitScene>();
-    connect(this, &VmBase::updateCircuitStateSignal, circuit_scene_.get(),
+    connect(this, &ProcessorBase::updateCircuitStateSignal, circuit_scene_.get(),
             &Kites::RV5StageVM_H_F_CircuitScene::updateCircuitState);
-    connect(this, &VmBase::vmStateChangedSignal, circuit_scene_.get(),
+    connect(this, &ProcessorBase::processorStateChangedSignal, circuit_scene_.get(),
             &Kites::RV5StageVM_H_F_CircuitScene::vmStateChangedSlot);
 #endif
     Reset();
@@ -85,7 +85,7 @@ RV5StageVM_H_F::RV5StageVM_H_F() : RV5StageVM_Base()
     always_active_wires_count_ = active_wires_.size();
 }
 
-void RV5StageVM_H_F::SetActiveWireNames()
+void RV5StageProcessorHF::SetActiveWireNames()
 {
     // Clear and populate canonical wires for the Hazard+Forwarding (H_F) circuit
     active_wires_.resize(always_active_wires_count_);
@@ -198,13 +198,13 @@ void RV5StageVM_H_F::SetActiveWireNames()
     // The scene will read `active_wires_` when `updateCircuitStateSignal` is emitted by callers.
 }
 
-void RV5StageVM_H_F::Reset()
+void RV5StageProcessorHF::Reset()
 {
     RV5StageVM_Base::Reset();
     stall_fetch_and_decode_ = false;
 }
 
-void RV5StageVM_H_F::Step()
+void RV5StageProcessorHF::Step()
 {
     // Capture PC before potential redirection in EX/MEM stages
     uint64_t old_pc_before_redirect = program_counter_;
@@ -276,7 +276,7 @@ void RV5StageVM_H_F::Step()
 
 // --- Pipeline Stage Implementations (Mode 4: H_F) ---
 
-void RV5StageVM_H_F::pipeline_fetch()
+void RV5StageProcessorHF::pipeline_fetch()
 {
     // If a stall is active, we prevent IF/ID from updating.
     if (stall_fetch_and_decode_)
@@ -296,7 +296,7 @@ void RV5StageVM_H_F::pipeline_fetch()
     }
 }
 
-void RV5StageVM_H_F::pipeline_execute()
+void RV5StageProcessorHF::pipeline_execute()
 {
     uint32_t instruction = id_ex_reg_.instruction;
     bool overflow;
@@ -478,7 +478,7 @@ void RV5StageVM_H_F::pipeline_execute()
     }
 }
 
-void RV5StageVM_H_F::handle_syscall()
+void RV5StageProcessorHF::handle_syscall()
 {
     if ((id_ex_reg_.instruction & 0x7F) == 0b1110011 &&
         ((id_ex_reg_.instruction >> 12) & 0x7) == 0b000)
@@ -489,7 +489,7 @@ void RV5StageVM_H_F::handle_syscall()
     }
 }
 
-uint64_t RV5StageVM_H_F::pipeline_execute_float()
+uint64_t RV5StageProcessorHF::pipeline_execute_float()
 {
     uint32_t instruction = id_ex_reg_.instruction;
     uint8_t opcode = instruction & 0b1111111;
@@ -597,7 +597,7 @@ uint64_t RV5StageVM_H_F::pipeline_execute_float()
     return alu_result;
 }
 
-uint64_t RV5StageVM_H_F::pipeline_execute_double()
+uint64_t RV5StageProcessorHF::pipeline_execute_double()
 {
     uint32_t instruction = id_ex_reg_.instruction;
     uint8_t opcode = instruction & 0b1111111;

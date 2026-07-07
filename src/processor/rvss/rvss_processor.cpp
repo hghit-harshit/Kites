@@ -26,15 +26,15 @@
 
 namespace Kites
 {
-RVSSVM::RVSSVM() : VmBase()
+RVSSProcessor::RVSSProcessor() : ProcessorBase()
 {
     DumpRegisters(globals::registers_dump_file_path, registers_);
     DumpState(globals::vm_state_dump_file_path);
 #ifndef DISABLE_GUI
     circuit_scene_ = std::make_unique<Kites::RVSSCircuitScene>();
-    connect(this, &VmBase::updateCircuitStateSignal, circuit_scene_.get(),
+    connect(this, &ProcessorBase::updateCircuitStateSignal, circuit_scene_.get(),
             &Kites::RVSSCircuitScene::updateCircuitState, Qt::QueuedConnection);
-    connect(this, &VmBase::vmStateChangedSignal, circuit_scene_.get(),
+    connect(this, &ProcessorBase::processorStateChangedSignal, circuit_scene_.get(),
             &Kites::RVSSCircuitScene::vmStateChangedSlot, Qt::QueuedConnection);
 #endif
 
@@ -54,9 +54,9 @@ RVSSVM::RVSSVM() : VmBase()
     always_active_wires_count_ = active_wires_.size();
 }
 
-RVSSVM::~RVSSVM() = default;
+RVSSProcessor::~RVSSProcessor() = default;
 
-void RVSSVM::SetActiveWireNames()
+void RVSSProcessor::SetActiveWireNames()
 {
     // first clear the current list
     // TODO * we dont have to clear wire that will always be active
@@ -120,7 +120,7 @@ void RVSSVM::SetActiveWireNames()
     // return active_wires_;
 }
 
-void RVSSVM::SetVMStateMap()
+void RVSSProcessor::SetVMStateMap()
 {
     vmState.clear();
     vmState["ProgramCounter"] = static_cast<qulonglong>(program_counter_);
@@ -147,7 +147,7 @@ void RVSSVM::SetVMStateMap()
     // Add more VM state variables as needed
 }
 
-void RVSSVM::Run()
+void RVSSProcessor::Run()
 {
     qDebug() << "Starting VM Run";
     ClearStop();
@@ -164,7 +164,7 @@ void RVSSVM::Run()
         {
             pause_requested_ = true;
             last_breakpoint_pc_ = program_counter_;
-            emit vmPausedAtBreakpointSignal();
+            emit processorPausedAtBreakpointSignal();
         }
         {
             QMutexLocker locker(&pause_mutex_);
@@ -183,7 +183,7 @@ void RVSSVM::Run()
         // emit UI update for circuit highlighting
         SetActiveWireNames();
         SetVMStateMap();
-        emit vmStateChangedSignal(vmState);
+        emit processorStateChangedSignal(vmState);
         emit updateCircuitStateSignal(active_wires_);
         active_wires_.erase(active_wires_.begin() + always_active_wires_count_,
                             active_wires_.end());
@@ -200,7 +200,7 @@ void RVSSVM::Run()
     if (stop_requested_)
     {
         vmState.clear();
-        emit vmStateChangedSignal(vmState);
+        emit processorStateChangedSignal(vmState);
     }
     if (program_counter_ >= program_size_)
     {
@@ -211,18 +211,18 @@ void RVSSVM::Run()
     DumpState(globals::vm_state_dump_file_path);
 }
 
-void RVSSVM::Fetch()
+void RVSSProcessor::Fetch()
 {
     current_instruction_ = memory_controller_.readInstruction(program_counter_);
     UpdateProgramCounter(4);
 }
 
-void RVSSVM::Decode()
+void RVSSProcessor::Decode()
 {
     control_unit_.SetControlSignals(current_instruction_);
 }
 
-void RVSSVM::Execute()
+void RVSSProcessor::Execute()
 {
     uint8_t opcode = current_instruction_ & 0b1111111;
     uint8_t funct3 = (current_instruction_ >> 12) & 0b111;
@@ -366,7 +366,7 @@ void RVSSVM::Execute()
     }
 }
 
-void RVSSVM::ExecuteFloat()
+void RVSSProcessor::ExecuteFloat()
 {
     uint8_t opcode = current_instruction_ & 0b1111111;
     uint8_t funct3 = (current_instruction_ >> 12) & 0b111;
@@ -407,7 +407,7 @@ void RVSSVM::ExecuteFloat()
     registers_.WriteCsr(0x003, fcsr_status);
 }
 
-void RVSSVM::ExecuteDouble()
+void RVSSProcessor::ExecuteDouble()
 {
     uint8_t opcode = current_instruction_ & 0b1111111;
     uint8_t funct3 = (current_instruction_ >> 12) & 0b111;
@@ -441,7 +441,7 @@ void RVSSVM::ExecuteDouble()
         alu::Alu::dfpexecute(aluOperation, reg1_value, reg2_value, reg3_value, rm);
 }
 
-void RVSSVM::ExecuteCsr()
+void RVSSProcessor::ExecuteCsr()
 {
     uint8_t rs1 = (current_instruction_ >> 15) & 0b11111;
     uint16_t csr = (current_instruction_ >> 20) & 0xFFF;
@@ -454,7 +454,7 @@ void RVSSVM::ExecuteCsr()
 }
 
 // TODO: implement writeback for syscalls
-void RVSSVM::HandleSyscall()
+void RVSSProcessor::HandleSyscall()
 {
     uint64_t syscall_number = registers_.ReadGpr(17);
     switch (syscall_number)
@@ -664,7 +664,7 @@ void RVSSVM::HandleSyscall()
     }
 }
 
-void RVSSVM::WriteMemory()
+void RVSSProcessor::WriteMemory()
 {
     uint8_t opcode = current_instruction_ & 0b1111111;
     uint8_t rs2 = (current_instruction_ >> 20) & 0b11111;
@@ -800,7 +800,7 @@ void RVSSVM::WriteMemory()
     }
 }
 
-void RVSSVM::WriteMemoryFloat()
+void RVSSProcessor::WriteMemoryFloat()
 {
     uint8_t rs2 = (current_instruction_ >> 20) & 0b11111;
 
@@ -835,7 +835,7 @@ void RVSSVM::WriteMemoryFloat()
     }
 }
 
-void RVSSVM::WriteMemoryDouble()
+void RVSSProcessor::WriteMemoryDouble()
 {
     uint8_t rs2 = (current_instruction_ >> 20) & 0b11111;
 
@@ -868,7 +868,7 @@ void RVSSVM::WriteMemoryDouble()
     }
 }
 
-void RVSSVM::WriteBack()
+void RVSSProcessor::WriteBack()
 {
     uint8_t opcode = current_instruction_ & 0b1111111;
     uint8_t funct3 = (current_instruction_ >> 12) & 0b111;
@@ -949,7 +949,7 @@ void RVSSVM::WriteBack()
     }
 }
 
-void RVSSVM::WriteBackFloat()
+void RVSSProcessor::WriteBackFloat()
 {
     uint8_t opcode = current_instruction_ & 0b1111111;
     uint8_t funct7 = (current_instruction_ >> 25) & 0b1111111;
@@ -993,7 +993,7 @@ void RVSSVM::WriteBackFloat()
     }
 }
 
-void RVSSVM::WriteBackDouble()
+void RVSSProcessor::WriteBackDouble()
 {
     uint8_t opcode = current_instruction_ & 0b1111111;
     uint8_t funct7 = (current_instruction_ >> 25) & 0b1111111;
@@ -1039,7 +1039,7 @@ void RVSSVM::WriteBackDouble()
     return;
 }
 
-void RVSSVM::WriteBackCsr()
+void RVSSProcessor::WriteBackCsr()
 {
     uint8_t rd = (current_instruction_ >> 7) & 0b11111;
     uint8_t funct3 = (current_instruction_ >> 12) & 0b111;
@@ -1112,7 +1112,7 @@ void RVSSVM::WriteBackCsr()
     }
 }
 
-void RVSSVM::DebugRun()
+void RVSSProcessor::DebugRun()
 {
     ClearStop();
     while (!stop_requested_ && program_counter_ < program_size_)
@@ -1173,7 +1173,7 @@ void RVSSVM::DebugRun()
     DumpState(globals::vm_state_dump_file_path);
 }
 
-void RVSSVM::Step()
+void RVSSProcessor::Step()
 {
     current_delta_.old_pc = program_counter_;
     if (program_counter_ < program_size_)
@@ -1221,10 +1221,10 @@ void RVSSVM::Step()
     SetActiveWireNames();
     SetVMStateMap();
     emit updateCircuitStateSignal(active_wires_);
-    emit vmStateChangedSignal(vmState);
+    emit processorStateChangedSignal(vmState);
 }
 
-void RVSSVM::Undo()
+void RVSSProcessor::Undo()
 {
     qInfo() << "Attempting to undo last step in rvss";
     if (undo_stack_.empty())
@@ -1286,11 +1286,11 @@ void RVSSVM::Undo()
     SetActiveWireNames();
     SetVMStateMap();
     emit updateCircuitStateSignal(active_wires_);
-    emit vmStateChangedSignal(vmState);
+    emit processorStateChangedSignal(vmState);
     qInfo() << "Undo completed in rvss";
 }
 
-void RVSSVM::Redo()
+void RVSSProcessor::Redo()
 {
     qInfo() << "Attempting to redo last undone step in rvss";
     if (redo_stack_.empty())
@@ -1353,10 +1353,10 @@ void RVSSVM::Redo()
     SetActiveWireNames();
     SetVMStateMap();
     emit updateCircuitStateSignal(active_wires_);
-    emit vmStateChangedSignal(vmState);
+    emit processorStateChangedSignal(vmState);
 }
 
-void RVSSVM::Reset()
+void RVSSProcessor::Reset()
 {
     program_counter_ = 0;
     instructions_retired_ = 0;

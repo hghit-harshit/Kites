@@ -6,7 +6,7 @@
 // TEST(RV5StageVM_H_F_TEST,hazard_forwarding_test_1)
 // {
 //     setupVmStateDirectory();
-//     RV5StageVM_H_F vm;
+//     RV5StageProcessorHF vm;
 //     std::cout << "Program Information " << std::endl;
 //     std::cout << "Program size : " <<vm.program_size_ << std::endl;
 //     AssembledProgram program = assemble("../examples/pipeline_test_code_1.s");
@@ -23,11 +23,11 @@
 #include "../include/assembler/assembler.h"
 #include "../include/utils.h"
 
-static std::unique_ptr<RV5StageVM_H_F> runHazardProgram(const std::string& filename)
+static std::unique_ptr<RV5StageProcessorHF> runHazardProgram(const std::string& filename)
 {
     setupVmStateDirectory();
 
-    auto vm = std::make_unique<RV5StageVM_H_F>();
+    auto vm = std::make_unique<RV5StageProcessorHF>();
     AssembledProgram program = assemble(filename);
     vm->LoadProgram(program);
     vm->DebugRun();

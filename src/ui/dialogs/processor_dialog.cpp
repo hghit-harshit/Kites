@@ -3,7 +3,7 @@
 
 namespace Kites
 {
-ProcessorDialog::ProcessorDialog(QWidget *parent, const VMType &currentVMType)
+ProcessorDialog::ProcessorDialog(QWidget *parent, const ProcessorType &currentVMType)
     : QDialog(parent), ui(new Ui::ProcessorDialog)
 {
     ui->setupUi(this);
@@ -26,23 +26,23 @@ void ProcessorDialog::on_buttonBox_accepted()
         // all these names were set in processor_dialog.ui using qt Designer
         if (processorType == "Single cycle processor")
         {
-            emit vmSelected(VMType::RVSS);
+            emit vmSelected(ProcessorType::RVSS);
         }
         else if (processorType == "5 statge Processor w/o hazard detection w/o forwarding")
         {
-            emit vmSelected(VMType::RV5Stage_NH_NF);
+            emit vmSelected(ProcessorType::RV5Stage_NH_NF);
         }
         else if (processorType == "5 statge Processor w/ hazard detection w/o forwarding")
         {
-            emit vmSelected(VMType::RV5Stage_H_NF);
+            emit vmSelected(ProcessorType::RV5Stage_H_NF);
         }
         else if (processorType == "5 statge Processor w/o hazard detection w/ forwarding")
         {
-            emit vmSelected(VMType::RV5Stage_NH_F);
+            emit vmSelected(ProcessorType::RV5Stage_NH_F);
         }
         else if (processorType == "5 statge Processor w/ hazard detection w/ forwarding")
         {
-            emit vmSelected(VMType::RV5Stage_H_F);
+            emit vmSelected(ProcessorType::RV5Stage_H_F);
         }
     }
 }

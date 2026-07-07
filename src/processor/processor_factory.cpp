@@ -1,6 +1,6 @@
 /**
  * @file vm_factory.cpp
- * @brief This file contains the implementation of the VMFactory class
+ * @brief This file contains the implementation of the ProcessorFactory class
  * @version 0.1
  * @date 2025-10-23
  *
@@ -12,7 +12,7 @@
 
 namespace Kites
 {
-std::unique_ptr<VmBase> VMFactory::createVM(VMType type)
+std::unique_ptr<ProcessorBase> ProcessorFactory::createVM(ProcessorType type)
 {
     auto &instance = getInstance();
     auto it = instance.m_vmContainer.find(type);
@@ -20,6 +20,6 @@ std::unique_ptr<VmBase> VMFactory::createVM(VMType type)
     {
         return it->second();
     }
-    throw std::runtime_error("VMFactory: Unknown VMType");
+    throw std::runtime_error("ProcessorFactory: Unknown ProcessorType");
 }
 }//namespace Kites

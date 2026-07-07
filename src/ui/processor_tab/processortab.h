@@ -20,13 +20,13 @@ class ProcessorTab : public KitesTab
     // we are passing vmManager instead of just circuuit scene
     // because later we might want  to have acces to stuff like
     // cpi ipc etc that are in vmManager
-    explicit ProcessorTab(QWidget *parent = nullptr, VMManager *vmManager = nullptr);
+    explicit ProcessorTab(QWidget *parent = nullptr, ProcessorManager *vmManager = nullptr);
     ~ProcessorTab();
     void setWiresStayActive(bool stayActive);
 
   private:
     Ui::ProcessorTab *ui;
-    VMManager *m_vmManager = nullptr;
+    ProcessorManager *m_vmManager = nullptr;
     VMStateTableModel *m_vmStateTableModel;
 
   public slots:

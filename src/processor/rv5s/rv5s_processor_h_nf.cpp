@@ -27,9 +27,9 @@ constexpr uint32_t NOP = 0x00000013;
 
 using namespace alu;
 
-// --- RV5StageVM_H_NF Class Implementation ---
+// --- RV5StageProcessorHNF Class Implementation ---
 
-RV5StageVM_H_NF::RV5StageVM_H_NF() : RV5StageVM_Base()
+RV5StageProcessorHNF::RV5StageProcessorHNF() : RV5StageVM_Base()
 {
     // Initialize VmBase members
     // program_counter_ = 0;
@@ -43,9 +43,9 @@ RV5StageVM_H_NF::RV5StageVM_H_NF() : RV5StageVM_Base()
     // Reset components and history
 #ifndef DISABLE_GUI
     circuit_scene_ = std::make_unique<Kites::RV5StageVM_H_NF_CircuitScene>();
-    connect(this, &VmBase::updateCircuitStateSignal, circuit_scene_.get(),
+    connect(this, &ProcessorBase::updateCircuitStateSignal, circuit_scene_.get(),
             &Kites::RV5StageVM_H_NF_CircuitScene::updateCircuitState);
-    connect(this, &VmBase::vmStateChangedSignal, circuit_scene_.get(),
+    connect(this, &ProcessorBase::processorStateChangedSignal, circuit_scene_.get(),
             &Kites::RV5StageVM_H_NF_CircuitScene::vmStateChangedSlot);
 #endif
     Reset();
@@ -72,7 +72,7 @@ RV5StageVM_H_NF::RV5StageVM_H_NF() : RV5StageVM_Base()
     always_active_wires_count_ = active_wires_.size();
 }
 
-void RV5StageVM_H_NF::SetActiveWireNames()
+void RV5StageProcessorHNF::SetActiveWireNames()
 {
     // Clear and populate canonical wires for the Hazard Detection + No Forwarding (H_NF) circuit
     active_wires_.erase(active_wires_.begin() + always_active_wires_count_, active_wires_.end());
@@ -153,13 +153,13 @@ void RV5StageVM_H_NF::SetActiveWireNames()
     // The scene will read `active_wires_` when `updateCircuitStateSignal` is emitted by callers.
 }
 
-void RV5StageVM_H_NF::Reset()
+void RV5StageProcessorHNF::Reset()
 {
     RV5StageVM_Base::Reset();
     stall_fetch_and_decode_ = false;
 }
 
-void RV5StageVM_H_NF::Step()
+void RV5StageProcessorHNF::Step()
 {
     uint64_t old_pc_before_redirect = program_counter_;
 
@@ -214,7 +214,7 @@ void RV5StageVM_H_NF::Step()
     // }
 }
 
-void RV5StageVM_H_NF::pipeline_fetch()
+void RV5StageProcessorHNF::pipeline_fetch()
 {
     if (stall_fetch_and_decode_)
     {
@@ -232,7 +232,7 @@ void RV5StageVM_H_NF::pipeline_fetch()
     }
 }
 
-void RV5StageVM_H_NF::pipeline_execute()
+void RV5StageProcessorHNF::pipeline_execute()
 {
     uint32_t cur_instruction = id_ex_reg_.instruction;
     const bool is_f_instruction = instruction_set::isFInstruction(cur_instruction);
@@ -347,7 +347,7 @@ void RV5StageVM_H_NF::pipeline_execute()
     }
 }
 
-void RV5StageVM_H_NF::handle_syscall()
+void RV5StageProcessorHNF::handle_syscall()
 {
     if ((id_ex_reg_.instruction & 0x7F) == 0b1110011 &&
         ((id_ex_reg_.instruction >> 12) & 0x7) == 0b000)
@@ -357,7 +357,7 @@ void RV5StageVM_H_NF::handle_syscall()
     }
 }
 
-uint64_t RV5StageVM_H_NF::pipeline_execute_float()
+uint64_t RV5StageProcessorHNF::pipeline_execute_float()
 {
     uint32_t instruction = id_ex_reg_.instruction;
     uint8_t opcode = instruction & 0b1111111;
@@ -395,7 +395,7 @@ uint64_t RV5StageVM_H_NF::pipeline_execute_float()
     return alu_result;
 }
 
-uint64_t RV5StageVM_H_NF::pipeline_execute_double()
+uint64_t RV5StageProcessorHNF::pipeline_execute_double()
 {
     uint32_t instruction = id_ex_reg_.instruction;
     uint8_t opcode = instruction & 0b1111111;

@@ -5,18 +5,18 @@
 #include "../include/assembler/assembler.h"
 #include "../include/utils.h"
 
-static std::unique_ptr<RV5StageVM_NH_NF> runNhNfProgram(const std::string& filename)
+static std::unique_ptr<RV5StageProcessorNHNF> runNhNfProgram(const std::string& filename)
 {
     setupVmStateDirectory();
 
-    auto vm = std::make_unique<RV5StageVM_NH_NF>();
+    auto vm = std::make_unique<RV5StageProcessorNHNF>();
     AssembledProgram program = assemble(filename);
     vm->LoadProgram(program);
     vm->DebugRun();
     return vm;
 }
 
-static std::unique_ptr<VmBase> runProgram(const std::string& filename)
+static std::unique_ptr<ProcessorBase> runProgram(const std::string& filename)
 {
     setupVmStateDirectory();
 

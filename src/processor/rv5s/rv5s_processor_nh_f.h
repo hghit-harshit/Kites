@@ -21,14 +21,14 @@ namespace Kites
 // * Conditional Branch Hazards: 3 NOPs (Same as Mode 1, no prediction/detection)
 // * Unconditional Jumps (JAL/JALR): 1 NOP (Same as Mode 1)
 
-class RV5StageVM_NH_F : public RV5StageVM_Base
+class RV5StageProcessorNHF : public RV5StageVM_Base
 {
   public:
     // Constructor and Destructor
-    RV5StageVM_NH_F();
-    ~RV5StageVM_NH_F() = default;
+    RV5StageProcessorNHF();
+    ~RV5StageProcessorNHF() = default;
 
-    // Overridden virtual functions from VmBase
+    // Overridden virtual functions from ProcessorBase
     // void Run() override;
     // void DebugRun() override;
     void Step() override;
@@ -36,7 +36,7 @@ class RV5StageVM_NH_F : public RV5StageVM_Base
 
     void PrintType()
     {
-        std::cout << "RV5StageVM_NH_F" << std::endl;
+        std::cout << "RV5StageProcessorNHF" << std::endl;
     }
     void SetActiveWireNames() override;
 

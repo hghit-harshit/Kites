@@ -9,7 +9,7 @@ class VMStateTableModel : public QAbstractTableModel
 {
     Q_OBJECT
   public:
-    explicit VMStateTableModel(QObject *parent = nullptr, VMManager * = nullptr);
+    explicit VMStateTableModel(QObject *parent = nullptr, ProcessorManager * = nullptr);
     ~VMStateTableModel() = default;
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -19,7 +19,7 @@ class VMStateTableModel : public QAbstractTableModel
                         int role = Qt::DisplayRole) const override;
 
   private:
-    VMManager *m_vmManager = nullptr;
+    ProcessorManager *m_vmManager = nullptr;
 
   public slots:
     void vmStateChangedSlot(const QMap<QString, QVariant> &vmState);

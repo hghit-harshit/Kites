@@ -9,7 +9,7 @@
 // TEST(FIVE_STAGE_VM_TEST,no_hazard_no_forwarding_test_1)
 // {
 //     setupVmStateDirectory();
-//     RV5StageVM_NH_NF vm;
+//     RV5StageProcessorNHNF vm;
 //     std::cout << "Program Information " << std::endl;
 //     std::cout << "Program size : " <<vm.program_size_ << std::endl;
 //     AssembledProgram program = assemble("../examples/pipeline_test_code_1.s");
@@ -22,7 +22,7 @@
 // TEST(FIVE_STAGE_VM_TEST,no_hazard_no_forwarding_test_2)
 // {
 //     setupVmStateDirectory();
-//     RV5StageVM_NH_NF vm;
+//     RV5StageProcessorNHNF vm;
 //     AssembledProgram program = assemble("../examples/pipeline_test_code_2.s");
 //     vm.LoadProgram(program);
 //     vm.DebugRun();    
@@ -33,7 +33,7 @@
 // TEST(FIVE_STAGE_VM_TEST,hazard_no_forwarding_test_1)
 // {
 //     setupVmStateDirectory();
-//     RV5StageVM_H_NF vm;
+//     RV5StageProcessorHNF vm;
 //     AssembledProgram program = assemble("../examples/pipeline_test_code_1.s");
 //     vm.LoadProgram(program);
 //     vm.DebugRun();    
@@ -44,7 +44,7 @@
 // TEST(FIVE_STAGE_VM_TEST,no_hazard_forwarding_test)
 // {
 //     setupVmStateDirectory();
-//     RV5StageVM_NH_F vm;
+//     RV5StageProcessorNHF vm;
 //     AssembledProgram program = assemble("../examples/pipeline_test_code.s");
 //     vm.LoadProgram(program);
 //     vm.DebugRun();    
@@ -54,7 +54,7 @@
 // TEST(FIVE_STAGE_VM_TEST,harzard_no_forwarding_test)
 // {
 //     setupVmStateDirectory();
-//     RV5StageVM_H_F vm;
+//     RV5StageProcessorHF vm;
 //     AssembledProgram program = assemble("../examples/pipeline_test_code.s");
 //     vm.LoadProgram(program);
 //     vm.DebugRun();    
@@ -64,7 +64,7 @@
 // TEST(FIVE_STAGE_VM_TEST,harzard_forwarding_test)
 // {
 //     setupVmStateDirectory();
-//     RV5StageVM_H_NF vm;
+//     RV5StageProcessorHNF vm;
 //     AssembledProgram program = assemble("../examples/pipeline_test_code.s");
 //     vm.LoadProgram(program);
 //     vm.DebugRun();    

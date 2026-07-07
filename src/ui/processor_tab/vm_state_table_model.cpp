@@ -2,10 +2,10 @@
 
 namespace Kites
 {
-VMStateTableModel::VMStateTableModel(QObject *parent, VMManager *vmManager)
+VMStateTableModel::VMStateTableModel(QObject *parent, ProcessorManager *vmManager)
     : QAbstractTableModel(parent), m_vmManager(vmManager)
 {
-    connect(m_vmManager, &VMManager::vmStageChangedSignal, this,
+    connect(m_vmManager, &ProcessorManager::processorStageChangedSignal, this,
             &VMStateTableModel::vmStateChangedSlot);
 }
 

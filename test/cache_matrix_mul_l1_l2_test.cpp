@@ -146,20 +146,20 @@ TEST(CacheHierarchyTest, MatrixMultiplyUsesL2OnL1Misses_RVSS)
 
 TEST(CacheHierarchyTest, MatrixMultiplyUsesL2OnL1Misses_RV5_NH_NF)
 {
-    runMatrixMultiplyCacheTest<RV5StageVM_NH_NF>("RV5StageVM_NH_NF");
+    runMatrixMultiplyCacheTest<RV5StageProcessorNHNF>("RV5StageProcessorNHNF");
 }
 
 TEST(CacheHierarchyTest, MatrixMultiplyUsesL2OnL1Misses_RV5_NH_F)
 {
-    runMatrixMultiplyCacheTest<RV5StageVM_NH_F>("RV5StageVM_NH_F");
+    runMatrixMultiplyCacheTest<RV5StageProcessorNHF>("RV5StageProcessorNHF");
 }
 
 TEST(CacheHierarchyTest, MatrixMultiplyUsesL2OnL1Misses_RV5_H_NF)
 {
-    runMatrixMultiplyCacheTest<RV5StageVM_H_NF>("RV5StageVM_H_NF");
+    runMatrixMultiplyCacheTest<RV5StageProcessorHNF>("RV5StageProcessorHNF");
 }
 
 TEST(CacheHierarchyTest, MatrixMultiplyUsesL2OnL1Misses_RV5_H_F)
 {
-    runMatrixMultiplyCacheTest<RV5StageVM_H_F>("RV5StageVM_H_F");
+    runMatrixMultiplyCacheTest<RV5StageProcessorHF>("RV5StageProcessorHF");
 }

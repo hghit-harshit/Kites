@@ -18,47 +18,47 @@
 
 namespace Kites
 {
-VMManager::VMManager(QObject *parent, VMType vmType) : QObject(parent)
+ProcessorManager::ProcessorManager(QObject *parent, ProcessorType vmType) : QObject(parent)
 {
     // first we register all the VMs
     m_profiler = std::make_unique<Profiler>();
 
-    VMFactory::RegisterVM<RVSSVM>(VMType::RVSS);
-    VMFactory::RegisterVM<RV5StageVM_NH_NF>(VMType::RV5Stage_NH_NF);
-    VMFactory::RegisterVM<RV5StageVM_H_NF>(VMType::RV5Stage_H_NF);
-    VMFactory::RegisterVM<RV5StageVM_NH_F>(VMType::RV5Stage_NH_F);
-    VMFactory::RegisterVM<RV5StageVM_H_F>(VMType::RV5Stage_H_F);
+    ProcessorFactory::RegisterVM<RVSSProcessor>(ProcessorType::RVSS);
+    ProcessorFactory::RegisterVM<RV5StageProcessorNHNF>(ProcessorType::RV5Stage_NH_NF);
+    ProcessorFactory::RegisterVM<RV5StageProcessorHNF>(ProcessorType::RV5Stage_H_NF);
+    ProcessorFactory::RegisterVM<RV5StageProcessorNHF>(ProcessorType::RV5Stage_NH_F);
+    ProcessorFactory::RegisterVM<RV5StageProcessorHF>(ProcessorType::RV5Stage_H_F);
     m_currentVMType = vmType;
-    m_currentVM = VMFactory::createVM(vmType);
-    connect(m_currentVM.get(), &VmBase::vmStateChangedSignal, this,
-            &VMManager::vmStageChangedSignal, Qt::DirectConnection);
-    connect(m_currentVM.get(), &VmBase::vmPausedAtBreakpointSignal, this,
-            &VMManager::vmPausedAtBreakpointSignal, Qt::DirectConnection);
+    m_currentVM = ProcessorFactory::createVM(vmType);
+    connect(m_currentVM.get(), &ProcessorBase::processorStateChangedSignal, this,
+            &ProcessorManager::processorStageChangedSignal, Qt::DirectConnection);
+    connect(m_currentVM.get(), &ProcessorBase::processorPausedAtBreakpointSignal, this,
+            &ProcessorManager::processorPausedAtBreakpointSignal, Qt::DirectConnection);
     // here we connect the vm state changed signal to the vm manager signal
     // and this will be further connected to the mainwindow slot to update the ui
 
-    connect(m_currentVM.get(), &VmBase::vmStateChangedSignal, m_profiler.get(),
+    connect(m_currentVM.get(), &ProcessorBase::processorStateChangedSignal, m_profiler.get(),
             &Profiler::onVMStateChanged, Qt::DirectConnection);
 }
 
-void VMManager::changeVM(VMType vmType)
+void ProcessorManager::changeVM(ProcessorType vmType)
 {
     m_currentVMType = vmType;
-    m_currentVM = VMFactory::createVM(vmType);
+    m_currentVM = ProcessorFactory::createVM(vmType);
     m_currentVM->step_delay_ = m_stepDelayMs;
-    connect(m_currentVM.get(), &VmBase::vmStateChangedSignal, this,
-            &VMManager::vmStageChangedSignal, Qt::DirectConnection);
-    connect(m_currentVM.get(), &VmBase::vmPausedAtBreakpointSignal, this,
-            &VMManager::vmPausedAtBreakpointSignal, Qt::DirectConnection);
+    connect(m_currentVM.get(), &ProcessorBase::processorStateChangedSignal, this,
+            &ProcessorManager::processorStageChangedSignal, Qt::DirectConnection);
+    connect(m_currentVM.get(), &ProcessorBase::processorPausedAtBreakpointSignal, this,
+            &ProcessorManager::processorPausedAtBreakpointSignal, Qt::DirectConnection);
     // create new connections for the new VM
 }
 
-void VMManager::loadProgram(const AssembledProgram &program)
+void ProcessorManager::loadProgram(const AssembledProgram &program)
 {
     m_currentVM->LoadProgram(program);
 }
 
-void VMManager::run()
+void ProcessorManager::run()
 {
     try
     {
@@ -70,7 +70,7 @@ void VMManager::run()
     }
 }
 
-void VMManager::step()
+void ProcessorManager::step()
 {
     try
     {
@@ -86,7 +86,7 @@ void VMManager::step()
         m_currentVM->SetVMStateMap();
         m_currentVM->SetActiveWireNames();
         emit m_currentVM->updateCircuitStateSignal(m_currentVM->active_wires_);
-        emit m_currentVM->vmStateChangedSignal(m_currentVM->vmState);
+        emit m_currentVM->processorStateChangedSignal(m_currentVM->vmState);
     }
     catch (const std::exception &e)
     {
@@ -94,116 +94,116 @@ void VMManager::step()
     }
 }
 
-void VMManager::debugRun()
+void ProcessorManager::debugRun()
 {
     // Debug mode starts in paused/manual mode; user advances with Step.
     m_currentVM->ClearStop();
     m_currentVM->RequestPause();
 }
 
-void VMManager::stop()
+void ProcessorManager::stop()
 {
     m_currentVM->RequestStop();
 }
-void VMManager::pause()
+void ProcessorManager::pause()
 {
     m_currentVM->RequestPause();
 }
-void VMManager::resume()
+void ProcessorManager::resume()
 {
     // QMutexLocker locker(&m_currentVM->pause_mutex_);
     m_currentVM->RequestResume();
     // m_currentVM->pause_wait_condition_.wakeAll();
 }
-void VMManager::undo()
+void ProcessorManager::undo()
 {
     qDebug() << "Undoing last step";
     // m_currentVM->RequestUndo();
     m_currentVM->Undo();
 }
-void VMManager::redo()
+void ProcessorManager::redo()
 {
     qDebug() << "Redoing last undone step";
     // m_currentVM->RequestRedo();
     m_currentVM->Redo();
 }
-void VMManager::setStepDelay(unsigned int delay)
+void ProcessorManager::setStepDelay(unsigned int delay)
 {
     m_stepDelayMs = delay;
     m_currentVM->step_delay_ = delay;
 }
 
-void VMManager::setBreakpoints(const std::vector<uint64_t> &breakpoints)
+void ProcessorManager::setBreakpoints(const std::vector<uint64_t> &breakpoints)
 {
     m_currentVM->SetBreakpoints(breakpoints);
 }
 
-RegisterFile *VMManager::getRegisterFile() const
+RegisterFile *ProcessorManager::getRegisterFile() const
 {
     return &m_currentVM->registers_;
 }
 
-MemoryController *VMManager::getMemoryController() const
+MemoryController *ProcessorManager::getMemoryController() const
 {
     return &m_currentVM->memory_controller_;
 }
 
-Kites::CircuitScene *VMManager::getCircuitScene() const
+Kites::CircuitScene *ProcessorManager::getCircuitScene() const
 {
     return m_currentVM->circuit_scene_.get();
 }
-void VMManager::reset()
+void ProcessorManager::reset()
 {
     qDebug() << "Resetting VM";
     m_currentVM->Reset();
 }
 
-VMType VMManager::getVMType()
+ProcessorType ProcessorManager::getVMType()
 {
     return m_currentVMType;
 }
 
-QMap<QString, QVariant>& VMManager::getVMStateMap() const
-{
-    return m_currentVM->vmState;
-}
+// QMap<QString, QVariant>& ProcessorManager::getVMStateMap() const
+// {
+//     return m_currentVM->vmState;
+// }
 
-Profiler* VMManager::getProfiler() const
+Profiler* ProcessorManager::getProfiler() const
 {
     return m_profiler.get();
 }
 
-uint64_t VMManager::getProgramCounter() const
+uint64_t ProcessorManager::getProgramCounter() const
 {
     return m_currentVM->program_counter_;
 }
 
-float VMManager::getCPI() const
+float ProcessorManager::getCPI() const
 {
     return m_currentVM->cpi_;
 }
 
-float VMManager::getIPC() const
+float ProcessorManager::getIPC() const
 {
     return m_currentVM->ipc_;
 }
 
-unsigned int VMManager::getBranchMispredictions() const
+unsigned int ProcessorManager::getBranchMispredictions() const
 {
     return m_currentVM->branch_mispredictions_;
 }
 
-unsigned int VMManager::getStallCycles() const
+unsigned int ProcessorManager::getStallCycles() const
 {
     return m_currentVM->stall_cycles_;
 }
 
-unsigned int VMManager::getCycles() const
+unsigned int ProcessorManager::getCycles() const
 {
     return m_currentVM->cycle_s_;
 }
 
-unsigned int VMManager::getInstructionsRetired() const
+unsigned int ProcessorManager::getInstructionsRetired() const
 {
     return m_currentVM->instructions_retired_;
 }

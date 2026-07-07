@@ -37,7 +37,7 @@ struct VMStatistics
 
 struct VMState
 {
-    VMType vmType;
+    ProcessorType vmType;
     VMStatistics statistics{};
     PipelineState pipelineState{};
     void reset()

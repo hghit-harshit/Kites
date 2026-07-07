@@ -7,7 +7,7 @@
 // #include "vsrtl/graphics/vsrtl_widget.h"
 namespace Kites
 {
-ProcessorTab::ProcessorTab(QWidget *parent, VMManager *vmManager)
+ProcessorTab::ProcessorTab(QWidget *parent, ProcessorManager *vmManager)
     : KitesTab(parent), ui(new Ui::ProcessorTab), m_vmManager(vmManager)
 {
     ui->setupUi(this);

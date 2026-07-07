@@ -9,7 +9,7 @@
 namespace Kites
 {
 
-EditorTab::EditorTab(QWidget *parent, VMManager *vmManager)
+EditorTab::EditorTab(QWidget *parent, ProcessorManager *vmManager)
     : KitesTab(parent), m_vmManager(vmManager), ui(new Ui::EditorTab)
 {
     ui->setupUi(this);

@@ -1,6 +1,6 @@
 /**
  * @file vm_runner.h
- * @brief This file contains the declaration of the VMManager class
+ * @brief This file contains the declaration of the ProcessorManager class
  */
 
 #pragma once
@@ -18,25 +18,25 @@
 
 namespace Kites
 {
-class RVSSVM;           // forward declaration
-class RV5StageVM_NH_NF; // forward declaration
-class RV5StageVM_H_NF;  // forward declaration
-class RV5StageVM_NH_F;  // forward declaration
-class RV5StageVM_H_F;   // forward declaration
+class RVSSProcessor;           // forward declaration
+class RV5StageProcessorNHNF; // forward declaration
+class RV5StageProcessorHNF;  // forward declaration
+class RV5StageProcessorNHF;  // forward declaration
+class RV5StageProcessorHF;   // forward declaration
 
 /**
  * @brief This class is responsible for the management of the VM instance
  *
  */
-class VMManager : public QObject
+class ProcessorManager : public QObject
 {
     Q_OBJECT
-  public:
-    VMManager(QObject *parent = nullptr, VMType vmType = VMType::RVSS);
+public:
+    ProcessorManager(QObject *parent = nullptr, ProcessorType vmType = ProcessorType::RVSS);
     // only for now later we will make it so that it pull the type from config.ini
-    // static VMManager& getInstance(VMType vmType = VMType::RVSS)
+    // static ProcessorManager& getInstance(ProcessorType vmType = ProcessorType::RVSS)
     // {
-    //     static VMManager instance(vmType);
+    //     static ProcessorManager instance(vmType);
     //     return instance;
     // }singletons are bad apparently
     /**
@@ -44,8 +44,8 @@ class VMManager : public QObject
      *
      * @param vmType
      */
-    void changeVM(VMType vmType);
-    VMType getVMType();
+    void changeVM(ProcessorType vmType);
+    ProcessorType getVMType();
     void reset();
     void loadProgram(const AssembledProgram &program);
     void run();
@@ -64,7 +64,7 @@ class VMManager : public QObject
     RegisterFile *getRegisterFile() const;
     MemoryController *getMemoryController() const;
     Kites::CircuitScene *getCircuitScene() const;
-    QMap<QString, QVariant> &getVMStateMap() const;
+    // QMap<QString, QVariant> &getVMStateMap() const;
     Profiler* getProfiler() const;
 
     // these are kinda ununsed for now
@@ -76,23 +76,23 @@ class VMManager : public QObject
     unsigned int getCycles() const;
     unsigned int getInstructionsRetired() const;
 
-  private:
-    std::unique_ptr<VmBase> m_currentVM{};
-    VMType m_currentVMType;
+private:
+    std::unique_ptr<ProcessorBase> m_currentVM{};
+    ProcessorType m_currentVMType;
     std::unique_ptr<Profiler> m_profiler{};
     // we need this as when we chage vm we need preserve the step delay
     unsigned int m_stepDelayMs{1000};
-  public slots:
+public slots:
     void runSlot()
     {
         run();
         emit runFinishedSignal();
     }
 
-  signals:
+signals:
     void runFinishedSignal();
-    void vmStageChangedSignal(const QMap<QString, QVariant> &vmState);
-    void vmPausedAtBreakpointSignal();
+    void processorStageChangedSignal(const QMap<QString, QVariant> &vmState);
+    void processorPausedAtBreakpointSignal();
     void runErrorSignal(const QString &errorMessage);
     // std::unique_ptr<> m_instance;
 };

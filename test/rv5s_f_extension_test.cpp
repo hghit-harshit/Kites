@@ -21,37 +21,37 @@
 // Helper launchers — one per VM type
 // ─────────────────────────────────────────────────────────────
 
-static std::unique_ptr<RV5StageVM_NH_NF> runNhNf(const std::string& file)
+static std::unique_ptr<RV5StageProcessorNHNF> runNhNf(const std::string& file)
 {
     setupVmStateDirectory();
-    auto vm = std::make_unique<RV5StageVM_NH_NF>();
+    auto vm = std::make_unique<RV5StageProcessorNHNF>();
     vm->LoadProgram(assemble(file));
     vm->DebugRun();
     return vm;
 }
 
-static std::unique_ptr<RV5StageVM_NH_F> runNhF(const std::string& file)
+static std::unique_ptr<RV5StageProcessorNHF> runNhF(const std::string& file)
 {
     setupVmStateDirectory();
-    auto vm = std::make_unique<RV5StageVM_NH_F>();
+    auto vm = std::make_unique<RV5StageProcessorNHF>();
     vm->LoadProgram(assemble(file));
     vm->DebugRun();
     return vm;
 }
 
-static std::unique_ptr<RV5StageVM_H_NF> runHNf(const std::string& file)
+static std::unique_ptr<RV5StageProcessorHNF> runHNf(const std::string& file)
 {
     setupVmStateDirectory();
-    auto vm = std::make_unique<RV5StageVM_H_NF>();
+    auto vm = std::make_unique<RV5StageProcessorHNF>();
     vm->LoadProgram(assemble(file));
     vm->DebugRun();
     return vm;
 }
 
-static std::unique_ptr<RV5StageVM_H_F> runHF(const std::string& file)
+static std::unique_ptr<RV5StageProcessorHF> runHF(const std::string& file)
 {
     setupVmStateDirectory();
-    auto vm = std::make_unique<RV5StageVM_H_F>();
+    auto vm = std::make_unique<RV5StageProcessorHF>();
     vm->LoadProgram(assemble(file));
     vm->DebugRun();
     return vm;

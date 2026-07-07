@@ -16,14 +16,14 @@
 
 namespace Kites
 {
-class RV5StageVM_H_F : public RV5StageVM_Base
+class RV5StageProcessorHF : public RV5StageVM_Base
 {
   public:
     // Constructor and Destructor
-    RV5StageVM_H_F();
-    ~RV5StageVM_H_F() = default;
+    RV5StageProcessorHF();
+    ~RV5StageProcessorHF() = default;
 
-    // Overridden virtual functions from VmBase
+    // Overridden virtual functions from ProcessorBase
     // void Run() override;
     // void DebugRun() override;
     void Step() override;
@@ -31,7 +31,7 @@ class RV5StageVM_H_F : public RV5StageVM_Base
 
     void PrintType()
     {
-        std::cout << "RV5StageVM_H_F" << std::endl;
+        std::cout << "RV5StageProcessorHF" << std::endl;
     }
 
     void SetActiveWireNames() override;

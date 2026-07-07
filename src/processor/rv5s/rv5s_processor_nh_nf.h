@@ -27,13 +27,13 @@
 
 namespace Kites
 {
-class RV5StageVM_NH_NF : public RV5StageVM_Base
+class RV5StageProcessorNHNF : public RV5StageVM_Base
 {
   public:
-    RV5StageVM_NH_NF();
-    ~RV5StageVM_NH_NF() = default;
+    RV5StageProcessorNHNF();
+    ~RV5StageProcessorNHNF() = default;
 
-    // Overridden virtual functions from VmBase
+    // Overridden virtual functions from ProcessorBase
     // void Run() override;
     // void DebugRun() override;
     void Step() override;

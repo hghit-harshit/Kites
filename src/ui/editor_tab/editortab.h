@@ -24,7 +24,7 @@ class EditorTab : public KitesTab
     Q_OBJECT
 
   public:
-    explicit EditorTab(QWidget *parent = nullptr, VMManager *vmManager = nullptr);
+    explicit EditorTab(QWidget *parent = nullptr, ProcessorManager *vmManager = nullptr);
     ~EditorTab();
     void updateDisassemblyView(const std::string &disassembledCode);
     void setErrorLinesFromFile(const std::filesystem::path &filepath);
@@ -50,7 +50,7 @@ class EditorTab : public KitesTab
     // but well make it read only and use it to show disassembled code
     // were doing this cause of the overriden paint event in Editor class to show hightlights
     QTextCharFormat m_squiggleFormat; // stores how the quiggles will look
-    VMManager *m_vmManager = nullptr;
+    ProcessorManager *m_vmManager = nullptr;
     QTextCursor m_userCursorPosition;
     // to save user cursor position when updating disassembly view
     bool m_expandedLocked = false;

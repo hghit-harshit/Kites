@@ -21,38 +21,38 @@
 namespace Kites
 {
 
-VmBase::VmBase()
+ProcessorBase::ProcessorBase()
 {
 }
 
-void VmBase::RequestStop()
+void ProcessorBase::RequestStop()
 {
     QMutexLocker locker(&pause_mutex_);
     stop_requested_ = true;
     pause_wait_condition_.wakeAll();
     Reset();
 }
-void VmBase::RequestPause()
+void ProcessorBase::RequestPause()
 {
     pause_requested_ = true;
 }
-void VmBase::RequestResume()
+void ProcessorBase::RequestResume()
 {
     QMutexLocker locker(&pause_mutex_);
     pause_requested_ = false;
     pause_wait_condition_.wakeAll();
 }
-bool VmBase::IsStopRequested() const
+bool ProcessorBase::IsStopRequested() const
 {
     return stop_requested_;
 }
-void VmBase::ClearStop()
+void ProcessorBase::ClearStop()
 {
     stop_requested_ = false;
     pause_requested_ = false;
 }
 
-void VmBase::LoadProgram(const AssembledProgram &program)
+void ProcessorBase::LoadProgram(const AssembledProgram &program)
 {
     program_ = program;
     unsigned int counter = 0;
@@ -145,12 +145,12 @@ void VmBase::LoadProgram(const AssembledProgram &program)
     DumpState(globals::vm_state_dump_file_path);
 }
 
-uint64_t VmBase::GetProgramCounter() const
+uint64_t ProcessorBase::GetProgramCounter() const
 {
     return program_counter_;
 }
 
-void VmBase::UpdateProgramCounter(int64_t value)
+void ProcessorBase::UpdateProgramCounter(int64_t value)
 {
     program_counter_ = static_cast<uint64_t>(static_cast<int64_t>(program_counter_) + value);
 }
@@ -161,7 +161,7 @@ auto sign_extend = [](uint32_t value, unsigned int bits) -> int32_t
     return (value ^ mask) - mask;
 };
 
-int32_t VmBase::ImmGenerator(uint32_t instruction)
+int32_t ProcessorBase::ImmGenerator(uint32_t instruction)
 {
     int32_t imm = 0;
     uint8_t opcode = instruction & 0b1111111;
@@ -235,7 +235,7 @@ int32_t VmBase::ImmGenerator(uint32_t instruction)
     return imm;
 }
 
-void VmBase::SetBreakpoints(const std::vector<uint64_t> &breakpoints)
+void ProcessorBase::SetBreakpoints(const std::vector<uint64_t> &breakpoints)
 {
     breakpoints_.clear();
     for (const auto &bp : breakpoints)
@@ -249,7 +249,7 @@ void VmBase::SetBreakpoints(const std::vector<uint64_t> &breakpoints)
     }
 }
 
-void VmBase::AddBreakpoint(uint64_t val, bool is_line)
+void ProcessorBase::AddBreakpoint(uint64_t val, bool is_line)
 {
     if (is_line)
     {
@@ -288,7 +288,7 @@ void VmBase::AddBreakpoint(uint64_t val, bool is_line)
     DumpState(globals::vm_state_dump_file_path);
 }
 
-void VmBase::RemoveBreakpoint(uint64_t val, bool is_line)
+void ProcessorBase::RemoveBreakpoint(uint64_t val, bool is_line)
 {
     if (is_line)
     {
@@ -328,12 +328,12 @@ void VmBase::RemoveBreakpoint(uint64_t val, bool is_line)
     DumpState(globals::vm_state_dump_file_path);
 }
 
-bool VmBase::CheckBreakpoint(uint64_t address)
+bool ProcessorBase::CheckBreakpoint(uint64_t address)
 {
     return std::find(breakpoints_.begin(), breakpoints_.end(), address) != breakpoints_.end();
 }
 
-void VmBase::PrintString(uint64_t address)
+void ProcessorBase::PrintString(uint64_t address)
 {
     while (true)
     {
@@ -345,7 +345,7 @@ void VmBase::PrintString(uint64_t address)
     }
 }
 
-void VmBase::DumpState(const std::filesystem::path &filename)
+void ProcessorBase::DumpState(const std::filesystem::path &filename)
 {
     std::ofstream file(filename);
     if (!file.is_open())
@@ -387,7 +387,7 @@ void VmBase::DumpState(const std::filesystem::path &filename)
     file.close();
 }
 
-void VmBase::ModifyRegister(const std::string &reg_name, uint64_t value)
+void ProcessorBase::ModifyRegister(const std::string &reg_name, uint64_t value)
 {
     registers_.ModifyRegister(reg_name, value);
 }

@@ -22,7 +22,7 @@ struct VmSnapshot {
     std::vector<uint8_t> watched_memory;
 };
 
-VmSnapshot captureSnapshot(VmBase& vm, const std::vector<uint64_t>& watched_addresses)
+VmSnapshot captureSnapshot(ProcessorBase& vm, const std::vector<uint64_t>& watched_addresses)
 {
     VmSnapshot snapshot;
     snapshot.pc = vm.program_counter_;
@@ -98,44 +98,44 @@ std::vector<uint64_t> watchedMemoryRange(uint64_t base, size_t size)
 
 TEST(RV5S_UNDO_REDO_NH_NF, basic_round_trip)
 {
-    runUndoRedoRoundTripTest<RV5StageVM_NH_NF>("../examples/rv5s_undo_redo_basic.s", 12, {});
+    runUndoRedoRoundTripTest<RV5StageProcessorNHNF>("../examples/rv5s_undo_redo_basic.s", 12, {});
 }
 
 TEST(RV5S_UNDO_REDO_NH_F, basic_round_trip)
 {
-    runUndoRedoRoundTripTest<RV5StageVM_NH_F>("../examples/rv5s_undo_redo_basic.s", 12, {});
+    runUndoRedoRoundTripTest<RV5StageProcessorNHF>("../examples/rv5s_undo_redo_basic.s", 12, {});
 }
 
 TEST(RV5S_UNDO_REDO_H_NF, basic_round_trip)
 {
-    runUndoRedoRoundTripTest<RV5StageVM_H_NF>("../examples/rv5s_undo_redo_basic.s", 12, {});
+    runUndoRedoRoundTripTest<RV5StageProcessorHNF>("../examples/rv5s_undo_redo_basic.s", 12, {});
 }
 
 TEST(RV5S_UNDO_REDO_H_F, basic_round_trip)
 {
-    runUndoRedoRoundTripTest<RV5StageVM_H_F>("../examples/rv5s_undo_redo_basic.s", 12, {});
+    runUndoRedoRoundTripTest<RV5StageProcessorHF>("../examples/rv5s_undo_redo_basic.s", 12, {});
 }
 
 TEST(RV5S_UNDO_REDO_NH_NF, memory_round_trip)
 {
-    runUndoRedoRoundTripTest<RV5StageVM_NH_NF>(
+    runUndoRedoRoundTripTest<RV5StageProcessorNHNF>(
         "../examples/rv5s_undo_redo_memory.s", 12, watchedMemoryRange(128, 16));
 }
 
 TEST(RV5S_UNDO_REDO_NH_F, memory_round_trip)
 {
-    runUndoRedoRoundTripTest<RV5StageVM_NH_F>(
+    runUndoRedoRoundTripTest<RV5StageProcessorNHF>(
         "../examples/rv5s_undo_redo_memory.s", 12, watchedMemoryRange(128, 16));
 }
 
 TEST(RV5S_UNDO_REDO_H_NF, memory_round_trip)
 {
-    runUndoRedoRoundTripTest<RV5StageVM_H_NF>(
+    runUndoRedoRoundTripTest<RV5StageProcessorHNF>(
         "../examples/rv5s_undo_redo_memory.s", 12, watchedMemoryRange(128, 16));
 }
 
 TEST(RV5S_UNDO_REDO_H_F, memory_round_trip)
 {
-    runUndoRedoRoundTripTest<RV5StageVM_H_F>(
+    runUndoRedoRoundTripTest<RV5StageProcessorHF>(
         "../examples/rv5s_undo_redo_memory.s", 12, watchedMemoryRange(128, 16));
 }

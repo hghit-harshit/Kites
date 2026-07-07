@@ -3,7 +3,7 @@
 namespace Kites
 {
 
-enum class VMType
+enum class ProcessorType
 {
     RVSS,
     RV5Stage_NH_NF,

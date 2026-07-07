@@ -1,6 +1,6 @@
 /**
  * @file vm_factory.h
- * @brief this file contains the declaration of the VMFactory class
+ * @brief this file contains the declaration of the ProcessorFactory class
  * @version 0.1
  * @date 2025-10-23
  *
@@ -16,30 +16,30 @@
 
 namespace Kites
 {
-using VMContainer = std::map<VMType, std::function<std::unique_ptr<VmBase>(void)>>;
+using ProcessorContainer = std::map<ProcessorType, std::function<std::unique_ptr<ProcessorBase>(void)>>;
 
 /**
- * @brief This class is responsible for creating VM instance based on the VMType
+ * @brief This class is responsible for creating VM instance based on the ProcessorType
  * this class uses the factory design pattern
  *
  */
 
-class VMFactory
+class ProcessorFactory
 {
   public:
-    static std::unique_ptr<VmBase> createVM(VMType type);
-    template <typename T> static void RegisterVM(VMType type)
+    static std::unique_ptr<ProcessorBase> createVM(ProcessorType type);
+    template <typename T> static void RegisterVM(ProcessorType type)
     {
         getInstance().m_vmContainer[type] = []() { return std::make_unique<T>(); };
     }
 
   private:
-    VMFactory() = default;
-    static VMFactory &getInstance()
+    ProcessorFactory() = default;
+    static ProcessorFactory &getInstance()
     {
-        static VMFactory instance;
+        static ProcessorFactory instance;
         return instance;
     }
-    VMContainer m_vmContainer;
+    ProcessorContainer m_vmContainer;
 };
 }//namespace Kites

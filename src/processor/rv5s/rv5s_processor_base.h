@@ -38,7 +38,7 @@ struct RV5StageStepDelta
     PipelineRegisterChange pipeline_register_change{};
 };
 
-class RV5StageVM_Base : public VmBase
+class RV5StageVM_Base : public ProcessorBase
 {
   public:
     RV5StageVM_Base() = default;

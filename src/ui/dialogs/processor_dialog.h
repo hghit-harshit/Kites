@@ -17,7 +17,7 @@ class ProcessorDialog : public QDialog
     Q_OBJECT
 
   public:
-    explicit ProcessorDialog(QWidget *parent = nullptr, const VMType &currentVMType = VMType::RVSS);
+    explicit ProcessorDialog(QWidget *parent = nullptr, const ProcessorType &currentVMType = ProcessorType::RVSS);
     ~ProcessorDialog();
 
   private:
@@ -28,7 +28,7 @@ class ProcessorDialog : public QDialog
     // void on_treeWidget_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
 
   signals:
-    void vmSelected(const VMType &vmType);
+    void vmSelected(const ProcessorType &vmType);
 };
 } // namespace Kites
 #endif // PROCESSOR_DIALOG_H

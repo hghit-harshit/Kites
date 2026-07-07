@@ -22,7 +22,7 @@ void RV5StageVM_Base::Run()
         {
             pause_requested_ = true;
             last_breakpoint_pc_ = program_counter_;
-            emit vmPausedAtBreakpointSignal();
+            emit processorPausedAtBreakpointSignal();
         }
 
         {
@@ -45,7 +45,7 @@ void RV5StageVM_Base::Run()
         ipc_ = cycle_s_ ? static_cast<float>(instructions_retired_) / static_cast<float>(cycle_s_)
                         : 0.0f;
         emit updateCircuitStateSignal(active_wires_);
-        emit vmStateChangedSignal(vmState);
+        emit processorStateChangedSignal(vmState);
 
         // handling the delay
         {
@@ -58,7 +58,7 @@ void RV5StageVM_Base::Run()
     }
     if (stop_requested_)
     {
-        emit vmStateChangedSignal(vmState);
+        emit processorStateChangedSignal(vmState);
         // we emit the vm state changed signal once more to update the ui
         // this will get rid of any highlights as they pause when we stop
         // before execution is complete
@@ -977,7 +977,7 @@ void RV5StageVM_Base::Undo()
     SetVMStateMap();
     SetActiveWireNames();
     emit updateCircuitStateSignal(active_wires_);
-    emit vmStateChangedSignal(vmState);
+    emit processorStateChangedSignal(vmState);
 }
 
 void RV5StageVM_Base::Redo()
@@ -1037,7 +1037,7 @@ void RV5StageVM_Base::Redo()
     SetVMStateMap();
     SetActiveWireNames();
     emit updateCircuitStateSignal(active_wires_);
-    emit vmStateChangedSignal(vmState);
+    emit processorStateChangedSignal(vmState);
 }
 
 void RV5StageVM_Base::print_pipeline_registers_debug()

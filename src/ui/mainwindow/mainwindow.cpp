@@ -38,15 +38,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     // well run the vm in a separate thread to keep the ui responsive
     // do not touch these 4 line unless you really know what you are doing
-    m_vmManager = new VMManager();
+    m_vmManager = new ProcessorManager();
     m_vmThread = new QThread(this);
     m_vmManager->moveToThread(m_vmThread);
     m_vmThread->start();
 
-    connect(this, &MainWindow::runVMSignal, m_vmManager, &VMManager::runSlot);
+    connect(this, &MainWindow::runVMSignal, m_vmManager, &ProcessorManager::runSlot);
     // well temporarily disable the toolbar buttons when vm is running
-    connect(m_vmManager, &VMManager::runFinishedSignal, this, &MainWindow::runFinishedSlot);
-    connect(m_vmManager, &VMManager::runErrorSignal, this,
+    connect(m_vmManager, &ProcessorManager::runFinishedSignal, this, &MainWindow::runFinishedSlot);
+    connect(m_vmManager, &ProcessorManager::runErrorSignal, this,
             [this](const QString &errorMessage)
             {
                 // first we enable the toolbar buttons
@@ -61,7 +61,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
             });
 
 
-    connect(m_vmManager, &VMManager::vmStageChangedSignal, this,
+    connect(m_vmManager, &ProcessorManager::processorStageChangedSignal, this,
             [this](const QMap<QString, QVariant> &vmState)
             {
                 qDebug() << "MainWindow received vm state change signal";
@@ -238,7 +238,7 @@ void MainWindow::setUpToolBar()
             });
 
     // we also connect the vm paused at breakpoint signal to change the pause button text
-    connect(m_vmManager, &VMManager::vmPausedAtBreakpointSignal, this,
+    connect(m_vmManager, &ProcessorManager::processorPausedAtBreakpointSignal, this,
             [this, pauseAction]()
             {
                 pauseAction->setText("Resume");
@@ -484,7 +484,7 @@ void MainWindow::processorChangeDialog()
     dialog.exec();
 }
 
-void MainWindow::vmChanged(const VMType &vmType)
+void MainWindow::vmChanged(const ProcessorType &vmType)
 {
     // m_vmManager->setVMType(vmType);
     // m_registerContainer->setRegisterFile(m_vmManager->getRegisterFile());
