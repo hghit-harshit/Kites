@@ -1,6 +1,6 @@
 #include "registercontainer.h"
 #include "ui_registercontainer.h"
-#include "vm/registers.h"
+#include "processor/registers.h"
 namespace Kites
 {
 RegisterContainer::RegisterContainer(QWidget *parent, RegisterFile *regfile)

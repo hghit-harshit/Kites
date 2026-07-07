@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "vm/rvss/rvss_vm.h"
+#include "processor/rvss/rvss_vm.h"
 
-#include "../include/vm/rv5s_vms/rv5svm_nh_nf.h"
+#include "../include/processor/rv5s/rv5s_processor_nh_nf.h"
 #include "../include/assembler/assembler.h"
 #include "../include/utils.h"
 

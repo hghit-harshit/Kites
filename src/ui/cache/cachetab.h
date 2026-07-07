@@ -3,7 +3,7 @@
 #include "cacheconfigwidget.h"
 #include "cachemodel.h"
 #include "ui/common/kitestab.h"
-#include "vm/memory_controller.h"
+#include "processor/memory_controller.h"
 #include <QWidget>
 
 

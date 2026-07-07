@@ -1,7 +1,7 @@
 // tests/cache_test.cpp
 #include <gtest/gtest.h>
-#include "vm/main_memory.h"
-#include "vm/cache/cache.h"
+#include "processor/main_memory.h"
+#include "processor/cache/cache.h"
 
 // ── Fixture ───────────────────────────────────────────────────────────────────
 class CacheTest : public ::testing::Test

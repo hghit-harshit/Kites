@@ -2,7 +2,7 @@
 
 #include "../include/assembler/assembler.h"
 #include "../include/utils.h"
-#include "../include/vm/rv5s_vms/rv5svm_nh_nf.h"
+#include "../include/processor/rv5s/rv5s_processor_nh_nf.h"
 
 static std::unique_ptr<RV5StageVM_NH_NF> runNhNfProgramMemory(const std::string& filename)
 {

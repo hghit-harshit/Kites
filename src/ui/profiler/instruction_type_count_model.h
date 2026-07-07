@@ -2,7 +2,7 @@
 #include <array>
 #include <QAbstractTableModel>
 #include "common/instruction_types.h"
-
+#include "utils/to_index.hpp"
 namespace Kites
 {
 
@@ -10,7 +10,7 @@ namespace Kites
 class InstructionTypeCountModel : public QAbstractTableModel
 {
     using InstructionTypeCounts = std::array<size_t, 
-    static_cast<size_t>(instruction_set::InstructionType::INSTRUCTION_TYPE_COUNT)>;
+    toIndex(instruction_set::InstructionType::INSTRUCTION_TYPE_COUNT)>;
     public:
     InstructionTypeCountModel(QObject *parent = nullptr,
         const InstructionTypeCounts &instruction_type_counts = {});

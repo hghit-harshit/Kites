@@ -7,7 +7,7 @@
 #include "assembler/parser.h"
 #include "common/instructions.h"
 #include "utils/utils.h"
-#include "vm/registers.h"
+#include "processor/registers.h"
 
 
 #include <string>

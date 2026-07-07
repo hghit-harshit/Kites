@@ -11,36 +11,40 @@ namespace Kites
 class KitesEditor : public QPlainTextEdit
 {
     Q_OBJECT
-  public:
+public:
     explicit KitesEditor(QWidget *parent = nullptr);
     ~KitesEditor() {};
 
-  protected:
+protected:
     class LineNumberArea : public QWidget
     {
-      public:
+    public:
         LineNumberArea(KitesEditor *editor) : QWidget(editor), m_editor(editor) {};
         QSize sizeHint() const override
         {
             return QSize(m_editor->lineNumberAreaWidth(), 0);
         }
 
-      protected:
+    protected:
         void paintEvent(QPaintEvent *event) override
         {
             m_editor->lineNumberAreaPaintEvent(event);
         }
 
-      private:
+    private:
         KitesEditor *m_editor;
     };
     LineNumberArea *m_lineNumberArea = nullptr;
-    void updateLineNumberAreaWidth(int newBlockCount);
+
     void updateLineNumberArea(const QRect &, int dy);
-    int lineNumberAreaWidth();
+    int lineNumberAreaWidth() const;
     void lineNumberAreaPaintEvent(QPaintEvent *event);
     void highlightCurrentLine();
     void resizeEvent(QResizeEvent *event) override;
-	void changeEvent(QEvent *event) override;
+    void changeEvent(QEvent *event) override;
+    void updateViewPortMargins(); 
+
+    virtual int rightViewMargin() const; 
+    virtual int leftViewMargin() const;
 };
 } // namespace Kites

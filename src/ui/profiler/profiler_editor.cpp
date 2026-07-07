@@ -10,7 +10,7 @@
 namespace Kites
 {
 
-ProfilerEditor::ProfilerEditor(QWidget *parent) : QPlainTextEdit(parent)
+ProfilerEditor::ProfilerEditor(QWidget *parent) : KitesEditor(parent)
 {
     m_syntaxHighlighter = new SyntaxHighlighter(this->document());
 
@@ -34,26 +34,24 @@ ProfilerEditor::ProfilerEditor(QWidget *parent) : QPlainTextEdit(parent)
     setReadOnly(true);
     setLineWrapMode(QPlainTextEdit::NoWrap);
 
-    m_lineNumberArea      = new ProfilerEditorHelpers::LineNumberArea(this);
-    m_ExecutionCountArea  = new ProfilerEditorHelpers::ExecutionCountArea(this);
-    m_instructionTypeArea = new ProfilerEditorHelpers::InstructionTypeArea(this);
+    m_ExecutionCountArea  = new ExecutionCountArea(this);
+    m_instructionTypeArea = new InstructionTypeArea(this);
 
-    connect(this, &QPlainTextEdit::blockCountChanged, this, &ProfilerEditor::updateAreaWidths);
     connect(this, &QPlainTextEdit::updateRequest, this, &ProfilerEditor::updateAreas);
-    updateAreaWidths();
+    updateViewPortMargins();
 }
 
 void ProfilerEditor::setExecutionCount(const std::map<int, int> &hitCounts)
 {
-    m_line_number_execution_count_mapping = hitCounts;
+    m_lineNumberToExecutionCounts = hitCounts;
     m_maxExecutionCount = 0;
-    for (const auto &pair : m_line_number_execution_count_mapping)
+    for (const auto &pair : m_lineNumberToExecutionCounts)
     {
         m_maxExecutionCount = std::max(m_maxExecutionCount, pair.second);
     }
 
     QList<QTextEdit::ExtraSelection> selections;
-    for (const auto &pair : m_line_number_execution_count_mapping)
+    for (const auto &pair : m_lineNumberToExecutionCounts)
     {
         const int lineNumber = pair.first;
         const int hits = pair.second;
@@ -84,24 +82,18 @@ void ProfilerEditor::setExecutionCount(const std::map<int, int> &hitCounts)
 
 void ProfilerEditor::setInstructionTypes(const std::map<int, std::string> &instructionTypes)
 {
-    m_instructionTypes = instructionTypes;
+    m_lineNumberToInstructionType = instructionTypes;
     m_instructionTypeArea->update();
 }
 
 void ProfilerEditor::clearExecutionCount()
 {
-    m_line_number_execution_count_mapping.clear();
+    m_lineNumberToExecutionCounts.clear();
     m_maxExecutionCount = 0;
     setExtraSelections({});
     m_lineNumberArea->update();
     m_ExecutionCountArea->update();
     m_instructionTypeArea->update();
-}
-
-int ProfilerEditor::lineNumberAreaWidth() const
-{
-    int digits = QString::number(qMax(1, blockCount())).length();
-    return fontMetrics().horizontalAdvance(QLatin1Char('9')) * digits + 4;
 }
 
 int ProfilerEditor::countAreaWidth() const
@@ -116,17 +108,11 @@ int ProfilerEditor::typeAreaWidth() const
     return fontMetrics().horizontalAdvance(QLatin1String("R-Type")) + 10;
 }
 
-void ProfilerEditor::updateAreaWidths()
-{
-    setViewportMargins(lineNumberAreaWidth(), 0, countAreaWidth() + typeAreaWidth(), 0);
-}
-
 void ProfilerEditor::resizeEvent(QResizeEvent *event)
 {
-    QPlainTextEdit::resizeEvent(event);
+    KitesEditor::resizeEvent(event);
 
     QRect cr = contentsRect();
-    m_lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
 
     int scrollbarWidth = verticalScrollBar()->isVisible() ? verticalScrollBar()->width() : 0;
 
@@ -139,51 +125,22 @@ void ProfilerEditor::resizeEvent(QResizeEvent *event)
                                            typeAreaWidth(), cr.height()));
 }
 
+int ProfilerEditor::rightViewMargin() const
+{
+    return countAreaWidth() + typeAreaWidth();
+}
+
 void ProfilerEditor::updateAreas(const QRect &rect, int dy)
 {
     if (dy)
     {
-        m_lineNumberArea->scroll(0, dy);
         m_ExecutionCountArea->scroll(0, dy);
         m_instructionTypeArea->scroll(0, dy);
     }
     else
     {
-        m_lineNumberArea->update(0, rect.y(), m_lineNumberArea->width(), rect.height());
         m_ExecutionCountArea->update(0, rect.y(), m_ExecutionCountArea->width(), rect.height());
         m_instructionTypeArea->update(0, rect.y(), m_instructionTypeArea->width(), rect.height());
-    }
-
-    if (rect.contains(viewport()->rect()))
-    {
-        updateAreaWidths();
-    }
-}
-
-void ProfilerEditor::paintLineNumberArea(QPaintEvent *event)
-{
-    QPainter painter(m_lineNumberArea);
-    painter.fillRect(event->rect(), palette().color(QPalette::AlternateBase));
-
-    QTextBlock block = firstVisibleBlock();
-    int blockNumber = block.blockNumber();
-    int top = static_cast<int>(blockBoundingGeometry(block).translated(contentOffset()).top());
-    int bottom = top + static_cast<int>(blockBoundingRect(block).height());
-
-    while (block.isValid() && top <= event->rect().bottom())
-    {
-        if (block.isVisible() && bottom >= event->rect().top())
-        {
-            QString number = QString::number(blockNumber + 1); // +1 for 1-based line numbers
-            painter.setPen(Qt::black);
-            painter.drawText(0, top, lineNumberAreaWidth() - 2, fontMetrics().height(),
-                             Qt::AlignRight, number);
-        }
-
-        block = block.next();
-        top = bottom;
-        bottom = top + static_cast<int>(blockBoundingRect(block).height());
-        ++blockNumber;
     }
 }
 
@@ -203,8 +160,8 @@ void ProfilerEditor::paintCountArea(QPaintEvent *event)
         {
             const int lineNumber = blockNumber + 1;
             int hits;
-            hits = m_line_number_execution_count_mapping.count(lineNumber) > 0 ? 
-            m_line_number_execution_count_mapping[lineNumber] : 0;
+            hits = m_lineNumberToExecutionCounts.count(lineNumber) > 0 ? 
+            m_lineNumberToExecutionCounts[lineNumber] : 0;
 
             if (hits > 0)
             {
@@ -237,9 +194,9 @@ void ProfilerEditor::paintTypeArea(QPaintEvent *event)
         if (block.isVisible() && bottom >= event->rect().top())
         {
             const int lineNumber = blockNumber + 1;
-            if (m_instructionTypes.count(lineNumber) > 0)
+            if (m_lineNumberToInstructionType.count(lineNumber) > 0)
             {
-                const std::string &instrType = m_instructionTypes.at(lineNumber);
+                const std::string &instrType = m_lineNumberToInstructionType.at(lineNumber);
                 painter.setPen(textColor);
                 painter.drawText(5, top, typeAreaWidth() - 10, fontMetrics().height(),
                                  Qt::AlignLeft, QString::fromStdString(instrType));

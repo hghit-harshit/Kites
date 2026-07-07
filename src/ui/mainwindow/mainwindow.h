@@ -1,9 +1,10 @@
 #pragma once
+#include "processor/processor_manager.h"
+#include "profiler/profiler.h"
 #include "ui/common/kitestab.h"
 #include "ui/register_table/registercontainer.h"
 #include "ui/theme/theme_manager.h"
-#include "profiler/profiler.h"
-#include "vm/vm_manager.h"
+#include "utils/to_index.hpp"
 #include <QColor>
 #include <QListWidget>
 #include <QMainWindow>
@@ -17,7 +18,6 @@
 #include <QWidget>
 #include <map>
 #include <memory>
-#include "utils/to_index.hpp"
 
 namespace Kites
 {

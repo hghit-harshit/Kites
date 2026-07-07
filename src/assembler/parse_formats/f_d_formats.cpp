@@ -8,7 +8,7 @@
 #include "common/instructions.h"
 #include "common/rounding_modes.h"
 #include "utils/utils.h"
-#include "vm/registers.h"
+#include "processor/registers.h"
 
 
 #include <string>

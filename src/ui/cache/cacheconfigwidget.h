@@ -1,7 +1,7 @@
 #ifndef CACHECONFIGWIDGET_H
 #define CACHECONFIGWIDGET_H
 
-#include "vm/cache/cacheconfig.h"
+#include "processor/cache/cacheconfig.h"
 #include <QWidget>
 
 namespace Kites

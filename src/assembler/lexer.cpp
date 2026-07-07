@@ -8,7 +8,7 @@
 
 #include "common/instructions.h"
 #include "common/rounding_modes.h"
-#include "vm/registers.h"
+#include "processor/registers.h"
 
 
 #include <fstream>

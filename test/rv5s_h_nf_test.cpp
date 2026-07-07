@@ -1,5 +1,5 @@
 // #include <gtest/gtest.h>
-// #include "../include/vm/rv5s_vms/rv5svm_h_nf.h"
+// #include "../include/processor/rv5s/rv5s_processor_h_nf.h"
 // #include "../include/assembler/assembler.h"
 // #include "../include/utils.h"
 
@@ -18,7 +18,7 @@
 
 
 #include <gtest/gtest.h>
-#include "../include/vm/rv5s_vms/rv5svm_h_nf.h"
+#include "../include/processor/rv5s/rv5s_processor_h_nf.h"
 #include "../include/assembler/assembler.h"
 #include "../include/utils.h"
 

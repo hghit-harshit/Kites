@@ -8,7 +8,7 @@ namespace Kites
 KitesEditor::KitesEditor(QWidget *parent)
     : QPlainTextEdit(parent), m_lineNumberArea(new LineNumberArea(this))
 {
-    connect(this, &KitesEditor::blockCountChanged, this, &KitesEditor::updateLineNumberAreaWidth);
+    connect(this, &KitesEditor::blockCountChanged, this, &KitesEditor::updateViewPortMargins);
     connect(this, &KitesEditor::updateRequest, this, &KitesEditor::updateLineNumberArea);
     connect(this, &KitesEditor::cursorPositionChanged, this, &KitesEditor::highlightCurrentLine);
 
@@ -18,27 +18,23 @@ KitesEditor::KitesEditor(QWidget *parent)
 
     const int tapspace = 4;
     setTabStopDistance(tapspace * fontMetrics().horizontalAdvance(' '));
-    updateLineNumberAreaWidth(0);
+    updateViewPortMargins();
     highlightCurrentLine();
 }
 
-void KitesEditor::updateLineNumberAreaWidth(int /* newBlockCount */)
+void KitesEditor::updateViewPortMargins()
 {
-    setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
+    setViewportMargins(leftViewMargin(), 0, rightViewMargin(), 0);
 }
-
 void KitesEditor::updateLineNumberArea(const QRect &rect, int dy)
 {
     if (dy)
         m_lineNumberArea->scroll(0, dy);
     else
         m_lineNumberArea->update(0, rect.y(), m_lineNumberArea->width(), rect.height());
-
-    if (rect.contains(viewport()->rect()))
-        updateLineNumberAreaWidth(0);
 }
 
-int KitesEditor::lineNumberAreaWidth()
+int KitesEditor::lineNumberAreaWidth() const
 {
     int digits = QString::number(qMax(1, blockCount())).length();
     return 10 + fontMetrics().horizontalAdvance(QLatin1Char('9')) * digits;
@@ -62,17 +58,6 @@ void KitesEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
             painter.setPen(Qt::black);
             painter.drawText(0, top, lineNumberAreaWidth() - 5, fontMetrics().height(),
                              Qt::AlignRight, number);
-
-            // Draw breakpoint indicator if exists
-            // if (m_isTextEditor && std::find(m_breakPoints.begin(), m_breakPoints.end(),
-            // blockNumber + 1) != m_breakPoints.end())
-            // {
-            //     painter.setBrush(Qt::red);
-            //     painter.setPen(Qt::NoPen);
-            //     int radius = 8;
-            //     painter.drawEllipse(2, top + (fontMetrics().height() - radius) / 2, radius,
-            //     radius);
-            // }
         }
 
         block = block.next();
@@ -91,7 +76,7 @@ void KitesEditor::highlightCurrentLine()
         QTextEdit::ExtraSelection selection;
 
         //TODO : improve this not working for light theme
-        // gett this value from theme manager
+        // get this value from theme manager
         QColor lineColor = palette().color(QPalette::Base).lighter(115);
 
         selection.format.setBackground(lineColor);
@@ -120,5 +105,15 @@ void KitesEditor::changeEvent(QEvent *event)
         highlightCurrentLine();
     }
     QPlainTextEdit::changeEvent(event);
+}
+
+int KitesEditor::rightViewMargin() const
+{
+    return 0; // Default implementation returns 0, can be overridden in derived classes
+}
+
+int KitesEditor::leftViewMargin() const
+{
+    return lineNumberAreaWidth();
 }
 } // namespace Kites

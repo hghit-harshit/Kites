@@ -6,7 +6,7 @@
 
 #include "utils.h"
 #include "common/globals.h"
-#include "vm/registers.h"
+#include "processor/registers.h"
 
 
 #include <algorithm>

@@ -8,9 +8,9 @@
 #define UTILS_H
 
 #include "assembler/parser.h"
-#include "vm/registers.h"
-#include "vm/vm_base.h"
 #include "common/assembled_program.h"
+#include "processor/processor_base.h"
+#include "processor/registers.h"
 
 #include <filesystem>
 #include <string>

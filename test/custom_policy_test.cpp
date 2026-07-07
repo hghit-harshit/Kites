@@ -3,9 +3,9 @@
 
 #include "../include/assembler/assembler.h"
 #include "../include/utils.h"
-#include "../include/vm/rvss/rvss_vm.h"
-#include "vm/main_memory.h"
-#include "vm/cache/cache.h"
+#include "../include/processor/rvss/rvss_vm.h"
+#include "processor/main_memory.h"
+#include "processor/cache/cache.h"
 
 class CustomPolicyTest : public ::testing::Test
 {

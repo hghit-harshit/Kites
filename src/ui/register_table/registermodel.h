@@ -1,6 +1,6 @@
 #pragma once
 #include "ui/common/display_base_types.h"
-#include "vm/registers.h"
+#include "processor/registers.h"
 #include <QAbstractTableModel>
 #include <memory>
 

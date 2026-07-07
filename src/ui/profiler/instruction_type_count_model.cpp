@@ -1,12 +1,12 @@
 #include "instruction_type_count_model.h"
-
+#include "utils/to_index.hpp"
 namespace Kites
 { 
 namespace instr = instruction_set;
 
 InstructionTypeCountModel::InstructionTypeCountModel(
     QObject *parent, 
-    const std::array<size_t, static_cast<size_t>(instr::InstructionType::INSTRUCTION_TYPE_COUNT)> 
+    const std::array<size_t, toIndex(instr::InstructionType::INSTRUCTION_TYPE_COUNT)> 
     &instruction_type_counts)
     : QAbstractTableModel(parent), m_instructionTypeCounts(instruction_type_counts)
 {}

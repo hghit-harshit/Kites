@@ -1,5 +1,5 @@
 #pragma once
-#include "vm/vm_manager.h"
+#include "processor/processor_manager.h"
 #include <QAbstractTableModel>
 
 

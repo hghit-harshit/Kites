@@ -6,7 +6,7 @@
 #ifndef COMMAND_HANDLER_H
 #define COMMAND_HANDLER_H
 
-#include "./vm/rvss/rvss_vm.h"
+#include "./processor/rvss/rvss_processor.h"
 
 #include <vector>
 

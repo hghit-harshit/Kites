@@ -1,5 +1,6 @@
 #pragma once
 #include "ui/common/syntax_highlighter.h"
+#include "ui/common/kites_editor.h"
 #include <QColor>
 #include <QPlainTextEdit>
 #include <QWidget>
@@ -9,17 +10,12 @@
 namespace Kites
 {
 
-namespace ProfilerEditorHelpers
-{
-class LineNumberArea;
 class ExecutionCountArea;
 class InstructionTypeArea;
-} // namespace ProfilerEditorHelpers
-
-class ProfilerEditor : public QPlainTextEdit
+class ProfilerEditor : public KitesEditor
 {
     Q_OBJECT
-  public:
+public:
     explicit ProfilerEditor(QWidget *parent = nullptr);
     ~ProfilerEditor() {};
 
@@ -31,29 +27,25 @@ class ProfilerEditor : public QPlainTextEdit
                                  &instructionTypes); // line number to instruction type mapping
     void clearExecutionCount();
 
-    int lineNumberAreaWidth() const;
     int countAreaWidth() const;
     int typeAreaWidth() const;
 
-    void paintLineNumberArea(QPaintEvent *event);
     void paintCountArea(QPaintEvent *event);
     void paintTypeArea(QPaintEvent *event);
 
-  protected:
+protected:
     void resizeEvent(QResizeEvent *event) override;
-  public slots:
-    void updateAreaWidths();
+	int rightViewMargin() const override;
+public slots:
     void updateAreas(const QRect &rect, int dy);
 
-  private:
-    ProfilerEditorHelpers::LineNumberArea *m_lineNumberArea;
-    ProfilerEditorHelpers::ExecutionCountArea *m_ExecutionCountArea;
-    ProfilerEditorHelpers::InstructionTypeArea *m_instructionTypeArea;
+private:
+    ExecutionCountArea *m_ExecutionCountArea;
+    InstructionTypeArea *m_instructionTypeArea;
     
     SyntaxHighlighter *m_syntaxHighlighter = nullptr;
-    std::map<int, int> m_line_number_execution_count_mapping; // line number to 
-                                                              //execution count mapping
-    std::map<int, std::string> m_instructionTypes; // line number to instruction type mapping
+    std::map<int, int> m_lineNumberToExecutionCounts;
+    std::map<int, std::string> m_lineNumberToInstructionType;
     int m_maxExecutionCount = 0; // to determine the color intensity for heatmap
 
     QColor heatColor(int hitCount) const; // Helper function to determine color based on hit count
@@ -61,31 +53,9 @@ class ProfilerEditor : public QPlainTextEdit
         int hitCount) const; // Helper function to determine background color based on hit count
 };
 
-class ProfilerEditorHelpers::LineNumberArea : public QWidget
+class ExecutionCountArea : public QWidget
 {
-  public:
-    LineNumberArea(ProfilerEditor *editor) : QWidget(editor), m_profilerEditor(editor)
-    {
-    }
-
-    QSize sizeHint() const override
-    {
-        return QSize(m_profilerEditor->lineNumberAreaWidth(), 0);
-    }
-
-  protected:
-    void paintEvent(QPaintEvent *event) override
-    {
-        m_profilerEditor->paintLineNumberArea(event);
-    }
-
-  private:
-    ProfilerEditor *m_profilerEditor;
-};
-
-class ProfilerEditorHelpers::ExecutionCountArea : public QWidget
-{
-  public:
+public:
     ExecutionCountArea(ProfilerEditor *editor) : QWidget(editor), m_profilerEditor(editor)
     {
     }
@@ -95,19 +65,19 @@ class ProfilerEditorHelpers::ExecutionCountArea : public QWidget
         return QSize(m_profilerEditor->countAreaWidth(), 0);
     }
 
-  protected:
+protected:
     void paintEvent(QPaintEvent *event) override
     {
         m_profilerEditor->paintCountArea(event);
     }
 
-  private:
+private:
     ProfilerEditor *m_profilerEditor;
 };
 
-class ProfilerEditorHelpers::InstructionTypeArea : public QWidget
+class InstructionTypeArea : public QWidget
 {
-  public:
+public:
     InstructionTypeArea(ProfilerEditor *editor) : QWidget(editor), m_profilerEditor(editor)
     {
     }
@@ -117,13 +87,13 @@ class ProfilerEditorHelpers::InstructionTypeArea : public QWidget
         return QSize(m_profilerEditor->typeAreaWidth(), 0);
     }
 
-  protected:
+protected:
     void paintEvent(QPaintEvent *event) override
     {
         m_profilerEditor->paintTypeArea(event);
     }
 
-  private:
+private:
     ProfilerEditor *m_profilerEditor;
 };
 }; // namespace Kites

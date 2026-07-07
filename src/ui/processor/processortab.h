@@ -1,9 +1,9 @@
 #ifndef PROCESSORTAB_H
 #define PROCESSORTAB_H
 
+#include "processor/processor_manager.h"
 #include "ui/common//kitestab.h"
 #include "vm_state_table_model.h"
-#include "vm/vm_manager.h"
 
 namespace Kites
 {

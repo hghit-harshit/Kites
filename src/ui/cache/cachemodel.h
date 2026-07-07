@@ -1,5 +1,5 @@
 #pragma once
-#include "vm/cache/cache.h"
+#include "processor/cache/cache.h"
 #include <QAbstractTableModel>
 #include <cstdint>
 

@@ -1,7 +1,7 @@
 #pragma once
 #include "ui/common/display_base_types.h"
-#include "vm/memory_block.h"
-#include "vm/memory_controller.h"
+#include "processor/memory_block.h"
+#include "processor/memory_controller.h"
 #include <QAbstractTableModel>
 #include <memory>
 

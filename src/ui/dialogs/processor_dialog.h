@@ -1,7 +1,7 @@
 #ifndef PROCESSOR_DIALOG_H
 #define PROCESSOR_DIALOG_H
 
-#include "vm/vm_types.h"
+#include "processor/processor_types.h"
 #include <QDialog>
 #include <QTreeWidgetItem>
 

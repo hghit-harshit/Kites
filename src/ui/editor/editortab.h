@@ -2,9 +2,9 @@
 #define EDITORTAB__H
 
 #include "editor.h"
+#include "processor/processor_manager.h"
 #include "ui/common/kitestab.h"
 #include "ui/register_table/registercontainer.h"
-#include "vm/vm_manager.h"
 #include <QFontDatabase>
 #include <QPlainTextEdit>
 #include <QString>

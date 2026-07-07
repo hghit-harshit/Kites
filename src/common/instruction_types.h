@@ -8,7 +8,7 @@
 
 #include <string>
 #include <array>
-
+#include "utils/to_index.hpp"
 namespace Kites
 {
 /*TODO
@@ -33,7 +33,7 @@ enum class InstructionType
            //count of valid instruction types
 };
 
-inline std::array<std::string, static_cast<size_t>(InstructionType::INSTRUCTION_TYPE_COUNT)> 
+inline std::array<std::string, toIndex(InstructionType::INSTRUCTION_TYPE_COUNT)> 
 instructionTypeNames = 
 {
     "R-Type", 
