@@ -1,4 +1,4 @@
-#include "editor.h"
+#include "main_editor.h"
 #include <QAbstractItemView> // this is needed for the auto completer popup
 #include <QMenu>
 #include <QMouseEvent>
