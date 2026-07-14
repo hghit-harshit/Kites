@@ -21,48 +21,54 @@ namespace Kites
 ProcessorManager::ProcessorManager(QObject *parent, ProcessorType vmType) : QObject(parent)
 {
     // first we register all the VMs
-    m_profiler = std::make_unique<Profiler>();
+    // m_profiler = std::make_unique<Profiler>();
 
     ProcessorFactory::RegisterVM<RVSSProcessor>(ProcessorType::RVSS);
     ProcessorFactory::RegisterVM<RV5StageProcessorNHNF>(ProcessorType::RV5Stage_NH_NF);
     ProcessorFactory::RegisterVM<RV5StageProcessorHNF>(ProcessorType::RV5Stage_H_NF);
     ProcessorFactory::RegisterVM<RV5StageProcessorNHF>(ProcessorType::RV5Stage_NH_F);
     ProcessorFactory::RegisterVM<RV5StageProcessorHF>(ProcessorType::RV5Stage_H_F);
-    m_currentVMType = vmType;
-    m_currentVM = ProcessorFactory::createVM(vmType);
-    connect(m_currentVM.get(), &ProcessorBase::processorStateChangedSignal, this,
-            &ProcessorManager::processorStageChangedSignal, Qt::DirectConnection);
-    connect(m_currentVM.get(), &ProcessorBase::processorPausedAtBreakpointSignal, this,
+    m_currentProcessorType = vmType;
+    m_currentProcessor = ProcessorFactory::createVM(vmType);
+    connect(m_currentProcessor.get(), &ProcessorBase::processorStateChangedSignal, this,
+            &ProcessorManager::processorStateChangedSignal, Qt::DirectConnection);
+    connect(m_currentProcessor.get(), &ProcessorBase::processorPausedAtBreakpointSignal, this,
             &ProcessorManager::processorPausedAtBreakpointSignal, Qt::DirectConnection);
     // here we connect the vm state changed signal to the vm manager signal
     // and this will be further connected to the mainwindow slot to update the ui
 
-    connect(m_currentVM.get(), &ProcessorBase::processorStateChangedSignal, m_profiler.get(),
-            &Profiler::onVMStateChanged, Qt::DirectConnection);
+    connect(m_currentProcessor.get(), &ProcessorBase::processorStateChangedSignal, &m_profiler,
+            &Profiler::processorStateChangedSlot, Qt::DirectConnection);
 }
 
-void ProcessorManager::changeVM(ProcessorType vmType)
+void ProcessorManager::changeProcessor(ProcessorType vmType)
 {
-    m_currentVMType = vmType;
-    m_currentVM = ProcessorFactory::createVM(vmType);
-    m_currentVM->step_delay_ = m_stepDelayMs;
-    connect(m_currentVM.get(), &ProcessorBase::processorStateChangedSignal, this,
-            &ProcessorManager::processorStageChangedSignal, Qt::DirectConnection);
-    connect(m_currentVM.get(), &ProcessorBase::processorPausedAtBreakpointSignal, this,
+    m_currentProcessorType = vmType;
+    m_currentProcessor = ProcessorFactory::createVM(vmType);
+    m_currentProcessor->step_delay_ = m_stepDelayMs;
+    connect(m_currentProcessor.get(), &ProcessorBase::processorStateChangedSignal, this,
+            &ProcessorManager::processorStateChangedSignal, Qt::DirectConnection);
+    connect(m_currentProcessor.get(), &ProcessorBase::processorPausedAtBreakpointSignal, this,
             &ProcessorManager::processorPausedAtBreakpointSignal, Qt::DirectConnection);
     // create new connections for the new VM
 }
 
 void ProcessorManager::loadProgram(const AssembledProgram &program)
 {
-    m_currentVM->LoadProgram(program);
+    m_currentProcessor->LoadProgram(program);
+}
+
+void ProcessorManager::runSlot()
+{
+    run();
+    emit runFinishedSignal();
 }
 
 void ProcessorManager::run()
 {
     try
     {
-        m_currentVM->Run();
+        m_currentProcessor->Run();
     }
     catch (const std::exception &e)
     {
@@ -74,19 +80,19 @@ void ProcessorManager::step()
 {
     try
     {
-        m_currentVM->Step();
-        m_currentVM->cpi_ = m_currentVM->instructions_retired_
-                                ? static_cast<float>(m_currentVM->cycle_s_) /
-                                      static_cast<float>(m_currentVM->instructions_retired_)
+        m_currentProcessor->Step();
+        m_currentProcessor->cpi_ = m_currentProcessor->instructions_retired_
+                                ? static_cast<float>(m_currentProcessor->cycle_s_) /
+                                      static_cast<float>(m_currentProcessor->instructions_retired_)
                                 : 0.0f;
-        m_currentVM->ipc_ = m_currentVM->cycle_s_
-                                ? static_cast<float>(m_currentVM->instructions_retired_) /
-                                      static_cast<float>(m_currentVM->cycle_s_)
+        m_currentProcessor->ipc_ = m_currentProcessor->cycle_s_
+                                ? static_cast<float>(m_currentProcessor->instructions_retired_) /
+                                      static_cast<float>(m_currentProcessor->cycle_s_)
                                 : 0.0f;
-        m_currentVM->SetVMStateMap();
-        m_currentVM->SetActiveWireNames();
-        emit m_currentVM->updateCircuitStateSignal(m_currentVM->active_wires_);
-        emit m_currentVM->processorStateChangedSignal(m_currentVM->vmState);
+        m_currentProcessor->setPorcessorState();
+        m_currentProcessor->SetActiveWireNames();
+        emit m_currentProcessor->updateCircuitStateSignal(m_currentProcessor->active_wires_);
+        emit m_currentProcessor->processorStateChangedSignal();
     }
     catch (const std::exception &e)
     {
@@ -97,114 +103,102 @@ void ProcessorManager::step()
 void ProcessorManager::debugRun()
 {
     // Debug mode starts in paused/manual mode; user advances with Step.
-    m_currentVM->ClearStop();
-    m_currentVM->RequestPause();
+    m_currentProcessor->ClearStop();
+    m_currentProcessor->RequestPause();
 }
 
 void ProcessorManager::stop()
 {
-    m_currentVM->RequestStop();
+    m_currentProcessor->RequestStop();
 }
 void ProcessorManager::pause()
 {
-    m_currentVM->RequestPause();
+    m_currentProcessor->RequestPause();
 }
 void ProcessorManager::resume()
 {
-    // QMutexLocker locker(&m_currentVM->pause_mutex_);
-    m_currentVM->RequestResume();
-    // m_currentVM->pause_wait_condition_.wakeAll();
+    m_currentProcessor->RequestResume();
 }
 void ProcessorManager::undo()
 {
-    qDebug() << "Undoing last step";
-    // m_currentVM->RequestUndo();
-    m_currentVM->Undo();
+    m_currentProcessor->Undo();
 }
 void ProcessorManager::redo()
 {
-    qDebug() << "Redoing last undone step";
-    // m_currentVM->RequestRedo();
-    m_currentVM->Redo();
+    m_currentProcessor->Redo();
 }
 void ProcessorManager::setStepDelay(unsigned int delay)
 {
     m_stepDelayMs = delay;
-    m_currentVM->step_delay_ = delay;
+    m_currentProcessor->step_delay_ = delay;
 }
 
 void ProcessorManager::setBreakpoints(const std::vector<uint64_t> &breakpoints)
 {
-    m_currentVM->SetBreakpoints(breakpoints);
+    m_currentProcessor->SetBreakpoints(breakpoints);
 }
 
 RegisterFile *ProcessorManager::getRegisterFile() const
 {
-    return &m_currentVM->registers_;
+    return &m_currentProcessor->registers_;
 }
 
 MemoryController *ProcessorManager::getMemoryController() const
 {
-    return &m_currentVM->memory_controller_;
+    return &m_currentProcessor->memory_controller_;
 }
 
 Kites::CircuitScene *ProcessorManager::getCircuitScene() const
 {
-    return m_currentVM->circuit_scene_.get();
+    return m_currentProcessor->circuit_scene_.get();
 }
 void ProcessorManager::reset()
 {
-    qDebug() << "Resetting VM";
-    m_currentVM->Reset();
+    m_currentProcessor->Reset();
 }
 
-ProcessorType ProcessorManager::getVMType()
+ProcessorType ProcessorManager::getProcessorType()
 {
-    return m_currentVMType;
+    return m_currentProcessorType;
 }
 
-// QMap<QString, QVariant>& ProcessorManager::getVMStateMap() const
-// {
-//     return m_currentVM->vmState;
-// }
-
-Profiler* ProcessorManager::getProfiler() const
+const Profiler* ProcessorManager::getProfiler() const
 {
-    return m_profiler.get();
+    return &m_profiler;
 }
 
 uint64_t ProcessorManager::getProgramCounter() const
 {
-    return m_currentVM->program_counter_;
+    return m_currentProcessor->program_counter_;
 }
 
 float ProcessorManager::getCPI() const
 {
-    return m_currentVM->cpi_;
+    return m_currentProcessor->cpi_;
 }
 
 float ProcessorManager::getIPC() const
 {
-    return m_currentVM->ipc_;
+    return m_currentProcessor->ipc_;
 }
 
 unsigned int ProcessorManager::getBranchMispredictions() const
 {
-    return m_currentVM->branch_mispredictions_;
+    return m_currentProcessor->branch_mispredictions_;
 }
 
 unsigned int ProcessorManager::getStallCycles() const
 {
-    return m_currentVM->stall_cycles_;
+    return m_currentProcessor->stall_cycles_;
 }
 
 unsigned int ProcessorManager::getCycles() const
 {
-    return m_currentVM->cycle_s_;
+    return m_currentProcessor->cycle_s_;
 }
 
 unsigned int ProcessorManager::getInstructionsRetired() const
 {
-    return m_currentVM->instructions_retired_;
+    return m_currentProcessor->instructions_retired_;
 }
 }//namespace Kites

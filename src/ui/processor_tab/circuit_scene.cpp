@@ -140,12 +140,12 @@ void CircuitScene::fitTableToCircuit(const QString &vmType)
     qDebug() << "Table set up with" << m_columnKeys.size() << "columns, width:" << totalWidth;
 }
 
-void CircuitScene::vmStateChangedSlot(const QMap<QString, QVariant> &vmState)
+void CircuitScene::vmStateChangedSlot(const QMap<QString, QVariant> &processorState)
 {
     if (!m_instructionTable || m_columnKeys.isEmpty())
         return;
 
-    QVariantMap instructionMap = vmState.value("CurrentInstructionsText").toMap();
+    QVariantMap instructionMap = processorState.value("CurrentInstructionsText").toMap();
     if (instructionMap.isEmpty())
         return;
 

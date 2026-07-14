@@ -22,7 +22,7 @@ class VMStateTableModel : public QAbstractTableModel
     ProcessorManager *m_vmManager = nullptr;
 
   public slots:
-    void vmStateChangedSlot(const QMap<QString, QVariant> &vmState);
+    void vmStateChangedSlot(const QMap<QString, QVariant> &processorState);
 };
 } // namespace kites
 

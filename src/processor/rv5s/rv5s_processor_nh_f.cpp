@@ -12,7 +12,7 @@
 #include "config/config.h"
 #include "ui/processor_tab/processor_designs/rv5s_processor_nh_f_circuit_scene.h"
 #include "processor/alu.h"
-#include "processor/vm_base.h" // For ImmGenerator, etc.
+#include "processor/processor_base.h" // For ImmGenerator, etc.
 #include <algorithm>
 #include <chrono>
 #include <iostream>
@@ -21,9 +21,6 @@
 
 namespace Kites
 {
-// NOP instruction: ADDI x0, x0, 0
-constexpr uint32_t NOP = 0x00000013;
-
 using namespace alu;
 
 // --- VmBase Pure Virtual Method Implementations (Run, DebugRun, Reset, Step) ---

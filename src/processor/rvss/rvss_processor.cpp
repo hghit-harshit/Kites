@@ -9,7 +9,7 @@
 #include "common/instructions.h"
 #include "config/config.h"
 #include "common/globals.h"
-#include "ui/processor_tab/processor_designs/rvss_circuit_scene.h"
+#include "ui/processor_tab/processor_designs/rvss_processor_circuit_scene.h"
 #include "utils/utils.h"
 #include <QDebug>
 #include <algorithm>
@@ -104,47 +104,62 @@ void RVSSProcessor::SetActiveWireNames()
         active_wires_.append("Control_to_MemtoRegMux");
     }
 
-    // static bool test = true;
-    // if(test%2 )
-    // 	active_wires_.append("IM_to_RF_rs1_whole");
-
-    // test = !test;
-    /* // Always include the ALU op wire (scene expects a wire name for ALU operation)
-    // Add a generic ALU op wire and an operation-specific tag so UI can show details.
-    auto aluOp = control_unit_.GetAluSignal(current_instruction_, control_unit_.GetAluOp());
-    Q_UNUSED(aluOp);
-    result.append("ALUOp_to_ALU_alusignal");
-    // also append a numeric/opcode tag like "ALUOp_3" to allow per-op highlighting if desired
-    result.append(QString("ALUOp_%1").arg(static_cast<int>(aluOp))); */
-
-    // return active_wires_;
 }
 
-void RVSSProcessor::SetVMStateMap()
+void RVSSProcessor::setPorcessorState()
 {
-    vmState.clear();
-    vmState["ProgramCounter"] = static_cast<qulonglong>(program_counter_);
-    vmState["CurrentInstruction"] = static_cast<qulonglong>(current_instruction_);
-    vmState["Cycles"] = static_cast<qulonglong>(cycle_s_);
-    vmState["InstructionsRetired"] = static_cast<qulonglong>(instructions_retired_);
-    vmState["CPI"] = static_cast<double>(cpi_);
-    vmState["IPC"] = static_cast<double>(ipc_);
-    vmState["StallCycles"] = static_cast<qulonglong>(stall_cycles_);
-    vmState["BranchMispredictions"] = static_cast<qulonglong>(branch_mispredictions_);
-    vmState["EditorLines"] = QVariantMap{
-        {".", static_cast<qulonglong>(
-                  program_.instruction_number_line_number_mapping[(program_counter_) / 4])}};
-    vmState["DisassemblyLines"] = QVariantMap{
-        {".", static_cast<qulonglong>(
-                  program_.instruction_number_disassembly_mapping[(program_counter_) / 4])}};
-
-    vmState["CurrentInstructions"] =
-        QVariantMap{{"CI", static_cast<qulonglong>(current_instruction_)}};
-
-    vmState["CurrentInstructionsText"] = QVariantMap{
-        {"CI", QString::fromStdString(instruction_set::disassemble(current_instruction_))}};
-
-    // Add more VM state variables as needed
+/*     processorState.reset();
+    processorState.statistics = ProcessorStatistics{
+        .cycleCount = cycle_s_,
+        .instructionsRetiredCount = instructions_retired_,
+        .branchMispredictionCount = branch_mispredictions_,
+        .stallCycleCount = stall_cycles_,
+        .cpi = cpi_,
+        .ipc = ipc_};
+    
+    processorState.pipelineState = PipelineState{
+        .instructionTexts = {
+            instruction_set::disassemble(current_instruction_),
+            (if_id_reg_.instruction != NOP
+                 ? instruction_set::disassemble(if_id_reg_.instruction)
+                 : "NOP"),
+            (id_ex_reg_.instruction != NOP
+                 ? instruction_set::disassemble(id_ex_reg_.instruction)
+                 : "NOP"),
+            (ex_mem_reg_.instruction != NOP
+                 ? instruction_set::disassemble(ex_mem_reg_.instruction)
+                 : "NOP"),
+            (mem_wb_reg_.instruction != NOP
+                 ? instruction_set::disassemble(mem_wb_reg_.instruction)
+                 : "NOP")},
+        .editorLineNumbers = {
+            program_.instruction_number_line_number_mapping[(program_counter_) / 4],
+            (if_id_reg_.pc != INVALID_PC
+                 ? program_.instruction_number_line_number_mapping[(if_id_reg_.pc) / 4]
+                 : -1),
+            (id_ex_reg_.pc != INVALID_PC
+                 ? program_.instruction_number_line_number_mapping[(id_ex_reg_.pc) / 4]
+                 : -1),
+            (ex_mem_reg_.pc != INVALID_PC
+                 ? program_.instruction_number_line_number_mapping[(ex_mem_reg_.pc) / 4]
+                 : -1),
+            (mem_wb_reg_.pc != INVALID_PC
+                 ? program_.instruction_number_line_number_mapping[(mem_wb_reg_.pc) / 4]
+                 : -1)},
+        .disassemblyLineNumbers = {
+            program_.instruction_number_disassembly_mapping[(program_counter_) / 4],
+            (if_id_reg_.pc != INVALID_PC
+                 ? program_.instruction_number_disassembly_mapping[(if_id_reg_.pc) / 4]
+                 : -1),
+            (id_ex_reg_.pc != INVALID_PC
+                 ? program_.instruction_number_disassembly_mapping[(id_ex_reg_.pc) / 4]
+                 : -1),
+            (ex_mem_reg_.pc != INVALID_PC
+                 ? program_.instruction_number_disassembly_mapping[(ex_mem_reg_.pc) / 4]
+                 : -1),
+            (mem_wb_reg_.pc != INVALID_PC
+                 ? program_.instruction_number_disassembly_mapping[(mem_wb_reg_.pc) / 4]
+                 : -1)}}; */
 }
 
 void RVSSProcessor::Run()
@@ -182,8 +197,8 @@ void RVSSProcessor::Run()
         cycle_s_++;
         // emit UI update for circuit highlighting
         SetActiveWireNames();
-        SetVMStateMap();
-        emit processorStateChangedSignal(vmState);
+        setPorcessorState();
+        emit processorStateChangedSignal();
         emit updateCircuitStateSignal(active_wires_);
         active_wires_.erase(active_wires_.begin() + always_active_wires_count_,
                             active_wires_.end());
@@ -199,8 +214,7 @@ void RVSSProcessor::Run()
     }
     if (stop_requested_)
     {
-        vmState.clear();
-        emit processorStateChangedSignal(vmState);
+        emit processorStateChangedSignal();
     }
     if (program_counter_ >= program_size_)
     {
@@ -1219,9 +1233,9 @@ void RVSSProcessor::Step()
     DumpState(globals::vm_state_dump_file_path);
 
     SetActiveWireNames();
-    SetVMStateMap();
+    setPorcessorState();
     emit updateCircuitStateSignal(active_wires_);
-    emit processorStateChangedSignal(vmState);
+    emit processorStateChangedSignal();
 }
 
 void RVSSProcessor::Undo()
@@ -1284,9 +1298,9 @@ void RVSSProcessor::Undo()
     DumpState(globals::vm_state_dump_file_path);
 
     SetActiveWireNames();
-    SetVMStateMap();
+    setPorcessorState();
     emit updateCircuitStateSignal(active_wires_);
-    emit processorStateChangedSignal(vmState);
+    emit processorStateChangedSignal();
     qInfo() << "Undo completed in rvss";
 }
 
@@ -1351,9 +1365,9 @@ void RVSSProcessor::Redo()
     undo_stack_.push(next);
 
     SetActiveWireNames();
-    SetVMStateMap();
+    setPorcessorState();
     emit updateCircuitStateSignal(active_wires_);
-    emit processorStateChangedSignal(vmState);
+    emit processorStateChangedSignal();
 }
 
 void RVSSProcessor::Reset()

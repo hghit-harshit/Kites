@@ -89,7 +89,7 @@ class RVSSProcessor : public ProcessorBase
     void Reset() override;
 
     void SetActiveWireNames() override;
-    void SetVMStateMap() override;
+    void setPorcessorState() override;
 
     void PrintType()
     {

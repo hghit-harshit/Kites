@@ -19,7 +19,7 @@ class Profiler : public QObject
 {
     Q_OBJECT
   
-  public:
+public:
     explicit Profiler(QObject *parent = nullptr);
 
     void Reset();
@@ -34,16 +34,13 @@ class Profiler : public QObject
     const InstructionTypeCounts& getInstructionTypeCounts() const;
 
     int getExecutionCountForLine(int lineNumber)const;
-  signals:
-    //void lineExecutionCountsUpdated(const std::map<int, int> &lineExecutionCounts);
-    // Signal emitted when an instruction line's execution count is incremented by 1
-    //void lineExecutionCountIncrementSignal(int lineNumber); 
+signals:
     void profilerReset();
 
-  public slots:
-    void onVMStateChanged(const QMap<QString, QVariant> &vmState);
+public slots:
+    void processorStateChangedSlot(const &processorState);
 
-  public:
+public:
     // Get instruction type for a specific line
     instruction_set::InstructionType getInstructionTypeForLine(int lineNumber) const;
     // Get all instruction types mapped by line number
@@ -52,8 +49,8 @@ class Profiler : public QObject
       return m_lineNumberToinstructionType;
     }
 
-  private:
-    int resolveSourceLineFromState(const QMap<QString, QVariant> &vmState) const;
+private:
+    int resolveSourceLineFromState(const QMap<QString, QVariant> &processorState) const;
    
     std::map<unsigned int, unsigned int> m_instructionNumberToLineNumber{};       
     std::map<int, int>                   m_lineNumberToExecutionCounts{}; 

@@ -37,7 +37,7 @@ void RV5StageVM_Base::Run()
                 break;
         }
         Step();
-        SetVMStateMap();
+        setPorcessorState();
         SetActiveWireNames();
         cpi_ = instructions_retired_
                    ? static_cast<float>(cycle_s_) / static_cast<float>(instructions_retired_)
@@ -45,7 +45,7 @@ void RV5StageVM_Base::Run()
         ipc_ = cycle_s_ ? static_cast<float>(instructions_retired_) / static_cast<float>(cycle_s_)
                         : 0.0f;
         emit updateCircuitStateSignal(active_wires_);
-        emit processorStateChangedSignal(vmState);
+        emit processorStateChangedSignal();
 
         // handling the delay
         {
@@ -58,7 +58,7 @@ void RV5StageVM_Base::Run()
     }
     if (stop_requested_)
     {
-        emit processorStateChangedSignal(vmState);
+        emit processorStateChangedSignal();
         // we emit the vm state changed signal once more to update the ui
         // this will get rid of any highlights as they pause when we stop
         // before execution is complete
@@ -84,10 +84,10 @@ void RV5StageVM_Base::DebugRun()
 
 void RV5StageVM_Base::Reset()
 {
-    program_counter_ = 0;
+    program_counter_      = 0;
     instructions_retired_ = 0;
-    cycle_s_ = 0;
-    stall_cycles_ = 0;
+    cycle_s_              = 0;
+    stall_cycles_         = 0;
     last_breakpoint_pc_.reset(); // Clear breakpoint tracking on reset
 
     registers_.Reset();
@@ -101,7 +101,7 @@ void RV5StageVM_Base::Reset()
     current_delta_ = RV5StageStepDelta{};
     undo_stack_ = std::stack<RV5StageStepDelta>();
     redo_stack_ = std::stack<RV5StageStepDelta>();
-    vmState.reset();
+    processorState.reset();
 }
 
 void RV5StageVM_Base::begin_step_delta()
@@ -139,81 +139,10 @@ void RV5StageVM_Base::finalize_step_delta()
     }
 }
 
-void RV5StageVM_Base::SetVMStateMap()
+void RV5StageVM_Base::setPorcessorState()
 {
-    vmState.reset();
-/*     vmState["ProgramCounter"] = static_cast<qulonglong>(program_counter_);
-    vmState["CurrentInstruction"] = static_cast<qulonglong>(current_instruction_);
-    vmState["Cycles"] = static_cast<qulonglong>(cycle_s_);
-    vmState["InstructionsRetired"] = static_cast<qulonglong>(instructions_retired_);
-    vmState["CPI"] = static_cast<double>(cpi_);
-    vmState["IPC"] = static_cast<double>(ipc_);
-    vmState["StallCycles"] = static_cast<qulonglong>(stall_cycles_);
-    vmState["BranchMispredictions"] = static_cast<qulonglong>(branch_mispredictions_);
-
-    vmState["CurrentInstructions"] =
-        QVariantMap{{"CI", static_cast<qulonglong>(current_instruction_)},
-                    {"IF/ID", (if_id_reg_.instruction)},
-                    {"ID/EX", (id_ex_reg_.instruction)},
-                    {"EX/MEM", (ex_mem_reg_.instruction)},
-                    {"MEM/WB", (mem_wb_reg_.instruction)}};
-    vmState["CurrentInstructionsText"] = QVariantMap{
-        {"CI", QString::fromStdString(instruction_set::disassemble(current_instruction_))},
-        {"IF/ID",
-         (if_id_reg_.instruction != NOP
-              ? QString::fromStdString(instruction_set::disassemble(if_id_reg_.instruction))
-              : "NOP")},
-        {"ID/EX",
-         (id_ex_reg_.instruction != NOP
-              ? QString::fromStdString(instruction_set::disassemble(id_ex_reg_.instruction))
-              : "NOP")},
-        {"EX/MEM",
-         (ex_mem_reg_.instruction != NOP
-              ? QString::fromStdString(instruction_set::disassemble(ex_mem_reg_.instruction))
-              : "NOP")},
-        {"MEM/WB",
-         (mem_wb_reg_.instruction != NOP
-              ? QString::fromStdString(instruction_set::disassemble(mem_wb_reg_.instruction))
-              : "NOP")}};
-    vmState["EditorLines"] = QVariantMap{
-        {"CI", static_cast<qulonglong>(
-                   program_.instruction_number_line_number_mapping[(program_counter_) / 4])},
-        {"IF/ID", (if_id_reg_.pc < UINT64_MAX
-                       ? static_cast<qulonglong>(
-                             program_.instruction_number_line_number_mapping[(if_id_reg_.pc) / 4])
-                       : -1)},
-        {"ID/EX", (id_ex_reg_.pc < UINT64_MAX
-                       ? static_cast<qulonglong>(
-                             program_.instruction_number_line_number_mapping[(id_ex_reg_.pc) / 4])
-                       : -1)},
-        {"EX/MEM", (ex_mem_reg_.pc < UINT64_MAX
-                        ? static_cast<qulonglong>(
-                              program_.instruction_number_line_number_mapping[(ex_mem_reg_.pc) / 4])
-                        : -1)},
-        {"MEM/WB", (mem_wb_reg_.pc < UINT64_MAX
-                        ? static_cast<qulonglong>(
-                              program_.instruction_number_line_number_mapping[(mem_wb_reg_.pc) / 4])
-                        : -1)}};
-    vmState["DisassemblyLines"] = QVariantMap{
-        {"CI", static_cast<qulonglong>(
-                   program_.instruction_number_disassembly_mapping[(program_counter_) / 4])},
-        {"IF/ID", (if_id_reg_.pc < UINT64_MAX
-                       ? static_cast<qulonglong>(
-                             program_.instruction_number_disassembly_mapping[(if_id_reg_.pc) / 4])
-                       : -1)},
-        {"ID/EX", (id_ex_reg_.pc < UINT64_MAX
-                       ? static_cast<qulonglong>(
-                             program_.instruction_number_disassembly_mapping[(id_ex_reg_.pc) / 4])
-                       : -1)},
-        {"EX/MEM", (ex_mem_reg_.pc < UINT64_MAX
-                        ? static_cast<qulonglong>(
-                              program_.instruction_number_disassembly_mapping[(ex_mem_reg_.pc) / 4])
-                        : -1)},
-        {"MEM/WB", (mem_wb_reg_.pc < UINT64_MAX
-                        ? static_cast<qulonglong>(
-                              program_.instruction_number_disassembly_mapping[(mem_wb_reg_.pc) / 4])
-                        : -1)}}; */
-    vmState.statistics = VMStatistics{
+    processorState.reset();
+    processorState.statistics = ProcessorStatistics{
         .cycleCount = cycle_s_,
         .instructionsRetiredCount = instructions_retired_,
         .branchMispredictionCount = branch_mispredictions_,
@@ -221,7 +150,7 @@ void RV5StageVM_Base::SetVMStateMap()
         .cpi = cpi_,
         .ipc = ipc_};
     
-    vmState.pipelineState = PipelineState{
+    processorState.pipelineState = PipelineState{
         .instructionTexts = {
             instruction_set::disassemble(current_instruction_),
             (if_id_reg_.instruction != NOP
@@ -323,8 +252,6 @@ void RV5StageVM_Base::pipeline_decode()
         id_ex_reg_.freg2_data = registers_.ReadFpr(id_ex_reg_.frs2);
         id_ex_reg_.freg3_data = registers_.ReadFpr(id_ex_reg_.frs3);
 
-        // uint8_t opcode = instruction & 0b1111111;
-        // uint8_t funct7 = (instruction >> 25) & 0b1111111;
 
         // For load instructions, rs1 is a GPR base address.
         // For integer-to-float conversions / moves, rs1 is also a GPR source.
@@ -974,10 +901,10 @@ void RV5StageVM_Base::Undo()
                : 0.0f;
     ipc_ =
         cycle_s_ ? static_cast<float>(instructions_retired_) / static_cast<float>(cycle_s_) : 0.0f;
-    SetVMStateMap();
+    setPorcessorState();
     SetActiveWireNames();
     emit updateCircuitStateSignal(active_wires_);
-    emit processorStateChangedSignal(vmState);
+    emit processorStateChangedSignal();
 }
 
 void RV5StageVM_Base::Redo()
@@ -1034,10 +961,10 @@ void RV5StageVM_Base::Redo()
                : 0.0f;
     ipc_ =
         cycle_s_ ? static_cast<float>(instructions_retired_) / static_cast<float>(cycle_s_) : 0.0f;
-    SetVMStateMap();
+    setPorcessorState();
     SetActiveWireNames();
     emit updateCircuitStateSignal(active_wires_);
-    emit processorStateChangedSignal(vmState);
+    emit processorStateChangedSignal();
 }
 
 void RV5StageVM_Base::print_pipeline_registers_debug()

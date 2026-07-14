@@ -10,7 +10,7 @@ namespace Kites
 {
 
 EditorTab::EditorTab(QWidget *parent, ProcessorManager *vmManager)
-    : KitesTab(parent), m_vmManager(vmManager), ui(new Ui::EditorTab)
+    : KitesTab(parent), m_processorManager(vmManager), ui(new Ui::EditorTab)
 {
     ui->setupUi(this);
     ui->editorViewButton->setChecked(true); // default to editor view

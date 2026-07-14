@@ -7,7 +7,6 @@
 #include <vector>
 namespace Kites
 {
-
 enum class PipelineStage
 {
     Current = 0,
@@ -25,7 +24,7 @@ struct PipelineState
     std::array<uint64_t, toIndex(PipelineStage::PipelineStageCount)> disassemblyLineNumbers{};
 };
 
-struct VMStatistics
+struct ProcessorStatistics
 {
     uint64_t cycleCount{};
     uint64_t instructionsRetiredCount{};
@@ -35,14 +34,15 @@ struct VMStatistics
     double ipc{};
 };
 
-struct VMState
+struct ProcessorState
 {
-    ProcessorType vmType;
-    VMStatistics statistics{};
+    // initially no ProcessorType
+    ProcessorType processorType{ProcessorType::ProcessorTypeCount};
+    ProcessorStatistics statistics{};
     PipelineState pipelineState{};
     void reset()
     {
-        statistics = VMStatistics{};
+        statistics = ProcessorStatistics{};
         pipelineState = PipelineState{};
     }
 };

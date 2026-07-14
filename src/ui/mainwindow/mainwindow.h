@@ -45,20 +45,19 @@ class MainWindow : public QMainWindow
         TabCount
     };
 
-    enum class VMState
+    enum class ExecutionState
     {
         Running,
         Stopped,
         Paused
     };
 
-  public:
+public:
     MainWindow(QWidget *parent = nullptr);
     void setUpUI();
-    // void connectActions();
     ~MainWindow();
 
-  private:
+private:
     void setUpStatusBar();
     void setUpToolBar();
     void setUpSidebar();
@@ -74,19 +73,19 @@ class MainWindow : public QMainWindow
     QListWidget       *m_sidebar           {nullptr};
     QStackedWidget    *m_stackedTabs       {nullptr};
     RegisterContainer *m_registerContainer {nullptr};
-    ProcessorManager         *m_vmManager         {nullptr};
-    QThread           *m_vmThread          {nullptr};
+    ProcessorManager  *m_processorManager  {nullptr};
+    QThread           *m_processorThread   {nullptr};
     TabIndex           m_currentTabIndex   {TabIndex::EditorTabIndex};
-    VMState            m_vmState           {VMState::Stopped};
+    ExecutionState     m_executionState    {ExecutionState::Stopped};
 
     std::array<KitesTab*, toIndex(TabIndex::TabCount)> m_tabs;
-  public slots:
-    void vmChanged(const ProcessorType &vmType); // this will catch the signal from processor dialog
+public slots:
+    void processorChanged(const ProcessorType &vmType); // this will catch the signal from processor dialog
     void runFinishedSlot();
     void themeChangedSlot([[maybe_unused]]ThemeType theme);
     // void runErrorSlot();
-  signals:
-    void vmChangedSignal();
-    void runVMSignal();
+signals:
+    void processorChangedSignal();
+    void runProcessorSignal();
 };
 } // namespace Kites

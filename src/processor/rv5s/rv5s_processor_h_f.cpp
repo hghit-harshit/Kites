@@ -23,9 +23,6 @@
 
 namespace Kites
 {
-// NOP instruction: ADDI x0, x0, 0 (Used for flushing)
-constexpr uint32_t NOP = 0x00000013;
-
 using namespace alu;
 
 // Define stall count constants (used internally, defined in rv5s_hdu.h)

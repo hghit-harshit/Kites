@@ -5,10 +5,8 @@
  */
 
 #include "processor/processor_base.h"
-
 #include "common/globals.h"
 #include "config/config.h"
-
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -20,7 +18,6 @@
 
 namespace Kites
 {
-
 ProcessorBase::ProcessorBase()
 {
 }
@@ -139,8 +136,6 @@ void ProcessorBase::LoadProgram(const AssembledProgram &program)
             },
             data);
     }
-    std::cout << "VM_PROGRAM_LOADED" << std::endl;
-    output_status_ = "VM_PROGRAM_LOADED";
 
     DumpState(globals::vm_state_dump_file_path);
 }

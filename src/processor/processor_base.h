@@ -104,7 +104,7 @@ class ProcessorBase : public QObject
 
     QList<QString> active_wires_{};
     size_t always_active_wires_count_{};
-    VMState vmState{};
+    ProcessorState processorState{};
     // the list of wire that will be active in this cycle of vm
     // well send this to the gui to highlight those wires
 
@@ -133,7 +133,7 @@ class ProcessorBase : public QObject
     bool IsStopRequested() const;
     void ClearStop();
     virtual void SetActiveWireNames() = 0;
-    virtual void SetVMStateMap() = 0;
+    virtual void setPorcessorState() = 0;
 
     void PrintString(uint64_t address);
 
@@ -152,14 +152,13 @@ class ProcessorBase : public QObject
         input_queue_.push(input);
         input_cv_.notify_one();
     }
-
   signals:
     // vm state will have all the info like pc,cycles, control signals
-    void processorStateChangedSignal(const VMState &vmState);
+    void processorStateChangedSignal();
     // this will send the list of wire that have to
     void updateCircuitStateSignal(const QList<QString> &wireList);
     // we emit this signal when vm is paused at breakpoint
-    //  so that gui can chane paued button to resume
+    //  so that gui can chane paused button to resume
     void processorPausedAtBreakpointSignal();
 };
 

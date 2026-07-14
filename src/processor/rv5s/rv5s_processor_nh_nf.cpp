@@ -14,7 +14,7 @@
 #include "common/debug_colors.h"
 #include "ui/processor_tab/processor_designs/rv5s_processor_nh_nf_circuit_scene.h"
 #include "processor/alu.h"
-#include "processor/vm_base.h" // For ImmGenerator, etc.
+#include "processor/processor_base.h" // For ImmGenerator, etc.
 
 
 #include <algorithm>

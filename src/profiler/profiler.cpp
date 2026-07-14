@@ -52,9 +52,9 @@ void Profiler::setLineNumberToInstructionTypeMapping(const AssembledProgram &pro
     }
 }
 
-void Profiler::onVMStateChanged(const QMap<QString, QVariant> &vmState)
+void Profiler::processorStateChangedSlot(const QMap<QString, QVariant> &processorState)
 {
-    const int sourceLine = resolveSourceLineFromState(vmState);
+    const int sourceLine = resolveSourceLineFromState(processorState);
     if (sourceLine <= 0)
     {
         return;
@@ -66,10 +66,10 @@ void Profiler::onVMStateChanged(const QMap<QString, QVariant> &vmState)
     //emit lineExecutionCountIncrementSignal(sourceLine);
 }
 
-int Profiler::resolveSourceLineFromState(const QMap<QString, QVariant> &vmState) const
+int Profiler::resolveSourceLineFromState(const QMap<QString, QVariant> &processorState) const
 {
     // Primary path: use PC + assembler mapping for consistent results across VM variants.
-    const QVariant pcVariant = vmState.value("ProgramCounter");
+    const QVariant pcVariant = processorState.value("ProgramCounter");
     bool ok = false;
     const qulonglong pc = pcVariant.toULongLong(&ok);
     if (ok)

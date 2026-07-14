@@ -13,7 +13,7 @@
 #include "ui/processor_tab/processor_designs/rv5s_processor_h_nf_circuit_scene.h"
 #include "processor/alu.h"
 #include "processor/pipeline_registers.h"
-#include "processor/vm_base.h"
+#include "processor/processor_base.h"
 #include <algorithm>
 #include <chrono>
 #include <iostream>

@@ -5,7 +5,7 @@ namespace Kites
 VMStateTableModel::VMStateTableModel(QObject *parent, ProcessorManager *vmManager)
     : QAbstractTableModel(parent), m_vmManager(vmManager)
 {
-    connect(m_vmManager, &ProcessorManager::processorStageChangedSignal, this,
+    connect(m_vmManager, &ProcessorManager::processorStateChangedSignal, this,
             &VMStateTableModel::vmStateChangedSlot);
 }
 
@@ -87,9 +87,9 @@ QVariant VMStateTableModel::data(const QModelIndex &index, int role) const
     return QVariant{};
 }
 
-void VMStateTableModel::vmStateChangedSlot(const QMap<QString, QVariant> &vmState)
+void VMStateTableModel::vmStateChangedSlot(const QMap<QString, QVariant> &processorState)
 {
-    Q_UNUSED(vmState);
+    Q_UNUSED(processorState);
     beginResetModel();
     endResetModel();
 }

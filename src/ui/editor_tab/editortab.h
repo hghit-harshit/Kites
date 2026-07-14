@@ -1,16 +1,14 @@
 #ifndef EDITORTAB__H
 #define EDITORTAB__H
 
-#include "editor.h"
+#include "main_editor.h"
 #include "processor/processor_manager.h"
 #include "ui/common/kitestab.h"
 #include "ui/register_table/registercontainer.h"
-#include <QFontDatabase>
 #include <QPlainTextEdit>
 #include <QString>
 #include <QTextCharFormat>
 #include <filesystem>
-#include <list>
 
 namespace Kites
 {
@@ -31,14 +29,15 @@ class EditorTab : public KitesTab
     std::string getRawText();
     void setRawText(const QString &text);
     void resetErrorLines();
-    void highlightLines(const QVariantMap &editorLines, const QVariantMap &disassemblyLines);
+    void highlightLines(const std::vector<uint64_t> &editorLines, const std::vector<uint64_t> &disassemblyLines);
     void setCanWrite(bool canWrite);
     void setExpandedLocked(bool locked);
     std::vector<uint64_t> getBreakpoints() const;
-    // void saveUserCursorPosition();
     void clearHighlights();
 
   public slots:
+    void processorStateChangedSlot();
+
     void onExpandButtonClicked(bool checked);
     void switchToExpandedView();
 
@@ -50,7 +49,7 @@ class EditorTab : public KitesTab
     // but well make it read only and use it to show disassembled code
     // were doing this cause of the overriden paint event in Editor class to show hightlights
     QTextCharFormat m_squiggleFormat; // stores how the quiggles will look
-    ProcessorManager *m_vmManager = nullptr;
+    ProcessorManager *m_processorManager = nullptr;
     QTextCursor m_userCursorPosition;
     // to save user cursor position when updating disassembly view
     bool m_expandedLocked = false;
@@ -58,4 +57,4 @@ class EditorTab : public KitesTab
     Ui::EditorTab *ui;
 };
 } // namespace Kites
-#endif // EDITORTAB__H
+#endif EDITORTAB__H

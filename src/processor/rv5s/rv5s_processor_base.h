@@ -83,7 +83,7 @@ class RV5StageVM_Base : public ProcessorBase
 
     void print_pipeline_registers_debug();
     bool is_pipeline_drained() const;
-    void SetVMStateMap() override;
+    void setPorcessorState() override;
     void Run() override; // run debug run adn reset are same across all rv5s vms
 
     // --- Private methods for each pipeline stage ---

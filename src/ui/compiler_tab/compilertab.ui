@@ -98,7 +98,7 @@
   <customwidget>
    <class>Editor</class>
    <extends>QPlainTextEdit</extends>
-   <header location="global">ui/editor/editor.h</header>
+   <header location="global">ui/editor/main_editor.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

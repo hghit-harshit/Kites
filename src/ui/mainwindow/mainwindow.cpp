@@ -6,7 +6,7 @@
 #include "custom_pseudo_manager/custom_pseudo_manager.h"
 #include "processor/processor_base.h"
 #include "processor/processor_manager.h"
-#include "ui/cache_tab_tab_tab/cachetab.h"
+#include "ui/cache_tab/cachetab.h"
 #include "ui/compiler_tab/compilertab.h"
 #include "ui/dialogs/processor_dialog.h"
 #include "ui/dialogs/settings_dialog.h"
@@ -25,7 +25,6 @@
 #include <QWidgetAction>
 
 namespace Kites
-
 {
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 // ui(new Ui::MainWindow)
@@ -38,47 +37,38 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     // well run the vm in a separate thread to keep the ui responsive
     // do not touch these 4 line unless you really know what you are doing
-    m_vmManager = new ProcessorManager();
-    m_vmThread = new QThread(this);
-    m_vmManager->moveToThread(m_vmThread);
-    m_vmThread->start();
+    m_processorManager = new ProcessorManager();
+    m_processorThread = new QThread(this);
+    m_processorManager->moveToThread(m_processorThread);
+    m_processorThread->start();
 
-    connect(this, &MainWindow::runVMSignal, m_vmManager, &ProcessorManager::runSlot);
+    connect(this, &MainWindow::runProcessorSignal, m_processorManager, &ProcessorManager::runSlot);
     // well temporarily disable the toolbar buttons when vm is running
-    connect(m_vmManager, &ProcessorManager::runFinishedSignal, this, &MainWindow::runFinishedSlot);
-    connect(m_vmManager, &ProcessorManager::runErrorSignal, this,
+    connect(m_processorManager, &ProcessorManager::runFinishedSignal, this, &MainWindow::runFinishedSlot);
+    connect(m_processorManager, &ProcessorManager::runErrorSignal, this,
             [this](const QString &errorMessage)
             {
                 // first we enable the toolbar buttons
                 runFinishedSlot();
-                QMessageBox::critical(
-                    this, "Runtime Error",
-                    errorMessage +
-                        "\nIf you are using floating point instruciction with 5 cycle VM please "
-                        "switch to single cycles VM in processor settings." +
-                        "\nWe will include floating point support in multi cycle VM in future "
-                        "releases.");
+                QMessageBox::critical(this, "Runtime Error", errorMessage);
             });
 
 
-    connect(m_vmManager, &ProcessorManager::processorStageChangedSignal, this,
-            [this](const QMap<QString, QVariant> &vmState)
+    connect(m_processorManager, &ProcessorManager::processorStateChangedSignal, this,
+            [this](const ProcessorState &processorState)
             {
-                qDebug() << "MainWindow received vm state change signal";
                 auto editorTab = dynamic_cast<EditorTab *>(m_tabs[TabIndex::EditorTabIndex]);
                 if (editorTab)
                 {
                     // -1 is default value meaning no line to highlight
-                    QVariantMap editorLines = vmState.value("EditorLines", {}).toMap();
-                    QVariantMap disassemblyLines = vmState.value("DisassemblyLines", {}).toMap();
 
-                    editorTab->highlightLines(editorLines, disassemblyLines);
+                    editorTab->highlightLines(processorState.editorLines, processorState.disassemblyLines);
                 }
             });
     connect(&ThemeManager::getInstance(), &ThemeManager::themeChangedSignal, 
             this, &MainWindow::themeChangedSlot);
             
-    m_registerContainer = new RegisterContainer(this, m_vmManager->getRegisterFile());
+    m_registerContainer = new RegisterContainer(this, m_processorManager->getRegisterFile());
     QWidget *central = new QWidget(this);
     QHBoxLayout *mainLayout = new QHBoxLayout(central);
     QSplitter *splitter = new QSplitter(Qt::Horizontal, this);
@@ -116,14 +106,14 @@ void MainWindow::setUpStatusBar()
 
 void MainWindow::setUpToolBar()
 {
-    QToolBar *toolbar = addToolBar("Main Toolbar");
-    QAction *processorAction = new QAction("Processor", this);
-    QAction *runAction = new QAction("Run", this);
-    QAction *pauseAction = new QAction("Pause", this);
-    QAction *debugAction = new QAction("Debug Run", this);
-    QAction *stepAction = new QAction("Step", this);
-    QAction *undoAction = new QAction("Undo", this);
-    QAction *redoAction = new QAction("Redo", this);
+    QToolBar *toolbar         = addToolBar("Main Toolbar");
+    QAction  *processorAction = new QAction("Processor", this);
+    QAction  *runAction       = new QAction("Run", this);
+    QAction  *pauseAction     = new QAction("Pause", this);
+    QAction  *debugAction     = new QAction("Debug Run", this);
+    QAction  *stepAction      = new QAction("Step", this);
+    QAction  *undoAction      = new QAction("Undo", this);
+    QAction  *redoAction      = new QAction("Redo", this);
 
     stepAction->setDisabled(true);
     pauseAction->setDisabled(true);
@@ -186,7 +176,7 @@ void MainWindow::setUpToolBar()
                     runAction->setText("Run");
                     runAction->setIcon(IconManager::getInstance().getIcon(Icon::Play));
                     runAction->setToolTip("Run program");
-                    m_vmManager->stop();
+                    m_processorManager->stop();
                 }
             });
 
@@ -206,13 +196,13 @@ void MainWindow::setUpToolBar()
                 {
                     editorTab->setExpandedLocked(true);
                 }
-                m_vmManager->debugRun();
+                m_processorManager->debugRun();
             });
 
     connect(processorAction, &QAction::triggered, this, &MainWindow::processorChangeDialog);
 
     connect(spinbox, qOverload<int>(&QSpinBox::valueChanged), this,
-            [this](int value) { m_vmManager->setStepDelay(value); });
+            [this](int value) { m_processorManager->setStepDelay(value); });
 
     connect(pauseAction, &QAction::triggered, this,
             [this, pauseAction, undoAction, redoAction]()
@@ -224,7 +214,7 @@ void MainWindow::setUpToolBar()
                     pauseAction->setToolTip("Resume execution");
                     undoAction->setEnabled(true);
                     redoAction->setEnabled(true);
-                    m_vmManager->pause();
+                    m_processorManager->pause();
                 }
                 else
                 {
@@ -233,12 +223,12 @@ void MainWindow::setUpToolBar()
                     pauseAction->setToolTip("Pause execution");
                     undoAction->setDisabled(true);
                     redoAction->setDisabled(true);
-                    m_vmManager->resume();
+                    m_processorManager->resume();
                 }
             });
 
     // we also connect the vm paused at breakpoint signal to change the pause button text
-    connect(m_vmManager, &ProcessorManager::processorPausedAtBreakpointSignal, this,
+    connect(m_processorManager, &ProcessorManager::processorPausedAtBreakpointSignal, this,
             [this, pauseAction]()
             {
                 pauseAction->setText("Resume");
@@ -246,9 +236,9 @@ void MainWindow::setUpToolBar()
                 pauseAction->setToolTip("Resume execution");
             });
 
-    connect(stepAction, &QAction::triggered, this, [this]() { m_vmManager->step(); });
-    connect(undoAction, &QAction::triggered, this, [this]() { m_vmManager->undo(); });
-    connect(redoAction, &QAction::triggered, this, [this]() { m_vmManager->redo(); });
+    connect(stepAction, &QAction::triggered, this, [this]() { m_processorManager->step(); });
+    connect(undoAction, &QAction::triggered, this, [this]() { m_processorManager->undo(); });
+    connect(redoAction, &QAction::triggered, this, [this]() { m_processorManager->redo(); });
 }
 
 void MainWindow::setUpSidebar()
@@ -277,17 +267,16 @@ void MainWindow::setUpSidebar()
 
 void MainWindow::setUpMenubar()
 {
-    QMenu *fileMenu = menuBar()->addMenu("&File");
+    QMenu *fileMenu     = menuBar()->addMenu("&File");
     QMenu *settingsMenu = menuBar()->addMenu("&Settings");
-    QMenu *helpMenu = menuBar()->addMenu("&Help");
+    QMenu *helpMenu     = menuBar()->addMenu("&Help");
 
     QMenu *preferencesMenu = new QMenu("Preferences", this);
     QMenu *processorMenu   = new QMenu("Processor", this);
     
-    QAction *openAction = new QAction("Open", this);
-    QAction *saveAction = new QAction("Save", this);
-    QAction *exitAction = new QAction("Exit", this);
-    // QAction *preferencesAction = new QAction("Preferences", this);
+    QAction *openAction  = new QAction("Open", this);
+    QAction *saveAction  = new QAction("Save", this);
+    QAction *exitAction  = new QAction("Exit", this);
     QAction *aboutAction = new QAction("About", this);
 
     ///////////File Menu///////////////////
@@ -392,13 +381,13 @@ void MainWindow::setUpMenubar()
 void MainWindow::setUpTabs()
 {
     m_tabs[TabIndex::EditorTabIndex]    = new EditorTab(this);
-    m_tabs[TabIndex::MemoryTabIndex]    = new MemoryTab(this, m_vmManager->getMemoryController());
-    m_tabs[TabIndex::ProcessorTabIndex] = new ProcessorTab(this, m_vmManager);                      
-    m_tabs[TabIndex::CacheTabIndex]     = new CacheTab(this, m_vmManager->getMemoryController());
+    m_tabs[TabIndex::MemoryTabIndex]    = new MemoryTab(this, m_processorManager->getMemoryController());
+    m_tabs[TabIndex::ProcessorTabIndex] = new ProcessorTab(this, m_processorManager);                      
+    m_tabs[TabIndex::CacheTabIndex]     = new CacheTab(this, m_processorManager->getMemoryController());
     m_tabs[TabIndex::CompilerTabIndex]  = new CompilerTab(this);
-    m_tabs[TabIndex::ProfilerTabIndex]  = new ProfilerTab(this, m_vmManager->getProfiler());
+    m_tabs[TabIndex::ProfilerTabIndex]  = new ProfilerTab(this, m_processorManager->getProfiler());
     // a little experiment
-    connect(this, &MainWindow::vmChangedSignal,
+    connect(this, &MainWindow::processorChangedSignal,
             dynamic_cast<ProcessorTab *>(m_tabs[TabIndex::ProcessorTabIndex]),
             &ProcessorTab::onVMChanged);
 
@@ -412,13 +401,19 @@ void MainWindow::setUpTabs()
 
 bool MainWindow::tryParseAndLoadProgram()
 {
-    auto editor = dynamic_cast<EditorTab *>(m_tabs[TabIndex::EditorTabIndex]);
-    auto profilerTab = dynamic_cast<ProfilerTab *>(m_tabs[TabIndex::ProfilerTabIndex]);
+    auto* editor = dynamic_cast<EditorTab*>(m_tabs[TabIndex::EditorTabIndex]);
+    auto* profilerTab = dynamic_cast<ProfilerTab*>(m_tabs[TabIndex::ProfilerTabIndex]);
+
+    if(!editor || !profilerTab) 
+    {
+        QMessageBox::critical(this, "Error", "Editor or Profiler tab not found.");
+        return false;
+    }
     editor->switchToExpandedView(); // switch to the expanded view 
                                     //to show expanded pseudoinstructions
     editor->resetErrorLines();    // we reset previous error lines
     editor->setCanWrite(false);   // we disable writing in editor while vm is running
-    m_vmManager->reset();
+    m_processorManager->reset();
     // reset register container and memory view as well
     try
     {
@@ -427,20 +422,16 @@ bool MainWindow::tryParseAndLoadProgram()
         std::ofstream out(globals::temporary_assembly_file_path);
         out << rawText;
         out.close();
-        /**TODO 
-         * Make AssembledProgram a const variable here
-        */
         AssembledProgram assembledProgram = assemble(globals::temporary_assembly_file_path.string());
         DumpDisasssembly(globals::disassembly_file_path, assembledProgram);
         std::ifstream in(globals::disassembly_file_path);
         std::stringstream buffer;
         buffer << in.rdbuf();
-
         editor->updateDisassemblyView(buffer.str());
         profilerTab->setSourceText(QString::fromStdString(rawText));
         
-        m_vmManager->loadProgram(assembledProgram);
-        m_vmManager->setBreakpoints(editor->getBreakpoints());
+        m_processorManager->loadProgram(assembledProgram);
+        m_processorManager->setBreakpoints(editor->getBreakpoints());
         return true;
     }
     catch (const std::exception &e)
@@ -463,11 +454,8 @@ void MainWindow::run()
         {
             editorTab->setExpandedLocked(true);
         }
-        // qDebug() << "Starting VM Run";
-        // m_vmManager->run();
 
-        emit runVMSignal();
-        // qDebug() << "VM Run Completed";
+        emit runProcessorSignal();
     }
     else
     {
@@ -478,31 +466,31 @@ void MainWindow::run()
 }
 void MainWindow::processorChangeDialog()
 {
-    ProcessorDialog dialog(this, m_vmManager->getVMType());
+    ProcessorDialog dialog(this, m_processorManager->getProcessorType());
     dialog.setWindowTitle("Choose Processor");
-    connect(&dialog, &ProcessorDialog::vmSelected, this, &MainWindow::vmChanged);
+    connect(&dialog, &ProcessorDialog::vmSelected, this, &MainWindow::processorChanged);
     dialog.exec();
 }
 
-void MainWindow::vmChanged(const ProcessorType &vmType)
+void MainWindow::processorChanged(const ProcessorType &vmType)
 {
     // m_vmManager->setVMType(vmType);
     // m_registerContainer->setRegisterFile(m_vmManager->getRegisterFile());
     //  this looks kinda ugly but well its better than emitting multiple signals
     qDebug() << "VM Changed to " << static_cast<int>(vmType);
-    m_vmManager->changeVM(vmType);
-    m_registerContainer->setRegisterFile(m_vmManager->getRegisterFile());
+    m_processorManager->changeProcessor(vmType);
+    m_registerContainer->setRegisterFile(m_processorManager->getRegisterFile());
     auto *memtab = dynamic_cast<MemoryTab *>(m_tabs[TabIndex::MemoryTabIndex]);
     if (memtab)
     {
-        memtab->changeMemoryController(m_vmManager->getMemoryController());
+        memtab->changeMemoryController(m_processorManager->getMemoryController());
     }
     auto *cacheTab = dynamic_cast<CacheTab *>(m_tabs[TabIndex::CacheTabIndex]);
     if (cacheTab)
     {
-        cacheTab->changeMemoryController(m_vmManager->getMemoryController());
+        cacheTab->changeMemoryController(m_processorManager->getMemoryController());
     }
-    emit vmChangedSignal();
+    emit processorChangedSignal();
 
     // well also have to change the processor design from here later
 }
@@ -545,7 +533,6 @@ void MainWindow::runFinishedSlot()
         }
     }
 
-    // we also reset the
 }
 
 
@@ -557,6 +544,7 @@ void MainWindow::toggleTheme(ThemeType theme)
 void MainWindow::themeChangedSlot([[maybe_unused]]ThemeType theme)
 {
     // we will update the icons here based on the theme
+    // this is very very hacky but this will do for now
     auto *toolbar = this->findChild<QToolBar *>();
     if (toolbar)
     {
@@ -596,7 +584,7 @@ void MainWindow::themeChangedSlot([[maybe_unused]]ThemeType theme)
 
 MainWindow::~MainWindow()
 {
-    m_vmManager->stop();
+    m_processorManager->stop();
     // delete ui;
 }
 } // namespace Kites
