@@ -60,7 +60,7 @@ void RV5StageVM_Base::Run()
     if (stop_requested_)
     {
         emit processorClockedSignal(processor_state_);
-        // we emit the vm state changed signal once more to update the ui
+        // we emit the processor clocked signal once more to update the ui
         // this will get rid of any highlights as they pause when we stop
         // before execution is complete
     }
@@ -142,7 +142,9 @@ void RV5StageVM_Base::finalize_step_delta()
 
 void RV5StageVM_Base::setProcessorState()
 {
-    processorState.reset();
+    processorState.reset(); 
+    processorState.programCounters = 
+    {program_counter_, if_id_reg_.pc, id_ex_reg_.pc, ex_mem_reg_.pc, mem_wb_reg_.pc};
 }
 
 void RV5StageVM_Base::pipeline_decode()

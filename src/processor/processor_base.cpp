@@ -236,11 +236,6 @@ void ProcessorBase::SetBreakpoints(const std::vector<uint64_t> &breakpoints)
     for (const auto &bp : breakpoints)
     {
         breakpoints_.emplace_back(program_.line_number_instruction_number_mapping[bp] * 4);
-        qDebug() << "Breakpoint set at line: " << bp;
-        qDebug() << "Breakpoint set at instruction number: "
-                 << program_.line_number_instruction_number_mapping[bp];
-        qDebug() << "Breakpoint set at address: "
-                 << QString::number(program_.line_number_instruction_number_mapping[bp] * 4, 16);
     }
 }
 

@@ -106,63 +106,12 @@ void RVSSProcessor::SetActiveWireNames()
 
 void RVSSProcessor::setProcessorState()
 {
-/*     processorState.reset();
-    processorState.statistics = ProcessorStatistics{
-        .cycleCount = cycle_s_,
-        .instructionsRetiredCount = instructions_retired_,
-        .branchMispredictionCount = branch_mispredictions_,
-        .stallCycleCount = stall_cycles_,
-        .cpi = cpi_,
-        .ipc = ipc_};
-    
-    processorState.pipelineState = PipelineState{
-        .instructionTexts = {
-            instruction_set::disassemble(current_instruction_),
-            (if_id_reg_.instruction != NOP
-                 ? instruction_set::disassemble(if_id_reg_.instruction)
-                 : "NOP"),
-            (id_ex_reg_.instruction != NOP
-                 ? instruction_set::disassemble(id_ex_reg_.instruction)
-                 : "NOP"),
-            (ex_mem_reg_.instruction != NOP
-                 ? instruction_set::disassemble(ex_mem_reg_.instruction)
-                 : "NOP"),
-            (mem_wb_reg_.instruction != NOP
-                 ? instruction_set::disassemble(mem_wb_reg_.instruction)
-                 : "NOP")},
-        .editorLineNumbers = {
-            program_.instruction_number_line_number_mapping[(program_counter_) / 4],
-            (if_id_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_line_number_mapping[(if_id_reg_.pc) / 4]
-                 : -1),
-            (id_ex_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_line_number_mapping[(id_ex_reg_.pc) / 4]
-                 : -1),
-            (ex_mem_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_line_number_mapping[(ex_mem_reg_.pc) / 4]
-                 : -1),
-            (mem_wb_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_line_number_mapping[(mem_wb_reg_.pc) / 4]
-                 : -1)},
-        .disassemblyLineNumbers = {
-            program_.instruction_number_disassembly_mapping[(program_counter_) / 4],
-            (if_id_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_disassembly_mapping[(if_id_reg_.pc) / 4]
-                 : -1),
-            (id_ex_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_disassembly_mapping[(id_ex_reg_.pc) / 4]
-                 : -1),
-            (ex_mem_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_disassembly_mapping[(ex_mem_reg_.pc) / 4]
-                 : -1),
-            (mem_wb_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_disassembly_mapping[(mem_wb_reg_.pc) / 4]
-                 : -1)}}; */
+    processor_state_.programCounters = 
+    {program_counter_,INVALID_PC,INVALID_PC,INVALID_PC,INVALID_PC};
 }
 
 void RVSSProcessor::Run()
 {
-    qDebug() << "Starting VM Run";
     ClearStop();
     while (!stop_requested_ && program_counter_ < program_size_)
     {
@@ -193,7 +142,6 @@ void RVSSProcessor::Run()
         Step();
         instructions_retired_++;
         cycle_s_++;
-        // emit UI update for circuit highlighting
         SetActiveWireNames();
         setProcessorState();
         emit processorClockedSignal(processor_state_);

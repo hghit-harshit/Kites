@@ -136,8 +136,6 @@ void CircuitScene::fitTableToCircuit(const QString &vmType)
             break;
         }
     }
-
-    qDebug() << "Table set up with" << m_columnKeys.size() << "columns, width:" << totalWidth;
 }
 
 
@@ -355,7 +353,6 @@ void CircuitScene::loadScene(const QString &fileName)
         }
     }
 
-    qDebug() << "Scene loaded from" << fileName;
     setUpInstructionTable();
 
     // this is very very hacky but it works fow now

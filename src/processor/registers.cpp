@@ -43,7 +43,6 @@ void RegisterFile::WriteGpr(size_t reg, uint64_t value)
         throw std::out_of_range("Invalid GPR index");
     if (reg == 0)
         return;
-    qDebug() << "Writing GPR[" << reg << "] = " << value;
     emit updateRegister(reg, value);
 
     gpr_[reg] = value;

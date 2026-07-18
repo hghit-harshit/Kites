@@ -190,15 +190,12 @@ void RegisterModel::changeRegisterFile(RegisterFile *regfile)
 
 void RegisterModel::registerResetSlot()
 {
-    qDebug() << "RegisterModel::registerResetSlot called";
     beginResetModel();
     endResetModel();
 }
 
 void RegisterModel::updateRegisterValue(size_t regIndex, uint64_t value)
 {
-    qDebug() << "RegisterModel::updateRegisterValue called for regIndex:" << regIndex
-             << " new value:" << value;
     //QModelIndex index = this->index(static_cast<int>(regIndex), 2);
     m_highlightedRegisterIndex = regIndex; // Update highlighted register index
     // emit dataChanged(index,index);
@@ -208,8 +205,6 @@ void RegisterModel::updateRegisterValue(size_t regIndex, uint64_t value)
 
 void RegisterModel::updateFRegisterValue(size_t regIndex, uint64_t value)
 {
-    qDebug() << "RegisterModel::updateFRegisterValue called for regIndex:" << regIndex
-             << " new value:" << value;
     //QModelIndex index = this->index(static_cast<int>(regIndex + 32), 2);
     m_highlightedRegisterIndex = regIndex + 32; // Update highlighted register index
     // emit dataChanged(index,index);

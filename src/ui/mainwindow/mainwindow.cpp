@@ -482,10 +482,6 @@ void MainWindow::processorChangeDialog()
 
 void MainWindow::processorChanged(const ProcessorType &vmType)
 {
-    // m_vmManager->setVMType(vmType);
-    // m_registerContainer->setRegisterFile(m_vmManager->getRegisterFile());
-    //  this looks kinda ugly but well its better than emitting multiple signals
-    qDebug() << "VM Changed to " << static_cast<int>(vmType);
     m_processorManager->changeProcessor(vmType);
     m_registerContainer->setRegisterFile(m_processorManager->getRegisterFile());
     auto *memtab = dynamic_cast<MemoryTab *>(m_tabs[TabIndex::MemoryTabIndex]);

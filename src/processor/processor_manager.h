@@ -33,7 +33,6 @@ class ProcessorManager : public QObject
     Q_OBJECT
 public:
     ProcessorManager(QObject *parent = nullptr, ProcessorType vmType = ProcessorType::RVSS);
-    // only for now later we will make it so that it pull the type from config.ini
     void changeProcessor(ProcessorType vmType);
     ProcessorType getProcessorType();
     void reset();
@@ -67,13 +66,6 @@ public:
     unsigned int getStallCycles() const;
     unsigned int getCycles() const;
     unsigned int getInstructionsRetired() const;
-
-    /**
-     * @brief Get the lines to highlight along with the text to put in the lighligted line
-     */
-    
-
-
 private:
     void updateEditorHighlight(const ProcessorState &processorState);
 
