@@ -86,6 +86,7 @@ class ProcessorBase : public QObject
 
     uint32_t current_instruction_{};
     uint64_t program_counter_{};
+    ProcessorState processor_state_{};
 
     unsigned int step_delay_{1000}; // well change it later to get it from config
     unsigned int cycle_s_{};
@@ -133,7 +134,7 @@ class ProcessorBase : public QObject
     bool IsStopRequested() const;
     void ClearStop();
     virtual void SetActiveWireNames() = 0;
-    virtual void setPorcessorState() = 0;
+    virtual void setProcessorState() = 0;
 
     void PrintString(uint64_t address);
 
@@ -154,7 +155,7 @@ class ProcessorBase : public QObject
     }
   signals:
     // vm state will have all the info like pc,cycles, control signals
-    void processorStateChangedSignal();
+    void processorClockedSignal(const ProcessorState &processorState);
     // this will send the list of wire that have to
     void updateCircuitStateSignal(const QList<QString> &wireList);
     // we emit this signal when vm is paused at breakpoint

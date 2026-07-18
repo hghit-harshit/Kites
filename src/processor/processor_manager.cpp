@@ -15,6 +15,10 @@
 #include "processor/rv5s/rv5s_processor_nh_nf.h"
 #include "processor/rvss/rvss_processor.h"
 #include "processor/processor_manager.h"
+#include "common/globals.h"
+#include "common/assembled_program.h"
+#include "assembler/assembler.h"
+#include "utils/utils.h"
 
 namespace Kites
 {
@@ -30,15 +34,15 @@ ProcessorManager::ProcessorManager(QObject *parent, ProcessorType vmType) : QObj
     ProcessorFactory::RegisterVM<RV5StageProcessorHF>(ProcessorType::RV5Stage_H_F);
     m_currentProcessorType = vmType;
     m_currentProcessor = ProcessorFactory::createVM(vmType);
-    connect(m_currentProcessor.get(), &ProcessorBase::processorStateChangedSignal, this,
+    connect(m_currentProcessor.get(), &ProcessorBase::processorClockedSignal, this,
             &ProcessorManager::processorStateChangedSignal, Qt::DirectConnection);
     connect(m_currentProcessor.get(), &ProcessorBase::processorPausedAtBreakpointSignal, this,
             &ProcessorManager::processorPausedAtBreakpointSignal, Qt::DirectConnection);
     // here we connect the vm state changed signal to the vm manager signal
     // and this will be further connected to the mainwindow slot to update the ui
 
-    connect(m_currentProcessor.get(), &ProcessorBase::processorStateChangedSignal, &m_profiler,
-            &Profiler::processorStateChangedSlot, Qt::DirectConnection);
+    connect(m_currentProcessor.get(), &ProcessorBase::processorClockedSignal, &m_profiler,
+            &Profiler::processorClockedSlot, Qt::DirectConnection);
 }
 
 void ProcessorManager::changeProcessor(ProcessorType vmType)
@@ -46,7 +50,7 @@ void ProcessorManager::changeProcessor(ProcessorType vmType)
     m_currentProcessorType = vmType;
     m_currentProcessor = ProcessorFactory::createVM(vmType);
     m_currentProcessor->step_delay_ = m_stepDelayMs;
-    connect(m_currentProcessor.get(), &ProcessorBase::processorStateChangedSignal, this,
+    connect(m_currentProcessor.get(), &ProcessorBase::processorClockedSignal, this,
             &ProcessorManager::processorStateChangedSignal, Qt::DirectConnection);
     connect(m_currentProcessor.get(), &ProcessorBase::processorPausedAtBreakpointSignal, this,
             &ProcessorManager::processorPausedAtBreakpointSignal, Qt::DirectConnection);
@@ -58,10 +62,69 @@ void ProcessorManager::loadProgram(const AssembledProgram &program)
     m_currentProcessor->LoadProgram(program);
 }
 
+void ProcessorManager::loadProgram(const std::string &sourceText)
+{
+    std::ofstream out(globals::temporary_assembly_file_path);
+    out << sourceText;
+    out.close();
+    m_currentProgram = assemble(globals::temporary_assembly_file_path.string());
+    m_currentProcessor->LoadProgram(m_currentProgram);
+    DumpDisasssembly(globals::disassembly_file_path, m_currentProgram);
+    std::ifstream in(globals::disassembly_file_path);
+    std::stringstream buffer;
+    buffer << in.rdbuf();
+    in.close();
+    emit updateDisassemblySignal(QString::fromStdString(buffer.str()));
+}
+
 void ProcessorManager::runSlot()
 {
     run();
     emit runFinishedSignal();
+}
+
+void ProcessorManager::processorClockedSlot(const ProcessorState &processorState)
+{
+    //first we get all the necesary info from the prcossor and then update the related
+    //gui widgets
+    updateEditorHighlight(processorState);
+
+}
+
+
+void ProcessorManager::updateEditorHighlight(const ProcessorState &processorState) 
+{
+    std::vector<std::pair<int,std::string>> editorLines;
+    std::vector<std::pair<int,std::string>> disassemblyLines;
+    if(m_currentProcessorType == ProcessorType::RVSS)
+    {
+        auto programCounter = processorState.programCounters[toIndex(PipelineStage::IF)];
+        auto editorLineNumber = 
+        m_currentProgram.instruction_number_line_number_mapping.at(programCounter/4);
+        auto disassemblyLineNumber = 
+        m_currentProgram.instruction_number_disassembly_mapping.at(programCounter/4);
+        editorLines.emplace_back(editorLineNumber, ".");
+        disassemblyLines.emplace_back(disassemblyLineNumber, ".");
+    }
+    else
+    {
+        
+        for(size_t i = 0; i < toIndex(PipelineStage::PipelineStageCount); ++i)
+        {
+            auto stagePC = processorState.programCounters[i];
+            if(stagePC == 0) continue; // skip stages that are not active
+            {
+                editorLines.emplace_back(
+                m_currentProgram.instruction_number_line_number_mapping.at(stagePC/4),
+                pipelineStageToString(static_cast<PipelineStage>(stagePC))); 
+                disassemblyLines.emplace_back(
+                m_currentProgram.instruction_number_disassembly_mapping.at(stagePC/4),
+                pipelineStageToString(static_cast<PipelineStage>(stagePC)));
+            }
+        }
+        
+    }
+    emit updateEditorHighlightSignal(editorLines, disassemblyLines);
 }
 
 void ProcessorManager::run()
@@ -81,18 +144,6 @@ void ProcessorManager::step()
     try
     {
         m_currentProcessor->Step();
-        m_currentProcessor->cpi_ = m_currentProcessor->instructions_retired_
-                                ? static_cast<float>(m_currentProcessor->cycle_s_) /
-                                      static_cast<float>(m_currentProcessor->instructions_retired_)
-                                : 0.0f;
-        m_currentProcessor->ipc_ = m_currentProcessor->cycle_s_
-                                ? static_cast<float>(m_currentProcessor->instructions_retired_) /
-                                      static_cast<float>(m_currentProcessor->cycle_s_)
-                                : 0.0f;
-        m_currentProcessor->setPorcessorState();
-        m_currentProcessor->SetActiveWireNames();
-        emit m_currentProcessor->updateCircuitStateSignal(m_currentProcessor->active_wires_);
-        emit m_currentProcessor->processorStateChangedSignal();
     }
     catch (const std::exception &e)
     {
@@ -201,4 +252,5 @@ unsigned int ProcessorManager::getInstructionsRetired() const
 {
     return m_currentProcessor->instructions_retired_;
 }
+
 }//namespace Kites

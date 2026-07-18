@@ -52,16 +52,16 @@ void Profiler::setLineNumberToInstructionTypeMapping(const AssembledProgram &pro
     }
 }
 
-void Profiler::processorStateChangedSlot(const QMap<QString, QVariant> &processorState)
+void Profiler::processorClockedSlot(const ProcessorState&processorState)
 {
-    const int sourceLine = resolveSourceLineFromState(processorState);
-    if (sourceLine <= 0)
-    {
-        return;
-    }
+    // const int sourceLine = resolveSourceLineFromState(processorState);
+    // if (sourceLine <= 0)
+    // {
+    //     return;
+    // }
 
-    ++m_lineNumberToExecutionCounts[sourceLine];
-    ++m_instructionTypeCounts[toIndex(getInstructionTypeForLine(sourceLine))];
+    // ++m_lineNumberToExecutionCounts[sourceLine];
+    // ++m_instructionTypeCounts[toIndex(getInstructionTypeForLine(sourceLine))];
     //emit lineExecutionCountsUpdated(m_line_to_execution_counts);
     //emit lineExecutionCountIncrementSignal(sourceLine);
 }

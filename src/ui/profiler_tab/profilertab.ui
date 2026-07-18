@@ -35,7 +35,7 @@
   <customwidget>
    <class>ProfilerEditor</class>
    <extends>QPlainTextEdit</extends>
-   <header>ui/profiler/profiler_editor.h</header>
+   <header>ui/profiler_tab/profiler_editor.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

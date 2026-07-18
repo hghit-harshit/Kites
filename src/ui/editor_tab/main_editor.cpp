@@ -85,7 +85,7 @@ void Editor::resetErrors()
     m_errorMessages.clear();
 }
 
-void Editor::setLinesToHighlight(const QVariantMap &linesToHighlight)
+void Editor::setLinesToHighlight(const std::vector<std::pair<int, std::string>> &linesToHighlight)
 {
     m_LinesToHighlight = linesToHighlight;
     viewport()->update(); // Trigger a repaint to show the highlights
@@ -160,9 +160,8 @@ void Editor::paintEvent(QPaintEvent *event)
 
     painter.setRenderHint(QPainter::Antialiasing);
 
-    for (const auto &key : m_LinesToHighlight.keys())
+    for (const auto [lineNumber, instructionStage] : m_LinesToHighlight)
     {
-        int lineNumber = m_LinesToHighlight.value(key).toInt();
         if (lineNumber < 0 || lineNumber >= this->blockCount() ||
             drawnLines.find(lineNumber) != drawnLines.end())
         {
@@ -185,7 +184,7 @@ void Editor::paintEvent(QPaintEvent *event)
             textRect.setWidth(viewport()->width() - 10);
 
             painter.setPen(Qt::black);
-            painter.drawText(textRect, Qt::AlignRight | Qt::AlignVCenter, key);
+            painter.drawText(textRect, Qt::AlignRight | Qt::AlignVCenter, instructionStage.c_str());
         }
     }
 

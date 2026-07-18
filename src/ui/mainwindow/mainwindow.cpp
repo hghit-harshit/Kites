@@ -1,10 +1,8 @@
 #include "mainwindow.h"
 #include "assembler/assembler.h"
-#include "assembler/code_generator.h"
 #include "common/assembled_program.h"
 #include "common/globals.h"
 #include "custom_pseudo_manager/custom_pseudo_manager.h"
-#include "processor/processor_base.h"
 #include "processor/processor_manager.h"
 #include "ui/cache_tab/cachetab.h"
 #include "ui/compiler_tab/compilertab.h"
@@ -23,6 +21,8 @@
 #include <QLabel>
 #include <QSpinBox>
 #include <QWidgetAction>
+#include <QSplitter>
+#include <QMessageBox>
 
 namespace Kites
 {
@@ -42,31 +42,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_processorManager->moveToThread(m_processorThread);
     m_processorThread->start();
 
-    connect(this, &MainWindow::runProcessorSignal, m_processorManager, &ProcessorManager::runSlot);
-    // well temporarily disable the toolbar buttons when vm is running
-    connect(m_processorManager, &ProcessorManager::runFinishedSignal, this, &MainWindow::runFinishedSlot);
-    connect(m_processorManager, &ProcessorManager::runErrorSignal, this,
-            [this](const QString &errorMessage)
-            {
-                // first we enable the toolbar buttons
-                runFinishedSlot();
-                QMessageBox::critical(this, "Runtime Error", errorMessage);
-            });
-
-
-    connect(m_processorManager, &ProcessorManager::processorStateChangedSignal, this,
-            [this](const ProcessorState &processorState)
-            {
-                auto editorTab = dynamic_cast<EditorTab *>(m_tabs[TabIndex::EditorTabIndex]);
-                if (editorTab)
-                {
-                    // -1 is default value meaning no line to highlight
-
-                    editorTab->highlightLines(processorState.editorLines, processorState.disassemblyLines);
-                }
-            });
-    connect(&ThemeManager::getInstance(), &ThemeManager::themeChangedSignal, 
-            this, &MainWindow::themeChangedSlot);
             
     m_registerContainer = new RegisterContainer(this, m_processorManager->getRegisterFile());
     QWidget *central = new QWidget(this);
@@ -95,6 +70,39 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     setCentralWidget(central);
     resize(1200, 800);
+    connect(this, &MainWindow::runProcessorSignal, m_processorManager, &ProcessorManager::runSlot);
+    // well temporarily disable the toolbar buttons when vm is running
+    connect(m_processorManager, &ProcessorManager::runFinishedSignal, this, &MainWindow::runFinishedSlot);
+    connect(m_processorManager, &ProcessorManager::runErrorSignal, this,
+            [this](const QString &errorMessage)
+            {
+                // first we enable the toolbar buttons
+                runFinishedSlot();
+                QMessageBox::critical(this, "Runtime Error", errorMessage);
+            });
+
+    //TODO : instead of using lambda just connect the signal to the fucntions directly
+    connect(m_processorManager, &ProcessorManager::updateDisassemblySignal, this,
+            [this](const QString &disassemblyText)
+            {
+                auto editorTab = dynamic_cast<EditorTab *>(m_tabs[TabIndex::EditorTabIndex]);
+                if (editorTab)
+                {
+                    editorTab->updateDisassemblyView(disassemblyText.toStdString());
+                }
+            });
+    connect(m_processorManager, &ProcessorManager::updateEditorHighlightSignal, this,
+            [this](const std::vector<std::pair<int,std::string>> &editorLines, 
+            const std::vector<std::pair<int,std::string>> &disassemblyLines)
+            {
+                auto editorTab = dynamic_cast<EditorTab *>(m_tabs[TabIndex::EditorTabIndex]);
+                if (editorTab)
+                {
+                    editorTab->highlightLines(editorLines, disassemblyLines);
+                }
+            });
+    connect(&ThemeManager::getInstance(), &ThemeManager::themeChangedSignal, 
+            this, &MainWindow::themeChangedSlot);
 }
 
 void MainWindow::setUpStatusBar()

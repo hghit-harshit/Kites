@@ -29,7 +29,7 @@
   <customwidget>
    <class>CircuitView</class>
    <extends>QGraphicsView</extends>
-   <header>ui/processor/circuit_view.h</header>
+   <header>ui/processor_tab/circuit_view.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

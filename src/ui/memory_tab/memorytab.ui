@@ -72,7 +72,7 @@
   <customwidget>
    <class>MemoryTableView</class>
    <extends>QTableView</extends>
-   <header>ui/memory/memory_table_view.h</header>
+   <header>ui/memory_tab/memory_table_view.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

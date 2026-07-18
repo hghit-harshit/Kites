@@ -104,7 +104,8 @@ void EditorTab::updateDisassemblyView(const std::string &disassembledCode)
     m_disassemblyView->setPlainText(QString::fromStdString(disassembledCode));
 }
 
-void EditorTab::highlightLines(const QVariantMap &editorLines, const QVariantMap &disassemblyLines)
+void EditorTab::highlightLines(const std::vector<std::pair<int,std::string>> &editorLines, 
+const std::vector<std::pair<int,std::string>> &disassemblyLines)
 {
     m_editor->setLinesToHighlight(editorLines);
     m_disassemblyView->setLinesToHighlight(disassemblyLines);

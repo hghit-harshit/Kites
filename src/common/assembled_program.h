@@ -23,7 +23,7 @@ struct AssembledProgram
     std::map<unsigned int, unsigned int> line_number_instruction_number_mapping;
     std::map<unsigned int, unsigned int> instruction_number_line_number_mapping;
     std::map<unsigned int, unsigned int> instruction_number_disassembly_mapping;
-
+    std::map<unsigned int, std::string > instruction_number_instruction_text_mapping;
     std::vector<std::pair<ICUnit, bool>> intermediate_code;
 
     // std::vector<std::pair<std::string, SymbolData>> symbol_table;

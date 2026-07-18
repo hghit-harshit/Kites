@@ -93,12 +93,12 @@
   <customwidget>
    <class>CompilerEditor</class>
    <extends>QPlainTextEdit</extends>
-   <header location="global">ui/compiler/compiler_editor.h</header>
+   <header location="global">ui/compiler_tab/compiler_editor.h</header>
   </customwidget>
   <customwidget>
    <class>Editor</class>
    <extends>QPlainTextEdit</extends>
-   <header location="global">ui/editor/main_editor.h</header>
+   <header location="global">ui/editor_tab/main_editor.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

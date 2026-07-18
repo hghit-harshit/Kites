@@ -140,41 +140,6 @@ void CircuitScene::fitTableToCircuit(const QString &vmType)
     qDebug() << "Table set up with" << m_columnKeys.size() << "columns, width:" << totalWidth;
 }
 
-void CircuitScene::vmStateChangedSlot(const QMap<QString, QVariant> &processorState)
-{
-    if (!m_instructionTable || m_columnKeys.isEmpty())
-        return;
-
-    QVariantMap instructionMap = processorState.value("CurrentInstructionsText").toMap();
-    if (instructionMap.isEmpty())
-        return;
-
-    // ── ONLY update values, never touch structure ──
-    for (int col = 0; col < m_columnKeys.size(); ++col)
-    {
-        const QString &key = m_columnKeys[col];
-        if (!instructionMap.contains(key))
-            continue;
-
-        QString instStr = instructionMap.value(key).toString();
-
-        QTableWidgetItem *item = m_instructionTable->item(0, col);
-        if (!item)
-        {
-            item = new QTableWidgetItem();
-            m_instructionTable->setItem(0, col, item);
-        }
-        item->setText(instStr); // just update text, nothing else
-        if (instStr == "NOP")
-        {
-            item->setForeground(Qt::red);
-        }
-        else
-        {
-            item->setForeground(Qt::white);
-        }
-    }
-}
 
 void CircuitScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {

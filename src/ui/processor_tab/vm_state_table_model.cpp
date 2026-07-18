@@ -5,8 +5,7 @@ namespace Kites
 VMStateTableModel::VMStateTableModel(QObject *parent, ProcessorManager *vmManager)
     : QAbstractTableModel(parent), m_vmManager(vmManager)
 {
-    connect(m_vmManager, &ProcessorManager::processorStateChangedSignal, this,
-            &VMStateTableModel::vmStateChangedSlot);
+
 }
 
 int VMStateTableModel::rowCount(const QModelIndex &parent) const

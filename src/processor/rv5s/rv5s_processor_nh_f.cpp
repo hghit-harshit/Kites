@@ -31,8 +31,6 @@ RV5StageProcessorNHF::RV5StageProcessorNHF() : RV5StageVM_Base()
     circuit_scene_ = std::make_unique<Kites::RV5StageVM_NH_F_CircuitScene>();
     connect(this, &ProcessorBase::updateCircuitStateSignal, circuit_scene_.get(),
             &Kites::RV5StageVM_NH_F_CircuitScene::updateCircuitState);
-    connect(this, &ProcessorBase::processorStateChangedSignal, circuit_scene_.get(),
-            &Kites::RV5StageVM_NH_F_CircuitScene::vmStateChangedSlot);
 #endif
     Reset();
 

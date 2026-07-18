@@ -8,6 +8,7 @@
 #include "common/assembled_program.h"
 #include "common/instruction_types.h"
 #include "utils/to_index.hpp"
+#include "processor/processor_state.h"
 
 namespace Kites
 {
@@ -38,7 +39,7 @@ signals:
     void profilerReset();
 
 public slots:
-    void processorStateChangedSlot(const &processorState);
+    void processorClockedSlot(const ProcessorState& processorState);
 
 public:
     // Get instruction type for a specific line

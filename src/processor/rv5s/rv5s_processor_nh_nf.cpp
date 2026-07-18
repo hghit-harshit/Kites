@@ -25,9 +25,6 @@
 
 namespace Kites
 {
-// NOP instruction: ADDI x0, x0, 0
-constexpr uint32_t NOP = 0x00000013;
-
 // --- VmBase Pure Virtual Method Implementations (Run, DebugRun, Reset, Step) ---
 RV5StageProcessorNHNF::RV5StageProcessorNHNF() : RV5StageVM_Base()
 {
@@ -37,8 +34,6 @@ RV5StageProcessorNHNF::RV5StageProcessorNHNF() : RV5StageVM_Base()
     circuit_scene_ = std::make_unique<Kites::RV5StageVM_NH_NF_CircuitScene>();
     connect(this, &ProcessorBase::updateCircuitStateSignal, circuit_scene_.get(),
             &Kites::RV5StageVM_NH_NF_CircuitScene::updateCircuitState);
-    connect(this, &ProcessorBase::processorStateChangedSignal, circuit_scene_.get(),
-            &Kites::RV5StageVM_NH_NF_CircuitScene::vmStateChangedSlot);
 #endif
     Reset();
     active_wires_.append("PC_to_IM");

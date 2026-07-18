@@ -22,31 +22,16 @@
 
 namespace Kites
 {
-// NOP instruction: ADDI x0, x0, 0
-constexpr uint32_t NOP = 0x00000013;
-
 using namespace alu;
 
 // --- RV5StageProcessorHNF Class Implementation ---
 
 RV5StageProcessorHNF::RV5StageProcessorHNF() : RV5StageVM_Base()
 {
-    // Initialize VmBase members
-    // program_counter_ = 0;
-    // instructions_retired_ = 0;
-    // cycle_s_ = 0;
-    // stall_cycles_ = 0;
-
-    // // Initialize local members
-    // stall_fetch_and_decode_ = false;
-
-    // Reset components and history
 #ifndef DISABLE_GUI
     circuit_scene_ = std::make_unique<Kites::RV5StageVM_H_NF_CircuitScene>();
     connect(this, &ProcessorBase::updateCircuitStateSignal, circuit_scene_.get(),
             &Kites::RV5StageVM_H_NF_CircuitScene::updateCircuitState);
-    connect(this, &ProcessorBase::processorStateChangedSignal, circuit_scene_.get(),
-            &Kites::RV5StageVM_H_NF_CircuitScene::vmStateChangedSlot);
 #endif
     Reset();
 

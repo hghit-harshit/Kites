@@ -38,6 +38,7 @@ public:
     ProcessorType getProcessorType();
     void reset();
     void loadProgram(const AssembledProgram &program);
+    void loadProgram(const std::string &sourceText);
     void run();
     void step();
     void debugRun();
@@ -53,7 +54,7 @@ public:
 
     RegisterFile *getRegisterFile() const;
     MemoryController *getMemoryController() const;
-    Kites::CircuitScene *getCircuitScene() const;
+    CircuitScene *getCircuitScene() const;
     const Profiler* getProfiler() const;
 
     // gui calls these functions to get the current state of the vm
@@ -70,10 +71,13 @@ public:
     /**
      * @brief Get the lines to highlight along with the text to put in the lighligted line
      */
-    std::vector<std::pair<int, std::string_view>> getHighlightInfo() const;
+    
 
 
 private:
+    void updateEditorHighlight(const ProcessorState &processorState);
+
+    AssembledProgram m_currentProgram{};
     std::unique_ptr<ProcessorBase> m_currentProcessor{};
     ProcessorType m_currentProcessorType;
     Profiler m_profiler{};
@@ -81,12 +85,16 @@ private:
     unsigned int m_stepDelayMs{1000};
 public slots:
     void runSlot();
+    void processorClockedSlot(const ProcessorState &processorState);
 
 signals:
     void runFinishedSignal();
     void processorStateChangedSignal();
     void processorPausedAtBreakpointSignal();
     void runErrorSignal(const QString &errorMessage);
+    void updateDisassemblySignal(const QString &disassemblyText);
+    void updateEditorHighlightSignal(const std::vector<std::pair<int,std::string>> &editorLines, 
+        const std::vector<std::pair<int,std::string>> &disassemblyLines);
     // std::unique_ptr<> m_instance;
 };
 }//namespace Kites

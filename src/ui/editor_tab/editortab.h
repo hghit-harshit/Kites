@@ -4,7 +4,6 @@
 #include "main_editor.h"
 #include "processor/processor_manager.h"
 #include "ui/common/kitestab.h"
-#include "ui/register_table/registercontainer.h"
 #include <QPlainTextEdit>
 #include <QString>
 #include <QTextCharFormat>
@@ -29,15 +28,14 @@ class EditorTab : public KitesTab
     std::string getRawText();
     void setRawText(const QString &text);
     void resetErrorLines();
-    void highlightLines(const std::vector<uint64_t> &editorLines, const std::vector<uint64_t> &disassemblyLines);
+    void highlightLines(const std::vector<std::pair<int,std::string>> &editorLines, 
+      const std::vector<std::pair<int,std::string>> &disassemblyLines);
     void setCanWrite(bool canWrite);
     void setExpandedLocked(bool locked);
     std::vector<uint64_t> getBreakpoints() const;
     void clearHighlights();
 
   public slots:
-    void processorStateChangedSlot();
-
     void onExpandButtonClicked(bool checked);
     void switchToExpandedView();
 

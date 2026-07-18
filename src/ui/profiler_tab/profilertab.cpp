@@ -7,7 +7,7 @@
 
 namespace Kites
 {
-ProfilerTab::ProfilerTab(QWidget *parent, Profiler *profiler)
+ProfilerTab::ProfilerTab(QWidget *parent, const Profiler *profiler)
     : KitesTab(parent), ui(new Ui::ProfilerTab), m_profiler(profiler)
 {
     ui->setupUi(this);

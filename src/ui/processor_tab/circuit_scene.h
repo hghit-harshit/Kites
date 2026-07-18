@@ -46,7 +46,6 @@ class CircuitScene : public QGraphicsScene
     void fitTableToCircuit(const QString &vmType);
   public slots:
     void updateCircuitState(const QList<QString> &wireList);
-    void vmStateChangedSlot(const QMap<QString, QVariant> &processorState);
     // maybe later we merge this two functions but for now this will have to do
 };
 } // namespace Kites

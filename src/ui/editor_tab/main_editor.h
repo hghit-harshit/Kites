@@ -12,11 +12,11 @@ namespace Kites
 class LineNumberArea; // forward declaration
 class Editor : public QPlainTextEdit
 {
-  public:
+public:
     Editor(QWidget *parent = nullptr, bool isTextEditor = true);
     void setErrorMessage(int line, const QString &message);
     void resetErrors();
-    void setLinesToHighlight(const QVariantMap &linesToHighlight);
+    void setLinesToHighlight(const std::vector<std::pair<int,std::string>> &linesToHighlight);
 
     // these fuctions are for the line number
     // and breakpoint area
@@ -32,21 +32,21 @@ class Editor : public QPlainTextEdit
 
     void insertCompletion(const QString &completion);
 
-  protected:
+protected:
     // void mouseMoveEvent(QMouseEvent* event) override;
     bool event(QEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
 
-  private:
+private:
     QString textUnderCursor();
 
     QCompleter *m_autoCompleter = nullptr;
 
     std::map<int, QString> m_errorMessages;
     SyntaxHighlighter *m_syntaxHighlighter;
-    QVariantMap m_LinesToHighlight;
+    std::vector<std::pair<int, std::string>> m_LinesToHighlight;
     std::vector<uint64_t> m_breakPoints; // to pass to the vm
     // QSet<int> m_breakPointsSet; // for quick lookup
     // int m_gutterWidth = 30;
@@ -57,7 +57,7 @@ class Editor : public QPlainTextEdit
 
 class DisassemblyEditor : public Editor
 {
-  public:
+public:
     DisassemblyEditor(QWidget *parent = nullptr) : Editor(parent, false)
     {
         setReadOnly(true);
@@ -66,7 +66,7 @@ class DisassemblyEditor : public Editor
 
 class LineNumberArea : public QWidget
 {
-  public:
+public:
     LineNumberArea(Editor *editor) : QWidget(editor), m_editor(editor)
     {
     }
@@ -75,7 +75,7 @@ class LineNumberArea : public QWidget
         return QSize(m_editor->lineNumberAreaWidth(), 0);
     }
 
-  protected:
+protected:
     void paintEvent(QPaintEvent *event) override
     {
         m_editor->lineNumberAreapaintEvent(event);
@@ -89,7 +89,7 @@ class LineNumberArea : public QWidget
         m_editor->lineNumberAreaMouseMoveEvent(event);
     }
 
-  private:
+private:
     Editor *m_editor;
 };
 

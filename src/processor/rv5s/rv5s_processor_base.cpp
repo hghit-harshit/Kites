@@ -37,15 +37,16 @@ void RV5StageVM_Base::Run()
                 break;
         }
         Step();
-        setPorcessorState();
         SetActiveWireNames();
         cpi_ = instructions_retired_
                    ? static_cast<float>(cycle_s_) / static_cast<float>(instructions_retired_)
                    : 0.0f;
         ipc_ = cycle_s_ ? static_cast<float>(instructions_retired_) / static_cast<float>(cycle_s_)
                         : 0.0f;
+        
+        setProcessorState();
         emit updateCircuitStateSignal(active_wires_);
-        emit processorStateChangedSignal();
+        emit processorClockedSignal(processor_state_);
 
         // handling the delay
         {
@@ -58,7 +59,7 @@ void RV5StageVM_Base::Run()
     }
     if (stop_requested_)
     {
-        emit processorStateChangedSignal();
+        emit processorClockedSignal(processor_state_);
         // we emit the vm state changed signal once more to update the ui
         // this will get rid of any highlights as they pause when we stop
         // before execution is complete
@@ -139,61 +140,9 @@ void RV5StageVM_Base::finalize_step_delta()
     }
 }
 
-void RV5StageVM_Base::setPorcessorState()
+void RV5StageVM_Base::setProcessorState()
 {
     processorState.reset();
-    processorState.statistics = ProcessorStatistics{
-        .cycleCount = cycle_s_,
-        .instructionsRetiredCount = instructions_retired_,
-        .branchMispredictionCount = branch_mispredictions_,
-        .stallCycleCount = stall_cycles_,
-        .cpi = cpi_,
-        .ipc = ipc_};
-    
-    processorState.pipelineState = PipelineState{
-        .instructionTexts = {
-            instruction_set::disassemble(current_instruction_),
-            (if_id_reg_.instruction != NOP
-                 ? instruction_set::disassemble(if_id_reg_.instruction)
-                 : "NOP"),
-            (id_ex_reg_.instruction != NOP
-                 ? instruction_set::disassemble(id_ex_reg_.instruction)
-                 : "NOP"),
-            (ex_mem_reg_.instruction != NOP
-                 ? instruction_set::disassemble(ex_mem_reg_.instruction)
-                 : "NOP"),
-            (mem_wb_reg_.instruction != NOP
-                 ? instruction_set::disassemble(mem_wb_reg_.instruction)
-                 : "NOP")},
-        .editorLineNumbers = {
-            program_.instruction_number_line_number_mapping[(program_counter_) / 4],
-            (if_id_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_line_number_mapping[(if_id_reg_.pc) / 4]
-                 : -1),
-            (id_ex_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_line_number_mapping[(id_ex_reg_.pc) / 4]
-                 : -1),
-            (ex_mem_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_line_number_mapping[(ex_mem_reg_.pc) / 4]
-                 : -1),
-            (mem_wb_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_line_number_mapping[(mem_wb_reg_.pc) / 4]
-                 : -1)},
-        .disassemblyLineNumbers = {
-            program_.instruction_number_disassembly_mapping[(program_counter_) / 4],
-            (if_id_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_disassembly_mapping[(if_id_reg_.pc) / 4]
-                 : -1),
-            (id_ex_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_disassembly_mapping[(id_ex_reg_.pc) / 4]
-                 : -1),
-            (ex_mem_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_disassembly_mapping[(ex_mem_reg_.pc) / 4]
-                 : -1),
-            (mem_wb_reg_.pc != INVALID_PC
-                 ? program_.instruction_number_disassembly_mapping[(mem_wb_reg_.pc) / 4]
-                 : -1)}};
-    
 }
 
 void RV5StageVM_Base::pipeline_decode()
@@ -901,10 +850,10 @@ void RV5StageVM_Base::Undo()
                : 0.0f;
     ipc_ =
         cycle_s_ ? static_cast<float>(instructions_retired_) / static_cast<float>(cycle_s_) : 0.0f;
-    setPorcessorState();
+    setProcessorState();
     SetActiveWireNames();
     emit updateCircuitStateSignal(active_wires_);
-    emit processorStateChangedSignal();
+    emit processorClockedSignal(processor_state_);
 }
 
 void RV5StageVM_Base::Redo()
@@ -961,10 +910,10 @@ void RV5StageVM_Base::Redo()
                : 0.0f;
     ipc_ =
         cycle_s_ ? static_cast<float>(instructions_retired_) / static_cast<float>(cycle_s_) : 0.0f;
-    setPorcessorState();
+    setProcessorState();
     SetActiveWireNames();
     emit updateCircuitStateSignal(active_wires_);
-    emit processorStateChangedSignal();
+    emit processorClockedSignal(processor_state_);
 }
 
 void RV5StageVM_Base::print_pipeline_registers_debug()

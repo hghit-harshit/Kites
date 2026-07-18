@@ -52,7 +52,7 @@
        <item>
         <widget class="QStackedWidget" name="stackedWidget">
          <property name="currentIndex">
-          <number>0</number>
+          <number>1</number>
          </property>
          <widget class="QWidget" name="page">
           <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -101,12 +101,12 @@
   <customwidget>
    <class>Editor</class>
    <extends>QPlainTextEdit</extends>
-   <header location="global">ui/editor/main_editor.h</header>
+   <header location="global">ui/editor_tab/main_editor.h</header>
   </customwidget>
   <customwidget>
    <class>DisassemblyEditor</class>
    <extends>QPlainTextEdit</extends>
-   <header>ui/editor/main_editor.h</header>
+   <header>ui/editor_tab/main_editor.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

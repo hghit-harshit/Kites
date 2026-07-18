@@ -24,7 +24,7 @@ class ProfilerTab : public KitesTab
     Q_OBJECT
 
 public:
-    explicit ProfilerTab(QWidget *parent = nullptr, Profiler *profiler = nullptr);
+    explicit ProfilerTab(QWidget *parent = nullptr, const Profiler *profiler = nullptr);
     ~ProfilerTab();
 
 public slots:
@@ -36,7 +36,7 @@ public slots:
 
 private:
     Ui::ProfilerTab *ui;
-    Profiler *m_profiler = nullptr;
+    const Profiler *m_profiler = nullptr;
 };
 } // namespace Kites
 #endif // PROFILERTAB_H
