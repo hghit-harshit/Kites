@@ -5,5 +5,7 @@
         <file>material_dark.qss</file>
         <file>elegant_dark.qss</file>
         <file>aqua_light.qss</file>
+        <file>EasyCode.qss</file>
+        <file>elegant_light.qss</file>
     </qresource>
 </RCC>
