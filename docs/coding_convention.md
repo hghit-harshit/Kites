@@ -20,8 +20,7 @@
   eg. prefer m_wayCount instead of m_numWays
 
 ## Exceptions
-* The Enum Value for AluOP are named using ALL_CAPS as they align better with
-their names in the official ISA Documentation.
+* Hardware/ISA Configurations: Enum values that map directly to hardware structures, ISA documentation, or processor configurations (e.g., AluOP, PipelineStage, VMType) may use ALL_CAPS to maintain alignment with architectural nomenclature.
 * Namespace enveloping the whole codebase is Kites, but all other namespaces
   should follow the coding convention.
 
