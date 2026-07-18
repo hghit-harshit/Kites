@@ -168,7 +168,6 @@ void EditorTab::setErrorLinesFromFile(const std::filesystem::path &filePath)
         }
         QTextEdit::ExtraSelection selection;
         selection.format = m_squiggleFormat;
-        qDebug() << "Setting tooltip for line" << errorObj["line"].toInt() << ":" << message;
         m_editor->setErrorMessage(line - 1, message); // passing error to editor for tooltip display
         // m_errorMessages[line] = message;
         // selection.format.setToolTip(message);

@@ -8,7 +8,6 @@ class RV5StageVM_H_F_CircuitScene : public CircuitScene
   public:
     explicit RV5StageVM_H_F_CircuitScene(QObject *parent = nullptr) : CircuitScene(parent)
     {
-        qDebug() << "Loading RVSS Circuit Scene";
         loadScene(":/circuit_designs/H_F_Processor.json");
     }
 };
