@@ -9,12 +9,10 @@
 #pragma once
 
 #include <cstdint>
+#include "processor/processor_constants.h"
 namespace Kites
 {
 // --- Data passed from Fetch (IF) to Decode (ID) ---
-
-constexpr uint32_t NOP = 0x00000013;  
-constexpr uint64_t INVALID_PC = UINT64_MAX;  
 struct IF_ID_Register
 {
     uint32_t instruction {NOP};  // A NOP instruction (addi x0, x0, 0)

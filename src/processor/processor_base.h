@@ -12,6 +12,7 @@
 #include "processor/processor_state.h"
 #include "processor/registers.h"
 #include "ui/processor_tab/circuit_scene.h"
+#include "processor/processor_constants.h"
 #include <QList>
 #include <QMap>
 #include <QMutex>
