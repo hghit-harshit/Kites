@@ -81,7 +81,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
                 QMessageBox::critical(this, "Runtime Error", errorMessage);
             });
 
-    //TODO : instead of using lambda just connect the signal to the fucntions directly
+    //TODO : instead of using lambda just connect the signal to the functions directly
     connect(m_processorManager, &ProcessorManager::updateDisassemblySignal, this,
             [this](const QString &disassemblyText)
             {
@@ -504,7 +504,7 @@ void MainWindow::runFinishedSlot()
     auto *editor = dynamic_cast<EditorTab *>(m_tabs[TabIndex::EditorTabIndex]);
     editor->setCanWrite(true); // re-enable writing in editor when vm stops
     editor->setExpandedLocked(false);
-    editor->clearHighlights(); // we clear any highlights when vm stops
+    editor->clearHighlights(); // we clear any highlights when processor stops
     // other we are not alble to move the cursor as the paint
     //  keeps jumping to last highlighted line
     QList<QToolBar *> toolbars = this->findChildren<QToolBar *>();

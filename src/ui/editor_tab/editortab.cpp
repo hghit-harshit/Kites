@@ -121,6 +121,7 @@ void EditorTab::setCanWrite(bool canWrite)
 void EditorTab::clearHighlights()
 {
     m_editor->clearHighlights();
+    m_expandedView->clearHighlights();
     m_disassemblyView->clearHighlights();
 }
 

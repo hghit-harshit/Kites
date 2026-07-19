@@ -102,7 +102,7 @@ void RV5StageVM_Base::Reset()
     current_delta_ = RV5StageStepDelta{};
     undo_stack_ = std::stack<RV5StageStepDelta>();
     redo_stack_ = std::stack<RV5StageStepDelta>();
-    processorState.reset();
+    processor_state_.reset();
 }
 
 void RV5StageVM_Base::begin_step_delta()
@@ -142,9 +142,11 @@ void RV5StageVM_Base::finalize_step_delta()
 
 void RV5StageVM_Base::setProcessorState()
 {
-    processorState.reset(); 
-    processorState.programCounters = 
-    {program_counter_, if_id_reg_.pc, id_ex_reg_.pc, ex_mem_reg_.pc, mem_wb_reg_.pc};
+    processor_state_.programCounters[toIndex(PipelineStage::IF)]  = program_counter_;
+    processor_state_.programCounters[toIndex(PipelineStage::ID)]  = if_id_reg_.pc;
+    processor_state_.programCounters[toIndex(PipelineStage::EX)]  = id_ex_reg_.pc;
+    processor_state_.programCounters[toIndex(PipelineStage::MEM)] = ex_mem_reg_.pc;
+    processor_state_.programCounters[toIndex(PipelineStage::WB)]  = mem_wb_reg_.pc;
 }
 
 void RV5StageVM_Base::pipeline_decode()

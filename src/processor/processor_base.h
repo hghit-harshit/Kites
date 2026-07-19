@@ -106,7 +106,6 @@ class ProcessorBase : public QObject
 
     QList<QString> active_wires_{};
     size_t always_active_wires_count_{};
-    ProcessorState processorState{};
     // the list of wire that will be active in this cycle of vm
     // well send this to the gui to highlight those wires
 

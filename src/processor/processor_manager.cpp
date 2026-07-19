@@ -40,9 +40,8 @@ ProcessorManager::ProcessorManager(QObject *parent, ProcessorType vmType) : QObj
             &ProcessorManager::processorPausedAtBreakpointSignal, Qt::DirectConnection);
     // here we connect the vm state changed signal to the vm manager signal
     // and this will be further connected to the mainwindow slot to update the ui
-
-    connect(m_currentProcessor.get(), &ProcessorBase::processorClockedSignal, &m_profiler,
-            &Profiler::processorClockedSlot, Qt::DirectConnection);
+    connect(m_currentProcessor.get(), &ProcessorBase::processorClockedSignal, this,
+            &ProcessorManager::processorClockedSlot, Qt::DirectConnection);
 }
 
 void ProcessorManager::changeProcessor(ProcessorType vmType)
@@ -52,6 +51,8 @@ void ProcessorManager::changeProcessor(ProcessorType vmType)
     m_currentProcessor->step_delay_ = m_stepDelayMs;
     connect(m_currentProcessor.get(), &ProcessorBase::processorClockedSignal, this,
             &ProcessorManager::processorStateChangedSignal, Qt::DirectConnection);
+    connect(m_currentProcessor.get(), &ProcessorBase::processorClockedSignal, this,
+            &ProcessorManager::processorClockedSlot, Qt::DirectConnection);        
     connect(m_currentProcessor.get(), &ProcessorBase::processorPausedAtBreakpointSignal, this,
             &ProcessorManager::processorPausedAtBreakpointSignal, Qt::DirectConnection);
     // create new connections for the new VM
@@ -59,6 +60,7 @@ void ProcessorManager::changeProcessor(ProcessorType vmType)
 
 void ProcessorManager::loadProgram(const AssembledProgram &program)
 {
+    m_currentProgram = program;
     m_currentProcessor->LoadProgram(program);
 }
 
@@ -98,7 +100,7 @@ void ProcessorManager::updateEditorHighlight(const ProcessorState &processorStat
     std::vector<std::pair<int,std::string>> disassemblyLines;
     if(m_currentProcessorType == ProcessorType::RVSS)
     {
-        auto programCounter = processorState.programCounters[toIndex(PipelineStage::IF)];
+        auto programCounter = processorState.programCounters[0];
         auto editorLineNumber = 
         m_currentProgram.instruction_number_line_number_mapping.at(programCounter/4);
         auto disassemblyLineNumber = 
@@ -112,15 +114,15 @@ void ProcessorManager::updateEditorHighlight(const ProcessorState &processorStat
         for(size_t i = 0; i < toIndex(PipelineStage::PipelineStageCount); ++i)
         {
             auto stagePC = processorState.programCounters[i];
-            if(stagePC == 0) continue; // skip stages that are not active
-            {
-                editorLines.emplace_back(
-                m_currentProgram.instruction_number_line_number_mapping.at(stagePC/4),
-                pipelineStageToString(static_cast<PipelineStage>(stagePC))); 
-                disassemblyLines.emplace_back(
-                m_currentProgram.instruction_number_disassembly_mapping.at(stagePC/4),
-                pipelineStageToString(static_cast<PipelineStage>(stagePC)));
-            }
+            if(stagePC == INVALID_PC) continue; // skip stages that are not active
+            
+            editorLines.emplace_back(
+            m_currentProgram.instruction_number_line_number_mapping.at(stagePC/4),
+            pipelineStageToString(static_cast<PipelineStage>(i))); 
+            disassemblyLines.emplace_back(
+            m_currentProgram.instruction_number_disassembly_mapping.at(stagePC/4),
+            pipelineStageToString(static_cast<PipelineStage>(i)));
+            
         }
         
     }
