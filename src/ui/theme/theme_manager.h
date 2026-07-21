@@ -5,7 +5,7 @@
 #include <QColor>
 #include <array>
 #include <QTextCharFormat>
-#include "utils/to_index.hpp"
+#include "utils/to_index.h"
 namespace Kites
 {
 

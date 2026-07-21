@@ -3,7 +3,7 @@
 #include "ui/common/kitestab.h"
 #include "ui/register_table/registercontainer.h"
 #include "ui/theme/theme_manager.h"
-#include "utils/to_index.hpp"
+#include "utils/to_index.h"
 #include <QListWidget>
 #include <QMainWindow>
 #include <QStackedWidget>

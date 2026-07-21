@@ -1,6 +1,6 @@
 #pragma once
 #include "processor/processor_types.h"
-#include "utils/to_index.hpp"
+#include "utils/to_index.h"
 #include <array>
 #include <cstdint>
 #include <string>

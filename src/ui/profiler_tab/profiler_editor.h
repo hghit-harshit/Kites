@@ -9,12 +9,13 @@
 
 namespace Kites
 {
-
-class ExecutionCountArea;
-class InstructionTypeArea;
+class ExecutionCountGutterColumn; 
+class InstructionTypeGutterColumn; // forward declaration
 class ProfilerEditor : public KitesEditor
 {
     Q_OBJECT
+    friend class ExecutionCountGutterColumn;
+    friend class InstructionTypeGutterColumn;
 public:
     explicit ProfilerEditor(QWidget *parent = nullptr);
     ~ProfilerEditor() {};
@@ -27,21 +28,13 @@ public:
                                  &instructionTypes); // line number to instruction type mapping
     void clearExecutionCount();
 
-    int countAreaWidth() const;
-    int typeAreaWidth() const;
+    // int countAreaWidth() const;
+    // int typeAreaWidth() const;
 
-    void paintCountArea(QPaintEvent *event);
-    void paintTypeArea(QPaintEvent *event);
-
-protected:
-    void resizeEvent(QResizeEvent *event) override;
-	int rightViewMargin() const override;
-public slots:
-    void updateAreas(const QRect &rect, int dy);
+    // void paintCountArea(QPaintEvent *event);
+    // void paintTypeArea(QPaintEvent *event);
 
 private:
-    ExecutionCountArea *m_ExecutionCountArea;
-    InstructionTypeArea *m_instructionTypeArea;
     
     SyntaxHighlighter *m_syntaxHighlighter = nullptr;
     std::map<int, int> m_lineNumberToExecutionCounts;
@@ -51,49 +44,5 @@ private:
     QColor heatColor(int hitCount) const; // Helper function to determine color based on hit count
     QColor heatBackgroundColor(
         int hitCount) const; // Helper function to determine background color based on hit count
-};
-
-class ExecutionCountArea : public QWidget
-{
-public:
-    ExecutionCountArea(ProfilerEditor *editor) : QWidget(editor), m_profilerEditor(editor)
-    {
-    }
-
-    QSize sizeHint() const override
-    {
-        return QSize(m_profilerEditor->countAreaWidth(), 0);
-    }
-
-protected:
-    void paintEvent(QPaintEvent *event) override
-    {
-        m_profilerEditor->paintCountArea(event);
-    }
-
-private:
-    ProfilerEditor *m_profilerEditor;
-};
-
-class InstructionTypeArea : public QWidget
-{
-public:
-    InstructionTypeArea(ProfilerEditor *editor) : QWidget(editor), m_profilerEditor(editor)
-    {
-    }
-
-    QSize sizeHint() const override
-    {
-        return QSize(m_profilerEditor->typeAreaWidth(), 0);
-    }
-
-protected:
-    void paintEvent(QPaintEvent *event) override
-    {
-        m_profilerEditor->paintTypeArea(event);
-    }
-
-private:
-    ProfilerEditor *m_profilerEditor;
 };
 }; // namespace Kites

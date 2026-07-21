@@ -2,7 +2,7 @@
 //#include <QObject>
 #include <QIcon>
 #include <array>
-#include "utils/to_index.hpp"
+#include "utils/to_index.h"
 namespace Kites
 {
 enum class Icon

@@ -7,7 +7,7 @@
 #include <string>
 #include "common/assembled_program.h"
 #include "common/instruction_types.h"
-#include "utils/to_index.hpp"
+#include "utils/to_index.h"
 #include "processor/processor_state.h"
 
 namespace Kites
