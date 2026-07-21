@@ -1,5 +1,5 @@
 #include "instruction_type_count_model.h"
-#include "utils/to_index.hpp"
+#include "utils/to_index.h"
 namespace Kites
 { 
 namespace instr = instruction_set;

@@ -106,7 +106,7 @@
   <customwidget>
    <class>DisassemblyEditor</class>
    <extends>QPlainTextEdit</extends>
-   <header>ui/editor_tab/main_editor.h</header>
+   <header>ui/editor_tab/disassembly_editor.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

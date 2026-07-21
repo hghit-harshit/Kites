@@ -2,6 +2,7 @@
 #define EDITORTAB__H
 
 #include "main_editor.h"
+#include "disassembly_editor.h"
 #include "processor/processor_manager.h"
 #include "ui/common/kitestab.h"
 #include <QPlainTextEdit>
@@ -41,7 +42,7 @@ class EditorTab : public KitesTab
 
   private:
     Editor *m_editor = nullptr;
-    Editor *m_disassemblyView = nullptr;
+    DisassemblyEditor *m_disassemblyView = nullptr;
     Editor *m_expandedView = nullptr;
     // m_disassemblyView is an object of the same class as m_editor
     // but well make it read only and use it to show disassembled code

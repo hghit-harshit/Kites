@@ -2,7 +2,7 @@
 #include <array>
 #include <QAbstractTableModel>
 #include "common/instruction_types.h"
-#include "utils/to_index.hpp"
+#include "utils/to_index.h"
 namespace Kites
 {
 

@@ -1,26 +1,21 @@
 #include "main_editor.h"
-#include <QAbstractItemView> // this is needed for the auto completer popup
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QScrollBar> // same reason as above
 #include <QTextBlock>
 #include <QToolTip>
 #include <set>
-
-// #include "ui/linenumberarea.h"
+#include "ui/common/line_number_gutter_column.h"
+#include "break_point_gutter_column.h"
 namespace Kites
 {
-Editor::Editor(QWidget *parent, bool isTextEditor)
-    : QPlainTextEdit(parent), m_isTextEditor(isTextEditor)
-//: m_LinesToHighlight({{".",1}})
+Editor::Editor(QWidget *parent )
+    : KitesEditor(parent)
 {
-    m_breakpointInteractionEnabled = isTextEditor;
     setMouseTracking(true);
     m_syntaxHighlighter = new SyntaxHighlighter(this->document());
     int id = QFontDatabase::addApplicationFont(":/fonts/Monaco.ttf");
     QString family = QFontDatabase::applicationFontFamilies(id).at(0);
-
     QFont font(family);
     font.setPointSize(11);
     font.setFixedPitch(true); // monospaced
@@ -28,34 +23,9 @@ Editor::Editor(QWidget *parent, bool isTextEditor)
 
     const int tapspace = 4;
     setTabStopDistance(tapspace * fontMetrics().horizontalAdvance(' '));
-
-    if (!m_isTextEditor)
-        return;
-
-    connect(this, &QPlainTextEdit::blockCountChanged, this, [this](int /* newBlockCount */)
-            { setViewportMargins(lineNumberAreaWidth(), 0, 0, 0); });
-
-    connect(this, &QPlainTextEdit::updateRequest, this,
-            [this](const QRect &rect, int dy)
-            {
-                if (dy)
-                    m_lineNumberArea->scroll(0, dy);
-                else
-                    m_lineNumberArea->update(0, rect.y(), m_lineNumberArea->width(), rect.height());
-
-                if (rect.contains(viewport()->rect()))
-                    setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
-            });
-    m_lineNumberArea = new LineNumberArea(this);
-    setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
-
-    //---------Setting up auto completer---------
-    QStringList words = {"harshit"};
-    m_autoCompleter = new QCompleter(words, this);
-    m_autoCompleter->setWidget(this);
-
-    connect(m_autoCompleter, QOverload<const QString &>::of(&QCompleter::activated), this,
-            &Editor::insertCompletion);
+    addLeftGutterColumn(new BreakPointGutterColumn(this));
+    addLeftGutterColumn(new LineNumberGutterColumn(this));
+    updateViewPortMargins();
 }
 
 std::vector<uint64_t> Editor::getBreakpoints() const
@@ -66,7 +36,7 @@ std::vector<uint64_t> Editor::getBreakpoints() const
 void Editor::setBreakpoints(const std::vector<uint64_t> &breakpoints)
 {
     m_breakPoints = breakpoints;
-    update();
+    viewport()->update(); 
 }
 
 void Editor::setBreakpointInteractionEnabled(bool enabled)
@@ -89,66 +59,6 @@ void Editor::setLinesToHighlight(const std::vector<std::pair<int, std::string>> 
 {
     m_LinesToHighlight = linesToHighlight;
     viewport()->update(); // Trigger a repaint to show the highlights
-}
-
-void Editor::insertCompletion(const QString &completion)
-{
-    QTextCursor tc = textCursor();
-    int extra = completion.length() - m_autoCompleter->completionPrefix().length();
-    tc.movePosition(QTextCursor::Left);
-    tc.movePosition(QTextCursor::EndOfWord);
-    tc.insertText(completion.right(extra));
-    setTextCursor(tc);
-}
-
-QString Editor::textUnderCursor()
-{
-    QTextCursor tc = textCursor();
-    tc.select(QTextCursor::WordUnderCursor);
-    return tc.selectedText();
-}
-
-void Editor::keyPressEvent(QKeyEvent *event)
-{
-    if (m_autoCompleter && m_autoCompleter->popup()->isVisible())
-    {
-        switch (event->key())
-        {
-        case Qt::Key_Enter:
-        case Qt::Key_Return:
-        case Qt::Key_Escape:
-        case Qt::Key_Tab:
-        case Qt::Key_Backtab:
-            event->ignore();
-            return;
-        default:
-            break;
-        }
-    }
-
-    QPlainTextEdit::keyPressEvent(event);
-
-    if (!m_autoCompleter)
-        return;
-
-    QString prefix = textUnderCursor();
-    if (prefix.length() < 1)
-    {
-        m_autoCompleter->popup()->hide();
-        return;
-    }
-
-    if (prefix != m_autoCompleter->completionPrefix())
-    {
-        m_autoCompleter->setCompletionPrefix(prefix);
-        m_autoCompleter->popup()->setCurrentIndex(m_autoCompleter->completionModel()->index(0, 0));
-    }
-
-    QRect cr = cursorRect();
-    cr.setWidth(m_autoCompleter->popup()->sizeHintForColumn(0) +
-                m_autoCompleter->popup()->verticalScrollBar()->sizeHint().width());
-
-    m_autoCompleter->complete(cr);
 }
 
 void Editor::paintEvent(QPaintEvent *event)
@@ -191,131 +101,6 @@ void Editor::paintEvent(QPaintEvent *event)
     // we clear the lines to highlight after painting
     // otherwise the cursor will keep jumping to last highlighted line on every repaint
     // Now highlight the specified lines with gradient and draw messages
-}
-
-int Editor::lineNumberAreaWidth()
-{
-    int digits = 1;
-    int max = qMax(1, blockCount());
-    while (max >= 10)
-    {
-        max /= 10;
-        ++digits;
-    }
-    int space = 15 + fontMetrics().horizontalAdvance(QLatin1Char('1')) * digits;
-    return space; // extra padding
-}
-
-void Editor::resizeEvent(QResizeEvent *event)
-{
-    QPlainTextEdit::resizeEvent(event);
-
-    if (!m_lineNumberArea)
-        return;
-    QRect cr = contentsRect();
-    m_lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
-}
-
-void Editor::lineNumberAreapaintEvent(QPaintEvent *event)
-{
-    QPainter painter(m_lineNumberArea);
-    painter.fillRect(event->rect(), Qt::lightGray);
-
-    QTextBlock block = firstVisibleBlock();
-    int blockNumber = block.blockNumber();
-    int top = static_cast<int>(blockBoundingGeometry(block).translated(contentOffset()).top());
-    int bottom = top + static_cast<int>(blockBoundingRect(block).height());
-
-    while (block.isValid() && top <= event->rect().bottom())
-    {
-        if (block.isVisible() && bottom >= event->rect().top())
-        {
-            QString number = QString::number(blockNumber + 1); // +1 for 1-based line numbers
-            painter.setPen(Qt::black);
-            painter.drawText(0, top, lineNumberAreaWidth() - 5, fontMetrics().height(),
-                             Qt::AlignRight, number);
-
-            // Draw breakpoint indicator if exists
-            if (m_isTextEditor && std::find(m_breakPoints.begin(), m_breakPoints.end(),
-                                            blockNumber + 1) != m_breakPoints.end())
-            {
-                painter.setBrush(Qt::red);
-                painter.setPen(Qt::NoPen);
-                int radius = 8;
-                painter.drawEllipse(2, top + (fontMetrics().height() - radius) / 2, radius, radius);
-            }
-        }
-
-        block = block.next();
-        top = bottom;
-        bottom = top + static_cast<int>(blockBoundingRect(block).height());
-        ++blockNumber;
-    }
-}
-
-void Editor::lineNumberAreaMousePressEvent(QMouseEvent *event)
-{
-    if (!m_isTextEditor || !m_breakpointInteractionEnabled)
-        return;
-
-    auto toggleBreakpointAtLine = [this, event]()
-    {
-        QPoint clickPos = viewport()->mapFromGlobal(event->globalPosition().toPoint());
-        QTextCursor cursor = cursorForPosition(clickPos);
-
-        QTextBlock block = cursor.block();
-
-        // check if click is within the block's vertical bounds
-        // cause cusorForPosition returns nearest line if clicked below text
-        if (clickPos.y() >= blockBoundingGeometry(block).translated(contentOffset()).top() &&
-            clickPos.y() <= blockBoundingGeometry(block).translated(contentOffset()).bottom())
-        {
-            int lineNumber = block.blockNumber() + 1; // +1 for 1-based line numbers
-
-            auto it = std::find(m_breakPoints.begin(), m_breakPoints.end(), lineNumber);
-            if (it != m_breakPoints.end())
-            {
-                m_breakPoints.erase(it);
-            }
-            else
-            {
-                m_breakPoints.push_back(lineNumber);
-            }
-            update(); // Trigger a repaint to show/hide the breakpoint indicator
-        }
-    };
-
-    if (event->button() == Qt::LeftButton && event->pos().x() < lineNumberAreaWidth())
-    {
-
-        toggleBreakpointAtLine();
-    }
-
-    if (event->button() == Qt::RightButton)
-    {
-        QMenu menu(this);
-
-        QAction *action1 = menu.addAction("Toggle Breakpoint");
-        QAction *action2 = menu.addAction("Remove All Breakpoints");
-
-        QAction *selectedAction = menu.exec(event->globalPosition().toPoint());
-        if (selectedAction == action1)
-        {
-            toggleBreakpointAtLine();
-        }
-        else if (selectedAction == action2)
-        {
-            m_breakPoints.clear();
-            update(); // Trigger a repaint to remove all breakpoint indicators
-        }
-        return; // Prevent base class selection
-    }
-}
-
-void Editor::lineNumberAreaMouseMoveEvent(QMouseEvent *event)
-{
-    // Future implementation for mouse move events in the line number area
-    QPlainTextEdit::mouseMoveEvent(event);
 }
 
 bool Editor::event(QEvent *event)

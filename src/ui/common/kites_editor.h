@@ -1,50 +1,29 @@
 #pragma once
 #include <QPlainTextEdit>
-
 namespace Kites
 {
-/**
- * @brief This will be the parent class for all code editors in Kites.
- * It is basically providing a line number area to the editors and
- *
- */
+class GutterColumn; //forward declaration
 class KitesEditor : public QPlainTextEdit
 {
     Q_OBJECT
+    friend class GutterColumn;
 public:
     explicit KitesEditor(QWidget *parent = nullptr);
     ~KitesEditor() {};
-
 protected:
-    class LineNumberArea : public QWidget
-    {
-    public:
-        LineNumberArea(KitesEditor *editor) : QWidget(editor), m_editor(editor) {};
-        QSize sizeHint() const override
-        {
-            return QSize(m_editor->lineNumberAreaWidth(), 0);
-        }
-
-    protected:
-        void paintEvent(QPaintEvent *event) override
-        {
-            m_editor->lineNumberAreaPaintEvent(event);
-        }
-
-    private:
-        KitesEditor *m_editor;
-    };
-    LineNumberArea *m_lineNumberArea = nullptr;
-
-    void updateLineNumberArea(const QRect &, int dy);
-    int lineNumberAreaWidth() const;
-    void lineNumberAreaPaintEvent(QPaintEvent *event);
+    void updateViewPortMargins();
+    void updateGutterColumns(const QRect &rect, int dy);
     void highlightCurrentLine();
     void resizeEvent(QResizeEvent *event) override;
     void changeEvent(QEvent *event) override;
-    void updateViewPortMargins(); 
 
-    virtual int rightViewMargin() const; 
-    virtual int leftViewMargin() const;
+    void addRightGutterColumn(GutterColumn* column);
+    void addLeftGutterColumn(GutterColumn* column);
+
+    int rightViewMargin() const;
+    int leftViewMargin() const;
+private:
+    std::vector<GutterColumn*> m_rightGutterColumns{};
+    std::vector<GutterColumn*> m_leftGutterColumns{};
 };
 } // namespace Kites

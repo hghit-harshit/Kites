@@ -1,4 +1,5 @@
 #include "kites_editor.h"
+#include "gutter_column.h"
 #include <QFontDatabase>
 #include <QPainter>
 #include <QTextBlock>
@@ -6,10 +7,10 @@
 namespace Kites
 {
 KitesEditor::KitesEditor(QWidget *parent)
-    : QPlainTextEdit(parent), m_lineNumberArea(new LineNumberArea(this))
+    : QPlainTextEdit(parent)
 {
     connect(this, &KitesEditor::blockCountChanged, this, &KitesEditor::updateViewPortMargins);
-    connect(this, &KitesEditor::updateRequest, this, &KitesEditor::updateLineNumberArea);
+    connect(this, &KitesEditor::updateRequest, this, &KitesEditor::updateGutterColumns);
     connect(this, &KitesEditor::cursorPositionChanged, this, &KitesEditor::highlightCurrentLine);
 
     int id = QFontDatabase::addApplicationFont(":/fonts/Monaco.ttf");
@@ -26,44 +27,29 @@ void KitesEditor::updateViewPortMargins()
 {
     setViewportMargins(leftViewMargin(), 0, rightViewMargin(), 0);
 }
-void KitesEditor::updateLineNumberArea(const QRect &rect, int dy)
+void KitesEditor::updateGutterColumns(const QRect &rect, int dy)
 {
-    if (dy)
-        m_lineNumberArea->scroll(0, dy);
-    else
-        m_lineNumberArea->update(0, rect.y(), m_lineNumberArea->width(), rect.height());
-}
-
-int KitesEditor::lineNumberAreaWidth() const
-{
-    int digits = QString::number(qMax(1, blockCount())).length();
-    return 10 + fontMetrics().horizontalAdvance(QLatin1Char('9')) * digits;
-}
-
-void KitesEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
-{
-    QPainter painter(m_lineNumberArea);
-    painter.fillRect(event->rect(), Qt::lightGray);
-
-    QTextBlock block = firstVisibleBlock();
-    int blockNumber = block.blockNumber();
-    int top = static_cast<int>(blockBoundingGeometry(block).translated(contentOffset()).top());
-    int bottom = top + static_cast<int>(blockBoundingRect(block).height());
-
-    while (block.isValid() && top <= event->rect().bottom())
+    if(dy)
     {
-        if (block.isVisible() && bottom >= event->rect().top())
+        for (auto *column : m_rightGutterColumns)
         {
-            QString number = QString::number(blockNumber + 1); // +1 for 1-based line numbers
-            painter.setPen(Qt::black);
-            painter.drawText(0, top, lineNumberAreaWidth() - 5, fontMetrics().height(),
-                             Qt::AlignRight, number);
+            column->scroll(0, dy);
         }
-
-        block = block.next();
-        top = bottom;
-        bottom = top + static_cast<int>(blockBoundingRect(block).height());
-        ++blockNumber;
+        for (auto *column : m_leftGutterColumns)
+        {
+            column->scroll(0, dy);
+        }
+    }
+    else
+    {
+        for (auto *column : m_rightGutterColumns)
+        {
+            column->update(0, rect.y(), column->width(), rect.height());
+        }
+        for (auto *column : m_leftGutterColumns)
+        {
+            column->update(0, rect.y(), column->width(), rect.height());
+        }
     }
 }
 
@@ -94,7 +80,20 @@ void KitesEditor::resizeEvent(QResizeEvent *event)
     QPlainTextEdit::resizeEvent(event);
 
     QRect cr = contentsRect();
-    m_lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
+    int currentWidth = 0;
+    for (auto *column : m_leftGutterColumns)
+    {
+        const int width = column->sizeHint().width();
+        column->setGeometry(QRect(cr.left() + currentWidth, cr.top(), width, cr.height()));
+        currentWidth += width;
+    }
+    currentWidth = 0;
+    for(auto* column : m_rightGutterColumns)
+    {
+        const int width = column->sizeHint().width();
+        column->setGeometry(QRect(cr.right() - currentWidth - width, cr.top(), width, cr.height()));
+        currentWidth += width;
+    }
 }
 
 void KitesEditor::changeEvent(QEvent *event)
@@ -107,13 +106,41 @@ void KitesEditor::changeEvent(QEvent *event)
     QPlainTextEdit::changeEvent(event);
 }
 
+void KitesEditor::addRightGutterColumn(GutterColumn* column)
+{
+    if (column && std::find(m_rightGutterColumns.begin(), 
+    m_rightGutterColumns.end(), column) == m_rightGutterColumns.end())
+    {
+        m_rightGutterColumns.push_back(column);
+    }
+}
+
+void KitesEditor::addLeftGutterColumn(GutterColumn* column)
+{
+    if (column && std::find(m_leftGutterColumns.begin(), 
+    m_leftGutterColumns.end(), column) == m_leftGutterColumns.end())
+    {
+        m_leftGutterColumns.push_back(column);
+    }
+}
+
 int KitesEditor::rightViewMargin() const
 {
-    return 0; // Default implementation returns 0, can be overridden in derived classes
+    int margin = 0;
+    for (const auto *column : m_rightGutterColumns)
+    {
+        margin += column->sizeHint().width();
+    }
+    return margin;
 }
 
 int KitesEditor::leftViewMargin() const
 {
-    return lineNumberAreaWidth();
+    int margin = 0;
+    for (const auto *column : m_leftGutterColumns)
+    {
+        margin += column->sizeHint().width();
+    }
+    return margin;
 }
 } // namespace Kites
