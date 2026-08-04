@@ -39,6 +39,7 @@ class EditorTab : public KitesTab
   public slots:
     void onExpandButtonClicked(bool checked);
     void switchToExpandedView();
+    void switchToEditorView();
 
   private:
     Editor *m_editor = nullptr;

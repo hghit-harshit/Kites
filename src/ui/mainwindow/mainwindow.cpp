@@ -422,7 +422,6 @@ bool MainWindow::tryParseAndLoadProgram()
     editor->resetErrorLines();    // we reset previous error lines
     editor->setCanWrite(false);   // we disable writing in editor while vm is running
     m_processorManager->reset();
-    // reset register container and memory view as well
     try
     {
         std::string rawText = editor->getRawText();
@@ -507,6 +506,7 @@ void MainWindow::runFinishedSlot()
     editor->clearHighlights(); // we clear any highlights when processor stops
     // other we are not alble to move the cursor as the paint
     //  keeps jumping to last highlighted line
+    editor->switchToEditorView();
     QList<QToolBar *> toolbars = this->findChildren<QToolBar *>();
     // since we only have one toolbar we can directly access it
     for (QAction *action : toolbars[0]->actions())

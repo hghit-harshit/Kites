@@ -61,6 +61,11 @@ void EditorTab::switchToExpandedView()
     ui->expandedViewButton->setChecked(true);
 }
 
+void EditorTab::switchToEditorView()
+{
+    ui->editorViewButton->setChecked(true);
+}
+
 void EditorTab::setExpandedLocked(bool locked)
 {
     m_expandedLocked = locked;
