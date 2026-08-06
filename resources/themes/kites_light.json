@@ -1,0 +1,30 @@
+{
+    "id": "kites-light",
+    "name": "Kites Light",
+    "appearance": "light",
+    "colors": {
+        "background": "#f5f5f5",
+        "surface": "#ffffff",
+        "border": "#d8d8d8",
+        "foreground": "#1a1a1a",
+        "mutedForeground": "#6e6e6e",
+        "accent": "#2a72da",
+        "selection": "#bfdbfe",
+        "currentLine": "#eaeaea",
+        "iconColor": "#1a1a1a",
+        "cacheHit": "#1f9e46",
+        "cacheMiss": "#c62828",
+        "syntax": {
+            "r32Instruction": "#0000ff",
+            "r64Instruction": "#0070c0",
+            "mInstruction": "#af00af",
+            "fInstruction": "#af00af",
+            "dInstruction": "#8a6d00",
+            "pseudoInstruction": "#ff8c00",
+            "register": "#800080",
+            "comment": "#008000",
+            "label": "#c2410c",
+            "numberLiteral": "#c00000"
+        }
+    }
+}

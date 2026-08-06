@@ -23,6 +23,9 @@ class CompilerTab : public KitesTab
     void onCopyToMainEditorClicked();
     void onConvertToAssemblyClicked();
 
+  private slots:
+    void applyOutputBorderStyle();
+
   private:
     Ui::CompilerTab *ui;
     QString cleanAssembly(const QString &rawAssembly);

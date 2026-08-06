@@ -9,6 +9,8 @@
 
 #include "tokens.h"
 #include <fstream>
+#include <istream>
+#include <memory>
 #include <vector>
 
 namespace Kites
@@ -23,8 +25,11 @@ namespace Kites
 class Lexer
 {
   private:
-    std::string filename_;       ///< The name of the input file.
-    std::ifstream input_;        ///< Input stream for reading the source code.
+    std::string filename_;       ///< The name of the input file (or a virtual name when
+                                  ///< constructed from an in-memory stream).
+    std::unique_ptr<std::ifstream> file_input_; ///< Owned file stream, when reading from a file.
+    std::istream *input_ = nullptr; ///< Stream actually used for reading (file_input_.get(), or
+                                     ///< an externally-owned stream passed to the istream ctor).
     std::string current_line_;   ///< The current line being processed.
     unsigned int line_number_;   ///< The current line number in the source code.
     unsigned int column_number_; ///< The current column number in the source code.
@@ -111,6 +116,17 @@ class Lexer
      * @param filename The name of the source code file to be tokenized.
      */
     explicit Lexer(std::string filename);
+
+    /**
+     * @brief Constructs a Lexer that reads from an already-open stream instead of a file.
+     *
+     * Used for in-memory assembly (e.g. live diagnostics on editor content that hasn't been
+     * saved to disk). The caller must keep `source` alive for the lifetime of this Lexer.
+     *
+     * @param source The stream to tokenize.
+     * @param virtualFilename A name to report in diagnostics (not an actual file on disk).
+     */
+    Lexer(std::istream &source, std::string virtualFilename);
 
     /**
      * @brief Destructor that closes the input file stream.

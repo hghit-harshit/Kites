@@ -1,5 +1,6 @@
 #pragma once
 #include "ui/common/gutter_column.h"
+#include "ui/theme/theme_manager.h"
 #include "main_editor.h"
 #include <QPainter>
 #include <QMenu>
@@ -21,7 +22,8 @@ protected:
     void paintEvent(QPaintEvent *event) override
     {
         QPainter painter(this);
-        painter.fillRect(event->rect(), Qt::lightGray);
+        painter.fillRect(event->rect(),
+                         ThemeManager::getInstance().getEditorBackgroundColor());
 
         QTextBlock block = firstVisibleBlock();
         int blockNumber = block.blockNumber();

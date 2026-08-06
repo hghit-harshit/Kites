@@ -797,6 +797,36 @@ const std::vector<ParseError> &Parser::getErrors() const
     return errors_.parse_errors;
 }
 
+std::vector<DiagnosticInfo> Parser::getDiagnostics() const
+{
+    std::vector<DiagnosticInfo> diagnostics;
+    diagnostics.reserve(errors_.all_errors.size());
+
+    for (const auto &error : errors_.all_errors)
+    {
+        std::visit(
+            [&diagnostics](auto &&arg)
+            {
+                std::string message;
+                if constexpr (requires { arg.main_message; arg.sub_message; })
+                {
+                    message = arg.sub_message.empty()
+                                  ? arg.main_message
+                                  : arg.main_message + ": " + arg.sub_message;
+                }
+                else
+                {
+                    message = arg.message;
+                }
+                diagnostics.push_back(
+                    DiagnosticInfo{arg.line_number, arg.column_number, std::move(message)});
+            },
+            error);
+    }
+
+    return diagnostics;
+}
+
 const std::map<std::string, SymbolData> &Parser::getSymbolTable() const
 {
     return symbol_table_;

@@ -1,31 +1,50 @@
 #include "main_editor.h"
+#include "language_service/language_service.h"
+#include <QAbstractItemView>
+#include <QKeyEvent>
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QScrollBar>
+#include <QStringListModel>
 #include <QTextBlock>
 #include <QToolTip>
 #include <set>
 #include "ui/common/line_number_gutter_column.h"
+#include "ui/theme/font_manager.h"
 #include "break_point_gutter_column.h"
 namespace Kites
 {
+namespace
+{
+bool isCompletionWordChar(QChar c)
+{
+    // default Qt word boundaries exclude '.'/'$', which real RISC-V syntax needs
+    // (fadd.s, and labels can contain '.'/'$')
+    return c.isLetterOrNumber() || c == '_' || c == '.' || c == '$';
+}
+} // namespace
+
 Editor::Editor(QWidget *parent )
     : KitesEditor(parent)
 {
     setMouseTracking(true);
     m_syntaxHighlighter = new SyntaxHighlighter(this->document());
-    int id = QFontDatabase::addApplicationFont(":/fonts/Monaco.ttf");
-    QString family = QFontDatabase::applicationFontFamilies(id).at(0);
-    QFont font(family);
-    font.setPointSize(11);
-    font.setFixedPitch(true); // monospaced
-    setFont(font);
+    setFont(FontManager::getInstance().currentFont());
 
     const int tapspace = 4;
     setTabStopDistance(tapspace * fontMetrics().horizontalAdvance(' '));
     addLeftGutterColumn(new BreakPointGutterColumn(this));
     addLeftGutterColumn(new LineNumberGutterColumn(this));
     updateViewPortMargins();
+
+    m_autoCompleter = new QCompleter(this);
+    m_autoCompleter->setModel(new QStringListModel(m_autoCompleter));
+    m_autoCompleter->setCaseSensitivity(Qt::CaseInsensitive);
+    m_autoCompleter->setCompletionMode(QCompleter::PopupCompletion);
+    m_autoCompleter->setWidget(this);
+    connect(m_autoCompleter, QOverload<const QString &>::of(&QCompleter::activated), this,
+            &Editor::insertCompletion);
 }
 
 std::vector<uint64_t> Editor::getBreakpoints() const
@@ -155,5 +174,87 @@ bool Editor::event(QEvent *event)
 void Editor::setErrorMessage(int line, const QString &message)
 {
     m_errorMessages.emplace(line, message);
+}
+
+QString Editor::textUnderCursor() const
+{
+    const QTextCursor cursor = textCursor();
+    const QTextBlock block = cursor.block();
+    const QString blockText = block.text();
+    const int posInBlock = cursor.position() - block.position();
+
+    int start = posInBlock;
+    while (start > 0 && isCompletionWordChar(blockText[start - 1]))
+        --start;
+    int end = posInBlock;
+    while (end < blockText.size() && isCompletionWordChar(blockText[end]))
+        ++end;
+
+    return blockText.mid(start, end - start);
+}
+
+void Editor::insertCompletion(const QString &completion)
+{
+    if (m_autoCompleter->widget() != this)
+        return;
+
+    QTextCursor cursor = textCursor();
+    const int prefixLength = m_autoCompleter->completionPrefix().length();
+    cursor.setPosition(cursor.position() - prefixLength);
+    cursor.setPosition(cursor.position() + prefixLength, QTextCursor::KeepAnchor);
+    cursor.insertText(completion);
+    setTextCursor(cursor);
+}
+
+void Editor::keyPressEvent(QKeyEvent *event)
+{
+    if (m_autoCompleter && m_autoCompleter->popup()->isVisible())
+    {
+        // let the completer's own popup handle these - it has an event filter
+        // installed on this widget that already intercepts most of them, this
+        // guard covers the rest (matches Qt's own QCompleter usage pattern)
+        switch (event->key())
+        {
+        case Qt::Key_Enter:
+        case Qt::Key_Return:
+        case Qt::Key_Escape:
+        case Qt::Key_Tab:
+        case Qt::Key_Backtab:
+            event->ignore();
+            return;
+        default:
+            break;
+        }
+    }
+
+    KitesEditor::keyPressEvent(event);
+
+    if (!m_autoCompleter)
+        return;
+
+    const QString prefix = textUnderCursor();
+    if (prefix.isEmpty())
+    {
+        m_autoCompleter->popup()->hide();
+        return;
+    }
+
+    const QStringList matches = LanguageService::completions(prefix, toPlainText());
+    if (matches.isEmpty())
+    {
+        m_autoCompleter->popup()->hide();
+        return;
+    }
+
+    auto *model = qobject_cast<QStringListModel *>(m_autoCompleter->model());
+    model->setStringList(matches);
+
+    m_autoCompleter->setCompletionPrefix(prefix);
+    m_autoCompleter->popup()->setCurrentIndex(m_autoCompleter->completionModel()->index(0, 0));
+
+    QRect completionRect = cursorRect();
+    completionRect.setWidth(m_autoCompleter->popup()->sizeHintForColumn(0) +
+                            m_autoCompleter->popup()->verticalScrollBar()->sizeHint().width());
+    m_autoCompleter->complete(completionRect);
 }
 } // namespace Kites

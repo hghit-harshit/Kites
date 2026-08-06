@@ -1,6 +1,7 @@
 #include "kites_editor.h"
 #include "gutter_column.h"
-#include <QFontDatabase>
+#include "ui/theme/font_manager.h"
+#include "ui/theme/theme_manager.h"
 #include <QPainter>
 #include <QTextBlock>
 
@@ -12,10 +13,12 @@ KitesEditor::KitesEditor(QWidget *parent)
     connect(this, &KitesEditor::blockCountChanged, this, &KitesEditor::updateViewPortMargins);
     connect(this, &KitesEditor::updateRequest, this, &KitesEditor::updateGutterColumns);
     connect(this, &KitesEditor::cursorPositionChanged, this, &KitesEditor::highlightCurrentLine);
+    connect(&FontManager::getInstance(), &FontManager::fontChangedSignal, this, &QWidget::setFont);
+    connect(&ThemeManager::getInstance(), &ThemeManager::editorThemeChangedSignal, this,
+            &KitesEditor::themeChangedSlot);
 
-    int id = QFontDatabase::addApplicationFont(":/fonts/Monaco.ttf");
-    QString family = QFontDatabase::applicationFontFamilies(id).at(0);
-    setFont(QFont(family, 11));
+    setFont(FontManager::getInstance().currentFont());
+    applyEditorTheme();
 
     const int tapspace = 4;
     setTabStopDistance(tapspace * fontMetrics().horizontalAdvance(' '));
@@ -61,9 +64,7 @@ void KitesEditor::highlightCurrentLine()
     {
         QTextEdit::ExtraSelection selection;
 
-        //TODO : improve this not working for light theme
-        // get this value from theme manager
-        QColor lineColor = palette().color(QPalette::Base).lighter(115);
+        QColor lineColor = ThemeManager::getInstance().getCurrentLineColor();
 
         selection.format.setBackground(lineColor);
         selection.format.setProperty(QTextFormat::FullWidthSelection, true);
@@ -94,6 +95,30 @@ void KitesEditor::resizeEvent(QResizeEvent *event)
         column->setGeometry(QRect(cr.right() - currentWidth - width, cr.top(), width, cr.height()));
         currentWidth += width;
     }
+}
+
+void KitesEditor::themeChangedSlot([[maybe_unused]] const QString &themeId)
+{
+    applyEditorTheme();
+    highlightCurrentLine();
+}
+
+void KitesEditor::applyEditorTheme()
+{
+    // per-widget stylesheet so the editor can use a different theme than the
+    // global UI (Zed-style editor/UI theme split); a per-widget palette is
+    // ignored while an application stylesheet is active
+    const ThemeManager &themeManager = ThemeManager::getInstance();
+    setStyleSheet(QString("QPlainTextEdit { background-color: %1; color: %2; }")
+                      .arg(themeManager.getEditorBackgroundColor().name(),
+                           themeManager.getEditorForegroundColor().name()));
+
+    // keep palette roles in sync for code that reads palette().color(QPalette::Base)
+    QPalette editorPalette = palette();
+    editorPalette.setColor(QPalette::Base, themeManager.getEditorBackgroundColor());
+    editorPalette.setColor(QPalette::Text, themeManager.getEditorForegroundColor());
+    setPalette(editorPalette);
+    viewport()->update();
 }
 
 void KitesEditor::changeEvent(QEvent *event)

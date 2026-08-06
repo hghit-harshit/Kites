@@ -23,6 +23,7 @@ class SettingsDialog : public QDialog
 
     QWidget *createCustomPseudoInstPage();
     QWidget *createEditorPage();
+    QWidget *createAppearancePage();
 
     void addPage(const QString &name, QWidget *page);
 

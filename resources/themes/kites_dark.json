@@ -1,0 +1,30 @@
+{
+    "id": "kites-dark",
+    "name": "Kites Dark",
+    "appearance": "dark",
+    "colors": {
+        "background": "#1e1e1e",
+        "surface": "#252526",
+        "border": "#333333",
+        "foreground": "#d4d4d4",
+        "mutedForeground": "#8a8a8a",
+        "accent": "#4f9cf9",
+        "selection": "#2c5a8c",
+        "currentLine": "#2a2a2a",
+        "iconColor": "#d4d4d4",
+        "cacheHit": "#2ada5c",
+        "cacheMiss": "#da2a2a",
+        "syntax": {
+            "r32Instruction": "#569cd6",
+            "r64Instruction": "#4fc1ff",
+            "mInstruction": "#c586c0",
+            "fInstruction": "#c586c0",
+            "dInstruction": "#dcdcaa",
+            "pseudoInstruction": "#ff8c00",
+            "register": "#9cdcfe",
+            "comment": "#6a9955",
+            "label": "#d7ba7d",
+            "numberLiteral": "#b5cea8"
+        }
+    }
+}

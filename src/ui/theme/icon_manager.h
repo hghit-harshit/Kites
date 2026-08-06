@@ -1,6 +1,8 @@
 #pragma once
 //#include <QObject>
 #include <QIcon>
+#include <QHash>
+#include <QPixmap>
 #include <array>
 #include "utils/to_index.h"
 namespace Kites
@@ -14,6 +16,16 @@ enum class Icon
     Step,
     Undo,
     Redo,
+    Editor,
+    Memory,
+    Processor,
+    Cache,
+    Compiler,
+    Profiler,
+    Open,
+    Save,
+    Settings,
+    About,
     IconCount
 };
 
@@ -29,5 +41,6 @@ private:
     // using size for futue proofing this fucntion.
     void setUpIconPaths();
     std::array<QString, toIndex(Icon::IconCount)> m_iconPaths;
+    mutable QHash<QString, QPixmap> m_pixmapCache; // keyed by "icon:size:color"
 };
 }//namespace Kites

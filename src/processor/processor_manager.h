@@ -68,6 +68,9 @@ public:
     unsigned int getInstructionsRetired() const;
 private:
     void updateEditorHighlight(const ProcessorState &processorState);
+    // Maps the current program counter back to a 1-based editor source line,
+    // or -1 if it isn't in the current program's mapping.
+    int resolveCurrentSourceLine() const;
 
     AssembledProgram m_currentProgram{};
     std::unique_ptr<ProcessorBase> m_currentProcessor{};
@@ -83,7 +86,8 @@ signals:
     void runFinishedSignal();
     void processorStateChangedSignal();
     void processorPausedAtBreakpointSignal();
-    void runErrorSignal(const QString &errorMessage);
+    // sourceLine is 1-based, or -1 if the failing PC couldn't be mapped back to a source line.
+    void runErrorSignal(const QString &errorMessage, int sourceLine);
     void updateDisassemblySignal(const QString &disassemblyText);
     void updateEditorHighlightSignal(const std::vector<std::pair<int,std::string>> &editorLines, 
         const std::vector<std::pair<int,std::string>> &disassemblyLines);

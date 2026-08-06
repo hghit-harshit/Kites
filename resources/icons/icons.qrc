@@ -8,5 +8,15 @@
         <file>undo-dot.svg</file>
         <file>resume.svg</file>
         <file>step.svg</file>
+        <file>editor.svg</file>
+        <file>memory.svg</file>
+        <file>processor.svg</file>
+        <file>cache.svg</file>
+        <file>compiler.svg</file>
+        <file>profiler.svg</file>
+        <file>open.svg</file>
+        <file>save.svg</file>
+        <file>settings.svg</file>
+        <file>about.svg</file>
     </qresource>
 </RCC>

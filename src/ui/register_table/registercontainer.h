@@ -5,12 +5,15 @@
 #include <QWidget>
 #include <memory>
 
+class QSortFilterProxyModel;
+
 namespace Kites
 {
 namespace Ui
 {
 class RegisterContainer;
 }
+class CollapsibleSection;
 
 class RegisterContainer : public QWidget
 {
@@ -24,6 +27,8 @@ class RegisterContainer : public QWidget
     //     void updateRegisterValue(size_t regIndex, uint64_t value);
   private:
     void setupRegisterTable();
+    QSortFilterProxyModel *makeRangeProxy(int firstRow, int lastRowExclusive);
+
     Ui::RegisterContainer *ui;
     RegisterModel *m_registerModel;
 };

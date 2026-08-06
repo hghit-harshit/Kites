@@ -22,7 +22,7 @@ namespace
 SyntaxHighlighter::SyntaxHighlighter(QTextDocument *parent) : QSyntaxHighlighter(parent)
 {
     setHighlightingRules();
-    connect(&ThemeManager::getInstance(), &ThemeManager::themeChangedSignal, 
+    connect(&ThemeManager::getInstance(), &ThemeManager::editorThemeChangedSignal,
     this, &SyntaxHighlighter::themeChangedSlot);
 }
 
@@ -127,7 +127,7 @@ void SyntaxHighlighter::highlightBlock(const QString &text)
     }
 }
 
-void SyntaxHighlighter::themeChangedSlot([[maybe_unused]] ThemeType theme)
+void SyntaxHighlighter::themeChangedSlot([[maybe_unused]] const QString &themeId)
 {
     rehighlight();
 }

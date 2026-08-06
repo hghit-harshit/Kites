@@ -1,4 +1,5 @@
 #include "compilertab.h"
+#include "config/app_settings.h"
 #include "ui_compilertab.h"
 #include <QClipboard>
 #include <QDir>
@@ -9,6 +10,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QProcess>
+#include <QStyle>
 #include <QTemporaryFile>
 #include <QTextStream>
 
@@ -22,9 +24,26 @@ CompilerTab::CompilerTab(QWidget *parent) : KitesTab(parent), ui(new Ui::Compile
             &CompilerTab::onConvertToAssemblyClicked);
     connect(ui->copyToMainEditorButton, &QPushButton::clicked, this,
             &CompilerTab::onCopyToMainEditorClicked);
+    connect(&AppSettings::getInstance(), &AppSettings::compilerOutputBorderStyleChangedSignal, this,
+            &CompilerTab::applyOutputBorderStyle);
     ui->splitter_2->setStretchFactor(0, 3);
     ui->splitter_2->setStretchFactor(1, 1);
     ui->outputTextEdit->setReadOnly(true);
+    applyOutputBorderStyle();
+}
+
+void CompilerTab::applyOutputBorderStyle()
+{
+    QString styleName;
+    switch (AppSettings::getInstance().compilerOutputBorderStyle())
+    {
+        case BorderStyle::None:   styleName = "none";   break;
+        case BorderStyle::Subtle: styleName = "subtle"; break;
+        case BorderStyle::Full:   styleName = "full";   break;
+    }
+    ui->outputTextEdit->setProperty("borderStyle", styleName);
+    ui->outputTextEdit->style()->unpolish(ui->outputTextEdit);
+    ui->outputTextEdit->style()->polish(ui->outputTextEdit);
 }
 
 QString CompilerTab::getUsersCompilerOptions()

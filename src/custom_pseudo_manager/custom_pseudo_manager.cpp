@@ -153,11 +153,26 @@ bool validatePseudoInstruction(const ParsedPseudoInstruction &parsedInst,
 
 std::string expandPseudoInstruction(const std::string &source)
 {
+    std::vector<int> unusedMapping;
+    return expandPseudoInstruction(source, unusedMapping);
+}
+
+std::string expandPseudoInstruction(const std::string &source,
+                                     std::vector<int> &expandedLineToOriginalLine)
+{
+    expandedLineToOriginalLine.clear();
+
     QString errorMessage; // just a dummy variable
     QJsonObject pseudoInstrcutions = loadInstructionsFromDisk(errorMessage);
 
     if (pseudoInstrcutions.isEmpty())
     {
+        const int lineCount = QString::fromStdString(source).count('\n') + 1;
+        expandedLineToOriginalLine.reserve(lineCount);
+        for (int i = 1; i <= lineCount; ++i)
+        {
+            expandedLineToOriginalLine.push_back(i);
+        }
         return source;
     }
 
@@ -165,13 +180,17 @@ std::string expandPseudoInstruction(const std::string &source)
     const QStringList sourceLines = qSource.split('\n');
     QStringList expandedLines;
 
-    for (const QString &line : sourceLines)
+    for (int sourceLineIndex = 0; sourceLineIndex < sourceLines.size(); ++sourceLineIndex)
     {
+        const QString &line = sourceLines[sourceLineIndex];
+        const int originalLineNumber = sourceLineIndex + 1; // 1-based
+
         const QString trimmedLine = line.trimmed();
 
         if (trimmedLine.isEmpty())
         {
             expandedLines << line;
+            expandedLineToOriginalLine.push_back(originalLineNumber);
             continue;
         }
 
@@ -182,6 +201,7 @@ std::string expandPseudoInstruction(const std::string &source)
         if (!pseudoInstrcutions.contains(instName))
         {
             expandedLines << line;
+            expandedLineToOriginalLine.push_back(originalLineNumber);
             continue;
         }
 
@@ -216,6 +236,7 @@ std::string expandPseudoInstruction(const std::string &source)
         {
             // argument count mismatch, treat as normal instruction
             expandedLines << line;
+            expandedLineToOriginalLine.push_back(originalLineNumber);
             continue;
         }
 
@@ -254,6 +275,7 @@ std::string expandPseudoInstruction(const std::string &source)
             {
                 // malformed expansion template; fall back to leaving source line as-is
                 expandedLines << line;
+                expandedLineToOriginalLine.push_back(originalLineNumber);
                 break;
             }
 
@@ -275,6 +297,7 @@ std::string expandPseudoInstruction(const std::string &source)
                 const QStringList operands = expansionLineTokens.mid(1);
                 expandedLines << QString("%1 %2").arg(mnemonic, operands.join(", "));
             }
+            expandedLineToOriginalLine.push_back(originalLineNumber);
         }
     }
 

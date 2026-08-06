@@ -1,11 +1,9 @@
 <RCC>
     <qresource prefix="/themes">
-        <file>light.qss</file>
-        <file>dark.qss</file>
-        <file>material_dark.qss</file>
-        <file>elegant_dark.qss</file>
-        <file>aqua_light.qss</file>
-        <file>EasyCode.qss</file>
-        <file>elegant_light.qss</file>
+        <file>template.qss</file>
+        <file>kites_dark.json</file>
+        <file>kites_light.json</file>
+        <file>tokyo_night.json</file>
+        <file>tokyo_night_storm.json</file>
     </qresource>
 </RCC>

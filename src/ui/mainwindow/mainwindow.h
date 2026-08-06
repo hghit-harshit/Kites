@@ -54,7 +54,7 @@ private:
     void setUpSidebar();
     void setUpMenubar();
     void setUpTabs();
-    void toggleTheme(ThemeType theme);
+    void toggleTheme(const QString &themeId);
     bool tryParseAndLoadProgram();
     void run();
     void processorChangeDialog();
@@ -73,7 +73,7 @@ private:
 public slots:
     void processorChanged(const ProcessorType &vmType); // this will catch the signal from processor dialog
     void runFinishedSlot();
-    void themeChangedSlot([[maybe_unused]]ThemeType theme);
+    void themeChangedSlot(const QString &themeId);
     // void runErrorSlot();
 signals:
     void processorChangedSignal();

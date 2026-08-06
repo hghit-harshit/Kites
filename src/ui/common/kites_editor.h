@@ -22,7 +22,10 @@ protected:
 
     int rightViewMargin() const;
     int leftViewMargin() const;
+private slots:
+    void themeChangedSlot(const QString &themeId);
 private:
+    void applyEditorTheme();
     std::vector<GutterColumn*> m_rightGutterColumns{};
     std::vector<GutterColumn*> m_leftGutterColumns{};
 };
