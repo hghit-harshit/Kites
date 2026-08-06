@@ -23,11 +23,18 @@ namespace Kites
 Lexer::Lexer(std::string filename)
     : filename_(std::move(filename)), line_number_(0), column_number_(0), pos_(0)
 {
-    input_.open(filename_);
-    if (!input_)
+    file_input_ = std::make_unique<std::ifstream>(filename_);
+    if (!*file_input_)
     {
         throw std::runtime_error("Failed to open file: " + filename_);
     }
+    input_ = file_input_.get();
+}
+
+Lexer::Lexer(std::istream &source, std::string virtualFilename)
+    : filename_(std::move(virtualFilename)), input_(&source), line_number_(0),
+      column_number_(0), pos_(0)
+{
 }
 
 std::string Lexer::getFilename() const
@@ -37,9 +44,9 @@ std::string Lexer::getFilename() const
 
 Lexer::~Lexer()
 {
-    if (input_.is_open())
+    if (file_input_ && file_input_->is_open())
     {
-        input_.close();
+        file_input_->close();
     }
 }
 
@@ -403,7 +410,7 @@ Token Lexer::getNextToken()
 
 std::vector<Token> Lexer::getTokenList()
 {
-    while (std::getline(input_, current_line_))
+    while (std::getline(*input_, current_line_))
     {
         pos_ = 0;
         column_number_ = 1;

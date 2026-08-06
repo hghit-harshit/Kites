@@ -14,7 +14,7 @@ class SyntaxHighlighter : public QSyntaxHighlighter
   protected:
     void highlightBlock(const QString &text) override;
   public slots:
-    void themeChangedSlot([[maybe_unused]] ThemeType theme);
+    void themeChangedSlot([[maybe_unused]] const QString &themeId);
     
   private:
     void setHighlightingRules();

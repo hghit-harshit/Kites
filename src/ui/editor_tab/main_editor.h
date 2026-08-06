@@ -34,10 +34,16 @@ protected:
     // void mouseMoveEvent(QMouseEvent* event) override;
     bool event(QEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
     // void resizeEvent(QResizeEvent *event) override;
+
+private slots:
+    void insertCompletion(const QString &completion);
 
 private:
     // int leftViewMargin() const override;
+    QString textUnderCursor() const;
+
     QCompleter *m_autoCompleter = nullptr;
 
     std::map<int, QString> m_errorMessages;

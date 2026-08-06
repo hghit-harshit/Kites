@@ -1,0 +1,201 @@
+/* ── Kites theme template ──────────────────────────────────────────
+ * Rendered by ThemeManager with a theme's JSON color tokens substituted
+ * for the {{token}} placeholders below. Kept intentionally flat/minimal
+ * (thin low-contrast borders, no gradients) to match a Zed-like aesthetic.
+ * ───────────────────────────────────────────────────────────────── */
+
+* {
+    outline: 0;
+}
+
+QWidget {
+    background-color: {{background}};
+    color: {{foreground}};
+    font-size: 13px;
+    selection-background-color: {{selection}};
+    selection-color: {{foreground}};
+}
+
+QMainWindow, QDialog {
+    background-color: {{background}};
+}
+
+/* ── Sidebar / lists ───────────────────────────────────────────── */
+QListWidget {
+    background-color: {{surface}};
+    border: none;
+    border-right: 1px solid {{border}};
+    outline: 0;
+}
+QListWidget::item {
+    padding: 8px 6px;
+    border-radius: 4px;
+    margin: 2px 4px;
+}
+QListWidget::item:selected {
+    background-color: {{selection}};
+    color: {{foreground}};
+}
+QListWidget::item:hover:!selected {
+    background-color: {{currentLine}};
+}
+
+/* ── Tab widgets ───────────────────────────────────────────────── */
+QTabWidget::pane {
+    border: 1px solid {{border}};
+    background-color: {{background}};
+}
+QTabBar::tab {
+    background-color: transparent;
+    color: {{mutedForeground}};
+    padding: 6px 14px;
+    border: none;
+    border-bottom: 2px solid transparent;
+}
+QTabBar::tab:selected {
+    color: {{foreground}};
+    border-bottom: 2px solid {{accent}};
+}
+QTabBar::tab:hover:!selected {
+    color: {{foreground}};
+}
+
+/* ── Buttons ───────────────────────────────────────────────────── */
+QPushButton, QToolButton {
+    background-color: {{surface}};
+    color: {{foreground}};
+    border: 1px solid {{border}};
+    border-radius: 4px;
+    padding: 5px 14px;
+    min-height: 22px;
+}
+QPushButton:hover, QToolButton:hover {
+    border-color: {{accent}};
+}
+QPushButton:pressed, QToolButton:pressed {
+    background-color: {{selection}};
+}
+QPushButton:disabled, QToolButton:disabled {
+    color: {{mutedForeground}};
+    border-color: {{border}};
+}
+
+/* ── Text inputs / editors ────────────────────────────────────── */
+QLineEdit {
+    background-color: {{surface}};
+    color: {{foreground}};
+    border: 1px solid {{border}};
+    border-radius: 4px;
+    padding: 3px 6px;
+    selection-background-color: {{selection}};
+}
+QLineEdit:focus {
+    border-color: {{accent}};
+}
+/* editors sit flush against their panel, Zed-style: no frame.
+ * palette() roles (not literal colors) so a per-widget palette set by
+ * KitesEditor can express a separate editor theme. */
+QTextEdit, QPlainTextEdit {
+    background-color: palette(base);
+    color: palette(text);
+    border: none;
+    selection-background-color: {{selection}};
+}
+
+/* ── Compiler output console border variants ─────────────────────
+ * Toggled by objectName property set at runtime from AppSettings;
+ * see compilertab.cpp. */
+QPlainTextEdit#outputTextEdit[borderStyle="none"] {
+    border: none;
+}
+QPlainTextEdit#outputTextEdit[borderStyle="subtle"] {
+    border: 1px solid {{border}};
+}
+QPlainTextEdit#outputTextEdit[borderStyle="full"] {
+    border: 2px solid {{accent}};
+}
+
+/* ── Menus / menu bar ──────────────────────────────────────────── */
+QMenuBar {
+    background-color: {{background}};
+    border-bottom: 1px solid {{border}};
+}
+QMenuBar::item:selected {
+    background-color: {{currentLine}};
+}
+QMenu {
+    background-color: {{surface}};
+    border: 1px solid {{border}};
+}
+QMenu::item:selected {
+    background-color: {{selection}};
+}
+
+/* ── Toolbars ──────────────────────────────────────────────────── */
+QToolBar {
+    background-color: {{background}};
+    border-bottom: 1px solid {{border}};
+    spacing: 4px;
+}
+
+/* ── Table / tree views ────────────────────────────────────────── */
+QTableView, QTreeView, QHeaderView::section {
+    background-color: {{surface}};
+    color: {{foreground}};
+    border: 1px solid {{border}};
+    gridline-color: {{border}};
+}
+QHeaderView::section {
+    padding: 4px;
+    border: none;
+    border-bottom: 1px solid {{border}};
+}
+QTableView::item:selected, QTreeView::item:selected {
+    background-color: {{selection}};
+}
+
+/* ── Scrollbars ────────────────────────────────────────────────── */
+QScrollBar:vertical, QScrollBar:horizontal {
+    background: transparent;
+    border: none;
+    margin: 0;
+}
+QScrollBar:vertical { width: 8px; }
+QScrollBar:horizontal { height: 8px; }
+QScrollBar::handle {
+    background: {{border}};
+    border-radius: 4px;
+    min-height: 24px;
+    min-width: 24px;
+}
+QScrollBar::handle:hover {
+    background: {{mutedForeground}};
+}
+QScrollBar::add-line, QScrollBar::sub-line {
+    width: 0; height: 0;
+}
+
+/* ── Splitters ─────────────────────────────────────────────────── */
+QSplitter::handle {
+    background-color: {{border}};
+}
+
+/* ── Status bar ────────────────────────────────────────────────── */
+QStatusBar {
+    background-color: {{surface}};
+    border-top: 1px solid {{border}};
+    color: {{mutedForeground}};
+}
+
+/* ── Collapsible sections (src/ui/common/collapsible_section.*) ── */
+QToolButton#collapsibleSectionHeader {
+    background-color: {{surface}};
+    border: none;
+    border-bottom: 1px solid {{border}};
+    padding: 6px 8px;
+    text-align: left;
+    font-weight: bold;
+}
+QToolButton#collapsibleSectionHeader:hover {
+    background-color: {{currentLine}};
+}

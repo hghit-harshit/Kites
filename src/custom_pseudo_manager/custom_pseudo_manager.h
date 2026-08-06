@@ -13,6 +13,7 @@
 #include <QJsonObject>
 #include <QString>
 #include <QStringList>
+#include <vector>
 
 namespace Kites
 {
@@ -49,5 +50,19 @@ namespace customPseudoManager
      * @return std::string
      */
     std::string expandPseudoInstruction(const std::string &source);
+
+    /**
+     * @brief Same as expandPseudoInstruction(), but also reports which original
+     * source line each expanded line came from, since a single pseudo-instruction
+     * can expand to multiple lines. Used to map diagnostics on expanded source
+     * back to the line the user actually sees in the editor.
+     *
+     * @param source
+     * @param expandedLineToOriginalLine Out param, 0-indexed by expanded line,
+     *        value is the 1-based original source line number.
+     * @return std::string
+     */
+    std::string expandPseudoInstruction(const std::string &source,
+                                         std::vector<int> &expandedLineToOriginalLine);
 }//namespace customPseudoManager
 }//namespace Kites

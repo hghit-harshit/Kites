@@ -1,5 +1,6 @@
 #include "editortab.h"
 #include "custom_pseudo_manager/custom_pseudo_manager.h"
+#include "ui/theme/theme_manager.h"
 #include "ui_editortab.h"
 #include <QFile>
 #include <QJsonArray>
@@ -29,10 +30,41 @@ EditorTab::EditorTab(QWidget *parent, ProcessorManager *vmManager)
     m_expandedView->setBreakpoints(m_editor->getBreakpoints());
     m_editor->setPlaceholderText("Enter your code here...");
     m_squiggleFormat.setUnderlineStyle(QTextCharFormat::WaveUnderline);
-    m_squiggleFormat.setUnderlineColor(Qt::red);
+    m_squiggleFormat.setUnderlineColor(ThemeManager::getInstance().getEditorErrorColor());
+    connect(&ThemeManager::getInstance(), &ThemeManager::editorThemeChangedSignal, this,
+            [this](const QString &)
+            {
+                m_squiggleFormat.setUnderlineColor(
+                    ThemeManager::getInstance().getEditorErrorColor());
+            });
 
     connect(ui->expandedViewButton, &QRadioButton::toggled, this,
             &EditorTab::onExpandButtonClicked);
+
+    m_languageService = new LanguageService(this);
+    connect(m_languageService, &LanguageService::diagnosticsReadySignal, this,
+            [this](const QVector<Diagnostic> &diagnostics)
+            {
+                if (m_editor->isReadOnly())
+                    return; // a Run started while this request was in flight; Run owns the
+                            // squiggles now, don't clobber them with a stale live result
+                applyDiagnostics(diagnostics);
+            });
+
+    m_diagnosticsDebounceTimer = new QTimer(this);
+    m_diagnosticsDebounceTimer->setSingleShot(true);
+    m_diagnosticsDebounceTimer->setInterval(300);
+    connect(m_diagnosticsDebounceTimer, &QTimer::timeout, this,
+            &EditorTab::requestLiveDiagnostics);
+    connect(m_editor, &QPlainTextEdit::textChanged, this,
+            [this]() { m_diagnosticsDebounceTimer->start(); });
+}
+
+void EditorTab::requestLiveDiagnostics()
+{
+    if (m_editor->isReadOnly())
+        return; // running/debugging - Run's own diagnostics own the squiggles right now
+    m_languageService->requestDiagnostics(QString::fromStdString(getRawText()));
 }
 
 void EditorTab::onExpandButtonClicked(bool checked)
@@ -118,6 +150,14 @@ void EditorTab::setCanWrite(bool canWrite)
     m_editor->setReadOnly(!canWrite);
 }
 
+void EditorTab::showRuntimeError(int line, const QString &message)
+{
+    if (line <= 0)
+        return;
+    m_editor->setLinesToHighlight({{line, "Runtime Error"}});
+    m_editor->setErrorMessage(line - 1, message);
+}
+
 void EditorTab::clearHighlights()
 {
     m_editor->clearHighlights();
@@ -127,10 +167,6 @@ void EditorTab::clearHighlights()
 
 void EditorTab::setErrorLinesFromFile(const std::filesystem::path &filePath)
 {
-    // This will hold all the squiggles we want to draw
-    QList<QTextEdit::ExtraSelection> extraSelections;
-    // m_errorMessages.clear();
-    //  --- 1. Read and Parse the JSON File ---
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly))
     {
@@ -150,29 +186,39 @@ void EditorTab::setErrorLinesFromFile(const std::filesystem::path &filePath)
     QJsonObject rootObject = doc.object();
     QJsonArray errors = rootObject["errors"].toArray();
 
-    // --- 2. Build the ExtraSelection List ---
+    QVector<Diagnostic> diagnostics;
+    diagnostics.reserve(errors.size());
     for (const QJsonValue &value : errors)
     {
         QJsonObject errorObj = value.toObject();
+        diagnostics.append(
+            Diagnostic{errorObj["line"].toInt(), 0, errorObj["message"].toString()});
+    }
 
-        int line = errorObj["line"].toInt();
-        QString message = errorObj["message"].toString();
+    applyDiagnostics(diagnostics);
+}
 
-        if (line <= 0)
+void EditorTab::applyDiagnostics(const QVector<Diagnostic> &diagnostics)
+{
+    m_editor->resetErrors();
+
+    QList<QTextEdit::ExtraSelection> extraSelections;
+    for (const Diagnostic &diagnostic : diagnostics)
+    {
+        if (diagnostic.line <= 0)
             continue; // Skip invalid lines
 
-        QTextBlock block =
-            m_editor->document()->findBlockByNumber(line - 1); // -1 since line is 1 based
+        QTextBlock block = m_editor->document()->findBlockByNumber(
+            diagnostic.line - 1); // -1 since line is 1 based
         if (!block.isValid())
         {
             continue; // Line number is out of bounds
         }
         QTextEdit::ExtraSelection selection;
         selection.format = m_squiggleFormat;
-        m_editor->setErrorMessage(line - 1, message); // passing error to editor for tooltip display
-        // m_errorMessages[line] = message;
-        // selection.format.setToolTip(message);
-        // selection.format.setToolTip("THIS IS A DRILL");
+        m_editor->setErrorMessage(diagnostic.line - 1,
+                                  diagnostic.message); // passing error to editor for tooltip display
+
         QTextCursor cursor(block);
         cursor.movePosition(QTextCursor::StartOfLine);
         cursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
@@ -180,7 +226,6 @@ void EditorTab::setErrorLinesFromFile(const std::filesystem::path &filePath)
         extraSelections.append(selection);
     }
 
-    // --- 4. Apply all squiggles at once ---
     m_editor->setExtraSelections(extraSelections);
     m_expandedView->setExtraSelections(extraSelections);
 }

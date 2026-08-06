@@ -129,6 +129,20 @@ void ProcessorManager::updateEditorHighlight(const ProcessorState &processorStat
     emit updateEditorHighlightSignal(editorLines, disassemblyLines);
 }
 
+int ProcessorManager::resolveCurrentSourceLine() const
+{
+    try
+    {
+        const uint64_t programCounter = m_currentProcessor->program_counter_;
+        return static_cast<int>(
+            m_currentProgram.instruction_number_line_number_mapping.at(programCounter / 4));
+    }
+    catch (const std::out_of_range &)
+    {
+        return -1;
+    }
+}
+
 void ProcessorManager::run()
 {
     try
@@ -137,7 +151,7 @@ void ProcessorManager::run()
     }
     catch (const std::exception &e)
     {
-        emit runErrorSignal(QString::fromStdString(e.what()));
+        emit runErrorSignal(QString::fromStdString(e.what()), resolveCurrentSourceLine());
     }
 }
 
@@ -149,7 +163,7 @@ void ProcessorManager::step()
     }
     catch (const std::exception &e)
     {
-        emit runErrorSignal(QString::fromStdString(e.what()));
+        emit runErrorSignal(QString::fromStdString(e.what()), resolveCurrentSourceLine());
     }
 }
 

@@ -39,6 +39,18 @@ struct ParseError
 };
 
 /**
+ * @brief A normalized view of one parse error (any of the structs in errors.h),
+ * for callers that just want line/column/message without matching on the
+ * specific error struct type.
+ */
+struct DiagnosticInfo
+{
+    unsigned int line;
+    unsigned int column;
+    std::string message;
+};
+
+/**
  * @brief Tracks parsing errors.
  */
 struct ErrorTracker
@@ -195,6 +207,12 @@ class Parser
      * @return A const reference to the vector of parse errors.
      */
     [[nodiscard]] const std::vector<ParseError> &getErrors() const;
+
+    /**
+     * @brief Returns every recorded error normalized to line/column/message,
+     * regardless of which error struct type produced it.
+     */
+    [[nodiscard]] std::vector<DiagnosticInfo> getDiagnostics() const;
 
     /**
      * @brief Returns the data buffer.

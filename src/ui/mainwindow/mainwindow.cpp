@@ -32,7 +32,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     // ui->setuoUi(this);
     setWindowTitle("Kites RISC-V Simulator");
     setWindowIcon(QIcon(":/icons/kite.png"));
-    toggleTheme(ThemeType::Dark);
+    ThemeManager::getInstance(); // applies the persisted (or default) theme before any UI is built
     setupVmStateDirectory();
 
     // well run the vm in a separate thread to keep the ui responsive
@@ -57,16 +57,22 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     setUpTabs();
 
     // m_registerContainer = new RegisterContainer(this);
-    mainLayout->addWidget(m_sidebar);
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     splitter->addWidget(m_stackedTabs);
     splitter->addWidget(m_registerContainer);
     splitter->widget(1)->setMaximumWidth(350);
 
-    mainLayout->addWidget(splitter);
-    mainLayout->setStretchFactor(m_sidebar, 1);
-    mainLayout->setStretchFactor(splitter, 4);
+    // outer splitter makes the sidebar width user-adjustable (Zed-style)
+    QSplitter *outerSplitter = new QSplitter(Qt::Horizontal, this);
+    outerSplitter->addWidget(m_sidebar);
+    outerSplitter->addWidget(splitter);
+    outerSplitter->setCollapsible(1, false);
+    outerSplitter->setStretchFactor(0, 0);
+    outerSplitter->setStretchFactor(1, 1);
+    outerSplitter->setSizes({m_sidebar->sizeHintForColumn(0) + 24, 1000});
+
+    mainLayout->addWidget(outerSplitter);
 
     setCentralWidget(central);
     resize(1200, 800);
@@ -74,10 +80,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     // well temporarily disable the toolbar buttons when vm is running
     connect(m_processorManager, &ProcessorManager::runFinishedSignal, this, &MainWindow::runFinishedSlot);
     connect(m_processorManager, &ProcessorManager::runErrorSignal, this,
-            [this](const QString &errorMessage)
+            [this](const QString &errorMessage, int sourceLine)
             {
                 // first we enable the toolbar buttons
                 runFinishedSlot();
+                auto editorTab = dynamic_cast<EditorTab *>(m_tabs[TabIndex::EditorTabIndex]);
+                if (editorTab)
+                {
+                    editorTab->showRuntimeError(sourceLine, errorMessage);
+                }
                 QMessageBox::critical(this, "Runtime Error", errorMessage);
             });
 
@@ -251,26 +262,20 @@ void MainWindow::setUpToolBar()
 
 void MainWindow::setUpSidebar()
 {
-    m_sidebar->addItem("Editor");
-    m_sidebar->addItem("Memory");
-    m_sidebar->addItem("Processor");
-    m_sidebar->addItem("Cache");
-    m_sidebar->addItem("Compiler");
-    m_sidebar->addItem("Profiler");
-    m_sidebar->setFixedWidth(80);
+    auto &iconManager = IconManager::getInstance();
+    m_sidebar->addItem(new QListWidgetItem(iconManager.getIcon(Icon::Editor), "Editor"));
+    m_sidebar->addItem(new QListWidgetItem(iconManager.getIcon(Icon::Memory), "Memory"));
+    m_sidebar->addItem(new QListWidgetItem(iconManager.getIcon(Icon::Processor), "Processor"));
+    m_sidebar->addItem(new QListWidgetItem(iconManager.getIcon(Icon::Cache), "Cache"));
+    m_sidebar->addItem(new QListWidgetItem(iconManager.getIcon(Icon::Compiler), "Compiler"));
+    m_sidebar->addItem(new QListWidgetItem(iconManager.getIcon(Icon::Profiler), "Profiler"));
+    m_sidebar->setIconSize(QSize(20, 20));
+    m_sidebar->setMinimumWidth(48);
     m_sidebar->setCurrentRow(0);
     // m_sidebar->setFocusPolicy(Qt::ClickFocus);
 
     connect(m_sidebar, &QListWidget::currentRowChanged, m_stackedTabs,
             &QStackedWidget::setCurrentIndex);
-
-    QPalette p = m_sidebar->palette();
-
-    // TODO : get this from theme manager
-    p.setColor(QPalette::Highlight, QColor("#2ecc71"));
-    p.setColor(QPalette::HighlightedText, Qt::white);
-
-    m_sidebar->setPalette(p);
 }
 
 void MainWindow::setUpMenubar()
@@ -282,10 +287,10 @@ void MainWindow::setUpMenubar()
     QMenu *preferencesMenu = new QMenu("Preferences", this);
     QMenu *processorMenu   = new QMenu("Processor", this);
     
-    QAction *openAction  = new QAction("Open", this);
-    QAction *saveAction  = new QAction("Save", this);
+    QAction *openAction  = new QAction(IconManager::getInstance().getIcon(Icon::Open), "Open", this);
+    QAction *saveAction  = new QAction(IconManager::getInstance().getIcon(Icon::Save), "Save", this);
     QAction *exitAction  = new QAction("Exit", this);
-    QAction *aboutAction = new QAction("About", this);
+    QAction *aboutAction = new QAction(IconManager::getInstance().getIcon(Icon::About), "About", this);
 
     ///////////File Menu///////////////////
     fileMenu->addAction(openAction);
@@ -294,18 +299,18 @@ void MainWindow::setUpMenubar()
     fileMenu->addAction(exitAction);
     ////////////Setting Menu////////////////
     settingsMenu->addMenu(preferencesMenu);
-    QAction *lightThemeAction = new QAction("Light", this);
-    lightThemeAction->setCheckable(true); // Make it checkable
-    lightThemeAction->setChecked(true);
-    QAction *darkThemeAction = new QAction("Dark", this);
-    darkThemeAction->setCheckable(true); // Make it checkable
-
     QActionGroup *themeGroup = new QActionGroup(this);
-    themeGroup->addAction(lightThemeAction);
-    themeGroup->addAction(darkThemeAction);
-
-    preferencesMenu->addAction(lightThemeAction);
-    preferencesMenu->addAction(darkThemeAction);
+    themeGroup->setExclusive(true);
+    for (const ThemeData &theme : ThemeManager::getInstance().availableThemes())
+    {
+        QAction *themeAction = new QAction(theme.name, this);
+        themeAction->setCheckable(true);
+        themeAction->setChecked(theme.id == ThemeManager::getInstance().currentThemeId());
+        themeGroup->addAction(themeAction);
+        preferencesMenu->addAction(themeAction);
+        connect(themeAction, &QAction::triggered, this,
+                [this, id = theme.id]() { toggleTheme(id); });
+    }
     //----------------------------------------------
     settingsMenu->addMenu(processorMenu);
     QAction *wireStayActiveAction = new QAction("Wires Stay Active", this);
@@ -323,7 +328,8 @@ void MainWindow::setUpMenubar()
                 }
             });
     //--------------------------------------------------
-    QAction *advancedSettingsAction = new QAction("Advanced Settings", this);
+    QAction *advancedSettingsAction =
+        new QAction(IconManager::getInstance().getIcon(Icon::Settings), "Advanced Settings", this);
     connect(advancedSettingsAction, &QAction::triggered, this,
             [this]()
             {
@@ -334,9 +340,6 @@ void MainWindow::setUpMenubar()
     settingsMenu->addAction(advancedSettingsAction);
     ///////////Help Menu///////////////////
     helpMenu->addAction(aboutAction);
-
-    connect(lightThemeAction, &QAction::triggered, this, [this]() { toggleTheme(ThemeType::Light); });
-    connect(darkThemeAction, &QAction::triggered, this, [this]() { toggleTheme(ThemeType::Dark); });
 
     connect(openAction, &QAction::triggered, this,
             [this]()
@@ -540,12 +543,12 @@ void MainWindow::runFinishedSlot()
 }
 
 
-void MainWindow::toggleTheme(ThemeType theme)
+void MainWindow::toggleTheme(const QString &themeId)
 {
-    ThemeManager::getInstance().setTheme(theme);
+    ThemeManager::getInstance().setTheme(themeId);
 }
 
-void MainWindow::themeChangedSlot([[maybe_unused]]ThemeType theme)
+void MainWindow::themeChangedSlot([[maybe_unused]] const QString &themeId)
 {
     // we will update the icons here based on the theme
     // this is very very hacky but this will do for now
@@ -583,6 +586,28 @@ void MainWindow::themeChangedSlot([[maybe_unused]]ThemeType theme)
                 action->setIcon(IconManager::getInstance().getIcon(Icon::Step));
             }
         }
+    }
+
+    // sidebar icons
+    static const std::array<Icon, toIndex(TabIndex::TabCount)> sidebarIcons = {
+        Icon::Editor, Icon::Memory, Icon::Processor, Icon::Cache, Icon::Compiler, Icon::Profiler};
+    for (int row = 0; row < m_sidebar->count(); ++row)
+    {
+        if (row < static_cast<int>(sidebarIcons.size()))
+            m_sidebar->item(row)->setIcon(IconManager::getInstance().getIcon(sidebarIcons[row]));
+    }
+
+    // menu bar action icons
+    for (QAction *action : this->findChildren<QAction *>())
+    {
+        if (action->text() == "Open")
+            action->setIcon(IconManager::getInstance().getIcon(Icon::Open));
+        else if (action->text() == "Save")
+            action->setIcon(IconManager::getInstance().getIcon(Icon::Save));
+        else if (action->text() == "About")
+            action->setIcon(IconManager::getInstance().getIcon(Icon::About));
+        else if (action->text() == "Advanced Settings")
+            action->setIcon(IconManager::getInstance().getIcon(Icon::Settings));
     }
 }
 
