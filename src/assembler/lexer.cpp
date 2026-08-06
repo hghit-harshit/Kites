@@ -145,7 +145,8 @@ Token Lexer::identifier()
     {
         return {TokenType::LABEL, value, line_number_, start_column};
     }
-    if (!tokens_.empty() && tokens_.back().type == TokenType::COMMA)
+    if (!tokens_.empty() && (tokens_.back().type == TokenType::COMMA || 
+    tokens_.back().type == TokenType::OPCODE))
     {
         return {TokenType::LABEL_REF, value, line_number_, start_column};
     }

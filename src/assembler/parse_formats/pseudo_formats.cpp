@@ -829,7 +829,39 @@ bool Parser::parse_pseudo()
             block.setLineNumber(currentToken().line_number);
             block.setInstructionIndex(instruction_index_);
             block.setRd("x0");
-            block.setLabel(peekToken(1).value);
+            if (symbol_table_.find(peekToken(1).value) != symbol_table_.end() &&
+                !symbol_table_[peekToken(1).value].isData)
+            {
+                uint64_t address = symbol_table_[peekToken(1).value].address;
+                auto offset = static_cast<int64_t>(address - instruction_index_ * 4);
+                if (-1048576 <= offset && offset <= 1048575)
+                {
+                    block.setImm(std::to_string(offset));
+                    block.setLabel(peekToken(1).value);
+                }
+                else
+                {
+                    errors_.count++;
+                    recordError(
+                        ParseError(peekToken(1).line_number, "Immediate value out of range"));
+                    errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
+                        "Immediate value out of range", "Expected: -1048576 <= imm <= 1048575",
+                        filename_, peekToken(1).line_number, peekToken(1).column_number,
+                        GetLineFromFile(filename_, peekToken(1).line_number)));
+                    skipCurrentLine();
+                    return true;
+                }
+            }
+            else
+            {
+                back_patch_.push_back(instruction_index_);
+                block.setLabel(peekToken(1).value);
+                intermediate_code_.emplace_back(block, false);
+                instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
+                instruction_index_++;
+                skipCurrentLine();
+                return true;
+            }
             intermediate_code_.emplace_back(block, true);
             instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
             instruction_index_++;
