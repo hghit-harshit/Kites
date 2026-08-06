@@ -17,11 +17,11 @@ CacheModel::CacheModel(QObject *parent, Cache *cache) : QAbstractTableModel(pare
 void CacheModel::attachCache(Cache *cache)
 {
     beginResetModel();
-    if (m_cache)
-    {
-        //disconnect everything from the old cache
-        disconnect(m_cache,nullptr , this, nullptr);
-    }
+    // if (m_cache)
+    // {
+    //     //disconnect everything from the old cache
+    //     disconnect(m_cache,nullptr , this, nullptr);
+    // }
     m_cache = cache;
     if (m_cache)
     {
