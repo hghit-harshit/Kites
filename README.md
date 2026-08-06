@@ -13,7 +13,7 @@ Prebuilt libraries are available for Linux,Windows on [Release Page](https://git
 
 ### Windows
 - All the required files are inside the zip file, so you can just run the file.
-- In case you get popup regarding some missing dll please contact the us.
+- In case you get popup regarding some missing dll please contact us.
 
 ## Building
 
