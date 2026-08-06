@@ -13,6 +13,7 @@
 #include "processor/registers.h"
 #include "ui/processor_tab/circuit_scene.h"
 #include "processor/processor_constants.h"
+#include "common/undo_buffer.h"
 #include <QList>
 #include <QMap>
 #include <QMutex>
@@ -57,6 +58,22 @@ struct MemoryChange
     uint64_t address;
     std::vector<uint8_t> old_bytes_vec;
     std::vector<uint8_t> new_bytes_vec;
+};
+
+struct StepDelta
+{
+    uint64_t old_pc{};
+    uint64_t new_pc{};
+    unsigned int old_cycle{};
+    unsigned int new_cycle{};
+    unsigned int old_instructions_retired{};
+    unsigned int new_instructions_retired{};
+    unsigned int old_stall_cycles{};
+    unsigned int new_stall_cycles{};
+    unsigned int old_branch_mispredictions{};
+    unsigned int new_branch_mispredictions{};
+    std::vector<RegisterChange> register_changes{};
+    std::vector<MemoryChange> memory_changes{};
 };
 
 /**
@@ -111,7 +128,7 @@ class ProcessorBase : public QObject
 
 
     std::unique_ptr<CircuitScene> circuit_scene_; // Circuit scene for visualization
-
+    UndoBuffer<StepDelta> m_undoBuffer{100};
     void LoadProgram(const AssembledProgram &program);
     uint64_t program_size_ = 0;
 

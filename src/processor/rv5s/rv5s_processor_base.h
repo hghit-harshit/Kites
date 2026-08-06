@@ -21,21 +21,9 @@ struct PipelineRegisterChange
     MEM_WB_Register new_mem_wb_reg;
 };
 
-struct RV5StageStepDelta
+struct RV5StageStepDelta : public StepDelta
 {
-    uint64_t old_pc{};
-    uint64_t new_pc{};
-    unsigned int old_cycle{};
-    unsigned int new_cycle{};
-    unsigned int old_instructions_retired{};
-    unsigned int new_instructions_retired{};
-    unsigned int old_stall_cycles{};
-    unsigned int new_stall_cycles{};
-    unsigned int old_branch_mispredictions{};
-    unsigned int new_branch_mispredictions{};
-    std::vector<RegisterChange> register_changes{};
-    std::vector<MemoryChange> memory_changes{};
-    PipelineRegisterChange pipeline_register_change{};
+    PipelineRegisterChange pipeline_register_change;
 };
 
 class RV5StageVM_Base : public ProcessorBase
@@ -67,7 +55,7 @@ class RV5StageVM_Base : public ProcessorBase
 
     std::stack<RV5StageStepDelta> undo_stack_{};
     std::stack<RV5StageStepDelta> redo_stack_{};
-    RV5StageStepDelta current_delta_{};
+    RV5StageStepDelta current_delta_;
 
     void memory_writeback();
     void memory_writeback_float();

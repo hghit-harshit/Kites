@@ -1097,7 +1097,7 @@ void RVSSProcessor::DebugRun()
             {
                 redo_stack_.pop();
             }
-            current_delta_ = StepDelta();
+            current_delta_ = RVSingleStageStepDelta();
             if (program_counter_ < program_size_)
             {
                 std::cout << "VM_STEP_COMPLETED" << std::endl;
@@ -1157,7 +1157,7 @@ void RVSSProcessor::Step()
             redo_stack_.pop();
         }
 
-        current_delta_ = StepDelta();
+        current_delta_ = RVSingleStageStepDelta();
 
         if (program_counter_ < program_size_)
         {

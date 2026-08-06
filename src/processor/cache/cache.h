@@ -14,14 +14,13 @@
 #include "processor/main_memory.h"
 #include <QObject>
 #include "processor/memory_device.h"
+#include "common/undo_buffer.h"
 
 namespace Kites
 {
 
 struct CacheLine
 {
-    bool     valid = false;
-    bool     dirty = false;
     uint64_t tag   = 0;
 
     // to be used by replacement policies
@@ -29,14 +28,27 @@ struct CacheLine
     uint64_t insertTime = 0;  // set when line is brought in
     uint64_t lastAccess = 0;  // updated on every access
     uint64_t frequency  = 0;  // access frequency counter
-
     std::vector<uint8_t> data{};
+    bool     valid = false;
+    bool     dirty = false;
 
     explicit CacheLine(size_t lineSizeInBytes) : data(lineSizeInBytes, 0)
     {
     }
 };
 
+struct CacheChange
+{
+    size_t newHitCount;
+    size_t oldMissCount;
+    size_t newMissCount;
+    size_t setIndex;
+    size_t wayIndex;
+    size_t oldHitCount;
+    CacheLine oldCacheLine;
+    CacheLine newCacheLine;
+
+};
 //default values for cache configuration
 //maybe we will move its location later on 
 namespace default_cache_config
@@ -82,8 +94,6 @@ public:
     uint32_t readWord(uint64_t address);
     uint64_t readDoubleWord(uint64_t address);
     
-    float readFloat(uint64_t address);
-    double readDouble(uint64_t address);
     void reset();
     void flush(); // write back all dirty lines to memory and and invalidate all lines in cache
 
@@ -153,6 +163,8 @@ private:
     size_t m_writeBackCount {0}; 
     // common setup function 
     void setupCache(size_t cache_size, size_t lineSizeInBytes,size_t wayCount); 
+    //TODO get this buffer size from config
+    UndoBuffer<CacheChange> m_undoBuffer{100};
 signals:
     //TODO : Maybe we can combine hit and miss into one signal with a bool parameter
     void cacheMissSignal(uint64_t address);

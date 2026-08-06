@@ -19,25 +19,18 @@
 // TODO: use a circular buffer instead of a stack for undo/redo
 namespace Kites
 {
-struct StepDelta
+struct RVSingleStageStepDelta : public StepDelta
 {
-    uint64_t old_pc;
-    uint64_t new_pc;
-    std::vector<RegisterChange> register_changes;
-    std::vector<MemoryChange> memory_changes;
+    // uint64_t old_pc;
+    // uint64_t new_pc;
+    // std::vector<RegisterChange> register_changes;
+    // std::vector<MemoryChange> memory_changes;
 };
 
 class RVSSProcessor : public ProcessorBase
 {
   public:
     RVSSControlUnit control_unit_;
-
-    // std::stack<StepDelta> undo_stack_;
-    // std::stack<StepDelta> redo_stack_;
-    // RingUndoRedo history_{1000}; // or however many steps you want to store
-
-    // StepDelta current_delta_;
-
     // intermediate variables
     int64_t execution_result_{};
     int64_t memory_result_{};
@@ -57,7 +50,7 @@ class RVSSProcessor : public ProcessorBase
     std::stack<StepDelta> undo_stack_;
     std::stack<StepDelta> redo_stack_;
 
-    StepDelta current_delta_;
+    RVSingleStageStepDelta current_delta_;
 
     void Fetch();
 
