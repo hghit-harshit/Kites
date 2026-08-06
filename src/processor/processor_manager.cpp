@@ -98,15 +98,33 @@ void ProcessorManager::updateEditorHighlight(const ProcessorState &processorStat
 {
     std::vector<std::pair<int,std::string>> editorLines;
     std::vector<std::pair<int,std::string>> disassemblyLines;
+    const auto addHighlightIfMapped = [&](const std::map<unsigned int, unsigned int> &mapping,
+                                          unsigned int instructionNumber,
+                                          const std::string &stageLabel,
+                                          std::vector<std::pair<int, std::string>> &lines)
+    {
+        const auto it = mapping.find(instructionNumber);
+        if (it == mapping.end())
+        {
+            return false;
+        }
+
+        lines.emplace_back(static_cast<int>(it->second), stageLabel);
+        return true;
+    };
+
     if(m_currentProcessorType == ProcessorType::RVSS)
     {
         auto programCounter = processorState.programCounters[0];
-        auto editorLineNumber = 
-        m_currentProgram.instruction_number_line_number_mapping.at(programCounter/4);
-        auto disassemblyLineNumber = 
-        m_currentProgram.instruction_number_disassembly_mapping.at(programCounter/4);
-        editorLines.emplace_back(editorLineNumber, ".");
-        disassemblyLines.emplace_back(disassemblyLineNumber, ".");
+        const auto instructionNumber = static_cast<unsigned int>(programCounter / 4);
+        addHighlightIfMapped(m_currentProgram.instruction_number_line_number_mapping,
+                             instructionNumber,
+                             ".",
+                             editorLines);
+        addHighlightIfMapped(m_currentProgram.instruction_number_disassembly_mapping,
+                             instructionNumber,
+                             ".",
+                             disassemblyLines);
     }
     else
     {
@@ -115,13 +133,18 @@ void ProcessorManager::updateEditorHighlight(const ProcessorState &processorStat
         {
             auto stagePC = processorState.programCounters[i];
             if(stagePC == INVALID_PC) continue; // skip stages that are not active
-            
-            editorLines.emplace_back(
-            m_currentProgram.instruction_number_line_number_mapping.at(stagePC/4),
-            pipelineStageToString(static_cast<PipelineStage>(i))); 
-            disassemblyLines.emplace_back(
-            m_currentProgram.instruction_number_disassembly_mapping.at(stagePC/4),
-            pipelineStageToString(static_cast<PipelineStage>(i)));
+
+            const auto instructionNumber = static_cast<unsigned int>(stagePC / 4);
+            const auto stageLabel = pipelineStageToString(static_cast<PipelineStage>(i));
+
+            addHighlightIfMapped(m_currentProgram.instruction_number_line_number_mapping,
+                                 instructionNumber,
+                                 stageLabel,
+                                 editorLines);
+            addHighlightIfMapped(m_currentProgram.instruction_number_disassembly_mapping,
+                                 instructionNumber,
+                                 stageLabel,
+                                 disassemblyLines);
             
         }
         
