@@ -95,6 +95,11 @@ void RegisterContainer::setupRegisterTable()
         tableView->verticalHeader()->setVisible(false);
         tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
+        auto* header = tableView->horizontalHeader();
+        header->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(2, QHeaderView::Stretch);
+
         section->setContentWidget(tableView);
         sectionsLayout->addWidget(section);
     }

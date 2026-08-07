@@ -72,7 +72,7 @@ QVariant RegisterModel::data(const QModelIndex &index, int role) const
     {
         if (static_cast<size_t>(index.row()) == m_highlightedRegisterIndex)
         {
-            return QBrush(QColor("#e81313")); // Highlight color for the updated register
+            return QBrush(QColor("#b13232fd")); // Highlight color for the updated register
         }
     }
     if (role == Qt::DisplayRole || role == Qt::ToolTipRole)
