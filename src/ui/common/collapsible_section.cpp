@@ -8,7 +8,7 @@ namespace Kites
 {
 namespace
 {
-constexpr int kAnimationDurationMs = 150;
+constexpr int animationDurationMs = 150;
 }
 
 CollapsibleSection::CollapsibleSection(const QString &title, QWidget *parent)
@@ -37,10 +37,23 @@ CollapsibleSection::CollapsibleSection(const QString &title, QWidget *parent)
     connect(m_animation, &QParallelAnimationGroup::finished, this,
             [this]()
             {
-                // once fully open, let the body grow with the layout instead of
-                // staying pinned to the sizeHint captured at animation start
                 if (m_headerButton->isChecked())
+                {
+                    // Fully open: let the body grow with the layout instead of
+                    // staying pinned to the sizeHint captured at animation start,
+                    // and let this section itself compete for/absorb extra space.
                     m_bodyWidget->setMaximumHeight(QWIDGETSIZE_MAX);
+                    setMaximumHeight(QWIDGETSIZE_MAX);
+                    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+                }
+                else
+                {
+                    // Fully collapsed: stop competing for leftover space in the
+                    // parent layout so sibling sections take it instead.
+                    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+                    setMaximumHeight(m_headerButton->sizeHint().height());
+                }
+                updateGeometry();
             });
 
     connect(m_headerButton, &QToolButton::toggled, this,
@@ -79,7 +92,7 @@ void CollapsibleSection::setExpanded(bool expanded, bool animate)
 
     m_animation->stop();
     auto *heightAnimation = qobject_cast<QPropertyAnimation *>(m_animation->animationAt(0));
-    heightAnimation->setDuration(animate ? kAnimationDurationMs : 0);
+    heightAnimation->setDuration(animate ? animationDurationMs : 0);
     heightAnimation->setStartValue(m_bodyWidget->maximumHeight());
     heightAnimation->setEndValue(targetHeight);
     m_animation->start();
