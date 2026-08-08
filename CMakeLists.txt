@@ -8,7 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # This works for Harshit
 # set( CMAKE_PREFIX_PATH "D:/QT/6.9.2/mingw_64/lib/cmake")
 # set(MINGW_PATH "D:/Qt/Tools/mingw1310_64")
-find_package(Qt6 6.9 REQUIRED COMPONENTS Core Widgets Network Concurrent)
+find_package(Qt6 6.6.3 REQUIRED COMPONENTS Core Widgets Network Concurrent)
 
 # This works for Atharva
 # set(CMAKE_PREFIX_PATH "/home/atharv/Qt/6.10.0/gcc_64")
