@@ -18,7 +18,7 @@ jobs:
           # ---------------- LINUX ----------------
           - os: ubuntu-22.04
             qt_version: '6.8.3'
-            qt_arch: gcc_64
+            qt_arch: linux_gcc_64
             qt_tools: ''
             executable_path: build/Kites
 
