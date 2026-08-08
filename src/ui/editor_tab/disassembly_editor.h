@@ -1,5 +1,6 @@
 #pragma once
 #include "ui/common/kites_editor.h"
+#include <set>
 #include <QPainter>
 namespace Kites
 {
