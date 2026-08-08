@@ -128,64 +128,129 @@ bool Parser::parse_pseudo()
         {
             ICUnit block;
             block.setOpcode(currentToken().value);
-            int64_t imm = std::stoll(peekToken(3).value);
+            uint64_t imm = std::stoull(peekToken(3).value,nullptr,0);
             std::string reg = reg_alias_to_name.at(peekToken(1).value);
-            if (-2048 <= imm && imm <= 2047)
-            {
-                block.setLineNumber(currentToken().line_number);
-                block.setInstructionIndex(instruction_index_);
-                block.setOpcode("addi");
-                block.setRd(reg);
-                block.setRs1("x0");
-                block.setImm(peekToken(3).value);
-                intermediate_code_.emplace_back(block, true);
-                instruction_number_line_number_mapping_[instruction_index_++] =
-                    block.getLineNumber();
-            }
-            else if (-2147483648LL <= imm && imm <= 2147483647LL)
-            {
-                int64_t upper = (imm + (1 << 11)) >> 12;
-                int64_t lower = imm - (upper << 12);
 
+            auto emitAddi = [&](const std::string &rd, int64_t imm)
+            {
+                ICUnit addiBlock;
+                addiBlock.setLineNumber(currentToken().line_number);
+                addiBlock.setInstructionIndex(instruction_index_);
+                addiBlock.setOpcode("addi");
+                addiBlock.setRd(rd);
+                addiBlock.setRs1(rd);
+                addiBlock.setImm(std::to_string(imm));
+                intermediate_code_.emplace_back(addiBlock, true);
+                instruction_number_line_number_mapping_[instruction_index_++] = addiBlock.getLineNumber();
+            };
+
+            auto emitLui = [&](const std::string &rd, int64_t top20)
+            {
                 ICUnit luiBlock;
                 luiBlock.setLineNumber(currentToken().line_number);
                 luiBlock.setInstructionIndex(instruction_index_);
                 luiBlock.setOpcode("lui");
-                luiBlock.setRd(reg);
-                luiBlock.setImm(std::to_string(upper));
+                luiBlock.setRd(rd);
+                luiBlock.setImm(std::to_string(top20));
                 intermediate_code_.emplace_back(luiBlock, true);
-                instruction_number_line_number_mapping_[instruction_index_++] =
-                    luiBlock.getLineNumber();
+                instruction_number_line_number_mapping_[instruction_index_++] = luiBlock.getLineNumber();
+            };
 
-                if (lower != 0)
-                {
-                    ICUnit addiBlock;
-                    addiBlock.setLineNumber(currentToken().line_number);
-                    addiBlock.setInstructionIndex(instruction_index_);
-                    addiBlock.setOpcode("addi");
-                    addiBlock.setRd(reg);
-                    addiBlock.setRs1(reg);
-                    addiBlock.setImm(std::to_string(lower));
-                    intermediate_code_.emplace_back(addiBlock, true);
-                    instruction_number_line_number_mapping_[instruction_index_++] =
-                        addiBlock.getLineNumber();
-                }
-            }
-            else if (INT64_MIN <= imm && imm <= INT64_MAX)
+            auto emitSlli = [&](const std::string &rd, int shift)
             {
-                errors_.count++;
-                recordError(ParseError(currentToken().line_number, "Immediate value out of range"));
-                errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
-                    "Immediate value out of range", "Expected: -2^31 <= imm <= 2^31 - 1", filename_,
-                    currentToken().line_number, currentToken().column_number,
-                    GetLineFromFile(filename_, currentToken().line_number)));
+                ICUnit slliBlock;
+                slliBlock.setLineNumber(currentToken().line_number);
+                slliBlock.setInstructionIndex(instruction_index_);
+                slliBlock.setOpcode("slli");
+                slliBlock.setRd(rd);
+                slliBlock.setRs1(rd);
+                slliBlock.setImm(std::to_string(shift));
+                intermediate_code_.emplace_back(slliBlock, true);
+                instruction_number_line_number_mapping_[instruction_index_++] = slliBlock.getLineNumber();
+            };
+
+            auto emitLi32 = [&](const std::string &rd, uint64_t value)
+            {
+                int64_t signedValue = static_cast<int64_t>(value);
+                if (-2048 <= signedValue && signedValue <= 2047)
+                {
+                    ICUnit block;
+                    block.setLineNumber(currentToken().line_number);
+                    block.setInstructionIndex(instruction_index_);  
+                    block.setOpcode("addi");
+                    block.setRd(rd);
+                    block.setRs1("x0");
+                    block.setImm(std::to_string(signedValue));
+                    intermediate_code_.emplace_back(block, true);
+                    instruction_number_line_number_mapping_[instruction_index_++] = block.getLineNumber();
+                    return;
+                }
+
+                int64_t upper = (signedValue + 2048) >> 12;
+                int64_t lower = signedValue - (upper << 12);
+                emitLui(rd, upper);
+                if (lower != 0)
+                    emitAddi(rd, lower);
+            };
+
+            auto countTrailingZeros64 = [](uint64_t v) -> int
+            {
+                if (v == 0)
+                    return 64;
+                int count = 0;
+                while ((v & 1) == 0)
+                {
+                    v >>= 1;
+                    ++count;
+                }
+                return count;
+            };
+
+            auto fitsIn32Bits = [](uint64_t value) -> bool
+            {
+                int64_t signedValue = static_cast<int64_t>(value);
+                // Truncate to 32 bits, then sign-extend back to 64.
+                // If that round-trip reproduces the original value, it fits in a signed 32-bit range.
+                return signedValue == static_cast<int64_t>(static_cast<int32_t>(signedValue));
+            };
+
+            if (0 <= imm && imm <= UINT64_MAX)
+            {
+                // RV64: repeatedly peel off a 12-bit signed chunk until the
+                // remaining "upper" value fits lui's 20-bit field. Collect the
+                // chunks low-to-high, then emit high-to-low (lui, then
+                // slli+addi per remaining chunk).
+                std::function<void(const std::string &, uint64_t)> emitLi =
+                [&](const std::string &rd, uint64_t value)
+                {
+                    if (fitsIn32Bits(value))
+                    {
+                        emitLi32(rd, value);
+                        return;
+                    }
+
+                    uint64_t lo12 = value & 0xFFF;
+                    if (lo12 & 0x800)
+                        lo12 -= 0x1000; // signExtend12
+
+                    value -= lo12;
+
+                    int shift = countTrailingZeros64(static_cast<uint64_t>(value));
+                    value >>= shift;
+
+                    emitLi(rd, value);
+                    emitSlli(rd, shift);
+                    if (lo12 != 0)
+                        emitAddi(rd, lo12);
+                };
+                emitLi(reg, imm);
             }
             else
             {
                 errors_.count++;
                 recordError(ParseError(currentToken().line_number, "Immediate value out of range"));
                 errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
-                    "Immediate value out of range", "Expected: -2^31 <= imm <= 2^31 - 1", filename_,
+                    "Immediate value out of range", "Expected: -2^63 <= imm <= 2^63 - 1", filename_,
                     currentToken().line_number, currentToken().column_number,
                     GetLineFromFile(filename_, currentToken().line_number)));
             }

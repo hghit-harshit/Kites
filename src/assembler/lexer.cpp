@@ -193,26 +193,26 @@ Token Lexer::number()
     {
         bool is_negative = value[0] == '-';
         value = (is_negative ? "-" : "") + value.substr(is_negative ? 3 : 2);
-        return {TokenType::NUM, std::to_string(std::stoll(value, nullptr, 16)), line_number_,
+        return {TokenType::NUM, std::to_string(std::stoull(value, nullptr, 16)), line_number_,
                 start_column};
     }
     else if (std::regex_match(value, binary_regex))
     {
         bool is_negative = value[0] == '-';
         value = (is_negative ? "-" : "") + value.substr(is_negative ? 3 : 2);
-        return {TokenType::NUM, std::to_string(std::stoll(value, nullptr, 2)), line_number_,
+        return {TokenType::NUM, std::to_string(std::stoull(value, nullptr, 2)), line_number_,
                 start_column};
     }
     else if (std::regex_match(value, octal_regex))
     {
         bool is_negative = value[0] == '-';
         value = (is_negative ? "-" : "") + value.substr(is_negative ? 3 : 2);
-        return {TokenType::NUM, std::to_string(std::stoll(value, nullptr, 8)), line_number_,
+        return {TokenType::NUM, std::to_string(std::stoull(value, nullptr, 8)), line_number_,
                 start_column};
     }
     else if (std::regex_match(value, decimal_regex))
     {
-        return {TokenType::NUM, std::to_string(std::stoll(value, nullptr, 10)), line_number_,
+        return {TokenType::NUM, std::to_string(std::stoull(value, nullptr, 10)), line_number_,
                 start_column};
     }
     else if (std::regex_match(value, float_regex))

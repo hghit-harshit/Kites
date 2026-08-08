@@ -99,7 +99,7 @@ bool Parser::parse_O_GPR_C_GPR_C_I()
 
             if (instruction_set::isValidI2TypeInstruction(block.getOpcode()))
             {
-                if (0 <= imm && imm <= 31)
+                if (0 <= imm && imm <= 63)
                 {
                     block.setImm(std::to_string(imm));
                 }
@@ -109,7 +109,7 @@ bool Parser::parse_O_GPR_C_GPR_C_I()
                     recordError(
                         ParseError(peekToken(5).line_number, "Immediate value out of range"));
                     errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
-                        "Immediate value out of range", "Expected: 0 <= imm <= 31", filename_,
+                        "Immediate value out of range", "Expected: 0 <= imm <= 63", filename_,
                         peekToken(5).line_number, peekToken(5).column_number,
                         GetLineFromFile(filename_, peekToken(5).line_number)));
                     skipCurrentLine();
