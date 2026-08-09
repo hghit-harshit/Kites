@@ -15,7 +15,7 @@ Prebuilt libraries are available for Linux,Windows on [Release Page](https://git
 - All the required files are inside the zip file, so you can just run the file.
 - In case you get popup regarding some missing dll please contact us.
 
-##MacOS
+## MacOS
 -Put Kites in the application folder
 - run application/kites.app/contents/macos/kites
 
