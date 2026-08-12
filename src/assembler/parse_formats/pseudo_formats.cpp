@@ -76,7 +76,6 @@ bool Parser::parse_pseudo()
             }
             else
             {
-                errors_.count++;
                 recordError(ParseError(currentToken().line_number, "Invalid label reference"));
                 errors_.all_errors.emplace_back(errors::InvalidLabelRefError(
                     "Invalid label reference", "Expected: Label defined in .data section",
@@ -247,7 +246,6 @@ bool Parser::parse_pseudo()
             }
             else
             {
-                errors_.count++;
                 recordError(ParseError(currentToken().line_number, "Immediate value out of range"));
                 errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                     "Immediate value out of range", "Expected: -2^63 <= imm <= 2^63 - 1", filename_,
@@ -906,7 +904,6 @@ bool Parser::parse_pseudo()
                 }
                 else
                 {
-                    errors_.count++;
                     recordError(
                         ParseError(peekToken(1).line_number, "Immediate value out of range"));
                     errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(

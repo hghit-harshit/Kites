@@ -459,7 +459,6 @@ bool Parser::parse_O_FPR_C_I_LP_GPR_RP()
             }
             else
             {
-                errors_.count++;
                 recordError(ParseError(peekToken(3).line_number, "Immediate value out of range"));
                 errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                     "Immediate value out of range", "Expected: -2048 <= imm <= 2047", filename_,
@@ -482,7 +481,6 @@ bool Parser::parse_O_FPR_C_I_LP_GPR_RP()
             }
             else
             {
-                errors_.count++;
                 recordError(ParseError(peekToken(3).line_number, "Immediate value out of range"));
                 errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                     "Immediate value out of range", "Expected: -2048 <= imm <= 2047", filename_,
