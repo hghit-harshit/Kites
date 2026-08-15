@@ -510,7 +510,11 @@ void RVSSProcessor::HandleSyscall()
         }
         output_status_ = "VM_EXIT";
         std::cout << "Exited with exit code: " << registers_.ReadGpr(10) << std::endl;
-        exit(0); // Exit the program
+        // Deliberately no exit() here. HandleSyscall runs on the VM worker
+        // thread, and exit() would run static destructors (including Qt's font
+        // database) from that thread while the GUI thread is still painting -
+        // a use-after-free that segfaults. stop_requested_ above already ends
+        // the Run() loop, which unwinds normally and lets the UI settle.
         break;
     }
     case SYSCALL_READ:
