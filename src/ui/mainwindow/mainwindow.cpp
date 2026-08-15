@@ -614,6 +614,11 @@ void MainWindow::themeChangedSlot([[maybe_unused]] const QString &themeId)
 MainWindow::~MainWindow()
 {
     m_processorManager->stop();
+    if(m_processorThread->isRunning())
+    {
+        m_processorThread->quit();
+        m_processorThread->wait();
+    }
     // delete ui;
 }
 } // namespace Kites
