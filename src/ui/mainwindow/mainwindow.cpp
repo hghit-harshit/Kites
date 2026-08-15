@@ -617,7 +617,20 @@ void MainWindow::themeChangedSlot([[maybe_unused]] const QString &themeId)
 
 MainWindow::~MainWindow()
 {
+    // m_processorThread is a child of this window, so ~QWidget will delete it.
+    // Qt calls qFatal() ("QThread: Destroyed while thread is still running") if
+    // a running QThread is destroyed, so it has to be stopped and joined first:
+    // stop() only breaks the VM's run loop, it does not end the event loop the
+    // thread is sitting in.
     m_processorManager->stop();
+    m_processorThread->quit();
+    if (!m_processorThread->wait(5000))
+    {
+        // A wedged VM thread is not worth aborting the whole process over.
+        // Detach it so it is not deleted here and let process exit reap it.
+        qWarning("Kites: VM thread did not stop in time; detaching it to finish shutdown.");
+        m_processorThread->setParent(nullptr);
+    }
     // delete ui;
 }
 } // namespace Kites
