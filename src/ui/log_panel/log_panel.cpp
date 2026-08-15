@@ -6,6 +6,7 @@ LogPanel *LogPanel::instance = nullptr;
 LogPanel::LogPanel(QWidget *parent) : QPlainTextEdit(parent)
 {
     instance = this;
+    resize(600, 400);
     setReadOnly(true);
 }
 
