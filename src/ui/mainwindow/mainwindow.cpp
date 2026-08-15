@@ -13,6 +13,7 @@
 #include "ui/processor_tab/processortab.h"
 #include "ui/profiler_tab/profilertab.h"
 #include "ui/theme/icon_manager.h"
+#include "updater/update_service.h"
 #include "ui_mainwindow.h"
 #include "utils/utils.h"
 #include <QActionGroup>
@@ -340,6 +341,9 @@ void MainWindow::setUpMenubar()
     settingsMenu->addAction(advancedSettingsAction);
     ///////////Help Menu///////////////////
     helpMenu->addAction(aboutAction);
+    // Adds "Check for Updates..." and schedules a quiet check after startup.
+    // Entire updater lives in src/updater/; this is its only hookup.
+    UpdateService::attachTo(helpMenu, this);
 
     connect(openAction, &QAction::triggered, this,
             [this]()
