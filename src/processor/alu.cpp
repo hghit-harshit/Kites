@@ -221,6 +221,11 @@ namespace alu
         uint64_t result = a >> (b & 63);
         return {result, false};
     }
+    case AluOp::SRLI:
+    {
+        uint64_t result = a >> (b & 63);
+        return {result, false};
+    }
     case AluOp::SRLW:
     {
         auto sa = static_cast<uint32_t>(a);
@@ -229,6 +234,11 @@ namespace alu
         return {static_cast<uint64_t>(static_cast<int32_t>(result)), false};
     }
     case AluOp::SRA:
+    {
+        auto sa = static_cast<int64_t>(a);
+        return {static_cast<uint64_t>(sa >> (b & 63)), false};
+    }
+    case AluOp::SRAI:
     {
         auto sa = static_cast<int64_t>(a);
         return {static_cast<uint64_t>(sa >> (b & 63)), false};

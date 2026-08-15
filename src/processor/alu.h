@@ -59,8 +59,10 @@ enum class AluOp
     SLL,    ///< Shift left logical operation.
     SLLW,   ///< Shift left logical word operation.
     SRL,    ///< Shift right logical operation.
+    SRLI,   ///< Shift right logical immediate operation.
     SRLW,   ///< Shift right logical word operation.
     SRA,    ///< Shift right arithmetic operation.
+    SRAI,   ///< Shift right arithmetic immediate operation.
     SRAW,   ///< Shift right arithmetic word operation.
     SLT,    ///< Set less than operation.
     SLTU,   ///< Unsigned set less than operation.

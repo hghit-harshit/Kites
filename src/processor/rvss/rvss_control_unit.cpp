@@ -128,7 +128,7 @@ alu::AluOp RVSSControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
     uint8_t funct7 = (instruction >> 25) & 0b1111111;
     uint8_t funct5 = (instruction >> 20) & 0b11111;
     uint8_t funct2 = (instruction >> 25) & 0b11;
-    // uint8_t funct6 = (instruction >> 26) & 0b111111;
+    uint8_t funct6 = (instruction >> 26) & 0b111111;
 
     switch (opcode)
     {
@@ -316,16 +316,16 @@ alu::AluOp RVSSControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
         }
         case 0b101:
         { // SRLI & SRAI
-            switch (funct7)
+            switch (funct6)
             {
-            case 0b0000000:
+            case 0b000000:
             { // SRLI
-                return alu::AluOp::SRL;
+                return alu::AluOp::SRLI;
                 break;
             }
-            case 0b0100000:
+            case 0b010000:
             { // SRAI
-                return alu::AluOp::SRA;
+                return alu::AluOp::SRAI;
                 break;
             }
             }
