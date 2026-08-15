@@ -31,8 +31,8 @@ Lexer::Lexer(std::string filename)
     input_ = file_input_.get();
 }
 
-Lexer::Lexer(std::istream &source, std::string virtualFilename)
-    : filename_(std::move(virtualFilename)), input_(&source), line_number_(0),
+Lexer::Lexer(std::istream &source)
+    : filename_("<stream>"), input_(&source), line_number_(0),
       column_number_(0), pos_(0)
 {
 }
@@ -192,7 +192,7 @@ Token Lexer::number()
     auto parserUnsignedPrefixed = 
     [](const std::string& value, int base, unsigned prefixLenght)->std::string
     {
-         bool is_negative = value[0] == '-';
+        bool is_negative = value[0] == '-';
         std::string digits = value.substr(is_negative ? prefixLenght + 1 : prefixLenght);
         uint64_t magnitude = std::stoull(digits, nullptr, base);
         return (is_negative ? "-" : "") + std::to_string(magnitude);

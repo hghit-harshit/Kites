@@ -10,9 +10,6 @@
 #include "code_generator.h"
 #include "common/globals.h"
 #include "utils/utils.h"
-
-
-
 #include <algorithm>
 #include <iostream>
 #include <map>
@@ -104,19 +101,24 @@ AssembledProgram assemble(const std::string &filename)
     return program;
 }
 
-AssembledProgram assemble(std::istream &source, const std::string &virtualFilename,
-                          std::vector<DiagnosticInfo> &diagnosticsOut)
+AssembledProgram assemble(std::istream& source)
 {
-    diagnosticsOut.clear();
+    std::unique_ptr<Lexer> lexer;
+    try
+    {
+        lexer = std::make_unique<Lexer>(source);
+    }
+    catch (const std::runtime_error &e)
+    {
+        throw std::runtime_error("Failed to read from stream");
+    }
 
-    Lexer lexer(source, virtualFilename);
-    std::vector<Token> tokens = lexer.getTokenList();
-
-    Parser parser(lexer.getFilename(), tokens);
+    std::vector<Token> tokens = lexer->getTokenList();
+    Parser parser(lexer->getFilename(), tokens);
     parser.parse();
 
     AssembledProgram program;
-    program.filename = virtualFilename;
+    program.filename = lexer->getFilename();
 
     if (parser.getErrorCount() == 0)
     {
@@ -124,9 +126,30 @@ AssembledProgram assemble(std::istream &source, const std::string &virtualFilena
     }
     else
     {
-        diagnosticsOut = parser.getDiagnostics();
+        throw std::runtime_error("Failed to parse stream");
     }
 
     return program;
+}
+
+std::vector<ParseError> getDiagnostics(std::istream &source, const std::string &virtualFilename)
+{
+    // std::vector<ParseError> parseErrors{};
+
+    // Lexer lexer(source, virtualFilena);
+    // std::vector<Token> tokens = lexer.getTokenList();
+
+    // Parser parser(lexer.getFilename(), tokens);
+    // parser.parse();
+
+    // AssembledProgram program;
+    // program.filename = virtualFilename;
+
+    // if (parser.getErrorCount() != 0)
+    // {
+    //     parseErrors = parser.getErrors();
+    // }
+    
+    // return parseErrors;
 }
 }//namespace Kites

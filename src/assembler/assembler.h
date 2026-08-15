@@ -32,6 +32,14 @@ AssembledProgram assemble(const std::string &filename);
 
 /**
  * @brief Assembles source read from an in-memory stream, without touching disk.
+ * 
+ * @param source 
+ * @return AssembledProgram 
+ */
+AssembledProgram assemble(std::istream &source);
+
+/**
+ * @brief Assembles source read from an in-memory stream, without touching disk.
  *
  * Used for live diagnostics on editor content that hasn't been saved. Unlike the
  * file-based overload, this never writes the disassembly/error dump files (those
@@ -45,8 +53,7 @@ AssembledProgram assemble(const std::string &filename);
  * @param diagnosticsOut Populated with every parse error/diagnostic found.
  * @return The assembled program (only meaningful when diagnosticsOut is empty).
  */
-AssembledProgram assemble(std::istream &source, const std::string &virtualFilename,
-                          std::vector<DiagnosticInfo> &diagnosticsOut);
+std::vector<ParseError> getDiagnostics(std::istream &source, const std::string &virtualFilename);
 
 }  // namespace Kites
 
