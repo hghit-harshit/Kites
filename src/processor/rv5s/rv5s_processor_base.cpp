@@ -36,6 +36,8 @@ void RV5StageVM_Base::Run()
             if (stop_requested_) // if we were requested to stop while paused
                 break;
         }
+        last_executed_pc_ = id_ex_reg_.pc; // this pc will be executed in this step, 
+        //so we set it as the last executed pc before we step
         Step();
         SetActiveWireNames();
         cpi_ = instructions_retired_
@@ -142,11 +144,13 @@ void RV5StageVM_Base::finalize_step_delta()
 
 void RV5StageVM_Base::setProcessorState()
 {
-    processor_state_.programCounters[toIndex(PipelineStage::IF)]  = program_counter_;
-    processor_state_.programCounters[toIndex(PipelineStage::ID)]  = if_id_reg_.pc;
-    processor_state_.programCounters[toIndex(PipelineStage::EX)]  = id_ex_reg_.pc;
-    processor_state_.programCounters[toIndex(PipelineStage::MEM)] = ex_mem_reg_.pc;
-    processor_state_.programCounters[toIndex(PipelineStage::WB)]  = mem_wb_reg_.pc;
+    // processor_state_.programCounters[toIndex(PipelineStage::IF)]  = program_counter_;
+    // processor_state_.programCounters[toIndex(PipelineStage::ID)]  = if_id_reg_.pc;
+    // processor_state_.programCounters[toIndex(PipelineStage::EX)]  = id_ex_reg_.pc;
+    // processor_state_.programCounters[toIndex(PipelineStage::MEM)] = ex_mem_reg_.pc;
+    // processor_state_.programCounters[toIndex(PipelineStage::WB)]  = mem_wb_reg_.pc;
+    processor_state_.programCounters = 
+    {program_counter_, if_id_reg_.pc, id_ex_reg_.pc, ex_mem_reg_.pc, mem_wb_reg_.pc};
 }
 
 void RV5StageVM_Base::pipeline_decode()

@@ -67,7 +67,7 @@ public:
     unsigned int getCycles() const;
     unsigned int getInstructionsRetired() const;
 private:
-    void updateEditorHighlight(const ProcessorState &processorState);
+    void updateEditorHighlight(const std::vector<uint64_t>& programCounters);
     // Maps the current program counter back to a 1-based editor source line,
     // or -1 if it isn't in the current program's mapping.
     int resolveCurrentSourceLine() const;
@@ -83,6 +83,8 @@ public slots:
     void processorClockedSlot(const ProcessorState &processorState);
 
 signals:
+    //this just forwards the signal from the current processor to the gui
+    void processorClockedSignal(const ProcessorState &processorState);
     void runFinishedSignal();
     void processorStateChangedSignal();
     void processorPausedAtBreakpointSignal();

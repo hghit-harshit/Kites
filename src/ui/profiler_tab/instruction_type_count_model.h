@@ -19,6 +19,9 @@ class InstructionTypeCountModel : public QAbstractTableModel
                         int role = Qt::DisplayRole) const override;
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+
+    public slots:
+    void updateInstructionTypeCountsSlot();
     
     private:
 

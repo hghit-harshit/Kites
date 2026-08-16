@@ -56,6 +56,11 @@ EditorTab::EditorTab(QWidget *parent, ProcessorManager *vmManager)
     m_diagnosticsDebounceTimer->setInterval(300);
     connect(m_diagnosticsDebounceTimer, &QTimer::timeout, this,
             &EditorTab::requestLiveDiagnostics);
+    // connect(m_diagnosticsDebounceTimer, &QTimer::timeout, this,
+    //         [this]()
+    //         {
+                
+    //         });
     connect(m_editor, &QPlainTextEdit::textChanged, this,
             [this]() { m_diagnosticsDebounceTimer->start(); });
 }

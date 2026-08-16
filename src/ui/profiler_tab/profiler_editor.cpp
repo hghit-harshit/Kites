@@ -12,7 +12,8 @@
 namespace Kites
 {
 
-ProfilerEditor::ProfilerEditor(QWidget *parent) : KitesEditor(parent)
+ProfilerEditor::ProfilerEditor(QWidget *parent, Profiler* profiler) : KitesEditor(parent)
+// m_lineStatsModel(new LineStatsModel(this, profiler))
 {
     m_syntaxHighlighter = new SyntaxHighlighter(this->document());
     setReadOnly(true);
@@ -98,5 +99,56 @@ QColor ProfilerEditor::heatBackgroundColor(int hitCount) const
     double t = (double)hitCount / m_maxExecutionCount;
     int alpha = static_cast<int>(12 + t * 40);
     return QColor(216, 90, 48, alpha);
+}
+
+void ProfilerEditor::incrementLineExecutionCountSlot(int lineNumber)
+{
+    qDebug() << "Incrementing execution count for line: " << lineNumber;
+    m_lineNumberToExecutionCounts[lineNumber]++;
+
+    for (const auto &pair : m_lineNumberToExecutionCounts)
+    {
+        m_maxExecutionCount = std::max(m_maxExecutionCount, pair.second);
+    }
+
+    QList<QTextEdit::ExtraSelection> selections;
+    for (const auto &pair : m_lineNumberToExecutionCounts)
+    {
+        const int lineNumber = pair.first;
+        const int hits = pair.second;
+        if (hits <= 0 || lineNumber <= 0)
+        {
+            continue;
+        }
+
+        QTextBlock block = document()->findBlockByNumber(lineNumber - 1);
+        if (!block.isValid())
+        {
+            continue;
+        }
+
+        QTextEdit::ExtraSelection selection;
+        selection.cursor = QTextCursor(block);
+        selection.cursor.clearSelection();
+        selection.format.setBackground(heatBackgroundColor(hits));
+        selection.format.setProperty(QTextFormat::FullWidthSelection, true);
+        selections.append(selection);
+    }
+    setExtraSelections(selections);
+    viewport()->update();
+}
+
+void ProfilerEditor::updateLineInstructionTypeSlot
+(const std::map<int, instruction_set::InstructionType> &instructionTypes)
+{
+    m_lineNumberToInstructionType.clear();
+    for (const auto &pair : instructionTypes)
+    {
+        int lineNumber = pair.first;
+        instruction_set::InstructionType instrType = pair.second;
+        m_lineNumberToInstructionType[lineNumber] = 
+        instruction_set::instructionTypeNames[toIndex(instrType)];
+    }
+    viewport()->update();
 }
 } // namespace Kites

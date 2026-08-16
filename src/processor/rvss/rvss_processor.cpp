@@ -108,6 +108,7 @@ void RVSSProcessor::setProcessorState()
 {
     processor_state_.programCounters = 
     {program_counter_,INVALID_PC,INVALID_PC,INVALID_PC,INVALID_PC};
+    processor_state_.lastExecutedPC = last_executed_pc_;
 }
 
 void RVSSProcessor::Run()
@@ -139,9 +140,8 @@ void RVSSProcessor::Run()
                 break;
             }
         }
+        last_executed_pc_ = program_counter_;
         Step();
-        instructions_retired_++;
-        cycle_s_++;
         SetActiveWireNames();
         setProcessorState();
         emit processorClockedSignal(processor_state_);
@@ -1178,10 +1178,6 @@ void RVSSProcessor::Step()
     DumpRegisters(globals::registers_dump_file_path, registers_);
     DumpState(globals::vm_state_dump_file_path);
 
-    SetActiveWireNames();
-    setProcessorState();
-    emit updateCircuitStateSignal(active_wires_);
-    emit processorClockedSignal(processor_state_);
 }
 
 void RVSSProcessor::Undo()

@@ -1,40 +1,40 @@
 #pragma once
 #include "processor/processor_types.h"
 #include "utils/to_index.h"
-#include <array>
+#include <vector>
 #include <cstdint>
 #include <string>
 #include <vector>
 namespace Kites
 {
-enum class PipelineStage
-{
-    IF,
-    ID,
-    EX,
-    MEM,
-    WB,
-    PipelineStageCount
-};
+// enum class PipelineStage
+// {
+//     IF,
+//     ID,
+//     EX,
+//     MEM,
+//     WB,
+//     PipelineStageCount
+// };
 
-inline std::string pipelineStageToString(PipelineStage stage)
-{
-    switch (stage)
-    {
-    case PipelineStage::IF:
-        return "IF";
-    case PipelineStage::ID:
-        return "ID";
-    case PipelineStage::EX:
-        return "EX";
-    case PipelineStage::MEM:
-        return "MEM";
-    case PipelineStage::WB:
-        return "WB";
-    default:
-        return "";
-    }
-}
+// inline std::string pipelineStageToString(PipelineStage stage)
+// {
+//     switch (stage)
+//     {
+//     case PipelineStage::IF:
+//         return "IF";
+//     case PipelineStage::ID:
+//         return "ID";
+//     case PipelineStage::EX:
+//         return "EX";
+//     case PipelineStage::MEM:
+//         return "MEM";
+//     case PipelineStage::WB:
+//         return "WB";
+//     default:
+//         return "";
+//     }
+// }
 // struct PipelineData
 // {
 //     std::array<std::string, toIndex(PipelineStage::PipelineStageCount)> instructionTexts{};
@@ -67,13 +67,14 @@ inline std::string pipelineStageToString(PipelineStage stage)
 
 struct ProcessorState
 {
-    std::array<uint64_t, toIndex(PipelineStage::PipelineStageCount)> programCounters{};
+    std::vector<uint64_t> programCounters;
+    uint64_t lastExecutedPC;
     void reset()
     {
-        programCounters.fill(0);
+        programCounters.assign(programCounters.size(), 0);
     }
     //for further extension we can add more fields here
-    // tho beware if this struct is too big we loose on performance
+    // tho beware if this struct is too big we lose on performance
 };
 
 } // namespace Kites

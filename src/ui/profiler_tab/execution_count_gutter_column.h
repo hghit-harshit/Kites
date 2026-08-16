@@ -1,5 +1,6 @@
 #pragma once
 #include "ui/common/gutter_column.h"
+#include "ui/theme/theme_manager.h"
 #include "profiler_editor.h"
 #include <QPainter>
 
@@ -21,7 +22,8 @@ protected:
     void paintEvent(QPaintEvent *event) override
     {
         QPainter painter(this);
-        painter.fillRect(event->rect(), palette().color(QPalette::Base));
+        const auto& themeManager = ThemeManager::getInstance();
+        painter.fillRect(event->rect(), themeManager.getEditorBackgroundColor());
 
         QTextBlock block = firstVisibleBlock();
         int blockNumber = block.blockNumber();
@@ -39,7 +41,7 @@ protected:
 
                 if (hits > 0)
                 {
-                    painter.setPen(Qt::black);
+                    painter.setPen(themeManager.getEditorForegroundColor());
                     painter.drawText(0, top, width() - 5, fontMetrics().height(),
                                      Qt::AlignLeft, QString::number(hits));
                 }
