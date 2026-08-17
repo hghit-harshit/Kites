@@ -258,8 +258,6 @@ void RV5StageProcessorNHF::pipeline_execute()
 
         // **Priority 1: EX/MEM (Data available from current instruction in MEM)**
         // Covers R->R, R->Branch, R->MemAddr, R->Store (Cases 1, 5, 7, 3)
-        // std::cout << (int)id_ex_reg_.rd<< " " << (int)id_ex_reg_.rs1<< " "<<(int)id_ex_reg_.rs2
-        // <<  std::endl;
         if (ex_mem_reg_.reg_write && (ex_mem_reg_.rd != 0))
         {
             if (ex_mem_reg_.rd == id_ex_reg_.rs1)
@@ -451,9 +449,7 @@ uint64_t RV5StageProcessorNHF::pipeline_execute_float()
 
     if (id_ex_reg_.alu_src)
     {
-        // std::cout << GREEN << "Is the alu src set correctly?" << RESET << std::endl;
         reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
-        // std::cout << BLUE << "Immediate value used in ALU: " << reg2_value << RESET << std::endl;
     }
 
     // --- FORWARDING for FPR sources (frs1/frs2/frs3) ---

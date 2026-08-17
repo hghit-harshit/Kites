@@ -462,11 +462,6 @@ bool Parser::parse_O_GPR_C_DL()
         load_instr.setRs1(reg);
         load_instr.setImm(std::to_string(lo12));
 
-        std::cout << "auipc " << reg << ", 0x" << std::hex << hi20 << std::dec << std::endl;
-
-        std::cout << load_instr.getOpcode() << " " << reg << ", " << lo12 << "(" << reg << ")"
-                  << std::endl;
-
         intermediate_code_.emplace_back(auipc_instr, true);
         instruction_number_line_number_mapping_[instruction_index_] = auipc_instr.getLineNumber();
         instruction_index_++;

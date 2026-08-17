@@ -164,7 +164,6 @@ void RVSSProcessor::Run()
     }
     if (program_counter_ >= program_size_)
     {
-        std::cout << "VM_PROGRAM_END" << std::endl;
         output_status_ = "VM_PROGRAM_END";
     }
     DumpRegisters(globals::registers_dump_file_path, registers_);
