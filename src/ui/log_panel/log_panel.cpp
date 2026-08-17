@@ -59,10 +59,10 @@ void LogPanel::appendLog(QtMsgType type, const QString &msg)
     switch (type)
     {
     case QtDebugMsg:
-        format.setForeground(Qt::gray);
+        format.setForeground(Qt::white);
         break;
     case QtInfoMsg:
-        format.setForeground(Qt::white);
+        format.setForeground(Qt::gray);
         break;
     case QtWarningMsg:
         format.setForeground(Qt::yellow);
