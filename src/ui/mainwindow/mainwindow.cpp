@@ -17,7 +17,9 @@
 #include "ui_mainwindow.h"
 #include "utils/utils.h"
 #include <QActionGroup>
+#include <QCloseEvent>
 #include <QFileDialog>
+#include <QTimer>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QSpinBox>
@@ -51,11 +53,33 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     m_stackedTabs = new QStackedWidget(this);
     m_sidebar = new QListWidget(this);
+    // Created before setUpMenubar() because the File actions bind to it.
+    m_fileService = new FileService(this, this);
     setUpStatusBar();
     setUpSidebar();
     setUpToolBar();
     setUpMenubar();
     setUpTabs();
+
+    // Now the editor exists, give the file service its document accessors and
+    // hook up dirty tracking + the title bar.
+    if (auto *editorTab = dynamic_cast<EditorTab *>(m_tabs[TabIndex::EditorTabIndex]))
+    {
+        m_fileService->setDocumentAccessors(
+            [editorTab]() { return QString::fromStdString(editorTab->getRawText()); },
+            [editorTab](const QString &text) { editorTab->setRawText(text); });
+
+        connect(editorTab, &EditorTab::contentChangedSignal, m_fileService,
+                &FileService::markDirty);
+    }
+    connect(m_fileService, &FileService::documentStateChangedSignal, this,
+            &MainWindow::updateWindowTitle);
+    connect(m_fileService, &FileService::statusMessageSignal, this,
+            [this](const QString &message) { statusBar()->showMessage(message, 4000); });
+    updateWindowTitle();
+
+    // Ask about restoring a previous session's unsaved work once the UI is up.
+    QTimer::singleShot(0, m_fileService, &FileService::offerRecoveryIfPresent);
 
     // m_registerContainer = new RegisterContainer(this);
     mainLayout->setSpacing(0);
@@ -290,12 +314,24 @@ void MainWindow::setUpMenubar()
     
     QAction *openAction  = new QAction(IconManager::getInstance().getIcon(Icon::Open), "Open", this);
     QAction *saveAction  = new QAction(IconManager::getInstance().getIcon(Icon::Save), "Save", this);
+    QAction *saveAsAction = new QAction(IconManager::getInstance().getIcon(Icon::Save), "Save As...", this);
     QAction *exitAction  = new QAction("Exit", this);
     QAction *aboutAction = new QAction(IconManager::getInstance().getIcon(Icon::About), "About", this);
+
+    // Standard sequences rather than hard-coded strings, so these follow the
+    // platform convention (Ctrl+S / Cmd+S and so on).
+    openAction->setShortcut(QKeySequence::Open);        // Ctrl+O
+    saveAction->setShortcut(QKeySequence::Save);        // Ctrl+S
+    saveAsAction->setShortcut(QKeySequence::SaveAs);    // Ctrl+Shift+S
+    exitAction->setShortcut(QKeySequence::Quit);        // Ctrl+Q
+    // Keep them working even when focus is inside the editor or a docked panel.
+    for (QAction *action : {openAction, saveAction, saveAsAction, exitAction})
+        action->setShortcutContext(Qt::WindowShortcut);
 
     ///////////File Menu///////////////////
     fileMenu->addAction(openAction);
     fileMenu->addAction(saveAction);
+    fileMenu->addAction(saveAsAction);
     fileMenu->addSeparator();
     fileMenu->addAction(exitAction);
     ////////////Setting Menu////////////////
@@ -345,52 +381,13 @@ void MainWindow::setUpMenubar()
     // Entire updater lives in src/updater/; this is its only hookup.
     UpdateService::attachTo(helpMenu, this);
 
-    connect(openAction, &QAction::triggered, this,
-            [this]()
-            {
-                QString filename = QFileDialog::getOpenFileName(
-                    this, "Open File", "", "Assembly Files (*.asm *.s);;All Files (*)");
-
-                if (!filename.isEmpty())
-                {
-                    QFile file(filename);
-                    if (file.open(QIODevice::ReadOnly | QIODevice::Text))
-                    {
-                        QTextStream in(&file);
-                        QString content = in.readAll();
-                        auto editorTab =
-                            dynamic_cast<EditorTab *>(m_tabs[TabIndex::EditorTabIndex]);
-                        if (editorTab)
-                        {
-                            editorTab->setRawText(content);
-                        }
-                        file.close();
-                    }
-                }
-            });
-
-    connect(saveAction, &QAction::triggered, this,
-            [this]()
-            {
-                QString filename = QFileDialog::getSaveFileName(
-                    this, "Save File", "", "Assembly Files (*.asm *.s);;All Files (*)");
-
-                if (!filename.isEmpty())
-                {
-                    QFile file(filename);
-                    if (file.open(QIODevice::WriteOnly | QIODevice::Text))
-                    {
-                        QTextStream out(&file);
-                        auto editorTab =
-                            dynamic_cast<EditorTab *>(m_tabs[TabIndex::EditorTabIndex]);
-                        if (editorTab)
-                        {
-                            out << editorTab->getRawText().c_str();
-                        }
-                        file.close();
-                    }
-                }
-            });
+    // File handling (open/save/save-as/autosave/crash recovery) lives entirely
+    // in src/file_service/; these actions just drive it.
+    connect(openAction, &QAction::triggered, m_fileService, &FileService::open);
+    connect(saveAction, &QAction::triggered, m_fileService, [this]() { m_fileService->save(); });
+    connect(saveAsAction, &QAction::triggered, m_fileService,
+            [this]() { m_fileService->saveAs(); });
+    connect(exitAction, &QAction::triggered, this, &QWidget::close);
 }
 
 void MainWindow::setUpTabs()
@@ -550,6 +547,33 @@ void MainWindow::runFinishedSlot()
 void MainWindow::toggleTheme(const QString &themeId)
 {
     ThemeManager::getInstance().setTheme(themeId);
+}
+
+void MainWindow::updateWindowTitle()
+{
+    if (!m_fileService)
+        return;
+
+    // "mul.asm - Kites RISC-V Simulator", with a bullet marking unsaved changes.
+    const QString marker = m_fileService->isDirty() ? QStringLiteral(" •") : QString();
+    setWindowTitle(QStringLiteral("%1%2 - Kites RISC-V Simulator")
+                       .arg(m_fileService->displayName(), marker));
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    if (m_fileService && !m_fileService->maybeSaveChanges())
+    {
+        event->ignore(); // user picked Cancel
+        return;
+    }
+
+    // Clean exit: drop the recovery snapshot so the next launch does not think
+    // the app crashed.
+    if (m_fileService)
+        m_fileService->shutdown();
+
+    QMainWindow::closeEvent(event);
 }
 
 void MainWindow::themeChangedSlot([[maybe_unused]] const QString &themeId)

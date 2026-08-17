@@ -49,6 +49,10 @@ class EditorTab : public KitesTab
     void switchToExpandedView();
     void switchToEditorView();
 
+  signals:
+    /// Emitted whenever the user edits the source buffer (drives FileService).
+    void contentChangedSignal();
+
   private slots:
     void requestLiveDiagnostics();
     void applyDiagnostics(const QVector<Diagnostic> &diagnostics);
