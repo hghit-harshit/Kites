@@ -91,7 +91,7 @@ void Editor::paintEvent(QPaintEvent *event)
 
     for (const auto [lineNumber, instructionStage] : m_LinesToHighlight)
     {
-        if (lineNumber < 0 || lineNumber >= this->blockCount() ||
+        if (lineNumber < 0 || lineNumber > this->blockCount() ||
             drawnLines.find(lineNumber) != drawnLines.end())
         {
             continue;
