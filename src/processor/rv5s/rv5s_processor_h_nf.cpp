@@ -276,7 +276,6 @@ void RV5StageProcessorHNF::pipeline_execute()
 
     if (id_ex_reg_.branch && opcode == 0b1100011)
     {
-        std::cout << "Branch instruction detected in EX stage." << std::endl;
         bool condition_met = false;
         uint8_t funct3 = (instruction >> 12) & 0x7;
 

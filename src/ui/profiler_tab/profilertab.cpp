@@ -25,6 +25,12 @@ ProfilerTab::ProfilerTab(QWidget *parent, const Profiler *profiler)
         //         &ProfilerTab::updateLineExecutionCounts);
         connect(m_profiler, &Profiler::profilerReset, this,
                 &ProfilerTab::resetProfilerView);
+        connect(m_profiler, &Profiler::incrementLineExecutionCountSignal, ui->plainTextEdit,
+                &ProfilerEditor::incrementLineExecutionCountSlot);
+        connect(m_profiler, &Profiler::updateLineInstructionTypeSignal, ui->plainTextEdit,
+                &ProfilerEditor::updateLineInstructionTypeSlot);
+        connect(m_profiler, &Profiler::updateInstructionTypeCountsSignal, model,
+                &InstructionTypeCountModel::updateInstructionTypeCountsSlot);
     }
 }
 
@@ -51,7 +57,7 @@ void ProfilerTab::updateLineInstructionType(const std::map<int, std::string> &li
 
 void ProfilerTab::updateStatistics(const std::map<std::string, int> &statistics)
 {
-   
+    
 }
 
 void ProfilerTab::resetProfilerView()

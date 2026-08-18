@@ -24,25 +24,21 @@ public:
     explicit Profiler(QObject *parent = nullptr);
 
     void Reset();
-    // void SetInstructionLineMapping(const std::map<unsigned int, unsigned int>  
-    //                                 &instructionToLineMapping);
-    // void SetInstructionInfo(const std::map<unsigned int, std::string> &instructionMnemonics);
-
-    //void setInstructionIndexToMnemonicMapping(const AssembledProgram &program);
     void setInstructionToLineMapping(const AssembledProgram &program);
      
     void setLineNumberToInstructionTypeMapping(const AssembledProgram &program);
+    //void setInstructionTypeCounts(const AssembledProgram &program);
+
     const InstructionTypeCounts& getInstructionTypeCounts() const;
 
-    int getExecutionCountForLine(int lineNumber)const;
-signals:
-    void profilerReset();
+    int getLineExecutionCount(int lineNumber)const;
 
 public slots:
     void processorClockedSlot(const ProcessorState& processorState);
 
 public:
     // Get instruction type for a specific line
+    // uint64_t resolveExecutedLineFromState(const ProcessorState& processorState) const;
     instruction_set::InstructionType getInstructionTypeForLine(int lineNumber) const;
     // Get all instruction types mapped by line number
     const std::map<int, instruction_set::InstructionType> getLineInstructionTypes() const
@@ -51,13 +47,16 @@ public:
     }
 
 private:
-    int resolveSourceLineFromState(const QMap<QString, QVariant> &processorState) const;
    
     std::map<unsigned int, unsigned int> m_instructionNumberToLineNumber{};       
     std::map<int, int>                   m_lineNumberToExecutionCounts{}; 
     std::map<int, instruction_set::InstructionType>       m_lineNumberToinstructionType{};
 
     InstructionTypeCounts m_instructionTypeCounts{};
-    
+signals:
+    void profilerReset();
+    void incrementLineExecutionCountSignal(int lineNumber);
+    void updateLineInstructionTypeSignal(std::map<int, instruction_set::InstructionType> lineInstructionTypes = {});
+    void updateInstructionTypeCountsSignal();
 };
 }//namespace Kites

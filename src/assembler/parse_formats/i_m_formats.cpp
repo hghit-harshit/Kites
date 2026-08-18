@@ -105,7 +105,6 @@ bool Parser::parse_O_GPR_C_GPR_C_I()
                 }
                 else
                 {
-                    errors_.count++;
                     recordError(
                         ParseError(peekToken(5).line_number, "Immediate value out of range"));
                     errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
@@ -124,7 +123,6 @@ bool Parser::parse_O_GPR_C_GPR_C_I()
                 }
                 else
                 {
-                    errors_.count++;
                     recordError(
                         ParseError(peekToken(5).line_number, "Immediate value out of range"));
                     errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
@@ -151,7 +149,6 @@ bool Parser::parse_O_GPR_C_GPR_C_I()
                 }
                 else
                 {
-                    errors_.count++;
                     recordError(ParseError(peekToken(5).line_number, "Misaligned immediate value"));
                     errors_.all_errors.emplace_back(errors::MisalignedImmediateError(
                         "Misaligned immediate value", "Expected: imm % 4 == 0", filename_,
@@ -163,7 +160,6 @@ bool Parser::parse_O_GPR_C_GPR_C_I()
             }
             else
             {
-                errors_.count++;
                 recordError(ParseError(peekToken(5).line_number, "Immediate value out of range"));
                 errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                     "Immediate value out of range", "Expected: -4096 <= imm <= 4095", filename_,
@@ -210,7 +206,6 @@ bool Parser::parse_O_GPR_C_I()
             }
             else
             {
-                errors_.count++;
                 recordError(ParseError(peekToken(3).line_number, "Immediate value out of range"));
                 errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                     "Immediate value out of range", "Expected: 0 <= imm <= 1048575", filename_,
@@ -233,7 +228,6 @@ bool Parser::parse_O_GPR_C_I()
                 }
                 else
                 {
-                    errors_.count++;
                     recordError(ParseError(peekToken(3).line_number, "Misaligned immediate value"));
                     errors_.all_errors.emplace_back(errors::MisalignedImmediateError(
                         "Misaligned immediate value", "Expected: imm % 4 == 0", filename_,
@@ -245,7 +239,6 @@ bool Parser::parse_O_GPR_C_I()
             }
             else
             {
-                errors_.count++;
                 recordError(ParseError(peekToken(3).line_number, "Immediate value out of range"));
                 errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                     "Immediate value out of range", "Expected: -1048576 <= imm <= 1048575",
@@ -304,7 +297,6 @@ bool Parser::parse_O_GPR_C_GPR_C_IL()
                 }
                 else
                 {
-                    errors_.count++;
                     recordError(
                         ParseError(peekToken(5).line_number, "Immediate value out of range"));
                     errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
@@ -372,7 +364,6 @@ bool Parser::parse_O_GPR_C_IL()
                 }
                 else
                 {
-                    errors_.count++;
                     recordError(
                         ParseError(peekToken(3).line_number, "Immediate value out of range"));
                     errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
@@ -438,7 +429,6 @@ bool Parser::parse_O_GPR_C_DL()
 
         if (symbol_table_.find(label) == symbol_table_.end() || !symbol_table_[label].isData)
         {
-            errors_.count++;
             recordError(ParseError(peekToken(3).line_number, "Invalid label reference"));
             errors_.all_errors.emplace_back(errors::InvalidLabelRefError(
                 "Invalid label reference", "Expected: Label defined in .data section", filename_,
@@ -471,11 +461,6 @@ bool Parser::parse_O_GPR_C_DL()
         load_instr.setRd(reg);
         load_instr.setRs1(reg);
         load_instr.setImm(std::to_string(lo12));
-
-        std::cout << "auipc " << reg << ", 0x" << std::hex << hi20 << std::dec << std::endl;
-
-        std::cout << load_instr.getOpcode() << " " << reg << ", " << lo12 << "(" << reg << ")"
-                  << std::endl;
 
         intermediate_code_.emplace_back(auipc_instr, true);
         instruction_number_line_number_mapping_[instruction_index_] = auipc_instr.getLineNumber();
@@ -525,7 +510,6 @@ bool Parser::parse_O_GPR_C_I_LP_GPR_RP()
             }
             else
             {
-                errors_.count++;
                 recordError(ParseError(peekToken(3).line_number, "Immediate value out of range"));
                 errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                     "Immediate value out of range", "Expected: -2048 <= imm <= 2047", filename_,
@@ -548,7 +532,6 @@ bool Parser::parse_O_GPR_C_I_LP_GPR_RP()
             }
             else
             {
-                errors_.count++;
                 recordError(ParseError(peekToken(3).line_number, "Immediate value out of range"));
                 errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                     "Immediate value out of range", "Expected: -2048 <= imm <= 2047", filename_,

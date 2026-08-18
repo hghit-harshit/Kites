@@ -19,12 +19,12 @@ QVector<Diagnostic> computeDiagnostics(QString source)
             source.toStdString(), expandedLineToOriginalLine);
 
         std::istringstream stream(expanded);
-        std::vector<DiagnosticInfo> rawDiagnostics;
-        assemble(stream, "<buffer>", rawDiagnostics);
+        std::vector<ParseError> parseErrors;
+        ;
 
         QVector<Diagnostic> diagnostics;
-        diagnostics.reserve(static_cast<int>(rawDiagnostics.size()));
-        for (const DiagnosticInfo &info : rawDiagnostics)
+        diagnostics.reserve(static_cast<int>(parseErrors.size()));
+        for (const ParseError &info : parseErrors)
         {
             int originalLine = static_cast<int>(info.line);
             if (info.line >= 1 && info.line <= expandedLineToOriginalLine.size())
@@ -75,6 +75,8 @@ void LanguageService::requestDiagnostics(const QString &source)
 void LanguageService::handleAssembleFinished()
 {
     try {
+        //here emitting the signal will never throw
+        // only m_watcher.result() can throw if the thread function throws, 
         emit diagnosticsReadySignal(m_watcher.result());
     } catch (const std::exception& e) {
         QVector<Diagnostic> err;

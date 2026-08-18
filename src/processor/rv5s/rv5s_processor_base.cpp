@@ -36,6 +36,8 @@ void RV5StageVM_Base::Run()
             if (stop_requested_) // if we were requested to stop while paused
                 break;
         }
+        last_executed_pc_ = id_ex_reg_.pc; // this pc will be executed in this step, 
+        //so we set it as the last executed pc before we step
         Step();
         SetActiveWireNames();
         cpi_ = instructions_retired_
@@ -142,11 +144,13 @@ void RV5StageVM_Base::finalize_step_delta()
 
 void RV5StageVM_Base::setProcessorState()
 {
-    processor_state_.programCounters[toIndex(PipelineStage::IF)]  = program_counter_;
-    processor_state_.programCounters[toIndex(PipelineStage::ID)]  = if_id_reg_.pc;
-    processor_state_.programCounters[toIndex(PipelineStage::EX)]  = id_ex_reg_.pc;
-    processor_state_.programCounters[toIndex(PipelineStage::MEM)] = ex_mem_reg_.pc;
-    processor_state_.programCounters[toIndex(PipelineStage::WB)]  = mem_wb_reg_.pc;
+    // processor_state_.programCounters[toIndex(PipelineStage::IF)]  = program_counter_;
+    // processor_state_.programCounters[toIndex(PipelineStage::ID)]  = if_id_reg_.pc;
+    // processor_state_.programCounters[toIndex(PipelineStage::EX)]  = id_ex_reg_.pc;
+    // processor_state_.programCounters[toIndex(PipelineStage::MEM)] = ex_mem_reg_.pc;
+    // processor_state_.programCounters[toIndex(PipelineStage::WB)]  = mem_wb_reg_.pc;
+    processor_state_.programCounters = 
+    {program_counter_, if_id_reg_.pc, id_ex_reg_.pc, ex_mem_reg_.pc, mem_wb_reg_.pc};
 }
 
 void RV5StageVM_Base::pipeline_decode()
@@ -484,7 +488,6 @@ void RV5StageVM_Base::pipeline_memory()
             }
             }
         }
-        std::cout << "Data read:" << (int)mem_wb_reg_.memory_data << std::endl;
     }
     else if (ex_mem_reg_.mem_write)
     {
@@ -499,14 +502,9 @@ void RV5StageVM_Base::pipeline_memory()
             return bytes;
         };
 
-        std::cout << (int)ex_mem_reg_.alu_result << ' ' << (int)ex_mem_reg_.reg2_data << std::endl;
         if (is_F_Instruction)
         { // FSW
             auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
-            std::cout << debug_color::red << "For float store we are writing:" << (int)ex_mem_reg_.freg2_data
-                      << std::endl
-                      << "To address:" << (int)ex_mem_reg_.alu_result << std::endl
-                      << debug_color::reset;
             memory_controller_.writeWord(ex_mem_reg_.alu_result,
                                          ex_mem_reg_.freg2_data & 0xFFFFFFFF);
             auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
@@ -541,14 +539,6 @@ void RV5StageVM_Base::pipeline_writeback()
 
     if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0)
     {
-        // debug stuff
-        std::cout << "Writing back to register x" << (int)mem_wb_reg_.rd << std::endl;
-        std::cout << "Value:"
-                  << (int)(mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data
-                                                  : mem_wb_reg_.alu_result)
-                  << std::endl;
-        // debgug stuff end
-
         uint64_t write_data =
             mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
 
@@ -637,7 +627,6 @@ void RV5StageVM_Base::pipeline_writeback_float()
     }
     else
     {
-        std::cout << "Writing to fpr : " << rd << " value:" << mem_wb_reg_.alu_result;
         old_reg = registers_.ReadFpr(rd);
         registers_.WriteFpr(rd, mem_wb_reg_.alu_result);
         new_reg = mem_wb_reg_.alu_result;
@@ -719,19 +708,12 @@ uint64_t RV5StageVM_Base::execute_float()
 
     if (id_ex_reg_.alu_src)
     {
-        // std::cout << GREEN << "Is the alu src set correctly?" << RESET << std::endl;
         reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
-        // std::cout << BLUE << "Immediate value used in ALU: " << reg2_value << RESET << std::endl;
     }
 
     alu::AluOp aluOperation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
-    std::cout << "The registers values:\n";
-    std::cout << reg1_value << ' ' << reg2_value << ' ' << reg3_value << std::endl;
     std::tie(alu_result, fcsr_status) =
         alu::Alu::fpexecute(aluOperation, reg1_value, reg2_value, reg3_value, rm);
-
-    std::cout << "The floating point result : \n";
-    std::cout << alu_result << std::endl;
 
     registers_.WriteCsr(0x003, fcsr_status);
     return alu_result;

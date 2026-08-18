@@ -16,7 +16,7 @@ enum class AllocationPolicy
     NoWriteAllocate
 };
 
-enum class ReplacementPolicy : size_t
+enum class ReplacementPolicy 
 {
     LRU = 0,
     FIFO,

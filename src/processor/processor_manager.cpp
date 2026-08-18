@@ -42,6 +42,11 @@ ProcessorManager::ProcessorManager(QObject *parent, ProcessorType vmType) : QObj
     // and this will be further connected to the mainwindow slot to update the ui
     connect(m_currentProcessor.get(), &ProcessorBase::processorClockedSignal, this,
             &ProcessorManager::processorClockedSlot, Qt::DirectConnection);
+    connect(m_currentProcessor.get(), &ProcessorBase::processorClockedSignal, this,
+            &ProcessorManager::processorClockedSignal, Qt::DirectConnection);
+
+    connect(this, &ProcessorManager::processorClockedSignal,&m_profiler, 
+            &Profiler::processorClockedSlot, Qt::DirectConnection);
 }
 
 void ProcessorManager::changeProcessor(ProcessorType vmType)
@@ -55,6 +60,8 @@ void ProcessorManager::changeProcessor(ProcessorType vmType)
             &ProcessorManager::processorClockedSlot, Qt::DirectConnection);        
     connect(m_currentProcessor.get(), &ProcessorBase::processorPausedAtBreakpointSignal, this,
             &ProcessorManager::processorPausedAtBreakpointSignal, Qt::DirectConnection);
+    connect(m_currentProcessor.get(), &ProcessorBase::processorClockedSignal, this,
+            &ProcessorManager::processorClockedSignal, Qt::DirectConnection);
     // create new connections for the new VM
 }
 
@@ -62,6 +69,9 @@ void ProcessorManager::loadProgram(const AssembledProgram &program)
 {
     m_currentProgram = program;
     m_currentProcessor->LoadProgram(program);
+    m_profiler.setInstructionToLineMapping(program);
+    m_profiler.setLineNumberToInstructionTypeMapping(program);
+    updateEditorHighlight({0});
 }
 
 void ProcessorManager::loadProgram(const std::string &sourceText)
@@ -76,6 +86,7 @@ void ProcessorManager::loadProgram(const std::string &sourceText)
     std::stringstream buffer;
     buffer << in.rdbuf();
     in.close();
+    updateEditorHighlight({0});
     emit updateDisassemblySignal(QString::fromStdString(buffer.str()));
 }
 
@@ -89,12 +100,12 @@ void ProcessorManager::processorClockedSlot(const ProcessorState &processorState
 {
     //first we get all the necesary info from the prcossor and then update the related
     //gui widgets
-    updateEditorHighlight(processorState);
+    updateEditorHighlight(processorState.programCounters);
 
 }
 
 
-void ProcessorManager::updateEditorHighlight(const ProcessorState &processorState) 
+void ProcessorManager::updateEditorHighlight(const std::vector<uint64_t>& programCounters)
 {
     std::vector<std::pair<int,std::string>> editorLines;
     std::vector<std::pair<int,std::string>> disassemblyLines;
@@ -113,9 +124,11 @@ void ProcessorManager::updateEditorHighlight(const ProcessorState &processorStat
         return true;
     };
 
+    static const std::array<std::string, 5> pcToStageLable = {"IF","ID", "EX", "MEM", "WB"};
+
     if(m_currentProcessorType == ProcessorType::RVSS)
     {
-        auto programCounter = processorState.programCounters[0];
+        auto programCounter = programCounters[0];
         const auto instructionNumber = static_cast<unsigned int>(programCounter / 4);
         addHighlightIfMapped(m_currentProgram.instruction_number_line_number_mapping,
                              instructionNumber,
@@ -128,14 +141,14 @@ void ProcessorManager::updateEditorHighlight(const ProcessorState &processorStat
     }
     else
     {
-        
-        for(size_t i = 0; i < toIndex(PipelineStage::PipelineStageCount); ++i)
+
+        for(size_t i = 0; i < programCounters.size(); ++i)
         {
-            auto stagePC = processorState.programCounters[i];
+            auto stagePC = programCounters[i];
             if(stagePC == INVALID_PC) continue; // skip stages that are not active
 
             const auto instructionNumber = static_cast<unsigned int>(stagePC / 4);
-            const auto stageLabel = pipelineStageToString(static_cast<PipelineStage>(i));
+            const auto stageLabel = pcToStageLable[i];
 
             addHighlightIfMapped(m_currentProgram.instruction_number_line_number_mapping,
                                  instructionNumber,

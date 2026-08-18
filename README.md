@@ -16,8 +16,14 @@ Prebuilt libraries are available for Linux,Windows on [Release Page](https://git
 - In case you get popup regarding some missing dll please contact us.
 
 ## MacOS
-- Put Kites in the application folder
-- run application/kites.app/contents/macos/kites
+- Put Kites in the application 
+
+RUN
+
+```bash
+sudo xattr -rd com.apple.quarantine sudo xattr -rd com.apple.quarantine /path/to/application.app
+
+```
 
 ## Building
 

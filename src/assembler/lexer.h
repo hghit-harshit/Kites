@@ -126,7 +126,7 @@ class Lexer
      * @param source The stream to tokenize.
      * @param virtualFilename A name to report in diagnostics (not an actual file on disk).
      */
-    Lexer(std::istream &source, std::string virtualFilename);
+    Lexer(std::istream &source);
 
     /**
      * @brief Destructor that closes the input file stream.

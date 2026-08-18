@@ -119,7 +119,6 @@ void Parser::parseDataDirective()
             }
             else
             {
-                errors_.count++;
                 recordError(ParseError(currentToken().line_number,
                                        "Invalid directive: Expected .dword, .word, .halfword, "
                                        ".byte, .float, .double, .string, .zero"));
@@ -255,7 +254,6 @@ void Parser::parseDataDirective()
                     }
                     else
                     {
-                        errors_.count++;
                         recordError(
                             ParseError(currentToken().line_number,
                                        "Invalid zero directive: Expected a positive number"));
@@ -290,7 +288,6 @@ void Parser::parseDataDirective()
         }
         else
         {
-            errors_.count++;
             recordError(ParseError(currentToken().line_number,
                                    "Invalid directive: Expected .dword, .word, .halfword, .byte, "
                                    ".string, .float, .double, .zero"));
@@ -314,7 +311,6 @@ void Parser::parseTextDirective()
         {
             if (symbol_table_.find(currentToken().value) != symbol_table_.end())
             {
-                errors_.count++;
                 recordError(ParseError(
                     currentToken().line_number,
                     "Label redefinition: already defined at line " +
@@ -498,7 +494,6 @@ void Parser::parseTextDirective()
             }
             if (!valid_syntax)
             {
-                errors_.count++;
                 recordError(
                     ParseError(currentToken().line_number,
                                "Invalid syntax: Expected: " +
@@ -514,7 +509,6 @@ void Parser::parseTextDirective()
         }
         else
         {
-            errors_.count++;
             recordError(ParseError(currentToken().line_number,
                                    "Unexpected token: " + currentToken().value));
             errors_.all_errors.emplace_back(errors::UnexpectedTokenError(
@@ -618,7 +612,6 @@ void Parser::parse()
 
         else
         {
-            errors_.count++;
             recordError(ParseError(currentToken().line_number,
                                    "Invalid token: Expected .data, .text, or <opcode> or <label>"));
             errors_.all_errors.emplace_back(errors::SyntaxError(
@@ -666,7 +659,6 @@ void Parser::parse()
         }
         else
         {
-            errors_.count++;
             recordError(
                 ParseError(currentToken().line_number,
                            "Invalid token: Expected .data, .text, .bss or <opcode> or <label>"));
@@ -696,7 +688,6 @@ void Parser::parse()
                     }
                     else
                     {
-                        errors_.count++;
                         recordError(
                             ParseError(block.getLineNumber(), "Immediate value out of range"));
                         errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
@@ -708,7 +699,6 @@ void Parser::parse()
                 }
                 else
                 {
-                    errors_.count++;
                     recordError(ParseError(block.getLineNumber(),
                                            "Invalid label reference: Label references data"));
                     errors_.all_errors.emplace_back(errors::InvalidLabelRefError(
@@ -730,7 +720,6 @@ void Parser::parse()
                     }
                     else
                     {
-                        errors_.count++;
                         recordError(
                             ParseError(block.getLineNumber(), "Immediate value out of range"));
                         errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
@@ -751,7 +740,6 @@ void Parser::parse()
                     }
                     else
                     {
-                        errors_.count++;
                         recordError(
                             ParseError(block.getLineNumber(), "Immediate value out of range"));
                         errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
@@ -764,7 +752,6 @@ void Parser::parse()
             }
             else
             {
-                errors_.count++;
                 recordError(ParseError(block.getLineNumber(),
                                        "Invalid label reference: Label references data"));
                 errors_.all_errors.emplace_back(errors::InvalidLabelRefError(
@@ -777,7 +764,6 @@ void Parser::parse()
         }
         else
         {
-            errors_.count++;
             recordError(ParseError(block.getLineNumber(),
                                    "Invalid label reference: Label reference not found"));
             errors_.all_errors.emplace_back(errors::InvalidLabelRefError(
@@ -795,36 +781,6 @@ unsigned int Parser::getErrorCount() const
 const std::vector<ParseError> &Parser::getErrors() const
 {
     return errors_.parse_errors;
-}
-
-std::vector<DiagnosticInfo> Parser::getDiagnostics() const
-{
-    std::vector<DiagnosticInfo> diagnostics;
-    diagnostics.reserve(errors_.all_errors.size());
-
-    for (const auto &error : errors_.all_errors)
-    {
-        std::visit(
-            [&diagnostics](auto &&arg)
-            {
-                std::string message;
-                if constexpr (requires { arg.main_message; arg.sub_message; })
-                {
-                    message = arg.sub_message.empty()
-                                  ? arg.main_message
-                                  : arg.main_message + ": " + arg.sub_message;
-                }
-                else
-                {
-                    message = arg.message;
-                }
-                diagnostics.push_back(
-                    DiagnosticInfo{arg.line_number, arg.column_number, std::move(message)});
-            },
-            error);
-    }
-
-    return diagnostics;
 }
 
 const std::map<std::string, SymbolData> &Parser::getSymbolTable() const

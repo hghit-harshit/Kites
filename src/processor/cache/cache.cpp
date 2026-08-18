@@ -298,7 +298,6 @@ void Cache::putByteInCache(uint64_t address, uint8_t value)
 
     if (m_writePolicy == WritePolicy::WriteThrough)
     {
-        // writeByteToNextLevel(address, value);
         line.dirty = false;
     }
     else
@@ -449,6 +448,26 @@ void Cache::writeGeneric(uint64_t address, T value)
     {
         uint8_t byte = static_cast<uint8_t>((value >> (8 * i)) & 0xFF);
         putByteInCache(address + i, byte);
+    }
+
+    if(m_writePolicy == WritePolicy::WriteThrough)
+    {
+        if constexpr(std::is_same_v<T, uint8_t>)
+        {
+            m_nextLevelMemoryRef.writeByte(address, static_cast<uint8_t>(value));
+        }
+        else if constexpr(std::is_same_v<T, uint16_t>)
+        {
+            m_nextLevelMemoryRef.writeHalfWord(address, static_cast<uint16_t>(value));
+        }
+        else if constexpr(std::is_same_v<T, uint32_t>)
+        {
+            m_nextLevelMemoryRef.writeWord(address, static_cast<uint32_t>(value));
+        }
+        else if constexpr(std::is_same_v<T, uint64_t>)
+        {
+            m_nextLevelMemoryRef.writeDoubleWord(address, static_cast<uint64_t>(value));
+        }
     }
 
     if(hit)

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(RISC_V_Simulator LANGUAGES CXX C)
+project(Kites LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -8,7 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # This works for Harshit
 # set( CMAKE_PREFIX_PATH "D:/QT/6.9.2/mingw_64/lib/cmake")
 # set(MINGW_PATH "D:/Qt/Tools/mingw1310_64")
-find_package(Qt6 6.9 REQUIRED COMPONENTS Core Widgets Network Concurrent)
+find_package(Qt6 6.9.2 REQUIRED COMPONENTS Core Widgets Network Concurrent)
 
 # This works for Atharva
 # set(CMAKE_PREFIX_PATH "/home/atharv/Qt/6.10.0/gcc_64")
@@ -74,7 +74,7 @@ if(WIN32)
     set(APP_RESOURCES ${APP_RESOURCES} resources/icons/app_icon.rc)
 endif()
 
-qt_add_executable(RISC_V_Simulator
+qt_add_executable(${PROJECT_NAME}
     WIN32 MACOSX_BUNDLE
     main.cpp
     ${HEADER_FILES}
@@ -82,7 +82,7 @@ qt_add_executable(RISC_V_Simulator
     ${UI_FILES}
     ${APP_RESOURCES}
 )
-set_target_properties(RISC_V_Simulator PROPERTIES OUTPUT_NAME "Kites")
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "Kites")
 target_precompile_headers(${PROJECT_NAME} PRIVATE
     #<cstdint>
     #<string>
@@ -109,7 +109,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 )
 
 
-target_link_libraries(RISC_V_Simulator
+target_link_libraries(${PROJECT_NAME}
     PRIVATE
         Qt::Core
         Qt::Widgets
@@ -123,14 +123,14 @@ endif()
 
 include(GNUInstallDirs)
 
-install(TARGETS RISC_V_Simulator
+install(TARGETS ${PROJECT_NAME}
     BUNDLE  DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 # qt_generate_deploy_app_script(
-#     TARGET RISC_V_Simulator
+#     TARGET ${PROJECT_NAME}
 #     OUTPUT_SCRIPT deploy_script
 #     NO_UNSUPPORTED_PLATFORM_ERROR
 # )
@@ -192,7 +192,7 @@ if(ENABLE_TESTS)
                 --output ${COVERAGE_DIR}/index.html
                 --exclude .*/external/.*
                 --exclude .*/_deps/.*
-                --exclude .*/RISC_V_Simulator_autogen/.*
+                --exclude .*/${PROJECT_NAME}_autogen/.*
             DEPENDS tests
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
             COMMENT "Running tests and generating coverage report"

@@ -20,14 +20,29 @@ void Profiler::Reset()
 void Profiler::setInstructionToLineMapping(const AssembledProgram &program)
 {
     m_instructionNumberToLineNumber = program.instruction_number_line_number_mapping;
-} 
+}
 
-const InstructionTypeCounts& Profiler::getInstructionTypeCounts() const
+// void Profiler::setInstructionTypeCounts(const AssembledProgram &program)
+// {
+//     m_instructionTypeCounts.fill(0);
+//     for (const auto &[icUnit, _] : program.intermediate_code)
+//     {
+//         const auto mnemonic = icUnit.getOpcode();
+//         if (!mnemonic.empty())
+//         {
+//             instr::InstructionType instrType = instr::getInstructionType(mnemonic);
+//             m_instructionTypeCounts[toIndex(instrType)]++;
+//         }
+//     }
+//     emit updateInstructionTypeCountsSignal(m_instructionTypeCounts);
+// }
+
+const InstructionTypeCounts &Profiler::getInstructionTypeCounts() const
 {
     return m_instructionTypeCounts;
 }
 
-int Profiler::getExecutionCountForLine(int lineNumber) const
+int Profiler::getLineExecutionCount(int lineNumber) const
 {
     const auto it = m_lineNumberToExecutionCounts.find(lineNumber);
     if (it != m_lineNumberToExecutionCounts.end())
@@ -40,6 +55,7 @@ int Profiler::getExecutionCountForLine(int lineNumber) const
 void Profiler::setLineNumberToInstructionTypeMapping(const AssembledProgram &program)
 {
     m_lineNumberToinstructionType.clear();
+    qDebug() << "Setting line number to instruction type mapping for program" ;
     for (const auto &[icUnit, _] : program.intermediate_code)
     {
         const auto lineNumber = icUnit.getLineNumber();
@@ -48,42 +64,39 @@ void Profiler::setLineNumberToInstructionTypeMapping(const AssembledProgram &pro
         {
             instr::InstructionType instrType = instr::getInstructionType(mnemonic);
             m_lineNumberToinstructionType[lineNumber] = instrType;
+            m_instructionTypeCounts[toIndex(instrType)]++;
         }
     }
+    emit updateLineInstructionTypeSignal(m_lineNumberToinstructionType);
 }
 
-void Profiler::processorClockedSlot(const ProcessorState&processorState)
+void Profiler::processorClockedSlot(const ProcessorState &processorState)
 {
-    // const int sourceLine = resolveSourceLineFromState(processorState);
-    // if (sourceLine <= 0)
-    // {
-    //     return;
-    // }
-
-    // ++m_lineNumberToExecutionCounts[sourceLine];
-    // ++m_instructionTypeCounts[toIndex(getInstructionTypeForLine(sourceLine))];
-    //emit lineExecutionCountsUpdated(m_line_to_execution_counts);
-    //emit lineExecutionCountIncrementSignal(sourceLine);
+    int executedLine = m_instructionNumberToLineNumber
+    [static_cast<unsigned int>(processorState.lastExecutedPC / 4)];
+    qDebug() << "Processor clocked. Last executed PC: " << processorState.lastExecutedPC
+             << ", Instruction number: " << (processorState.lastExecutedPC / 4)
+             << ", Mapped line number: " << executedLine;
+    emit incrementLineExecutionCountSignal(executedLine);
 }
 
-int Profiler::resolveSourceLineFromState(const QMap<QString, QVariant> &processorState) const
-{
-    // Primary path: use PC + assembler mapping for consistent results across VM variants.
-    const QVariant pcVariant = processorState.value("ProgramCounter");
-    bool ok = false;
-    const qulonglong pc = pcVariant.toULongLong(&ok);
-    if (ok)
-    {
-        const auto mappingIt = m_instructionNumberToLineNumber.find(
-            static_cast<unsigned int>(pc / 4));
-        if (mappingIt != m_instructionNumberToLineNumber.end())
-        {
-            return static_cast<int>(mappingIt->second);
-        }
-    }
+// uint64_t Profiler::resolveExecutedLineFromState(const ProcessorState& processorState) const
+// {
+//     if (processorState.programCounters.empty())
+//     {
+//         return -1; // No program counters available
+//     }
 
-    return -1;
-}
+//     uint64_t programCounter = processorState.programCounters[0];
+//     unsigned int instructionNumber = static_cast<unsigned int>(programCounter / 4);
+
+//     const auto it = m_instructionNumberToLineNumber.find(instructionNumber);
+//     if (it != m_instructionNumberToLineNumber.end())
+//     {
+//         return static_cast<int>(it->second);
+//     }
+//     return -1; // Not found
+// }
 
 instr::InstructionType Profiler::getInstructionTypeForLine(int lineNumber) const
 {

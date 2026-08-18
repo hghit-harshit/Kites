@@ -647,13 +647,16 @@ MainWindow::~MainWindow()
     // stop() only breaks the VM's run loop, it does not end the event loop the
     // thread is sitting in.
     m_processorManager->stop();
-    m_processorThread->quit();
-    if (!m_processorThread->wait(5000))
+    if (m_processorThread->isRunning())
     {
-        // A wedged VM thread is not worth aborting the whole process over.
-        // Detach it so it is not deleted here and let process exit reap it.
-        qWarning("Kites: VM thread did not stop in time; detaching it to finish shutdown.");
-        m_processorThread->setParent(nullptr);
+        m_processorThread->quit();
+        if (!m_processorThread->wait(5000))
+        {
+            // A wedged VM thread is not worth aborting the whole process over.
+            // Detach it so it is not deleted here and let process exit reap it.
+            qWarning("Kites: VM thread did not stop in time; detaching it to finish shutdown.");
+            m_processorThread->setParent(nullptr);
+        }
     }
     // delete ui;
 }

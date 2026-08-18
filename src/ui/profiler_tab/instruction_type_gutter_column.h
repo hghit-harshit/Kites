@@ -4,53 +4,54 @@
 #include <QPainter>
 namespace Kites
 {
-    class InstructionTypeGutterColumn : public GutterColumn
+class InstructionTypeGutterColumn : public GutterColumn
+{
+public:
+    InstructionTypeGutterColumn(ProfilerEditor *editor) : GutterColumn(editor), m_profilerEditor(editor)
+    {}
+
+    QSize sizeHint() const override
     {
-    public:
-        InstructionTypeGutterColumn(ProfilerEditor *editor) : GutterColumn(editor), m_profilerEditor(editor)
-        {}
+        // Estimate width for instruction type display (e.g., "R-Type", "Pseudo", "F/D-R4")
+        return QSize(fontMetrics().horizontalAdvance(QLatin1String("R-Type")) + 10, 0);
+    }
 
-        QSize sizeHint() const override
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        const auto& themeManager = ThemeManager::getInstance();
+        QPainter painter(this);
+        painter.fillRect(event->rect(), themeManager.getEditorBackgroundColor());
+        const QColor textColor = themeManager.getEditorForegroundColor();
+
+        QTextBlock block = firstVisibleBlock();
+        int blockNumber = block.blockNumber();
+        int top = blockTop(block);
+        int bottom = top + blockHeight(block);
+
+        while (block.isValid() && top <= event->rect().bottom())
         {
-            // Estimate width for instruction type display (e.g., "R-Type", "Pseudo", "F/D-R4")
-            return QSize(fontMetrics().horizontalAdvance(QLatin1String("R-Type")) + 10, 0);
-        }
-
-    protected:
-        void paintEvent(QPaintEvent *event) override
-        {
-            QPainter painter(this);
-            painter.fillRect(event->rect(), palette().color(QPalette::Base));
-            const QColor textColor = palette().color(QPalette::Text);
-
-            QTextBlock block = firstVisibleBlock();
-            int blockNumber = block.blockNumber();
-            int top = blockTop(block);
-            int bottom = top + blockHeight(block);
-
-            while (block.isValid() && top <= event->rect().bottom())
+            if (block.isVisible() && bottom >= event->rect().top())
             {
-                if (block.isVisible() && bottom >= event->rect().top())
+                const int lineNumber = blockNumber + 1;
+                if (m_profilerEditor->m_lineNumberToInstructionType.count(lineNumber) > 0)
                 {
-                    const int lineNumber = blockNumber + 1;
-                    if (m_profilerEditor->m_lineNumberToInstructionType.count(lineNumber) > 0)
-                    {
-                        const std::string &instrType = m_profilerEditor->m_lineNumberToInstructionType.at(lineNumber);
-                        painter.setPen(textColor);
-                        painter.drawText(5, top, width() - 10, fontMetrics().height(),
-                                         Qt::AlignLeft, QString::fromStdString(instrType));
-                    }
+                    const std::string &instrType = m_profilerEditor->m_lineNumberToInstructionType.at(lineNumber);
+                    painter.setPen(textColor);
+                    painter.drawText(5, top, width() - 10, fontMetrics().height(),
+                                     Qt::AlignLeft, QString::fromStdString(instrType));
                 }
-
-                block = block.next();
-                top = bottom;
-                bottom = top + blockHeight(block);
-                ++blockNumber;
             }
-            
-        }
 
-    private:
-        ProfilerEditor *m_profilerEditor;
-    };
+            block = block.next();
+            top = bottom;
+            bottom = top + blockHeight(block);
+            ++blockNumber;
+        }
+        
+    }
+
+private:
+    ProfilerEditor *m_profilerEditor;
+};
 }

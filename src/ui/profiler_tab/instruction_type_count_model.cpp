@@ -68,4 +68,9 @@ QVariant InstructionTypeCountModel::data(const QModelIndex &index, int role) con
     return QVariant();
 }
 
+void InstructionTypeCountModel::updateInstructionTypeCountsSlot()
+{
+    beginResetModel();
+    endResetModel();
+}
 } // namespace kites

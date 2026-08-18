@@ -48,9 +48,6 @@ bool Parser::parse_pseudo()
                 auipc_instr.setImm(std::to_string(hi20));
                 auipc_instr.setLineNumber(currentToken().line_number);
 
-                // std::cout << "auipc " << reg << ", " << "0x" << std::hex << hi20 << std::dec <<
-                // std::endl;
-
                 ICUnit addi_instr;
                 addi_instr.setOpcode("addi");
                 addi_instr.setRd(reg);
@@ -58,9 +55,6 @@ bool Parser::parse_pseudo()
                 addi_instr.setRs2("");
                 addi_instr.setImm(std::to_string(lo12));
                 addi_instr.setLineNumber(currentToken().line_number);
-
-                // std::cout << "addi " << reg << ", " << reg << ", " << lo12 << std::dec <<
-                // std::endl;
 
                 auipc_instr.setInstructionIndex(instruction_index_);
                 intermediate_code_.emplace_back(auipc_instr, true);
@@ -76,7 +70,6 @@ bool Parser::parse_pseudo()
             }
             else
             {
-                errors_.count++;
                 recordError(ParseError(currentToken().line_number, "Invalid label reference"));
                 errors_.all_errors.emplace_back(errors::InvalidLabelRefError(
                     "Invalid label reference", "Expected: Label defined in .data section",
@@ -247,7 +240,6 @@ bool Parser::parse_pseudo()
             }
             else
             {
-                errors_.count++;
                 recordError(ParseError(currentToken().line_number, "Immediate value out of range"));
                 errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                     "Immediate value out of range", "Expected: -2^63 <= imm <= 2^63 - 1", filename_,
@@ -906,7 +898,6 @@ bool Parser::parse_pseudo()
                 }
                 else
                 {
-                    errors_.count++;
                     recordError(
                         ParseError(peekToken(1).line_number, "Immediate value out of range"));
                     errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(

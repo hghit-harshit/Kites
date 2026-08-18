@@ -24,7 +24,7 @@ class EditorTab : public KitesTab
 {
     Q_OBJECT
 
-  public:
+public:
     explicit EditorTab(QWidget *parent = nullptr, ProcessorManager *vmManager = nullptr);
     ~EditorTab();
     void updateDisassemblyView(const std::string &disassembledCode);
@@ -44,20 +44,20 @@ class EditorTab : public KitesTab
     // syntax error. No-op if line <= 0 (PC couldn't be resolved to a source line).
     void showRuntimeError(int line, const QString &message);
 
-  public slots:
+public slots:
     void onExpandButtonClicked(bool checked);
     void switchToExpandedView();
     void switchToEditorView();
 
-  signals:
+signals:
     /// Emitted whenever the user edits the source buffer (drives FileService).
     void contentChangedSignal();
 
-  private slots:
+private slots:
     void requestLiveDiagnostics();
     void applyDiagnostics(const QVector<Diagnostic> &diagnostics);
 
-  private:
+private:
     Editor *m_editor = nullptr;
     DisassemblyEditor *m_disassemblyView = nullptr;
     Editor *m_expandedView = nullptr;
@@ -73,6 +73,8 @@ class EditorTab : public KitesTab
     QTimer *m_diagnosticsDebounceTimer = nullptr;
     // public slots:
     Ui::EditorTab *ui;
+signals:
+    void loadProgramSignal(std::string& sourceText); 
 };
 } // namespace Kites
 #endif EDITORTAB__H

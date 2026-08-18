@@ -98,12 +98,13 @@ class ProcessorBase : public QObject
     std::queue<std::string> input_queue_;
 
     std::vector<uint64_t> breakpoints_;
-    std::optional<uint64_t> last_breakpoint_pc_{}; // Track last PC where we paused at breakpoint
+    std::optional<uint64_t> last_breakpoint_pc_{std::nullopt}; // Track last PC where we paused at breakpoint
     // This is to prevent multiple pause signals when we are paused at a breakpoint and the user
     // tries to resume but the PC hasn't moved yet
 
     uint32_t current_instruction_{};
     uint64_t program_counter_{};
+    uint64_t last_executed_pc_{INVALID_PC}; 
     ProcessorState processor_state_{};
 
     unsigned int step_delay_{1000}; // well change it later to get it from config
