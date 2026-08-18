@@ -20,10 +20,10 @@ Prebuilt libraries are available for Linux,Windows on [Release Page](https://git
 
 RUN
 
-`
+```bash
 sudo xattr -rd com.apple.quarantine sudo xattr -rd com.apple.quarantine /path/to/application.app
 
-`
+```
 
 ## Building
 
