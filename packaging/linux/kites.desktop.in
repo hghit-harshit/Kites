@@ -1,0 +1,18 @@
+[Desktop Entry]
+Type=Application
+Version=1.5
+Name=Kites
+GenericName=RISC-V Simulator
+Comment=@KITES_SUMMARY@
+Exec=@KITES_EXEC_PATH@ %f
+TryExec=@KITES_EXEC_PATH@
+Icon=@KITES_APP_ID@
+Terminal=false
+# Exactly one main category (Development) so the launcher does not show up
+# twice in the applications menu; the metainfo file additionally lists
+# Education so software centers still surface it there.
+Categories=Development;IDE;
+Keywords=RISC-V;riscv;assembly;assembler;simulator;emulator;CPU;pipeline;cache;
+MimeType=text/x-asm;
+StartupNotify=true
+StartupWMClass=Kites

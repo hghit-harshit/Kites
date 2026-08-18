@@ -167,6 +167,42 @@ QWidget *SettingsDialog::createEditorPage()
     layout->addRow("Font Family:", fontFamilyCombo);
     layout->addRow("Font Size:", fontSizeSpinBox);
 
+    // --- Autosave -----------------------------------------------------------
+    // Crash recovery is always on and is not exposed here; these controls only
+    // govern writing back to the user's own file. See src/file_service/.
+    auto *autosaveCombo = new QComboBox(page);
+    autosaveCombo->addItem("Off (save with Ctrl+S)", static_cast<int>(AutosaveMode::Off));
+    autosaveCombo->addItem("After a delay", static_cast<int>(AutosaveMode::AfterDelay));
+    autosaveCombo->setCurrentIndex(
+        autosaveCombo->findData(static_cast<int>(AppSettings::getInstance().autosaveMode())));
+
+    auto *autosaveDelaySpinBox = new QSpinBox(page);
+    autosaveDelaySpinBox->setRange(1, 600);
+    autosaveDelaySpinBox->setSuffix(" s");
+    autosaveDelaySpinBox->setValue(AppSettings::getInstance().autosaveDelaySeconds());
+    autosaveDelaySpinBox->setEnabled(AppSettings::getInstance().autosaveMode() ==
+                                     AutosaveMode::AfterDelay);
+
+    connect(autosaveCombo, qOverload<int>(&QComboBox::currentIndexChanged), this,
+            [autosaveCombo, autosaveDelaySpinBox](int)
+            {
+                const auto mode = static_cast<AutosaveMode>(autosaveCombo->currentData().toInt());
+                AppSettings::getInstance().setAutosaveMode(mode);
+                autosaveDelaySpinBox->setEnabled(mode == AutosaveMode::AfterDelay);
+            });
+    connect(autosaveDelaySpinBox, qOverload<int>(&QSpinBox::valueChanged), this,
+            [](int seconds) { AppSettings::getInstance().setAutosaveDelaySeconds(seconds); });
+
+    layout->addRow("Autosave:", autosaveCombo);
+    layout->addRow("Autosave After:", autosaveDelaySpinBox);
+
+    auto *recoveryNote = new QLabel(
+        "Unsaved changes are always mirrored to a recovery file and offered back "
+        "if Kites exits unexpectedly, regardless of this setting.",
+        page);
+    recoveryNote->setWordWrap(true);
+    layout->addRow(QString(), recoveryNote);
+
     return page;
 }
 
