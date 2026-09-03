@@ -1,11 +1,30 @@
 #include "globals.h"
+#include <cstdlib>
 #include <filesystem>
 
 namespace Kites
 {
 namespace globals
 {
-std::filesystem::path invokation_path = std::filesystem::current_path();
+namespace
+{
+std::filesystem::path getWritableDataDirectory()
+{
+#ifdef __APPLE__
+    if (const char *home = std::getenv("HOME"); home != nullptr && *home != '\0')
+    {
+        return std::filesystem::path(home) /
+               "Library" /
+               "Application Support" /
+               "Kites";
+    }
+#endif
+
+    return std::filesystem::current_path();
+}
+} // namespace
+
+std::filesystem::path invokation_path = getWritableDataDirectory();
 
 std::filesystem::path vm_state_directory = invokation_path / "vm_state";
 std::filesystem::path config_file_path =
