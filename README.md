@@ -33,3 +33,7 @@ Then simply build using
 ```bash
 cmake -DCMAKE_PREFIX_PATH="path/to/Qt/6.x.x/<compiler>" ..
 ```
+
+## Testing
+
+See [docs/TESTING.md](TESTING) for how to build and run tests, including coverage reports.
