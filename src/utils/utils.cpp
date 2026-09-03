@@ -14,15 +14,21 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <stdexcept>
 
 namespace Kites
 {
 void setupVmStateDirectory()
 {
-    // std::filesystem::path vm_state_dir = std::filesystem::path(".") / "vm_state";
-    if (!std::filesystem::exists(globals::vm_state_directory))
+    std::error_code ec;
+    std::filesystem::create_directories(globals::vm_state_directory, ec);
+
+    if (ec)
     {
-        std::filesystem::create_directories(globals::vm_state_directory);
+        throw std::runtime_error(
+            "Unable to create Kites VM state directory: " +
+            globals::vm_state_directory.string() +
+            " (" + ec.message() + ")");
     }
 
     // std::filesystem::path registers_file = vm_state_dir / "registers_dump.json";
