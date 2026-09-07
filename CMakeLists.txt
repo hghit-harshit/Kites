@@ -216,3 +216,10 @@ if(ENABLE_TESTS)
     )
     #add_test(NAME AllTests COMMAND test_run)
 endif()
+
+# ---------------------------------------------------------------------------
+# Linux desktop integration, packaging and the in-app version string.
+# Everything lives in cmake/KitesPackaging.cmake; see packaging/README.md.
+# Included last because it attaches to the already-defined targets.
+# ---------------------------------------------------------------------------
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/KitesPackaging.cmake)

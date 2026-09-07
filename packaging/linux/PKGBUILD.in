@@ -1,0 +1,40 @@
+# Maintainer: @KITES_VENDOR@
+#
+# Arch Linux package build file. Generated from packaging/linux/PKGBUILD.in.
+#
+# To publish to the AUR at release time:
+#   1. Tag the release as v@KITES_VERSION@ and push it.
+#   2. Replace the 'SKIP' checksum below with the real one:
+#        makepkg -g >> PKGBUILD
+#   3. makepkg --printsrcinfo > .SRCINFO && push to the AUR repo.
+#
+# To build locally right now:
+#   cd build/packaging && makepkg -si
+
+pkgname=kites
+pkgver=@KITES_VERSION@
+pkgrel=1
+pkgdesc="@KITES_SUMMARY@"
+arch=('x86_64')
+url="@KITES_HOMEPAGE_URL@"
+license=('MIT')
+depends=('qt6-base')
+makedepends=('cmake' 'ninja' 'qt6-tools')
+source=("${pkgname}-${pkgver}.tar.gz::@KITES_HOMEPAGE_URL@/archive/refs/tags/v${pkgver}.tar.gz")
+# Regenerate with `makepkg -g` once the release tag exists.
+sha256sums=('SKIP')
+
+build() {
+    cmake -B build -S "Kites-${pkgver}" \
+        -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr
+    cmake --build build
+}
+
+package() {
+    DESTDIR="${pkgdir}" cmake --install build
+
+    install -Dm644 "Kites-${pkgver}/LICENSE.md" \
+        "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE.md"
+}
