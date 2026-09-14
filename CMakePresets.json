@@ -1,0 +1,113 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_PREFIX_PATH": "D:/Qt/6.9.2/mingw_64/lib/cmake",
+                "CMAKE_C_COMPILER": "D:/Qt/Tools/mingw1310_64/bin/gcc.exe",
+                "CMAKE_CXX_COMPILER": "D:/Qt/Tools/mingw1310_64/bin/g++.exe"
+            }
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "ENABLE_TESTS": "OFF"
+            }
+        },
+        {
+            "name": "release",
+            "displayName": "Release",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "ENABLE_TESTS": "OFF"
+            }
+        },
+        {
+            "name": "test",
+            "displayName": "Test",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "ENABLE_TESTS": "ON",
+                "LOG_PANEL": "OFF"
+            }
+        }
+    ],
+
+    "buildPresets": [
+        {
+            "name": "debug",
+            "configurePreset": "debug"
+        },
+        {
+            "name": "release",
+            "configurePreset": "release"
+        },
+        {
+            "name": "cli",
+            "displayName": "Build CLI",
+            "configurePreset": "debug",
+            "targets": ["kites_cli"]
+        },
+        {
+            "name": "test",
+            "configurePreset": "test"
+        },
+         {
+            "name": "test-only",
+            "displayName": "Build tests (no coverage)",
+            "configurePreset": "test",
+            "targets": ["kites_test"]
+        },
+        {
+            "name": "test-coverage",
+            "displayName": "Build tests (with coverage)",
+            "configurePreset": "test",
+            "targets": ["kites_test_cov"]
+        }
+    ],
+
+    "testPresets": [
+        {
+            "name": "test",
+            "configurePreset": "test",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-only",
+            "displayName": "Run tests (no coverage)",
+            "configurePreset": "test",
+            "output": {
+                "outputOnFailure": true
+            },
+            "filter": {
+                "exclude": {
+                    "name": "^cov_"
+                }
+            }
+        },
+        {
+            "name": "test-coverage",
+            "displayName": "Run tests (with coverage)",
+            "configurePreset": "test",
+            "output": {
+                "outputOnFailure": true
+            },
+            "filter": {
+                "include": {
+                    "name": "^cov_"
+                }
+            }
+        }
+    ]
+}

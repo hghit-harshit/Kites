@@ -16,24 +16,12 @@ find_package(Qt6 6.9.2 REQUIRED COMPONENTS Core Widgets Network Concurrent)
 # find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 # tests
 option(ENABLE_TESTS "Build tests" OFF)
-option(ENABLE_COVERAGE "Enable coverage instrumentation for tests" OFF)
 option(LOG_PANEL "Enable LogPanel mode" OFF) # will enable log_panel
-if(ENABLE_TESTS)
-    include(FetchContent)
-
-    FetchContent_Declare(
-    googletest
-    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-    )
-    FetchContent_MakeAvailable(googletest)
-endif()
 qt_standard_project_setup()
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(SRC_DIR "src")
-# set(INCLUDE_DIR "include")
-set(TEST_DIR "test")
 set(EXTERNAL_DIR "external")
 
 set(CMAKE_AUTOUIC_SEARCH_PATHS  ${SRC_DIR}/ui)
@@ -53,7 +41,6 @@ file(GLOB_RECURSE SRC_FILES "${SRC_DIR}/*.cpp")
 file(GLOB_RECURSE TEST_FILES "${TEST_DIR}/*.cpp")
 file(GLOB_RECURSE UI_FILES "${SRC_DIR}/*.ui")
 file(GLOB_RECURSE HEADER_FILES
-    # "${INCLUDE_DIR}/*.h"
     "${SRC_DIR}/*.h")
 
 list(APPEND SRC_FILES ${LUA_SRC_FILES})
@@ -74,52 +61,54 @@ if(WIN32)
     set(APP_RESOURCES ${APP_RESOURCES} resources/icons/app_icon.rc)
 endif()
 
-qt_add_executable(${PROJECT_NAME}
-    WIN32 MACOSX_BUNDLE
-    main.cpp
+add_library(kites_core STATIC
     ${HEADER_FILES}
     ${SRC_FILES}
     ${UI_FILES}
+)
+
+target_include_directories(kites_core PUBLIC
+    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_autogen/include"
+    ${SRC_DIR}
+    ${EXTERNAL_DIR}/lua-5.5.0/src
+)
+
+target_link_libraries(kites_core
+    Qt::Core
+    Qt::Widgets
+    Qt::Network
+    Qt::Concurrent
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(kites_core PRIVATE 
+        -Wall 
+        -Wextra 
+        -pedantic 
+        -frounding-math 
+        -ffloat-store 
+    )
+endif()
+
+if(LOG_PANEL)
+    target_compile_definitions(kites_core PRIVATE LOG_PANEL)
+endif()
+
+target_precompile_headers(kites_core PRIVATE
+    # <cstdint>
+    # <string>
+    # <array>
+    # <vector>
+)
+
+#Main application executable
+qt_add_executable(${PROJECT_NAME}
+    WIN32 MACOSX_BUNDLE
+    main.cpp
     ${APP_RESOURCES}
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "Kites")
-target_precompile_headers(${PROJECT_NAME} PRIVATE
-    #<cstdint>
-    #<string>
-   # <array>
-)
-
-
-target_include_directories(${PROJECT_NAME} 
-    PRIVATE 
-        # ${INCLUDE_DIR} 
-        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_autogen/include"
-        ${SRC_DIR}
-        ${EXTERNAL_DIR}/lua-5.5.0/src
-)
-
-target_compile_options(${PROJECT_NAME} PRIVATE 
-    -Wall 
-    -Wextra 
-    -pedantic 
-    -frounding-math 
-    -ffloat-store 
-    -g 
-    -O3
-)
-
-
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-        Qt::Core
-        Qt::Widgets
-        Qt::Network
-        Qt::Concurrent
-)
-
-if(LOG_PANEL)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE LOG_PANEL)
-endif()
+target_link_libraries(${PROJECT_NAME} PRIVATE kites_core)
 
 include(GNUInstallDirs)
 
@@ -129,90 +118,28 @@ install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-# qt_generate_deploy_app_script(
-#     TARGET ${PROJECT_NAME}
-#     OUTPUT_SCRIPT deploy_script
-#     NO_UNSUPPORTED_PLATFORM_ERROR
-# )
-# install(SCRIPT ${deploy_script})
+# Command-line executable (no GUI/QApplication dependency at runtime).
+add_executable(kites_cli cli/main.cpp)
+set_target_properties(kites_cli PROPERTIES OUTPUT_NAME "kites-cli")
+target_link_libraries(kites_cli PRIVATE kites_core)
+target_compile_definitions(kites_cli PRIVATE DISABLE_GUI)
+
+install(TARGETS kites_cli
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
 
 if(ENABLE_TESTS)
-    #find_package(GTest REQUIRED)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    include(FetchContent)
+    FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+    )
+    FetchContent_MakeAvailable(googletest)
+
     option (DISABLE_GUI "Disable GUI components in tests" ON)
     option (VM_DEBUG_PRINTS "Enable debug prints in VM during tests" OFF)
     enable_testing()
-    include_directories(${GTEST_INCLUDE_DIRS})
-   
-    add_executable(tests EXCLUDE_FROM_ALL
-    ${HEADER_FILES}
-    ${SRC_FILES}
-    ${UI_FILES}
-    ${TEST_FILES})
-
-    target_include_directories(tests PRIVATE
-    # ${INCLUDE_DIR}
-    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_autogen/include"
-    ${SRC_DIR}
-    ${EXTERNAL_DIR}/lua-5.5.0/src)
-
-    target_link_libraries(tests
-    GTest::gtest
-    GTest::gmock_main
-    Qt::Core
-    Qt::Widgets
-    Qt::Network
-    Qt::Concurrent
-    pthread)
-
-    if(ENABLE_COVERAGE)
-        if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-            message(FATAL_ERROR "ENABLE_COVERAGE requires a GCC- or Clang-style compiler")
-        endif()
-
-        find_program(GCOVR_EXECUTABLE gcovr REQUIRED)
-        target_compile_options(tests PRIVATE -O0 --coverage)
-        target_link_options(tests PRIVATE --coverage)
-
-        include(GoogleTest)
-        gtest_discover_tests(tests
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            PROPERTIES
-                FAIL_REGULAR_EXPRESSION ".*FAILED.*"
-        )
-
-        set(COVERAGE_DIR ${CMAKE_BINARY_DIR}/coverage)
-        add_custom_target(coverage
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${COVERAGE_DIR}
-            COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --test-dir ${CMAKE_BINARY_DIR}
-            COMMAND ${GCOVR_EXECUTABLE}
-                --root ${CMAKE_SOURCE_DIR}
-                --filter ${CMAKE_SOURCE_DIR}/src/.*
-                --filter ${CMAKE_SOURCE_DIR}/include/.*
-                --html --html-details
-                --output ${COVERAGE_DIR}/index.html
-                --exclude .*/external/.*
-                --exclude .*/_deps/.*
-                --exclude .*/${PROJECT_NAME}_autogen/.*
-            DEPENDS tests
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            COMMENT "Running tests and generating coverage report"
-        )
-    endif()
-
-    if(DISABLE_GUI)
-    target_compile_definitions(tests PRIVATE DISABLE_GUI)
-    endif()
-    if(VM_DEBUG_PRINTS)
-    target_compile_definitions(tests PRIVATE VM_DEBUG_PRINTS)
-    endif()
-
-    add_custom_target(test_run
-        COMMAND ./tests
-        --gtest_color=yes
-        #--gtest_filter=RV5StageVM_H_NF_TEST.l_b_forwarding
-        || true #to prevent cmake from treating test failures as build failures
-        DEPENDS tests
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    )
-    #add_test(NAME AllTests COMMAND test_run)
+    add_subdirectory(test)
 endif()

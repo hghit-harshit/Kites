@@ -37,3 +37,7 @@ cmake -DCMAKE_PREFIX_PATH="path/to/Qt/6.x.x/<compiler>" ..
 ## Testing
 
 See [docs/TESTING.md](TESTING) for how to build and run tests, including coverage reports.
+
+## CLI
+
+See [docs/CLI.md](docs/CLI.md) for how to build and use the headless command-line executable.
