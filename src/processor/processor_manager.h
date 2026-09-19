@@ -47,6 +47,8 @@ public:
     void undo();
     void redo();
 
+    void pushInput(const std::string &input);
+
     void setStepDelay(unsigned int delay);
 
     void setBreakpoints(const std::vector<uint64_t> &breakpoints);

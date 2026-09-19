@@ -6,8 +6,10 @@
 #ifndef COMMAND_HANDLER_H
 #define COMMAND_HANDLER_H
 
-#include "./processor/rvss/rvss_processor.h"
+#include "common/assembled_program.h"
+#include "processor/processor_manager.h"
 
+#include <cstdint>
 #include <vector>
 
 namespace Kites
@@ -56,9 +58,25 @@ struct Command
     }
 };
 
+/**
+ * @brief State a REPL loop keeps across commands (loaded program, breakpoint set), threaded
+ * through ExecuteCommand since ProcessorManager itself doesn't track this bookkeeping.
+ */
+struct ReplState
+{
+    AssembledProgram currentProgram{};
+    std::vector<uint64_t> breakpoints{};
+    bool programLoaded{false};
+};
+
 Command ParseCommand(const std::string &input);
 
-void ExecuteCommand(const Command &command, RVSSProcessor &vm);
+/**
+ * @brief Executes a parsed command against a running VM instance.
+ * @throws std::invalid_argument on malformed/missing arguments or an unsupported command.
+ * @throws std::exception (propagated from assembling a file) on LOAD failure.
+ */
+void ExecuteCommand(const Command &command, ProcessorManager &manager, ReplState &state);
 
 } // namespace command_handler
 }//namespace Kites

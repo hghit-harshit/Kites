@@ -50,14 +50,14 @@ struct CacheChange
 
 };
 //default values for cache configuration
-//maybe we will move its location later on 
+//maybe we will move its location later on
 namespace default_cache_config
 {
     constexpr size_t lineSizeinBytes              = 16;
     constexpr size_t setCount                     = 1;
     constexpr size_t wayCount                     = 2;
     constexpr WritePolicy writePolicy             = WritePolicy::WriteThrough;
-    constexpr AllocationPolicy allocationPolicy   = AllocationPolicy::WriteAllocate;
+    constexpr AllocationPolicy allocationPolicy   = AllocationPolicy::NoWriteAllocate;
     constexpr ReplacementPolicy replacementPolicy = ReplacementPolicy::LRU;
 }
 
@@ -66,13 +66,13 @@ class Cache : public QObject, public MemoryDevice
     Q_OBJECT
 public:
     // When next level is memory
-    Cache(MemoryDevice &memory, size_t setCount = default_cache_config::setCount, 
-		size_t lineSizeInBytes = default_cache_config::lineSizeinBytes, 
+    Cache(MemoryDevice &memory, size_t setCount = default_cache_config::setCount,
+		size_t lineSizeInBytes = default_cache_config::lineSizeinBytes,
 		size_t wayCount = default_cache_config::wayCount,
         WritePolicy writePolicy = default_cache_config::writePolicy,
         AllocationPolicy allocationPolicy = default_cache_config::allocationPolicy,
         ReplacementPolicy replacementPolicy = default_cache_config::replacementPolicy);
-        
+
     Cache (const Cache &) = delete; // explicitly delete copy constructor
 
 
@@ -93,7 +93,7 @@ public:
     uint16_t readHalfWord(uint64_t address);
     uint32_t readWord(uint64_t address);
     uint64_t readDoubleWord(uint64_t address);
-    
+
     void reset();
     void flush(); // write back all dirty lines to memory and and invalidate all lines in cache
 
@@ -129,7 +129,7 @@ private:
     void writeBack(size_t setIndex, size_t wayIndex);
     void bringIn(uint64_t address, size_t setIndex, size_t wayIndex);
     // These functions are used to read and write
-    uint8_t getByteFromCache(uint64_t address);  
+    uint8_t getByteFromCache(uint64_t address);
     void putByteInCache(uint64_t address, uint8_t value);
     template <typename T> bool isHit(uint64_t address) const;
     template <typename T> void touchLines(uint64_t address);
@@ -139,7 +139,7 @@ private:
 
     // Data Members
     MemoryDevice& m_nextLevelMemoryRef; //either memory or next level cache
-    
+
     std::vector<std::vector<CacheLine>> m_sets; // each set contains wayCount cache lines
     uint64_t m_timestampCounter {0};           // cache-wide clock for replacement metadata
 
@@ -160,9 +160,9 @@ private:
     // Statistics
     size_t m_hitCount  {0};
     size_t m_missCount {0};
-    size_t m_writeBackCount {0}; 
-    // common setup function 
-    void setupCache(size_t cache_size, size_t lineSizeInBytes,size_t wayCount); 
+    size_t m_writeBackCount {0};
+    // common setup function
+    void setupCache(size_t cache_size, size_t lineSizeInBytes,size_t wayCount);
     //TODO get this buffer size from config
     UndoBuffer<CacheChange> m_undoBuffer{100};
 signals:

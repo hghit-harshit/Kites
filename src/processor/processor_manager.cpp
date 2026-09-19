@@ -230,6 +230,11 @@ void ProcessorManager::redo()
 {
     m_currentProcessor->Redo();
 }
+
+void ProcessorManager::pushInput(const std::string &input)
+{
+    m_currentProcessor->PushInput(input);
+}
 void ProcessorManager::setStepDelay(unsigned int delay)
 {
     m_stepDelayMs = delay;

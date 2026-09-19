@@ -3,10 +3,12 @@
  * @brief Entry point for the Kites command-line interface.
  */
 #include "assembler/assembler.h"
+#include "command_handler/command_handler.h"
 #include "common/assembled_program.h"
 #include "common/globals.h"
 #include "processor/processor_manager.h"
 #include "processor/processor_types.h"
+#include "repl.h"
 #include "utils/utils.h"
 
 #include <QCoreApplication>
@@ -22,11 +24,17 @@ namespace
 {
 void printUsage(const char *programName)
 {
-    std::cerr << "Usage: " << programName
-               << " <assembly-file> [--vm <name>] [--mem-dump <hex_addr> <row_count>]...\n"
-               << "  --vm <name>   rvss (default) | rv5-nh-nf | rv5-h-nf | rv5-nh-f | rv5-h-f\n"
-               << "  --mem-dump    dump <row_count> 8-byte rows starting at <hex_addr>; "
-                  "repeatable\n";
+    std::cerr
+        << "Usage: " << programName
+        << " [assembly-file] [--vm <name>] [--mem-dump <hex_addr> <row_count>]... [--repl|-i]\n"
+        << "  assembly-file   optional; if given without --repl, assembles, runs to\n"
+        << "                  completion, and dumps state (batch mode)\n"
+        << "  --vm <name>     rvss (default) | rv5-nh-nf | rv5-h-nf | rv5-nh-f | rv5-h-f\n"
+        << "  --mem-dump      dump <row_count> 8-byte rows starting at <hex_addr>; "
+           "repeatable (batch mode only)\n"
+        << "  --repl, -i      drop into the interactive REPL instead of auto-running;\n"
+        << "                  if assembly-file is given it is loaded before the prompt\n"
+        << "  (running with no assembly-file also enters the REPL)\n";
 }
 
 const std::unordered_map<std::string, Kites::ProcessorType> processorTypes = {
@@ -44,16 +52,12 @@ int main(int argc, char *argv[])
 
     Kites::setupVmStateDirectory();
 
-    if (argc < 2)
-    {
-        printUsage(argv[0]);
-        return 1;
-    }
-
+    std::string assemblyFile;
     std::string processorTypeStr = "rvss";
     std::vector<std::string> memDumpArgs;
+    bool replRequested = false;
 
-    for (int i = 2; i < argc; ++i)
+    for (int i = 1; i < argc; ++i)
     {
         std::string arg = argv[i];
         if (arg == "--vm")
@@ -77,26 +81,67 @@ int main(int argc, char *argv[])
             memDumpArgs.push_back(argv[++i]);
             memDumpArgs.push_back(argv[++i]);
         }
-        else
+        else if (arg == "--repl" || arg == "-i")
+        {
+            replRequested = true;
+        }
+        else if (!arg.empty() && arg[0] == '-')
         {
             std::cerr << "Error: unknown argument '" << arg << "'.\n";
             printUsage(argv[0]);
             return 1;
         }
+        else if (assemblyFile.empty())
+        {
+            assemblyFile = arg;
+        }
+        else
+        {
+            std::cerr << "Error: unexpected extra argument '" << arg << "'.\n";
+            printUsage(argv[0]);
+            return 1;
+        }
     }
 
-    auto vmTypeIt = processorTypes.find(processorTypeStr);
-    if (vmTypeIt == processorTypes.end())
+    auto processorTypeIt = processorTypes.find(processorTypeStr);
+    if (processorTypeIt == processorTypes.end())
     {
         std::cerr << "Error: unknown VM type '" << processorTypeStr << "'.\n";
         printUsage(argv[0]);
         return 1;
     }
 
+    if (replRequested || assemblyFile.empty())
+    {
+        Kites::ProcessorManager manager(nullptr, processorTypeIt->second);
+        manager.setStepDelay(0);
+
+        Kites::command_handler::ReplState state;
+        if (!assemblyFile.empty())
+        {
+            try
+            {
+                Kites::AssembledProgram program = Kites::assemble(assemblyFile);
+                manager.loadProgram(program);
+                state.currentProgram = program;
+                state.programLoaded = true;
+                std::cout << "Loaded '" << assemblyFile << "': " << program.text_buffer.size()
+                           << " instruction word(s), " << program.data_buffer.size()
+                           << " data item(s).\n";
+            }
+            catch (const std::exception &e)
+            {
+                std::cerr << "Assembly failed: " << e.what() << "\n";
+            }
+        }
+
+        return Kites::RunRepl(manager, state);
+    }
+
     Kites::AssembledProgram program;
     try
     {
-        program = Kites::assemble(argv[1]);
+        program = Kites::assemble(assemblyFile);
     }
     catch (const std::exception &e)
     {
@@ -104,7 +149,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    Kites::ProcessorManager manager(nullptr, vmTypeIt->second);
+    Kites::ProcessorManager manager(nullptr, processorTypeIt->second);
 
     bool runFailed = false;
     std::string runErrorMsg;
@@ -146,7 +191,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    std::cout << "Assembled '" << argv[1] << "': " << program.text_buffer.size()
+    std::cout << "Assembled '" << assemblyFile << "': " << program.text_buffer.size()
                << " instruction word(s), " << program.data_buffer.size() << " data item(s).\n"
                << "Run " << (runFailed ? "failed" : "completed") << ".\n"
                << "Registers   -> " << Kites::globals::registers_dump_file_path.string() << "\n"
