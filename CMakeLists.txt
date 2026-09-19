@@ -17,6 +17,7 @@ find_package(Qt6 6.9.2 REQUIRED COMPONENTS Core Widgets Network Concurrent)
 # tests
 option(ENABLE_TESTS "Build tests" OFF)
 option(LOG_PANEL "Enable LogPanel mode" OFF) # will enable log_panel
+option(DISABLE_GUI "Disable GUI components" OFF) # will disable GUI components
 qt_standard_project_setup()
 
 set(CMAKE_AUTOMOC ON)
@@ -94,6 +95,10 @@ if(LOG_PANEL)
     target_compile_definitions(kites_core PRIVATE LOG_PANEL)
 endif()
 
+if(DISABLE_GUI)
+    target_compile_definitions(kites_core PRIVATE DISABLE_GUI)
+endif()
+
 target_precompile_headers(kites_core PRIVATE
     # <cstdint>
     # <string>
@@ -119,7 +124,7 @@ install(TARGETS ${PROJECT_NAME}
 )
 
 # Command-line executable (no GUI/QApplication dependency at runtime).
-add_executable(kites_cli cli/main.cpp)
+add_executable(kites_cli cli/main.cpp cli/repl.cpp)
 set_target_properties(kites_cli PROPERTIES OUTPUT_NAME "kites-cli")
 target_link_libraries(kites_cli PRIVATE kites_core)
 target_compile_definitions(kites_cli PRIVATE DISABLE_GUI)

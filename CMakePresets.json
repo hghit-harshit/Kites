@@ -37,7 +37,20 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "ENABLE_TESTS": "ON",
-                "LOG_PANEL": "OFF"
+                "LOG_PANEL": "OFF",
+                "DISABLE_GUI": "ON"
+            }
+        },
+        {
+            "name": "cli",
+            "displayName": "CLI",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "ENABLE_TESTS": "OFF",
+                "LOG_PANEL": "OFF",
+                "DISABLE_GUI": "ON"
+
             }
         }
     ],
@@ -54,7 +67,7 @@
         {
             "name": "cli",
             "displayName": "Build CLI",
-            "configurePreset": "debug",
+            "configurePreset": "cli",
             "targets": ["kites_cli"]
         },
         {
