@@ -126,10 +126,6 @@ Token Lexer::identifier()
         return {TokenType::LABEL, value, line_number_, start_column};
     }
 
-    if (instruction_set::isValidInstruction(value))
-    {
-        return {TokenType::OPCODE, value, line_number_, start_column};
-    }
     if (IsValidGeneralPurposeRegister(value))
     {
         return {TokenType::GP_REGISTER, value, line_number_, start_column};
@@ -148,14 +144,18 @@ Token Lexer::identifier()
         return {TokenType::RM, value, line_number_, start_column};
     }
 
-    if (pos_ < current_line_.size() && current_line_[pos_] == ':')
-    {
-        return {TokenType::LABEL, value, line_number_, start_column};
-    }
-    if (!tokens_.empty() && (tokens_.back().type == TokenType::COMMA || 
+    // An identifier in operand position (right after an opcode or a comma) is a label
+    // reference even if its text happens to match an instruction mnemonic, e.g. `j add`
+    // where `add` is a label. 
+    if (!tokens_.empty() && (tokens_.back().type == TokenType::COMMA ||
     tokens_.back().type == TokenType::OPCODE))
     {
         return {TokenType::LABEL_REF, value, line_number_, start_column};
+    }
+
+    if (instruction_set::isValidInstruction(value))
+    {
+        return {TokenType::OPCODE, value, line_number_, start_column};
     }
 
     // Default case: invalid token
