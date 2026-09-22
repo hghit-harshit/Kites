@@ -1,8 +1,33 @@
 #include "memorymodel.h"
 #include "config/config.h"
 #include <QDebug>
+#include <algorithm>
+#include <cstdint>
 namespace Kites
 {
+namespace
+{
+// Highest 8-byte-aligned row that still fits entirely inside memory.
+uint64_t maxCentralAddress()
+{
+    const uint64_t memorySize = vm_config::config.getMemorySize();
+    if (memorySize < 8)
+    {
+        return 0;
+    }
+    return ((memorySize - 8) / 8) * 8;
+}
+
+uint64_t clampCentralAddress(int64_t address)
+{
+    if (address < 0)
+    {
+        return 0;
+    }
+    return std::min(static_cast<uint64_t>(address), maxCentralAddress());
+}
+} // namespace
+
 MemoryModel::MemoryModel(QObject *parent, MemoryController *memoryController)
     : QAbstractTableModel(parent)
 {
@@ -59,7 +84,7 @@ void MemoryModel::changeMemoryController(MemoryController *memoryController)
 bool MemoryModel::canOffset(int offset)
 {
     return ((offset < 0 && m_currentCentralAddress != 0) ||
-            (offset > 0 && m_currentCentralAddress != vm_config::config.getMemorySize()));
+            (offset > 0 && m_currentCentralAddress != maxCentralAddress()));
 }
 
 void MemoryModel::offsetCentralAddress(int offset)
@@ -67,17 +92,18 @@ void MemoryModel::offsetCentralAddress(int offset)
     if (!canOffset(offset))
         return;
     beginResetModel();
-    m_currentCentralAddress = m_currentCentralAddress + offset * 8;
-    // m_currentCentralAddress = (isValidAddress(newCentralAddress)
-    // ? newCentralAddress : m_currentCentralAddress);
-    // change it to get the bytes of rom f/lrom some kind of config
+    // Signed arithmetic, then clamp: scrolling past either end would otherwise wrap the
+    // unsigned address around to a wildly out-of-range row.
+    m_currentCentralAddress = clampCentralAddress(static_cast<int64_t>(m_currentCentralAddress) +
+                                                  static_cast<int64_t>(offset) * 8);
     endResetModel();
 }
 
 void MemoryModel::setCentralAddress(const uint64_t &address)
 {
     beginResetModel();
-    m_currentCentralAddress = (address / 8) * 8; // doing this becuase we want closed multiples of 8
+    // multiples of 8 so that a row never straddles a double-word boundary
+    m_currentCentralAddress = clampCentralAddress(static_cast<int64_t>((address / 8) * 8));
     endResetModel();
 }
 
@@ -136,14 +162,21 @@ QVariant MemoryModel::data(const QModelIndex &index, int role) const
     {
         int offsetAddress = ((((m_rowsVisible * 8) / 2) / 8) * 8) - (index.row() * 8);
         // protecting against overflows
-        if ((offsetAddress < 0 && abs(offsetAddress) > m_currentCentralAddress) ||
-            (offsetAddress > 0 && static_cast<uint64_t>(offsetAddress) + m_currentCentralAddress >
-                                      vm_config::config.getMemorySize()))
+        if (offsetAddress < 0 && static_cast<uint64_t>(abs(offsetAddress)) > m_currentCentralAddress)
         {
             return QString("-");
         }
         const uint64_t alignedAddress =
             static_cast<uint64_t>(m_currentCentralAddress) + offsetAddress;
+
+        // Every column of a row reads somewhere in the 8 bytes at alignedAddress, so the whole
+        // row must fit in memory. A partially out-of-range row would make the reads below throw
+        // std::out_of_range, and that would unwind through Qt's view code rather than be caught.
+        const uint64_t memorySize = vm_config::config.getMemorySize();
+        if (memorySize < 8 || alignedAddress > memorySize - 8)
+        {
+            return QString("-");
+        }
 
         // size_t row = static_cast<size_t>(index.row());
         //  if(!isValidAddress(alignedAddress))
