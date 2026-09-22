@@ -569,8 +569,10 @@ void RV5StageVM_Base::pipeline_writeback()
         {
         case 0b0110011: // R-Type
         case 0b0010011: // I-Type
-        case 0b0010111:
-        { // AUIPC
+        case 0b0010111: // AUIPC
+        case 0b0111011: // OP-32 R-type (ADDW, SUBW, MULW, DIVW, DIVUW, REMW, REMUW, SLLW, SRLW, SRAW)
+        case 0b0011011: // OP-32 I-type (ADDIW, SLLIW, SRLIW, SRAIW)
+        {
             registers_.WriteGpr(mem_wb_reg_.rd, write_data);
             break;
         }

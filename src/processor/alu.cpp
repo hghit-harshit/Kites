@@ -114,11 +114,11 @@ namespace alu
         auto sb = static_cast<int64_t>(b);
         if (sb == 0)
         {
-            return {0, false};
+            return {static_cast<uint64_t>(-1), false};
         }
         if (sa == INT64_MIN && sb == -1)
         {
-            return {static_cast<uint64_t>(INT64_MAX), true};
+            return {static_cast<uint64_t>(INT64_MIN), true};
         }
         int64_t result = sa / sb;
         return {static_cast<uint64_t>(result), false};
@@ -129,68 +129,84 @@ namespace alu
         auto sb = static_cast<int32_t>(b);
         if (sb == 0)
         {
-            return {0, false};
+            return {static_cast<uint64_t>(static_cast<int64_t>(-1)), false};
         }
         if (sa == INT32_MIN && sb == -1)
         {
-            return {static_cast<uint64_t>(INT32_MIN), true};
+            return {static_cast<uint64_t>(static_cast<int64_t>(INT32_MIN)), true};
         }
         int32_t result = sa / sb;
-        return {static_cast<uint64_t>(result), false};
+        return {static_cast<uint64_t>(static_cast<int64_t>(result)), false};
     }
     case AluOp::DIVU:
     {
         if (b == 0)
         {
-            return {0, false};
+            return {UINT64_MAX, false};
         }
         uint64_t result = a / b;
         return {result, false};
     }
     case AluOp::DIVUW:
     {
-        if (b == 0)
+        auto ua = static_cast<uint32_t>(a);
+        auto ub = static_cast<uint32_t>(b);
+        if (ub == 0)
         {
-            return {0, false};
+            return {static_cast<uint64_t>(static_cast<int64_t>(-1)), false};
         }
-        uint64_t result = static_cast<uint32_t>(a) / static_cast<uint32_t>(b);
-        return {static_cast<uint64_t>(result), false};
+        auto result = static_cast<int32_t>(ua / ub);
+        return {static_cast<uint64_t>(static_cast<int64_t>(result)), false};
     }
     case AluOp::REM:
     {
-        if (b == 0)
+        auto sa = static_cast<int64_t>(a);
+        auto sb = static_cast<int64_t>(b);
+        if (sb == 0)
         {
-            return {0, false};
+            return {static_cast<uint64_t>(sa), false};
         }
-        int64_t result = static_cast<int64_t>(a) % static_cast<int64_t>(b);
+        if (sa == INT64_MIN && sb == -1)
+        {
+            return {0, true};
+        }
+        int64_t result = sa % sb;
         return {static_cast<uint64_t>(result), false};
     }
     case AluOp::REMW:
     {
-        if (b == 0)
+        auto sa = static_cast<int32_t>(a);
+        auto sb = static_cast<int32_t>(b);
+        if (sb == 0)
         {
-            return {0, false};
+            return {static_cast<uint64_t>(static_cast<int64_t>(sa)), false};
         }
-        int32_t result = static_cast<int32_t>(a) % static_cast<int32_t>(b);
-        return {static_cast<uint64_t>(result), false};
+        if (sa == INT32_MIN && sb == -1)
+        {
+            return {0, true};
+        }
+        int32_t result = sa % sb;
+        return {static_cast<uint64_t>(static_cast<int64_t>(result)), false};
     }
     case AluOp::REMU:
     {
         if (b == 0)
         {
-            return {0, false};
+            return {a, false};
         }
         uint64_t result = a % b;
         return {result, false};
     }
     case AluOp::REMUW:
     {
-        if (b == 0)
+        auto ua = static_cast<uint32_t>(a);
+        auto ub = static_cast<uint32_t>(b);
+        if (ub == 0)
         {
-            return {0, false};
+            return {static_cast<uint64_t>(static_cast<int64_t>(static_cast<int32_t>(ua))), false};
         }
-        uint64_t result = static_cast<uint32_t>(a) % static_cast<uint32_t>(b);
-        return {static_cast<uint64_t>(result), false};
+        auto result = static_cast<int32_t>(ua % ub);
+        return {static_cast<uint64_t>(static_cast<int64_t>(result)), false};
     }
     case AluOp::AND:
     {

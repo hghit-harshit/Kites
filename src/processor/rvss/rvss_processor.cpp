@@ -865,8 +865,10 @@ void RVSSProcessor::WriteBack()
         {
         case 0b0110011: // R-Type
         case 0b0010011: // I-Type
-        case 0b0010111:
-        { // AUIPC
+        case 0b0010111: // AUIPC
+        case 0b0111011: // R4-Type / OP-32 (ADDW, SUBW, MULW, DIVW, DIVUW, REMW, REMUW, SLLW, SRLW, SRAW)
+        case 0b0011011: // I-type OP-32 (ADDIW, SLLIW, SRLIW, SRAIW)
+        {
             registers_.WriteGpr(rd, execution_result_);
             break;
         }

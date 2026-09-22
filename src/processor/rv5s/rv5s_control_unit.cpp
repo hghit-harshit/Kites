@@ -239,7 +239,7 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
             return alu::AluOp::OR;
         case 0b111: // AND, REMU
             if (funct7 == 0b0000001)
-                return alu::AluOp::REMUW;
+                return alu::AluOp::REMU;
             return alu::AluOp::AND;
         }
         break;
@@ -382,9 +382,9 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
         case 0b1000111:
             return (funct2 == 0b00) ? alu::AluOp::FMSUB_S : alu::AluOp::FMSUB_D;
         case 0b1001011:
-            return (funct2 == 0b00) ? alu::AluOp::FNMADD_S : alu::AluOp::FNMADD_D;
-        case 0b1001111:
             return (funct2 == 0b00) ? alu::AluOp::FNMSUB_S : alu::AluOp::FNMSUB_D;
+        case 0b1001111:
+            return (funct2 == 0b00) ? alu::AluOp::FNMADD_S : alu::AluOp::FNMADD_D;
         }
         break;
     }

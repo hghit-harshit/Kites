@@ -87,6 +87,19 @@ void RVSSControlUnit::SetControlSignals(uint32_t instruction)
         alu_op_ = true;
         break;
     }
+    case 0b0111011:
+    { // R4-Type / OP-32 (ADDW, SUBW, MULW, DIVW, DIVUW, REMW, REMUW, SLLW, SRLW, SRAW)
+        reg_write_ = true;
+        alu_op_ = true;
+        break;
+    }
+    case 0b0011011:
+    { // I-type OP-32 (ADDIW, SLLIW, SRLIW, SRAIW)
+        alu_src_ = true;
+        reg_write_ = true;
+        alu_op_ = true;
+        break;
+    }
 
     // F extension + D extension
     case 0b0000111:
@@ -106,6 +119,15 @@ void RVSSControlUnit::SetControlSignals(uint32_t instruction)
     }
     case 0b1010011:
     { // F-Type R-type instructions (FADD, FSUB, FMUL, FDIV, etc.)
+        reg_write_ = true;
+        alu_op_ = true;
+        break;
+    }
+    case 0b1000011: // FMADD.S/D
+    case 0b1000111: // FMSUB.S/D
+    case 0b1001011: // FNMSUB.S/D
+    case 0b1001111: // FNMADD.S/D
+    {
         reg_write_ = true;
         alu_op_ = true;
         break;
@@ -877,21 +899,6 @@ alu::AluOp RVSSControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
             break;
         }
         case 0b1001011:
-        { // FNMADD.S, FNMADD.D
-            switch (funct2)
-            {
-            case 0b00:
-            { // FNMADD.S
-                return alu::AluOp::FNMADD_S;
-            }
-            case 0b01:
-            { // FNMADD.D
-                return alu::AluOp::FNMADD_D;
-            }
-            }
-            break;
-        }
-        case 0b1001111:
         { // FNMSUB.S, FNMSUB.D
             switch (funct2)
             {
@@ -902,6 +909,21 @@ alu::AluOp RVSSControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
             case 0b01:
             { // FNMSUB.D
                 return alu::AluOp::FNMSUB_D;
+            }
+            }
+            break;
+        }
+        case 0b1001111:
+        { // FNMADD.S, FNMADD.D
+            switch (funct2)
+            {
+            case 0b00:
+            { // FNMADD.S
+                return alu::AluOp::FNMADD_S;
+            }
+            case 0b01:
+            { // FNMADD.D
+                return alu::AluOp::FNMADD_D;
             }
             }
             break;
