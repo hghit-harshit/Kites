@@ -1,9 +1,11 @@
 #include <gtest/gtest.h>
-#include "processor/rvss/rvss_vm.h"
+#include "processor/rvss/rvss_processor.h"
 
-#include "../include/processor/rv5s/rv5s_processor_nh_nf.h"
-#include "../include/assembler/assembler.h"
-#include "../include/utils.h"
+#include "processor/rv5s/rv5s_processor_nh_nf.h"
+#include "assembler/assembler.h"
+#include "utils/utils.h"
+
+using namespace Kites;
 
 static std::unique_ptr<RV5StageProcessorNHNF> runNhNfProgram(const std::string& filename)
 {
@@ -20,7 +22,7 @@ static std::unique_ptr<ProcessorBase> runProgram(const std::string& filename)
 {
     setupVmStateDirectory();
 
-    auto vm = std::make_unique<RVSSVM>();
+    auto vm = std::make_unique<RVSSProcessor>();
     AssembledProgram program = assemble(filename);
     vm->LoadProgram(program);
     vm->DebugRun();

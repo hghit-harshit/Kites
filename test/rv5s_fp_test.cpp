@@ -13,12 +13,14 @@
  */
 
 #include <gtest/gtest.h>
-#include "../include/processor/rv5s/rv5s_processor_nh_nf.h"
-#include "../include/processor/rv5s/rv5s_processor_nh_f.h"
-#include "../include/processor/rv5s/rv5s_processor_h_nf.h"
-#include "../include/processor/rv5s/rv5s_processor_h_f.h"
-#include "../include/assembler/assembler.h"
-#include "../include/utils.h"
+#include "processor/rv5s/rv5s_processor_nh_nf.h"
+#include "processor/rv5s/rv5s_processor_nh_f.h"
+#include "processor/rv5s/rv5s_processor_h_nf.h"
+#include "processor/rv5s/rv5s_processor_h_f.h"
+#include "assembler/assembler.h"
+#include "utils/utils.h"
+
+using namespace Kites;
 
 // ─────────────────────────────────────────────────────────────
 // Helper launchers — one per VM type

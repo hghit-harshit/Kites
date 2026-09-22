@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "../include/assembler/assembler.h"
-#include "../include/utils.h"
-#include "../include/processor/rv5s/rv5s_processor_nh_nf.h"
+#include "assembler/assembler.h"
+#include "utils/utils.h"
+#include "processor/rv5s/rv5s_processor_nh_nf.h"
+
+using namespace Kites;
 
 static std::unique_ptr<RV5StageProcessorNHNF> runNhNfProgramMemory(const std::string& filename)
 {

@@ -69,7 +69,11 @@ if(ENABLE_COVERAGE)
 
     target_compile_options(kites_test_cov PRIVATE -O0 --coverage)
     target_compile_options(kites_core PRIVATE -O0 --coverage)
-    
+
+    # kites_core is instrumented above, so every target that links it needs gcov,
+    # not just the coverage test binary.
+    target_link_libraries(kites_core gcov)
+
     target_link_libraries(kites_test_cov PRIVATE gcov)
 
     set(COVERAGE_DIR ${CMAKE_BINARY_DIR}/coverage)

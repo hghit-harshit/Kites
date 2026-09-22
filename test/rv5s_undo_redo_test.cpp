@@ -5,12 +5,14 @@
 #include <string>
 #include <vector>
 
-#include "../include/assembler/assembler.h"
-#include "../include/utils.h"
-#include "../include/processor/rv5s/rv5s_processor_h_f.h"
-#include "../include/processor/rv5s/rv5s_processor_h_nf.h"
-#include "../include/processor/rv5s/rv5s_processor_nh_f.h"
-#include "../include/processor/rv5s/rv5s_processor_nh_nf.h"
+#include "assembler/assembler.h"
+#include "utils/utils.h"
+#include "processor/rv5s/rv5s_processor_h_f.h"
+#include "processor/rv5s/rv5s_processor_h_nf.h"
+#include "processor/rv5s/rv5s_processor_nh_f.h"
+#include "processor/rv5s/rv5s_processor_nh_nf.h"
+
+using namespace Kites;
 
 namespace {
 
@@ -37,7 +39,7 @@ VmSnapshot captureSnapshot(ProcessorBase& vm, const std::vector<uint64_t>& watch
     snapshot.watched_memory.reserve(watched_addresses.size());
     for (const uint64_t addr : watched_addresses)
     {
-        snapshot.watched_memory.push_back(vm.memory_controller_.ReadByte(addr));
+        snapshot.watched_memory.push_back(vm.memory_controller_.readByte(addr));
     }
 
     return snapshot;

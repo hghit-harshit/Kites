@@ -5,13 +5,15 @@
 #include <memory>
 
 #include "processor/cache/cache.h"
-#include "../include/assembler/assembler.h"
-#include "../include/utils.h"
-#include "../include/processor/rv5s/rv5s_processor_h_f.h"
-#include "../include/processor/rv5s/rv5s_processor_h_nf.h"
-#include "../include/processor/rv5s/rv5s_processor_nh_f.h"
-#include "../include/processor/rv5s/rv5s_processor_nh_nf.h"
-#include "../include/processor/rvss/rvss_vm.h"
+#include "assembler/assembler.h"
+#include "utils/utils.h"
+#include "processor/rv5s/rv5s_processor_h_f.h"
+#include "processor/rv5s/rv5s_processor_h_nf.h"
+#include "processor/rv5s/rv5s_processor_nh_f.h"
+#include "processor/rv5s/rv5s_processor_nh_nf.h"
+#include "processor/rvss/rvss_processor.h"
+
+using namespace Kites;
 
 namespace {
 
@@ -39,19 +41,19 @@ const std::array<uint32_t, kMatrixWords> kExpectedC = {
     138, 114, 90
 };
 
-void writeMatrix(MemoryController& memory, uint64_t base, const std::array<uint32_t, kMatrixWords>& values)
+void writeMatrix(Kites::MemoryController& memory, uint64_t base, const std::array<uint32_t, kMatrixWords>& values)
 {
     for (size_t i = 0; i < values.size(); ++i)
     {
-        memory.WriteWord_d(base + static_cast<uint64_t>(i * 4), values[i]);
+        memory.writeWord_d(base + static_cast<uint64_t>(i * 4), values[i]);
     }
 }
 
-void warmL2(Cache& l2, uint64_t base, size_t words)
+void warmL2(Kites::Cache& l2, uint64_t base, size_t words)
 {
     for (size_t i = 0; i < words; ++i)
     {
-        l2.ReadWord(base + static_cast<uint64_t>(i * 4));
+        l2.readWord(base + static_cast<uint64_t>(i * 4));
     }
 }
 
@@ -64,11 +66,11 @@ void runMatrixMultiplyCacheTest(const char* vm_label)
 
     auto vm = std::make_unique<VmType>();
 
-    Cache* l1_cache = vm->memory_controller_.GetL1Cache();
-    Cache* l2_cache = vm->memory_controller_.GetL2Cache();
-    Cache* instruction_cache = vm->memory_controller_.GetInstructionCache();
+    Kites::Cache* l1_cache = vm->memory_controller_.getL1Cache();
+    Kites::Cache* l2_cache = vm->memory_controller_.getL2Cache();
+    Kites::Cache* instruction_cache = vm->memory_controller_.getInstructionCache();
 
-    l2_cache->Reconfigure(CacheConfig{
+    l2_cache->reconfigure(CacheConfig{
         64,
         1,
         2,
@@ -76,7 +78,7 @@ void runMatrixMultiplyCacheTest(const char* vm_label)
         AllocationPolicy::WriteAllocate,
         ReplacementPolicy::LRU});
 
-    l1_cache->Reconfigure(CacheConfig{
+    l1_cache->reconfigure(CacheConfig{
         2,
         1,
         1,
@@ -84,7 +86,7 @@ void runMatrixMultiplyCacheTest(const char* vm_label)
         AllocationPolicy::WriteAllocate,
         ReplacementPolicy::LRU});
 
-    instruction_cache->Reconfigure(CacheConfig{
+    instruction_cache->reconfigure(CacheConfig{
         4,
         1,
         1,
@@ -97,42 +99,42 @@ void runMatrixMultiplyCacheTest(const char* vm_label)
 
     for (size_t i = 0; i < kMatrixWords; ++i)
     {
-        vm->memory_controller_.WriteWord_d(kBaseC + static_cast<uint64_t>(i * 4), 0);
+        vm->memory_controller_.writeWord_d(kBaseC + static_cast<uint64_t>(i * 4), 0);
     }
 
     warmL2(*l2_cache, kBaseA, kMatrixWords);
     warmL2(*l2_cache, kBaseB, kMatrixWords);
     warmL2(*l2_cache, kBaseC, kMatrixWords);
 
-    l1_cache->Reset();
+    l1_cache->reset();
 
-    const size_t l2_hits_probe_before = l2_cache->GetHits();
-    const uint32_t probe_value = vm->memory_controller_.ReadWord(kBaseA);
+    const size_t l2_hits_probe_before = l2_cache->getHitCount();
+    const uint32_t probe_value = vm->memory_controller_.readWord(kBaseA);
     EXPECT_EQ(probe_value, kMatrixA[0]);
-    const size_t l2_hits_probe_after = l2_cache->GetHits();
+    const size_t l2_hits_probe_after = l2_cache->getHitCount();
     EXPECT_GT(l2_hits_probe_after, l2_hits_probe_before);
 
-    l1_cache->Reset();
+    l1_cache->reset();
 
-    const size_t l1_misses_before = l1_cache->GetMisses();
-    const size_t l2_hits_before = l2_cache->GetHits();
+    const size_t l1_misses_before = l1_cache->getMissCount();
+    const size_t l2_hits_before = l2_cache->getHitCount();
 
     AssembledProgram program = assemble("../examples/cache_matrix_mul_3x3.s");
     vm->LoadProgram(program);
     vm->DebugRun();
 
-    const size_t l1_misses_after = l1_cache->GetMisses();
-    const size_t l2_hits_after = l2_cache->GetHits();
+    const size_t l1_misses_after = l1_cache->getMissCount();
+    const size_t l2_hits_after = l2_cache->getHitCount();
 
     EXPECT_GT(l1_misses_after - l1_misses_before, 0u);
     EXPECT_GT(l2_hits_after - l2_hits_before, 0u);
 
-    l1_cache->Flush();
-    l2_cache->Flush();
+    l1_cache->flush();
+    l2_cache->flush();
 
     for (size_t i = 0; i < kMatrixWords; ++i)
     {
-        const uint32_t value = vm->memory_controller_.ReadWord_d(kBaseC + static_cast<uint64_t>(i * 4));
+        const uint32_t value = vm->memory_controller_.readWord_d(kBaseC + static_cast<uint64_t>(i * 4));
         EXPECT_EQ(value, kExpectedC[i]) << "index=" << i;
     }
 }
@@ -141,25 +143,25 @@ void runMatrixMultiplyCacheTest(const char* vm_label)
 
 TEST(CacheHierarchyTest, MatrixMultiplyUsesL2OnL1Misses_RVSS)
 {
-    runMatrixMultiplyCacheTest<RVSSVM>("RVSSVM");
+    runMatrixMultiplyCacheTest<Kites::RVSSProcessor>("RVSSVM");
 }
 
 TEST(CacheHierarchyTest, MatrixMultiplyUsesL2OnL1Misses_RV5_NH_NF)
 {
-    runMatrixMultiplyCacheTest<RV5StageProcessorNHNF>("RV5StageProcessorNHNF");
+    runMatrixMultiplyCacheTest<Kites::RV5StageProcessorNHNF>("RV5StageProcessorNHNF");
 }
 
 TEST(CacheHierarchyTest, MatrixMultiplyUsesL2OnL1Misses_RV5_NH_F)
 {
-    runMatrixMultiplyCacheTest<RV5StageProcessorNHF>("RV5StageProcessorNHF");
+    runMatrixMultiplyCacheTest<Kites::RV5StageProcessorNHF>("RV5StageProcessorNHF");
 }
 
 TEST(CacheHierarchyTest, MatrixMultiplyUsesL2OnL1Misses_RV5_H_NF)
 {
-    runMatrixMultiplyCacheTest<RV5StageProcessorHNF>("RV5StageProcessorHNF");
+    runMatrixMultiplyCacheTest<Kites::RV5StageProcessorHNF>("RV5StageProcessorHNF");
 }
 
 TEST(CacheHierarchyTest, MatrixMultiplyUsesL2OnL1Misses_RV5_H_F)
 {
-    runMatrixMultiplyCacheTest<RV5StageProcessorHF>("RV5StageProcessorHF");
+    runMatrixMultiplyCacheTest<Kites::RV5StageProcessorHF>("RV5StageProcessorHF");
 }

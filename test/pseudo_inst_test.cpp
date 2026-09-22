@@ -3,11 +3,13 @@
 #include <QFile>
 #include <QTemporaryDir>
 
-#include "../include/globals.h"
+#include "common/globals.h"
 
 #define private public
-#include "../include/assembler/custom_pseudo_manager.h"
+#include "custom_pseudo_manager/custom_pseudo_manager.h"
 #undef private
+
+using namespace Kites;
 
 class CustomPseudoManagerTest : public ::testing::Test {
 protected:
@@ -78,7 +80,7 @@ TEST_F(CustomPseudoManagerTest, ExpandPseudoInstructionWithMultipleExpansionLine
 TEST_F(CustomPseudoManagerTest, KeepsSourceLineWhenArgumentCountDoesNotMatch)
 {
 	QString error;
-	const bool added = CustomPseudoManager::addCustomPseudoInstruction(
+	const bool added = customPseudoManager::addCustomPseudoInstruction(
 		"mov2 r1, r2",
 		"add r1 r2 x0",
 		error);
@@ -86,7 +88,7 @@ TEST_F(CustomPseudoManagerTest, KeepsSourceLineWhenArgumentCountDoesNotMatch)
 	ASSERT_TRUE(added) << error.toStdString();
 
 	const std::string source = "mov2 x1";
-	const std::string expanded = CustomPseudoManager::expandPseudoInstruction(source);
+	const std::string expanded = customPseudoManager::expandPseudoInstruction(source);
 
 	EXPECT_EQ(expanded, "mov2 x1");
 }

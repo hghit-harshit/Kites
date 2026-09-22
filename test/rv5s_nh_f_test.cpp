@@ -1,8 +1,8 @@
 // #include <gtest/gtest.h>
-// #include "../include/processor/rv5s/rv5s_processor_nh_f.h"
-// #include "../include/assembler/assembler.h"
-// #include "../include/utils.h"
-#include "../include/assembler/assembler.h"
+// #include "processor/rv5s/rv5s_processor_nh_f.h"
+// #include "assembler/assembler.h"
+// #include "utils/utils.h"
+#include "assembler/assembler.h"
 
 // TEST(RV5S_NH_F_TEST,no_hazard_forwarding_test_1)
 // {
@@ -18,9 +18,11 @@
 // }
 
 #include <gtest/gtest.h>
-#include "../include/processor/rv5s/rv5s_processor_nh_f.h"
-#include "../include/assembler/assembler.h"
-#include "../include/utils.h"
+#include "processor/rv5s/rv5s_processor_nh_f.h"
+#include "assembler/assembler.h"
+#include "utils/utils.h"
+
+using namespace Kites;
 
 
 static std::unique_ptr<RV5StageProcessorNHF> runHazardProgram(const std::string& filename)

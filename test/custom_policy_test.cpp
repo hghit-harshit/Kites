@@ -1,11 +1,13 @@
 #include <gtest/gtest.h>
 #include <filesystem>
 
-#include "../include/assembler/assembler.h"
-#include "../include/utils.h"
-#include "../include/processor/rvss/rvss_vm.h"
+#include "assembler/assembler.h"
+#include "utils/utils.h"
+#include "processor/rvss/rvss_processor.h"
 #include "processor/main_memory.h"
 #include "processor/cache/cache.h"
+
+using namespace Kites;
 
 class CustomPolicyTest : public ::testing::Test
 {
@@ -28,7 +30,7 @@ protected:
         return asm_path;
     }
 
-    Memory ram;
+    Kites::MainMemory ram;
 };
 
 TEST_F(CustomPolicyTest, LoadedLFUEvictsLeastFrequentlyUsed)
@@ -38,45 +40,45 @@ TEST_F(CustomPolicyTest, LoadedLFUEvictsLeastFrequentlyUsed)
                 AllocationPolicy::WriteAllocate,
                 ReplacementPolicy::LRU);
 
-    cache.LoadCustomPolicyScript(ResolveLfuScriptPath().string());
+    cache.loadCustomPolicyScript(ResolveLfuScriptPath().string());
 
     // Fill the set with A and B.
-    cache.ReadWord(0x00); // A
-    cache.ReadWord(0x04); // B
+    cache.readWord(0x00); // A
+    cache.readWord(0x04); // B
 
     // Make A more frequent than B.
-    cache.ReadWord(0x00);
-    cache.ReadWord(0x00);
-    cache.ReadWord(0x00);
-    cache.ReadWord(0x04);
+    cache.readWord(0x00);
+    cache.readWord(0x00);
+    cache.readWord(0x00);
+    cache.readWord(0x04);
 
     // Force one eviction; LFU should evict B (lower frequency), not A.
-    cache.ReadWord(0x08); // C
+    cache.readWord(0x08); // C
 
-    const size_t hits_before = cache.GetHits();
-    cache.ReadWord(0x00); // A should still be cached.
-    EXPECT_EQ(cache.GetHits(), hits_before + 1);
+    const size_t hits_before = cache.getHitCount();
+    cache.readWord(0x00); // A should still be cached.
+    EXPECT_EQ(cache.getHitCount(), hits_before + 1);
 
-    const size_t misses_before = cache.GetMisses();
-    cache.ReadWord(0x04); // B should have been evicted.
-    EXPECT_EQ(cache.GetMisses(), misses_before + 1);
+    const size_t misses_before = cache.getMissCount();
+    cache.readWord(0x04); // B should have been evicted.
+    EXPECT_EQ(cache.getMissCount(), misses_before + 1);
 }
 
 TEST_F(CustomPolicyTest, AssemblyProgramMatchesLFUPatternAt1000)
 {
     setupVmStateDirectory();
 
-    auto vm = std::make_unique<RVSSVM>();
-    Cache* l1_cache = vm->memory_controller_.GetL1Cache();
+    auto vm = std::make_unique<RVSSProcessor>();
+    Cache* l1_cache = vm->memory_controller_.getL1Cache();
 
-    l1_cache->Reconfigure(CacheConfig{
+    l1_cache->reconfigure(CacheConfig{
         1,
         1,
         2,
         WritePolicy::WriteThrough,
         AllocationPolicy::NoWriteAllocate,
         ReplacementPolicy::Custom});
-    l1_cache->LoadCustomPolicyScript(ResolveLfuScriptPath().string());
+    l1_cache->loadCustomPolicyScript(ResolveLfuScriptPath().string());
 
     AssembledProgram program = assemble(ResolveAssemblyProgramPath().string());
     vm->LoadProgram(program);
@@ -108,9 +110,9 @@ TEST_F(CustomPolicyTest, AssemblyProgramMatchesLFUPatternAt1000)
     uint64_t frequency_a = 0;
     uint64_t frequency_b = 0;
 
-    for (size_t way = 0; way < l1_cache->GetNumWays(); ++way)
+    for (size_t way = 0; way < l1_cache->getWayCount(); ++way)
     {
-        const auto& line = l1_cache->GetCacheLine(0, way);
+        const auto& line = l1_cache->getCacheLine(0, way);
         if (!line.valid)
         {
             continue;
