@@ -1,0 +1,12 @@
+addi x1,x1,10
+addi x1,x1,10
+addi x1,x1,10
+addi x1,x1,10
+addi x1,x1,10
+addi x1,x1,10
+addi x1,x1,10
+addi x1,x1,10
+addi x1,x1,10
+addi x1,x1,10
+addi x1,x1,10
+addi x1,x1,10
