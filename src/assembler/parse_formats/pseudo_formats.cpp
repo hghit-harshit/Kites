@@ -571,7 +571,8 @@ bool Parser::parse_pseudo()
             block.setRs1(reg);
             block.setRs2("x0");
             block.setLabel(peekToken(3).value);
-            intermediate_code_.emplace_back(block, true);
+            back_patch_.push_back(instruction_index_);
+            intermediate_code_.emplace_back(block, false);
             instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
             instruction_index_++;
             skipCurrentLine();
@@ -601,7 +602,8 @@ bool Parser::parse_pseudo()
             block.setRs1(reg);
             block.setRs2("x0");
             block.setLabel(peekToken(3).value);
-            intermediate_code_.emplace_back(block, true);
+            back_patch_.push_back(instruction_index_);
+            intermediate_code_.emplace_back(block, false);
             instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
             instruction_index_++;
             skipCurrentLine();
@@ -631,7 +633,8 @@ bool Parser::parse_pseudo()
             block.setRs1("x0");
             block.setRs2(reg);
             block.setLabel(peekToken(3).value);
-            intermediate_code_.emplace_back(block, true);
+            back_patch_.push_back(instruction_index_);
+            intermediate_code_.emplace_back(block, false);
             instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
             instruction_index_++;
             skipCurrentLine();
@@ -661,7 +664,8 @@ bool Parser::parse_pseudo()
             block.setRs1(reg);
             block.setRs2("x0");
             block.setLabel(peekToken(3).value);
-            intermediate_code_.emplace_back(block, true);
+            back_patch_.push_back(instruction_index_);
+            intermediate_code_.emplace_back(block, false);
             instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
             instruction_index_++;
             skipCurrentLine();
@@ -691,7 +695,8 @@ bool Parser::parse_pseudo()
             block.setRs1(reg);
             block.setRs2("x0");
             block.setLabel(peekToken(3).value);
-            intermediate_code_.emplace_back(block, true);
+            back_patch_.push_back(instruction_index_);
+            intermediate_code_.emplace_back(block, false);
             instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
             instruction_index_++;
             skipCurrentLine();
@@ -721,7 +726,8 @@ bool Parser::parse_pseudo()
             block.setRs1("x0");
             block.setRs2(reg);
             block.setLabel(peekToken(3).value);
-            intermediate_code_.emplace_back(block, true);
+            back_patch_.push_back(instruction_index_);
+            intermediate_code_.emplace_back(block, false);
             instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
             instruction_index_++;
             skipCurrentLine();
@@ -756,7 +762,8 @@ bool Parser::parse_pseudo()
             block.setRs1(reg2);
             block.setRs2(reg1);
             block.setLabel(peekToken(5).value);
-            intermediate_code_.emplace_back(block, true);
+            back_patch_.push_back(instruction_index_);
+            intermediate_code_.emplace_back(block, false);
             instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
             instruction_index_++;
             skipCurrentLine();
@@ -791,7 +798,8 @@ bool Parser::parse_pseudo()
             block.setRs1(reg2);
             block.setRs2(reg1);
             block.setLabel(peekToken(5).value);
-            intermediate_code_.emplace_back(block, true);
+            back_patch_.push_back(instruction_index_);
+            intermediate_code_.emplace_back(block, false);
             instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
             instruction_index_++;
             skipCurrentLine();
@@ -827,7 +835,8 @@ bool Parser::parse_pseudo()
             block.setRs1(reg2);
             block.setRs2(reg1);
             block.setLabel(peekToken(5).value);
-            intermediate_code_.emplace_back(block, true);
+            back_patch_.push_back(instruction_index_);
+            intermediate_code_.emplace_back(block, false);
             instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
             instruction_index_++;
             skipCurrentLine();
@@ -863,7 +872,8 @@ bool Parser::parse_pseudo()
             block.setRs1(reg2);
             block.setRs2(reg1);
             block.setLabel(peekToken(5).value);
-            intermediate_code_.emplace_back(block, true);
+            back_patch_.push_back(instruction_index_);
+            intermediate_code_.emplace_back(block, false);
             instruction_number_line_number_mapping_[instruction_index_] = block.getLineNumber();
             instruction_index_++;
             skipCurrentLine();
