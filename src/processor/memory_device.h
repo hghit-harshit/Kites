@@ -23,6 +23,9 @@ class MemoryDevice
     virtual void writeHalfWord(uint64_t address, uint16_t value) = 0;
     virtual void writeWord(uint64_t address, uint32_t value) = 0;
     virtual void writeDoubleWord(uint64_t address, uint64_t value) = 0;
+    // The byte a read of `address` would return right now, without changing any state
+    // (no allocation, replacement bookkeeping, statistics or signals).
+    virtual uint8_t peekByte(uint64_t address) = 0;
     //virtual void writeFloat(uint64_t address, float value) = 0;
     //virtual void writeDouble(uint64_t address, double value) = 0;
     private: 

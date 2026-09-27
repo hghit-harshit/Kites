@@ -125,6 +125,11 @@ uint8_t MainMemory::readByte(uint64_t address)
     return read(address);
 }
 
+uint8_t MainMemory::peekByte(uint64_t address)
+{
+    return read(address); // reading main memory has no side effects
+}
+
 uint16_t MainMemory::readHalfWord(uint64_t address)
 {
     if (address >= memory_size_ - 1)

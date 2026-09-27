@@ -50,6 +50,9 @@ class MemoryController : public QObject
     [[nodiscard]] uint16_t readHalfWord_d(uint64_t address);
     [[nodiscard]] uint32_t readWord_d(uint64_t address);
     [[nodiscard]] uint64_t readDoubleWord_d(uint64_t address);
+    // Current value of a byte as the program would read it (L1, then L2, then memory),
+    // without affecting cache state or statistics. For bookkeeping such as undo/redo.
+    [[nodiscard]] uint8_t peekByte(uint64_t address);
     // function to read from instruction cache
     [[nodiscard]] uint32_t readInstruction(uint64_t address);
     // Functions to write directly to memory with cache bypass

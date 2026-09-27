@@ -91,6 +91,7 @@ void RV5StageVM_Base::Reset()
     instructions_retired_ = 0;
     cycle_s_              = 0;
     stall_cycles_         = 0;
+    pc_redirected_        = false;
     last_breakpoint_pc_.reset(); // Clear breakpoint tracking on reset
 
     registers_.Reset();
@@ -239,7 +240,7 @@ void RV5StageVM_Base::memory_writeback()
         bytes.reserve(byte_count);
         for (size_t i = 0; i < byte_count; ++i)
         {
-            bytes.push_back(memory_controller_.readByte(addr + i));
+            bytes.push_back(memory_controller_.peekByte(addr + i));
         }
         return bytes;
     };
@@ -382,6 +383,32 @@ void RV5StageVM_Base::register_write_back(const uint64_t &write_data)
 
 //////////////////////
 
+void RV5StageVM_Base::redirect_pc(uint64_t target)
+{
+    program_counter_ = target;
+    pc_redirected_ = true;
+}
+
+// IF stage plus PC update. Runs after WB/MEM/EX/ID so a redirect resolved this cycle
+// is visible. The target is fetched next cycle, leaving a bubble in IF/ID now, the same
+// as hardware that only learns the target at the end of the resolving stage.
+void RV5StageVM_Base::fetch_and_advance_pc(bool stalled)
+{
+    if (pc_redirected_)
+    {
+        if_id_reg_.reset();
+        pc_redirected_ = false;
+        return;
+    }
+
+    pipeline_fetch();
+    // A stall skipped the fetch, so hold the PC on the instruction still to be fetched.
+    if (!stalled)
+    {
+        program_counter_ += 4;
+    }
+}
+
 void RV5StageVM_Base::pipeline_memory()
 {
 
@@ -390,7 +417,7 @@ void RV5StageVM_Base::pipeline_memory()
     {
         // B-Type misprediction confirmed in MEM stage. Hardware flushes the pipeline.
 
-        program_counter_ = ex_mem_reg_.branch_target_pc;
+        redirect_pc(ex_mem_reg_.branch_target_pc);
         if_id_reg_.reset();
         id_ex_reg_.reset();
         branch_mispredictions_++;
@@ -497,7 +524,7 @@ void RV5StageVM_Base::pipeline_memory()
             bytes.reserve(byte_count);
             for (size_t i = 0; i < byte_count; ++i)
             {
-                bytes.push_back(memory_controller_.readByte(addr + i));
+                bytes.push_back(memory_controller_.peekByte(addr + i));
             }
             return bytes;
         };
@@ -535,12 +562,41 @@ void RV5StageVM_Base::pipeline_memory()
 
 void RV5StageVM_Base::pipeline_writeback()
 {
-    // --- FP Writeback Delegation ---
+    // Every real instruction reaching WB retires, whether or not it writes a register
+    // (stores, branches, jumps to x0, nops). Bubbles carry INVALID_PC.
+    if (mem_wb_reg_.pc != INVALID_PC)
+    {
+        instructions_retired_++;
+    }
 
-    if (mem_wb_reg_.reg_write && mem_wb_reg_.rd != 0)
+    if (!mem_wb_reg_.reg_write)
+    {
+        return;
+    }
+
+    // --- FP Writeback Delegation ---
+    // Before the rd != 0 check: for FP ops rd names an FPR, and f0 is writable.
+    if (instruction_set::isFInstruction(mem_wb_reg_.instruction))
+    {
+        pipeline_writeback_float();
+        return;
+    }
+    else if (instruction_set::isDInstruction(mem_wb_reg_.instruction))
+    {
+        pipeline_writeback_double();
+        return;
+    }
+
+    if (mem_wb_reg_.rd != 0)
     {
         uint64_t write_data =
             mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
+        // JAL/JALR write the link address, not the ALU result.
+        uint8_t opcode = mem_wb_reg_.instruction & 0b1111111;
+        if (opcode == 0b1100111 || opcode == 0b1101111)
+        {
+            write_data = mem_wb_reg_.pc + 4;
+        }
 
         // Record state for Undo/Redo
         uint64_t old_value = registers_.ReadGpr(mem_wb_reg_.rd);
@@ -551,21 +607,7 @@ void RV5StageVM_Base::pipeline_writeback()
                                                        old_value, write_data});
         }
 
-        /**TODO i think this is counting wrong so look into this */
-        instructions_retired_++; // Instruction successfully retired
-
-        if (instruction_set::isFInstruction(mem_wb_reg_.instruction))
-        {
-            pipeline_writeback_float();
-            return;
-        }
-        else if (instruction_set::isDInstruction(mem_wb_reg_.instruction))
-        {
-            pipeline_writeback_double();
-            return;
-        }
-
-        switch (mem_wb_reg_.instruction & 0b1111111)
+        switch (opcode)
         {
         case 0b0110011: // R-Type
         case 0b0010011: // I-Type
@@ -761,7 +803,11 @@ uint64_t RV5StageVM_Base::execute_double()
 
 bool RV5StageVM_Base::is_pipeline_drained() const
 {
-    // IF/ID and ID/EX registers directly store the instruction word.
+    // A stage holds a real instruction (possibly an actual `nop`) unless its PC is
+    // INVALID_PC, which is what flushes, stalls and fetches past the end leave behind.
+    if (if_id_reg_.pc != INVALID_PC || id_ex_reg_.pc != INVALID_PC ||
+        ex_mem_reg_.pc != INVALID_PC || mem_wb_reg_.pc != INVALID_PC)
+        return false;
     if (if_id_reg_.instruction != NOP)
         return false;
     if (id_ex_reg_.instruction != NOP)
@@ -816,7 +862,9 @@ void RV5StageVM_Base::Undo()
         const auto &change = *it;
         for (size_t i = 0; i < change.old_bytes_vec.size(); ++i)
         {
-            memory_controller_.writeByte_d(change.address + i, change.old_bytes_vec[i]);
+            // Through the cache, like the store being undone: bypassing it would leave the
+            // new value in a dirty L1 line, where every later read still sees it.
+            memory_controller_.writeByte(change.address + i, change.old_bytes_vec[i]);
         }
     }
 

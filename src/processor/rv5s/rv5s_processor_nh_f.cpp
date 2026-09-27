@@ -172,9 +172,6 @@ void RV5StageProcessorNHF::Reset()
 
 void RV5StageProcessorNHF::Step()
 {
-    // Capture PC before potential redirection in EX/MEM stages
-    uint64_t old_pc_before_redirect = program_counter_;
-
     begin_step_delta();
 
     // 1. Execute stages (WB -> MEM -> EX -> ID -> IF)
@@ -182,19 +179,8 @@ void RV5StageProcessorNHF::Step()
     pipeline_memory();
     pipeline_execute();
     pipeline_decode();
-    // Fetch the instruction at the committed PC address.
-    pipeline_fetch();
-    // 2. Determine the next PC (Redirection logic overrides sequential advance)
-    uint64_t next_pc = program_counter_;
-
-    // If no redirect happened in EX or MEM, advance sequentially.
-    if (next_pc == old_pc_before_redirect)
-    {
-        next_pc = old_pc_before_redirect + 4;
-    }
-
-    // Commit the new PC for the Fetch stage
-    program_counter_ = next_pc;
+    // 2. Fetch and PC update
+    fetch_and_advance_pc(false);
     cycle_s_++; // One clock cycle has passed
 
     finalize_step_delta();
@@ -416,7 +402,7 @@ void RV5StageProcessorNHF::pipeline_execute()
             ex_mem_reg_.alu_result = id_ex_reg_.pc + 4; // Set link address (PC+4)
         }
 
-        program_counter_ = jump_target;
+        redirect_pc(jump_target);
         if_id_reg_.reset();
         ex_mem_reg_.branch_taken = true;
     }

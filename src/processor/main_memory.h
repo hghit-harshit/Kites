@@ -127,6 +127,13 @@ private:
     uint8_t readByte(uint64_t address);
 
     /**
+     * @brief Reads a byte without changing any state (see MemoryDevice::peekByte).
+     * @param address The memory address to read from.
+     * @return The byte value at the given address.
+     */
+    uint8_t peekByte(uint64_t address) override;
+
+    /**
      * @brief Reads a 16-bit halfword from the given memory address.
      * @param address The memory address to read from.
      * @return The 16-bit value at the given address.

@@ -201,9 +201,6 @@ void RV5StageProcessorHF::Reset()
 
 void RV5StageProcessorHF::Step()
 {
-    // Capture PC before potential redirection in EX/MEM stages
-    uint64_t old_pc_before_redirect = program_counter_;
-
     begin_step_delta();
 
     // 1. Execute back stages (WB -> MEM -> EX)
@@ -249,20 +246,8 @@ void RV5StageProcessorHF::Step()
         stall_fetch_and_decode_ = false;
     }
 
-    // Fetch the instruction at the committed PC address.
-    pipeline_fetch();
-    // 3. PC Update and Fetch
-    uint64_t next_pc = program_counter_;
-
-    // Only advance the PC if we were not stalling this cycle (and thus fetched an instruction).
-    // Note: Control hazards (JAL/Branch) already override program_counter_ in EX/MEM.
-    if (!stall_fetch_and_decode_ && next_pc == old_pc_before_redirect)
-    {
-        next_pc = old_pc_before_redirect + 4;
-    }
-
-    // Commit the new PC for the Fetch stage
-    program_counter_ = next_pc;
+    // 3. Fetch and PC update
+    fetch_and_advance_pc(stall_fetch_and_decode_);
 
     cycle_s_++; // One clock cycle has passed
 
@@ -467,7 +452,7 @@ void RV5StageProcessorHF::pipeline_execute()
             ex_mem_reg_.alu_result = id_ex_reg_.pc + 4; // Set link address (PC+4)
         }
 
-        program_counter_ = jump_target;
+        redirect_pc(jump_target);
         if_id_reg_.reset();
         ex_mem_reg_.branch_taken = true;
     }

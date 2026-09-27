@@ -146,8 +146,6 @@ void RV5StageProcessorHNF::Reset()
 
 void RV5StageProcessorHNF::Step()
 {
-    uint64_t old_pc_before_redirect = program_counter_;
-
     begin_step_delta();
 
     pipeline_writeback();
@@ -181,14 +179,8 @@ void RV5StageProcessorHNF::Step()
         stall_fetch_and_decode_ = false;
     }
 
-    pipeline_fetch();
-    uint64_t next_pc = program_counter_;
-    if (!stall_fetch_and_decode_ && next_pc == old_pc_before_redirect)
-    {
-        next_pc = old_pc_before_redirect + 4;
-    }
+    fetch_and_advance_pc(stall_fetch_and_decode_);
 
-    program_counter_ = next_pc;
     cycle_s_++;
 
     finalize_step_delta();
@@ -325,7 +317,7 @@ void RV5StageProcessorHNF::pipeline_execute()
             ex_mem_reg_.alu_result = id_ex_reg_.pc + 4;
         }
 
-        program_counter_ = jump_target;
+        redirect_pc(jump_target);
         if_id_reg_.reset();
         ex_mem_reg_.branch_taken = true;
     }

@@ -86,6 +86,11 @@ uint64_t MemoryController::readDoubleWord_d(uint64_t address)
     return memory_.readDoubleWord(address);
 }
 
+uint8_t MemoryController::peekByte(uint64_t address)
+{
+    return l1_cache_.peekByte(address);
+}
+
 // function to read from instruction cache
 uint32_t MemoryController::readInstruction(uint64_t address)
 {

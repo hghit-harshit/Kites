@@ -37,17 +37,27 @@ struct CacheLine
     }
 };
 
+// Everything one processor step changed in a cache, for undo/redo. A step can change
+// several lines, or only counters (a no-write-allocate store miss touches no line).
 struct CacheChange
 {
-    size_t newHitCount;
-    size_t oldMissCount;
-    size_t newMissCount;
-    size_t setIndex;
-    size_t wayIndex;
-    size_t oldHitCount;
-    CacheLine oldCacheLine;
-    CacheLine newCacheLine;
+    struct LineChange
+    {
+        size_t setIndex;
+        size_t wayIndex;
+        CacheLine oldCacheLine;
+        CacheLine newCacheLine;
+    };
+    std::vector<LineChange> lines;
 
+    size_t oldHitCount{0};
+    size_t newHitCount{0};
+    size_t oldMissCount{0};
+    size_t newMissCount{0};
+    size_t oldWriteBackCount{0};
+    size_t newWriteBackCount{0};
+    uint64_t oldTimestamp{0};
+    uint64_t newTimestamp{0};
 };
 //default values for cache configuration
 //maybe we will move its location later on
@@ -94,12 +104,29 @@ public:
     uint32_t readWord(uint64_t address);
     uint64_t readDoubleWord(uint64_t address);
 
+    // The byte a read would return (this level if cached, else the next level), without
+    // allocating lines, touching replacement state, counting hits/misses or emitting signals.
+    uint8_t peekByte(uint64_t address) override;
+
     void reset();
     void flush(); // write back all dirty lines to memory and and invalidate all lines in cache
+
+    // Undo/redo history, one entry per processor step. Between beginStep() and commitStep()
+    // the first change to each line is recorded; commitStep() always pushes an entry so the
+    // history stays in step with the processor's. undo/redoStep restore lines and counters
+    // directly, without counting as accesses.
+    void beginStep();
+    void commitStep();
+    void undoStep();
+    void redoStep();
+    void clearHistory();
+    // Changes whenever the geometry is (re)set, which also clears the history.
+    [[nodiscard]] uint64_t getGeneration() const;
 
     // Statistics
     [[nodiscard]]size_t getHitCount()  const;
     [[nodiscard]]size_t getMissCount() const;
+    [[nodiscard]]size_t getWriteBackCount() const;
     [[nodiscard]]double getHitRate()   const;
     [[nodiscard]]double getMissRate()  const;
     [[nodiscard]]size_t getSetCount()  const;
@@ -128,6 +155,9 @@ private:
     size_t evictCacheLine(size_t setIndex);
     void writeBack(size_t setIndex, size_t wayIndex);
     void bringIn(uint64_t address, size_t setIndex, size_t wayIndex);
+    // Every change to a line goes through this, so a recorded step saves the line first.
+    CacheLine &lineForWrite(size_t setIndex, size_t wayIndex);
+    void restoreStep(const CacheChange &change, bool toNew);
     // These functions are used to read and write
     uint8_t getByteFromCache(uint64_t address);
     void putByteInCache(uint64_t address, uint8_t value);
@@ -165,6 +195,9 @@ private:
     void setupCache(size_t cache_size, size_t lineSizeInBytes,size_t wayCount);
     //TODO get this buffer size from config
     UndoBuffer<CacheChange> m_undoBuffer{100};
+    CacheChange m_pendingChange;  // the step being recorded
+    bool m_recording{false};
+    uint64_t m_generation{0};
 signals:
     //TODO : Maybe we can combine hit and miss into one signal with a bool parameter
     void cacheMissSignal(uint64_t address);

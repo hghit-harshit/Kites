@@ -57,6 +57,9 @@ class RV5StageVM_Base : public ProcessorBase
     std::stack<RV5StageStepDelta> redo_stack_{};
     RV5StageStepDelta current_delta_;
 
+    // Set when EX/MEM redirected the PC this cycle; consumed by fetch_and_advance_pc().
+    bool pc_redirected_ = false;
+
     void memory_writeback();
     void memory_writeback_float();
     void memory_writeback_double();
@@ -76,6 +79,9 @@ class RV5StageVM_Base : public ProcessorBase
 
     // --- Private methods for each pipeline stage ---
     virtual void pipeline_fetch() = 0;
+
+    void redirect_pc(uint64_t target);
+    void fetch_and_advance_pc(bool stalled);
 
     void pipeline_decode();
 

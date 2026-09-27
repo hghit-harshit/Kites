@@ -1,20 +1,36 @@
 #pragma once
+#include <cassert>
+#include <cstddef>
+#include <functional>
+#include <optional>
+#include <vector>
+
 namespace Kites
 {
+/**
+ * Circular undo/redo history holding at most `capacity` entries; pushing past that
+ * overwrites the oldest.
+ *
+ * When entries are per-step *changes*, keep an empty entry first (push one after every
+ * clear()), since canUndo() needs a step before the current one:
+ *   undo: apply the reverse of current(), then undo();
+ *   redo: if (auto entry = redo()) apply *entry.
+ */
 template <typename T>
 class UndoBuffer
 {
 public:
     UndoBuffer(size_t capacity)
-    :m_oldest(0), m_size(0)
+    :m_oldest(0), m_size(0), m_current(0)
     {
-        m_data.reserve(capacity);
+        m_data.resize(capacity); // resize, not reserve: capacity() is m_data.size()
     }
 
     void setCapacity(size_t capacity)
     {
         clear();
-        m_data.reserve(capacity);
+        m_data.clear();
+        m_data.resize(capacity);
     }
     [[nodiscard]] size_t capacity() const
     {

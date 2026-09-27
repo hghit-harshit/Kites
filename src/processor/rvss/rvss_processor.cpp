@@ -539,7 +539,7 @@ void RVSSProcessor::HandleSyscall()
 
             for (size_t i = 0; i < length; ++i)
             {
-                old_bytes_vec[i] = memory_controller_.readByte(buffer_address + i);
+                old_bytes_vec[i] = memory_controller_.peekByte(buffer_address + i);
             }
 
             for (size_t i = 0; i < input.size() && i < length; ++i)
@@ -553,7 +553,7 @@ void RVSSProcessor::HandleSyscall()
 
             for (size_t i = 0; i < length; ++i)
             {
-                new_bytes_vec[i] = memory_controller_.readByte(buffer_address + i);
+                new_bytes_vec[i] = memory_controller_.peekByte(buffer_address + i);
             }
 
             current_delta_.memory_changes.push_back({buffer_address, old_bytes_vec, new_bytes_vec});
@@ -693,7 +693,7 @@ void RVSSProcessor::WriteMemory()
     std::vector<uint8_t> old_bytes_vec;
     std::vector<uint8_t> new_bytes_vec;
 
-    // TODO: use direct read to read memory for undo/redo functionality, i.e. ReadByte -> ReadByte_d
+    // Undo bookkeeping reads use peekByte so they do not show up as cache accesses.
 
     if (control_unit_.GetMemWrite())
     {
@@ -702,9 +702,9 @@ void RVSSProcessor::WriteMemory()
         case 0b000:
         { // SB
             addr = execution_result_;
-            old_bytes_vec.push_back(memory_controller_.readByte(addr));
+            old_bytes_vec.push_back(memory_controller_.peekByte(addr));
             memory_controller_.writeByte(execution_result_, registers_.ReadGpr(rs2) & 0xFF);
-            new_bytes_vec.push_back(memory_controller_.readByte(addr));
+            new_bytes_vec.push_back(memory_controller_.peekByte(addr));
             break;
         }
         case 0b001:
@@ -712,12 +712,12 @@ void RVSSProcessor::WriteMemory()
             addr = execution_result_;
             for (size_t i = 0; i < 2; ++i)
             {
-                old_bytes_vec.push_back(memory_controller_.readByte(addr + i));
+                old_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
             }
             memory_controller_.writeHalfWord(execution_result_, registers_.ReadGpr(rs2) & 0xFFFF);
             for (size_t i = 0; i < 2; ++i)
             {
-                new_bytes_vec.push_back(memory_controller_.readByte(addr + i));
+                new_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
             }
             break;
         }
@@ -726,12 +726,12 @@ void RVSSProcessor::WriteMemory()
             addr = execution_result_;
             for (size_t i = 0; i < 4; ++i)
             {
-                old_bytes_vec.push_back(memory_controller_.readByte(addr + i));
+                old_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
             }
             memory_controller_.writeWord(execution_result_, registers_.ReadGpr(rs2) & 0xFFFFFFFF);
             for (size_t i = 0; i < 4; ++i)
             {
-                new_bytes_vec.push_back(memory_controller_.readByte(addr + i));
+                new_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
             }
             break;
         }
@@ -740,13 +740,13 @@ void RVSSProcessor::WriteMemory()
             addr = execution_result_;
             for (size_t i = 0; i < 8; ++i)
             {
-                old_bytes_vec.push_back(memory_controller_.readByte(addr + i));
+                old_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
             }
             memory_controller_.writeDoubleWord(execution_result_,
                                                registers_.ReadGpr(rs2) & 0xFFFFFFFFFFFFFFFF);
             for (size_t i = 0; i < 8; ++i)
             {
-                new_bytes_vec.push_back(memory_controller_.readByte(addr + i));
+                new_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
             }
             break;
         }
@@ -777,14 +777,14 @@ void RVSSProcessor::WriteMemoryFloat()
         addr = execution_result_;
         for (size_t i = 0; i < 4; ++i)
         {
-            old_bytes_vec.push_back(memory_controller_.readByte(addr + i));
+            old_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
         }
         uint32_t val = registers_.ReadFpr(rs2) & 0xFFFFFFFF;
         memory_controller_.writeWord(execution_result_, val);
         // new_bytes_vec.push_back(memory_controller_.ReadByte(addr));
         for (size_t i = 0; i < 4; ++i)
         {
-            new_bytes_vec.push_back(memory_controller_.readByte(addr + i));
+            new_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
         }
     }
 
@@ -812,12 +812,12 @@ void RVSSProcessor::WriteMemoryDouble()
         addr = execution_result_;
         for (size_t i = 0; i < 8; ++i)
         {
-            old_bytes_vec.push_back(memory_controller_.readByte(addr + i));
+            old_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
         }
         memory_controller_.writeDoubleWord(execution_result_, registers_.ReadFpr(rs2));
         for (size_t i = 0; i < 8; ++i)
         {
-            new_bytes_vec.push_back(memory_controller_.readByte(addr + i));
+            new_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
         }
     }
 

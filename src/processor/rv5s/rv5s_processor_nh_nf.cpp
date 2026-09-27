@@ -166,27 +166,13 @@ void RV5StageProcessorNHNF::Reset()
 
 void RV5StageProcessorNHNF::Step()
 {
-    // Capture PC before potential redirection in EX/MEM stages
-    uint64_t old_pc_before_redirect = program_counter_;
-
     begin_step_delta();
 
     pipeline_writeback();
     pipeline_memory();
     pipeline_execute();
     pipeline_decode();
-    pipeline_fetch();
-
-    uint64_t next_pc = program_counter_;
-
-    // If no redirect happened in EX or MEM, advance sequentially.
-    if (next_pc == old_pc_before_redirect)
-    {
-        next_pc = old_pc_before_redirect + 4;
-    }
-
-    // Commit the new PC for the Fetch stage
-    program_counter_ = next_pc;
+    fetch_and_advance_pc(false);
     cycle_s_++;
 
     finalize_step_delta();
@@ -331,7 +317,7 @@ void RV5StageProcessorNHNF::pipeline_execute()
         }
 
         // 1. Redirect PC (Auto-Advance)
-        program_counter_ = jump_target;
+        redirect_pc(jump_target);
 
         // 2. Kill the next instruction (IF/ID register) to incur the 1-bubble penalty.
         if_id_reg_.reset();
