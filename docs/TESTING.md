@@ -12,7 +12,7 @@ Both targets are produced from a single configure step; you choose which one to 
 - CMake 3.24+
 - Ninja
 - A GCC- or Clang-style compiler (coverage instrumentation requires this — see [Notes](#notes))
-- [`gcovr`](https://gcovr.com/) on your `PATH` (only required if configuring with `ENABLE_COVERAGE=ON`, which is the default)
+- [`gcovr`](https://gcovr.com/) on your `PATH` (only required if configuring with `ENABLE_COVERAGE=ON`)
 
 ## Configure
 
@@ -45,10 +45,10 @@ This builds and runs `kites_test_cov`, whose CTest test names are prefixed with 
 The `coverage` target runs the instrumented test suite via CTest and then invokes `gcovr` to produce an HTML report:
 
 ```sh
-cmake --build build/test --target coverage
+cmake --build build/coverage --target coverage
 ```
 
-The report is written to `build/test/coverage/index.html`.
+The report is written to `build/coverage/coverage/index.html`.
 
 ## Build options
 
@@ -58,7 +58,7 @@ Set via `-D<OPTION>=ON|OFF` at configure time, or in `CMakePresets.json`:
 |---------------------|---------|---------------------------------------------------|
 | `DISABLE_GUI`        | `ON`    | Disable GUI components during tests               |
 | `VM_DEBUG_PRINTS`     | `OFF`   | Enable debug prints in the VM during tests        |
-| `ENABLE_COVERAGE`     | `ON`    | Build the `kites_test_cov` target and `coverage` target |
+| `ENABLE_COVERAGE`     | `OFF`   | Build the `kites_test_cov` target and `coverage` target |
 
 ## Notes
 

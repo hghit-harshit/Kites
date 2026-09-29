@@ -6,6 +6,9 @@
             "hidden": true,
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/${presetName}",
+            "environment": {
+                "PATH": "D:/Qt/Tools/mingw1310_64/bin;D:/Qt/6.9.2/mingw_64/bin;$penv{PATH}"
+            },
             "cacheVariables": {
                 "CMAKE_PREFIX_PATH": "D:/Qt/6.9.2/mingw_64/lib/cmake",
                 "CMAKE_C_COMPILER": "D:/Qt/Tools/mingw1310_64/bin/gcc.exe",
@@ -37,8 +40,17 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "ENABLE_TESTS": "ON",
+                "ENABLE_COVERAGE": "OFF",
                 "LOG_PANEL": "OFF",
                 "DISABLE_GUI": "ON"
+            }
+        },
+        {
+            "name": "coverage",
+            "displayName": "Test Coverage",
+            "inherits": "test",
+            "cacheVariables": {
+                "ENABLE_COVERAGE": "ON"
             }
         },
         {
@@ -72,7 +84,8 @@
         },
         {
             "name": "test",
-            "configurePreset": "test"
+            "configurePreset": "test",
+            "targets": ["kites_test"]
         },
          {
             "name": "test-only",
@@ -83,7 +96,10 @@
         {
             "name": "test-coverage",
             "displayName": "Build tests (with coverage)",
-            "configurePreset": "test",
+            "configurePreset": "coverage",
+            "environment": {
+                "PATH": "D:/Qt/Tools/mingw1310_64/bin;D:/Qt/6.9.2/mingw_64/bin;$penv{PATH}"
+            },
             "targets": ["kites_test_cov"]
         }
     ],
@@ -94,6 +110,14 @@
             "configurePreset": "test",
             "output": {
                 "outputOnFailure": true
+            },
+            "environment": {
+                "PATH": "D:/Qt/Tools/mingw1310_64/bin;D:/Qt/6.9.2/mingw_64/bin;$penv{PATH}"
+            },
+            "filter": {
+                "exclude": {
+                    "name": "^cov_"
+                }
             }
         },
         {
@@ -102,6 +126,9 @@
             "configurePreset": "test",
             "output": {
                 "outputOnFailure": true
+            },
+            "environment": {
+                "PATH": "D:/Qt/Tools/mingw1310_64/bin;D:/Qt/6.9.2/mingw_64/bin;$penv{PATH}"
             },
             "filter": {
                 "exclude": {
@@ -112,9 +139,12 @@
         {
             "name": "test-coverage",
             "displayName": "Run tests (with coverage)",
-            "configurePreset": "test",
+            "configurePreset": "coverage",
             "output": {
                 "outputOnFailure": true
+            },
+            "environment": {
+                "PATH": "D:/Qt/Tools/mingw1310_64/bin;D:/Qt/6.9.2/mingw_64/bin;$penv{PATH}"
             },
             "filter": {
                 "include": {

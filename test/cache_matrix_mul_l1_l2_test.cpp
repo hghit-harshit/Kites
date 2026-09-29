@@ -70,17 +70,19 @@ void runMatrixMultiplyCacheTest(const char* vm_label)
     Kites::Cache* l2_cache = vm->memory_controller_.getL2Cache();
     Kites::Cache* instruction_cache = vm->memory_controller_.getInstructionCache();
 
+    // A, B and C are 0x100 apart, which is exactly one way of this L2 (64 sets x 4 bytes),
+    // so all three map to the same sets. 4 ways lets the L2 hold all of them at once.
     l2_cache->reconfigure(CacheConfig{
         64,
-        1,
-        2,
+        4, // bytes per line (1 word)
+        4,
         WritePolicy::WriteBack,
         AllocationPolicy::WriteAllocate,
         ReplacementPolicy::LRU});
 
     l1_cache->reconfigure(CacheConfig{
         2,
-        1,
+        4, // bytes per line (1 word)
         1,
         WritePolicy::WriteBack,
         AllocationPolicy::WriteAllocate,
@@ -88,7 +90,7 @@ void runMatrixMultiplyCacheTest(const char* vm_label)
 
     instruction_cache->reconfigure(CacheConfig{
         4,
-        1,
+        4, // bytes per line (1 word)
         1,
         WritePolicy::WriteThrough,
         AllocationPolicy::WriteAllocate,

@@ -15,7 +15,7 @@ protected:
 
 TEST_F(FIFOTest, BasicEvictionOrder)
 {
-    Kites::Cache cache(ram, 1, 1, 3,
+    Kites::Cache cache(ram, 1, 4, 3,
                 Kites::WritePolicy::WriteBack,
                 Kites::AllocationPolicy::WriteAllocate,
                 Kites::ReplacementPolicy::FIFO);
@@ -41,7 +41,7 @@ TEST_F(FIFOTest, BasicEvictionOrder)
 
 TEST_F(FIFOTest, HitsDoNotAffectEvictionOrder)
 {
-    Kites::Cache cache(ram, 1, 1, 2,
+    Kites::Cache cache(ram, 1, 4, 2,
                 Kites::WritePolicy::WriteBack,
                 Kites::AllocationPolicy::WriteAllocate,
                 Kites::ReplacementPolicy::FIFO);
@@ -70,7 +70,7 @@ TEST_F(FIFOTest, HitsDoNotAffectEvictionOrder)
 
 TEST_F(FIFOTest, CircularEvictionOrder)
 {
-    Kites::Cache cache(ram, 1, 1, 2,
+    Kites::Cache cache(ram, 1, 4, 2,
                 Kites::WritePolicy::WriteBack,
                 Kites::AllocationPolicy::WriteAllocate,
                 Kites::ReplacementPolicy::FIFO);
@@ -91,7 +91,7 @@ TEST_F(FIFOTest, CircularEvictionOrder)
 
 TEST_F(FIFOTest, FIFOWithWriteBack)
 {
-    Kites::Cache cache(ram, 1, 1, 2,
+    Kites::Cache cache(ram, 1, 4, 2,
                 Kites::WritePolicy::WriteBack,
                 Kites::AllocationPolicy::WriteAllocate,
                 Kites::ReplacementPolicy::FIFO);
@@ -113,7 +113,7 @@ TEST_F(FIFOTest, FIFOWithMultipleSets)
     // 2 sets, 1 word/line, 2 ways
     // set 0: 0x00, 0x08  (stride = 2 sets * 1 word * 4 bytes = 8)
     // set 1: 0x04, 0x0C
-    Kites::Cache cache(ram, 2, 1, 2,
+    Kites::Cache cache(ram, 2, 4, 2,
                 Kites::WritePolicy::WriteBack,
                 Kites::AllocationPolicy::WriteAllocate,
                 Kites::ReplacementPolicy::FIFO);
@@ -148,7 +148,7 @@ protected:
 #if 0
 TEST_F(LRUTest, BasicEvictionOrder)
 {
-    Cache cache(ram, 1, 1, 3,
+    Cache cache(ram, 1, 4, 3,
                 WritePolicy::WriteBack,
                 AllocationPolicy::WriteAllocate,
                 ReplacementPolicy::LRU);
@@ -173,7 +173,7 @@ TEST_F(LRUTest, BasicEvictionOrder)
 #if 0
 TEST_F(LRUTest, AccessPromotesToMostRecent)
 {
-    Cache cache(ram, 1, 1, 3,
+    Cache cache(ram, 1, 4, 3,
                 WritePolicy::WriteBack,
                 AllocationPolicy::WriteAllocate,
                 ReplacementPolicy::LRU);
@@ -201,7 +201,7 @@ TEST_F(LRUTest, AccessPromotesToMostRecent)
 
 TEST_F(LRUTest, WritePromotesToMostRecent)
 {
-    Kites::Cache cache(ram, 1, 1, 2,
+    Kites::Cache cache(ram, 1, 4, 2,
                 Kites::WritePolicy::WriteBack,
                 Kites::AllocationPolicy::WriteAllocate,
                 Kites::ReplacementPolicy::LRU);
@@ -226,7 +226,7 @@ TEST_F(LRUTest, WritePromotesToMostRecent)
 
 TEST_F(LRUTest, LRUWithWriteBack)
 {
-    Kites::Cache cache(ram, 1, 1, 2,
+    Kites::Cache cache(ram, 1, 4, 2,
                 Kites::WritePolicy::WriteBack,
                 Kites::AllocationPolicy::WriteAllocate,
                 Kites::ReplacementPolicy::LRU);
@@ -249,7 +249,7 @@ TEST_F(LRUTest, LRUWithWriteBack)
 TEST_F(LRUTest, LRUWithMultipleSets)
 {
     // 2 sets, 1 word/line, 2 ways
-    Kites::Cache cache(ram, 2, 1, 2,
+    Kites::Cache cache(ram, 2, 4, 2,
                 Kites::WritePolicy::WriteBack,
                 Kites::AllocationPolicy::WriteAllocate,
                 Kites::ReplacementPolicy::LRU);
@@ -282,7 +282,7 @@ TEST_F(LRUTest, LRUWithMultipleSets)
 #if 0
 TEST_F(LRUTest, LRUAgeingAcrossManyCycles)
 {
-    Kites::Cache cache(ram, 1, 1, 3,
+    Kites::Cache cache(ram, 1, 4, 3,
                 Kites::WritePolicy::WriteBack,
                 Kites::AllocationPolicy::WriteAllocate,
                 Kites::ReplacementPolicy::LRU);
@@ -328,12 +328,12 @@ protected:
 
 TEST_F(PolicyComparisonTest, LRUBetterThanFIFOOnRepeatingPattern)
 {
-    Kites::Cache lru_cache(ram_lru, 1, 1, 3,
+    Kites::Cache lru_cache(ram_lru, 1, 4, 3,
                     Kites::WritePolicy::WriteBack,
                     Kites::AllocationPolicy::WriteAllocate,
                     Kites::ReplacementPolicy::LRU);
 
-    Kites::Cache fifo_cache(ram_fifo, 1, 1, 3,
+    Kites::Cache fifo_cache(ram_fifo, 1, 4, 3,
                      Kites::WritePolicy::WriteBack,
                      Kites::AllocationPolicy::WriteAllocate,
                      Kites::ReplacementPolicy::FIFO);

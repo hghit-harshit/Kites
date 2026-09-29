@@ -35,7 +35,7 @@ protected:
 
 TEST_F(CustomPolicyTest, LoadedLFUEvictsLeastFrequentlyUsed)
 {
-    Cache cache(ram, 1, 1, 2,
+    Cache cache(ram, 1, 4, 2,
                 WritePolicy::WriteBack,
                 AllocationPolicy::WriteAllocate,
                 ReplacementPolicy::LRU);
@@ -73,7 +73,7 @@ TEST_F(CustomPolicyTest, AssemblyProgramMatchesLFUPatternAt1000)
 
     l1_cache->reconfigure(CacheConfig{
         1,
-        1,
+        4, // bytes per line (1 word)
         2,
         WritePolicy::WriteThrough,
         AllocationPolicy::NoWriteAllocate,
@@ -133,9 +133,8 @@ TEST_F(CustomPolicyTest, AssemblyProgramMatchesLFUPatternAt1000)
     EXPECT_TRUE(found_a);
     EXPECT_TRUE(found_b);
 
-    // In this sequence with LFU, B is reinserted on the final access (miss).
-    // For a word read miss in this cache implementation, the first byte misses and
-    // the remaining 3 bytes hit the freshly inserted line, producing frequency = 3.
+    // In this sequence with LFU, B is reinserted on the final access (miss). A load counts
+    // as one access, and a freshly inserted line starts at frequency 0.
     EXPECT_GT(frequency_a, 0u);
-    EXPECT_EQ(frequency_b, 3u);
+    EXPECT_EQ(frequency_b, 0u);
 }

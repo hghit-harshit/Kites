@@ -1,6 +1,8 @@
 .idea/
 CMakeCache.txt
+vm_state/
 CLAUDE.md
+*.log
 .zed/
 .cache/
 .vscode/

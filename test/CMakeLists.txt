@@ -26,7 +26,8 @@ if(VM_DEBUG_PRINTS)
 endif()
 
 gtest_discover_tests(kites_test
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test
+    DISCOVERY_MODE PRE_TEST
     PROPERTIES
         FAIL_REGULAR_EXPRESSION ".*FAILED.*"
 )
@@ -61,7 +62,8 @@ if(ENABLE_COVERAGE)
     endif()
 
     gtest_discover_tests(kites_test_cov
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test
+        DISCOVERY_MODE PRE_TEST
         TEST_PREFIX "cov_"
         PROPERTIES
             FAIL_REGULAR_EXPRESSION ".*FAILED.*"
@@ -77,17 +79,21 @@ if(ENABLE_COVERAGE)
     target_link_libraries(kites_test_cov PRIVATE gcov)
 
     set(COVERAGE_DIR ${CMAKE_BINARY_DIR}/coverage)
+    get_filename_component(KITES_COMPILER_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
     add_custom_target(coverage
         COMMAND ${CMAKE_COMMAND} -E make_directory ${COVERAGE_DIR}
-        COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --test-dir ${CMAKE_BINARY_DIR}
+        COMMAND ${CMAKE_COMMAND} -E env
+            "PATH=$<TARGET_FILE_DIR:Qt6::Core>;${KITES_COMPILER_BIN_DIR};$ENV{PATH}"
+            ${CMAKE_CTEST_COMMAND} --output-on-failure --test-dir ${CMAKE_BINARY_DIR} -R "^cov_"
         COMMAND ${GCOVR_EXECUTABLE}
             --root ${CMAKE_SOURCE_DIR}
             --filter ${CMAKE_SOURCE_DIR}/src/.*
             --html --html-details
             --output ${COVERAGE_DIR}/index.html
-            --exclude .*/external/.*
-            --exclude .*/_deps/.*
-            --exclude .*/${PROJECT_NAME}_autogen/.*
+            --exclude "src/ui/*"
+            --exclude "external/*"
+            --exclude "_deps/*"
+            --exclude "${PROJECT_NAME}_autogen/*"
         DEPENDS kites_test_cov
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         COMMENT "Running tests and generating coverage report"

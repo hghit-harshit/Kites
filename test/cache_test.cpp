@@ -15,7 +15,7 @@ protected:
         cache = std::make_unique<Kites::Cache>(
             ram,
             /*num_sets*/  4,
-            /*block_size*/4,   // 4 words = 16 bytes per line
+            /*block_size*/16,  // 4 words = 16 bytes per line
             /*num_ways*/  4,
             Kites::WritePolicy::WriteBack,
             Kites::AllocationPolicy::WriteAllocate,
@@ -175,7 +175,7 @@ TEST_F(CacheTest, EvictionWritesBackDirtyLine)
     // 4 sets, 1 word/line (4 bytes), 1 way — direct mapped
     // 0x00 and 0x10 map to same set (4 sets * 1 word * 4 bytes = 16 byte stride)
     Kites::MainMemory ram2;
-    Kites::Cache dm_cache(ram2, 4, 1, 1,
+    Kites::Cache dm_cache(ram2, 4, 4, 1,
                    Kites::WritePolicy::WriteBack,
                    Kites::AllocationPolicy::WriteAllocate,
                    Kites::ReplacementPolicy::LRU);
@@ -189,7 +189,7 @@ TEST_F(CacheTest, EvictionWritesBackDirtyLine)
 TEST_F(CacheTest, CleanLineEvictedWithoutWriteback)
 {
     Kites::MainMemory ram2;
-    Kites::Cache dm_cache(ram2, 4, 1, 1,
+    Kites::Cache dm_cache(ram2, 4, 4, 1,
                    Kites::WritePolicy::WriteBack,
                    Kites::AllocationPolicy::WriteAllocate,
                    Kites::ReplacementPolicy::LRU);
@@ -235,7 +235,7 @@ TEST_F(CacheTest, CrossLineWriteDoesNotCorruptUnrelatedMemory)
 {
     // 1-word lines force a word store at +2 to span two cache lines.
     Kites::MainMemory ram2;
-    Kites::Cache dm_cache(ram2, 4, 1, 1,
+    Kites::Cache dm_cache(ram2, 4, 4, 1,
                    Kites::WritePolicy::WriteBack,
                    Kites::AllocationPolicy::WriteAllocate,
                    Kites::ReplacementPolicy::LRU);
@@ -254,6 +254,89 @@ TEST_F(CacheTest, CrossLineWriteDoesNotCorruptUnrelatedMemory)
     EXPECT_EQ(ram2.readByte(0x80), 0x00);
 }
 
+// ── peekByte ──────────────────────────────────────────────────────────────────
+TEST_F(CacheTest, PeekByteSeesDirtyDataWithoutSideEffects)
+{
+    cache->writeWord(0x00, 0x12345678); // dirty in the cache, memory still 0
+    ram.writeByte(0x1000, 0x5A);        // only in memory
+
+    const size_t hits_before   = cache->getHitCount();
+    const size_t misses_before = cache->getMissCount();
+    const Kites::CacheLine line_before = cache->getCacheLine(0, 0);
+
+    EXPECT_EQ(cache->peekByte(0x00), 0x78); // from the dirty line, not memory
+    EXPECT_EQ(cache->peekByte(0x03), 0x12);
+    EXPECT_EQ(ram.readWord(0x00), 0u);
+    EXPECT_EQ(cache->peekByte(0x1000), 0x5A); // falls through to memory
+
+    EXPECT_EQ(cache->getHitCount(), hits_before);
+    EXPECT_EQ(cache->getMissCount(), misses_before);
+    const Kites::CacheLine &line_after = cache->getCacheLine(0, 0);
+    EXPECT_EQ(line_after.frequency, line_before.frequency);
+    EXPECT_EQ(line_after.lastAccess, line_before.lastAccess);
+    EXPECT_EQ(line_after.age, line_before.age);
+
+    // Peeking 0x1000 must not have brought its line in: a real read still misses.
+    cache->readByte(0x1000);
+    EXPECT_EQ(cache->getMissCount(), misses_before + 1);
+}
+
+// ── Accesses spanning two lines ──────────────────────────────────────────────
+
+// Bug: a miss re-fetches every line the access touches, even ones already cached. The
+// cached line is loaded again from memory into a second way, where it shadows the dirty
+// copy (findWay returns the lowest way), so reads see the old value.
+TEST_F(CacheTest, LineCrossingReadDoesNotDuplicateDirtyLine)
+{
+    // 1 set, 1 word/line, 2 ways
+    Kites::MainMemory ram2;
+    Kites::Cache cache2(ram2, 1, 4, 2,
+                        Kites::WritePolicy::WriteBack,
+                        Kites::AllocationPolicy::WriteAllocate,
+                        Kites::ReplacementPolicy::LRU);
+
+    cache2.readWord(0x200);      // X -> way 0
+    cache2.writeWord(0x100, 5);  // A -> way 1, dirty (memory still 0)
+
+    // Touches A (cached) and 0x104 (not cached), so it counts as a miss.
+    EXPECT_EQ(cache2.readDoubleWord(0x100) & 0xFFFFFFFF, 5u);
+    EXPECT_EQ(cache2.readWord(0x100), 5u);
+}
+
+// Bug: bringing in the second line of an access can evict the first line of the same
+// access, when both map to one set with too few ways. getByteFromCache then asserts
+// (Debug; this aborts the test process) or reads out of bounds (Release).
+TEST_F(CacheTest, LineCrossingReadDoesNotEvictItsOwnLine)
+{
+    // 1 set, 1 word/line, 1 way
+    Kites::MainMemory ram2;
+    Kites::Cache cache2(ram2, 1, 4, 1,
+                        Kites::WritePolicy::WriteBack,
+                        Kites::AllocationPolicy::WriteAllocate,
+                        Kites::ReplacementPolicy::LRU);
+
+    ram2.writeDoubleWord(0x00, 0x0807060504030201);
+    EXPECT_EQ(cache2.readWord(0x02), 0x06050403u);
+}
+
+// Bug: with no-write-allocate, a store that only partly hits is treated as a miss and
+// written to the next level only, so the cached line keeps the old bytes.
+TEST_F(CacheTest, NoWriteAllocatePartialHitUpdatesCachedLine)
+{
+    // 1 set, 1 word/line, 2 ways (the default write/allocate policies)
+    Kites::MainMemory ram2;
+    Kites::Cache cache2(ram2, 1, 4, 2,
+                        Kites::WritePolicy::WriteThrough,
+                        Kites::AllocationPolicy::NoWriteAllocate,
+                        Kites::ReplacementPolicy::LRU);
+
+    cache2.readWord(0x100);  // caches line 0x100
+    cache2.writeDoubleWord(0x100, 0x1111111122222222);
+
+    EXPECT_EQ(ram2.readWord(0x100), 0x22222222u);   // memory is right
+    EXPECT_EQ(cache2.readWord(0x100), 0x22222222u); // cached line is stale
+}
+
 // ── Replacement policies ──────────────────────────────────────────────────────
 class ReplacementPolicyTest : public ::testing::Test
 {
@@ -265,7 +348,7 @@ protected:
 
 TEST_F(ReplacementPolicyTest, LRUEvictsLeastRecentlyUsed)
 {
-    Kites::Cache cache(ram, 1, 1, 2,
+    Kites::Cache cache(ram, 1, 4, 2,
                 Kites::WritePolicy::WriteBack,
                 Kites::AllocationPolicy::WriteAllocate,
                 Kites::ReplacementPolicy::LRU);
@@ -289,7 +372,7 @@ TEST_F(ReplacementPolicyTest, LRUEvictsLeastRecentlyUsed)
 #if 0
 TEST_F(ReplacementPolicyTest, FIFOEvictsFirstInserted)
 {
-    Kites::Cache cache(ram, 1, 1, 2,
+    Kites::Cache cache(ram, 1, 4, 2,
                 Kites::WritePolicy::WriteBack,
                 Kites::AllocationPolicy::WriteAllocate,
                 Kites::ReplacementPolicy::FIFO);
