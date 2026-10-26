@@ -1,0 +1,354 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Kites TUI installer
+#
+# Self-contained text-mode installer for any Linux distribution. It detects the
+# distro and whether it is running as root, picks the correct install prefix
+# accordingly, installs the binary plus the desktop entry / icon / AppStream
+# metadata, and refreshes the desktop and icon caches so Kites appears in the
+# applications view immediately.
+#
+# Generated from packaging/linux/kites-installer.sh.in - do not edit the copy
+# in the build directory, edit the .in template.
+#
+# Usage:
+#   ./kites-installer.sh              # interactive menu
+#   ./kites-installer.sh install      # non-interactive install
+#   ./kites-installer.sh uninstall    # non-interactive uninstall
+#   ./kites-installer.sh info         # print detected system info and exit
+#   PREFIX=/opt/kites ./kites-installer.sh install   # override prefix
+# =============================================================================
+
+set -euo pipefail
+
+APP_NAME="Kites"
+APP_ID="@KITES_APP_ID@"
+BIN_NAME="Kites"
+# Deliberately not named VERSION/NAME/ID: /etc/os-release defines those, and
+# sourcing it would silently overwrite them.
+APP_VERSION="@KITES_VERSION@"
+HOMEPAGE="@KITES_HOMEPAGE_URL@"
+
+# Where this script lives; the payload/ directory sits next to it.
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PAYLOAD_DIR="${SCRIPT_DIR}/payload"
+
+# ---------------------------------------------------------------------------
+# Output helpers. Colors are suppressed when not writing to a terminal.
+# ---------------------------------------------------------------------------
+if [ -t 1 ]; then
+    C_RESET=$'\033[0m'; C_BOLD=$'\033[1m'; C_DIM=$'\033[2m'
+    C_RED=$'\033[31m'; C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'; C_BLUE=$'\033[34m'
+else
+    C_RESET=""; C_BOLD=""; C_DIM=""; C_RED=""; C_GREEN=""; C_YELLOW=""; C_BLUE=""
+fi
+
+info()  { printf '%s\n' "$*"; }
+step()  { printf '%s==>%s %s\n' "$C_BLUE" "$C_RESET" "$*"; }
+ok()    { printf '%s  ok%s %s\n' "$C_GREEN" "$C_RESET" "$*"; }
+warn()  { printf '%swarn%s %s\n' "$C_YELLOW" "$C_RESET" "$*" >&2; }
+die()   { printf '%serror%s %s\n' "$C_RED" "$C_RESET" "$*" >&2; exit 1; }
+
+# ---------------------------------------------------------------------------
+# System detection
+# ---------------------------------------------------------------------------
+DISTRO_ID="unknown"
+DISTRO_NAME="Unknown Linux"
+DISTRO_FAMILY="unknown"
+PKG_MANAGER="none"
+
+# Reads one variable out of /etc/os-release. Done in a subshell so os-release's
+# own NAME/VERSION/ID definitions can never leak into this script's variables.
+read_os_release() {
+    local key="$1"
+    # shellcheck disable=SC1091
+    ( . /etc/os-release 2>/dev/null && printf '%s' "${!key:-}" )
+}
+
+detect_system() {
+    if [ -r /etc/os-release ]; then
+        DISTRO_ID="$(read_os_release ID)"
+        DISTRO_ID="${DISTRO_ID:-unknown}"
+
+        DISTRO_NAME="$(read_os_release PRETTY_NAME)"
+        [ -n "$DISTRO_NAME" ] || DISTRO_NAME="$(read_os_release NAME)"
+        DISTRO_NAME="${DISTRO_NAME:-Unknown Linux}"
+
+        local like
+        like="$(read_os_release ID_LIKE)"
+
+        case " ${DISTRO_ID} ${like} " in
+            *" debian "*|*" ubuntu "*)  DISTRO_FAMILY="debian" ;;
+            *" fedora "*|*" rhel "*|*" centos "*) DISTRO_FAMILY="fedora" ;;
+            *" arch "*)                 DISTRO_FAMILY="arch" ;;
+            *" suse "*|*" opensuse "*)  DISTRO_FAMILY="suse" ;;
+            *" alpine "*)               DISTRO_FAMILY="alpine" ;;
+            *)                          DISTRO_FAMILY="unknown" ;;
+        esac
+    fi
+
+    # Report the native package manager purely so we can tell the user how
+    # they *would* update a natively-packaged build. We never invoke it.
+    for candidate in apt dnf yum pacman zypper apk; do
+        if command -v "$candidate" >/dev/null 2>&1; then
+            PKG_MANAGER="$candidate"
+            break
+        fi
+    done
+}
+
+is_root() { [ "$(id -u)" -eq 0 ]; }
+
+# Root installs go system-wide; unprivileged installs go to the user's
+# XDG data dir, which every modern desktop already scans for .desktop files.
+default_prefix() {
+    if is_root; then
+        printf '/usr/local'
+    else
+        printf '%s/.local' "${HOME}"
+    fi
+}
+
+PREFIX="${PREFIX:-$(default_prefix)}"
+
+manifest_path() { printf '%s/share/%s/install-manifest.txt' "$PREFIX" "$BIN_NAME"; }
+
+# ---------------------------------------------------------------------------
+# Checks
+# ---------------------------------------------------------------------------
+check_payload() {
+    [ -d "$PAYLOAD_DIR" ] || die "payload directory not found next to this script: $PAYLOAD_DIR"
+    [ -f "${PAYLOAD_DIR}/bin/${BIN_NAME}" ] || die "payload is missing bin/${BIN_NAME}"
+}
+
+# Kites links against Qt at runtime. A payload built on another machine may be
+# missing those libs here, which would produce a confusing "installed fine but
+# won't launch". Surface it up front instead.
+check_runtime_deps() {
+    local binary="${PAYLOAD_DIR}/bin/${BIN_NAME}"
+    command -v ldd >/dev/null 2>&1 || return 0
+
+    local missing
+    missing="$(ldd "$binary" 2>/dev/null | awk '/not found/ {print "    " $1}' || true)"
+    if [ -n "$missing" ]; then
+        warn "this build is missing shared libraries on this system:"
+        printf '%s\n' "$missing" >&2
+        case "$DISTRO_FAMILY" in
+            debian) warn "try: sudo apt install qt6-base-dev qt6-base-dev-tools" ;;
+            fedora) warn "try: sudo dnf install qt6-qtbase qt6-qtbase-gui" ;;
+            arch)   warn "try: sudo pacman -S qt6-base" ;;
+            suse)   warn "try: sudo zypper install qt6-base" ;;
+            *)      warn "install the Qt 6 base runtime for your distribution" ;;
+        esac
+        warn "Kites will install but may not launch until these are present."
+        return 1
+    fi
+    return 0
+}
+
+warn_if_not_on_path() {
+    case ":${PATH}:" in
+        *":${PREFIX}/bin:"*) : ;;
+        *) warn "${PREFIX}/bin is not on your PATH; the desktop entry will still work, but 'Kites' from a shell will not until you add it." ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
+# Install / uninstall
+# ---------------------------------------------------------------------------
+INSTALLED_FILES=()
+
+install_file() {
+    local src="$1" dest="$2" mode="$3"
+    install -Dm"$mode" "$src" "$dest"
+    INSTALLED_FILES+=("$dest")
+}
+
+do_install() {
+    check_payload
+    check_runtime_deps || true   # a warning, not a hard failure
+
+    local bin_dir="${PREFIX}/bin"
+    local desktop_dir="${PREFIX}/share/applications"
+    local icon_dir="${PREFIX}/share/icons/hicolor/512x512/apps"
+    local metainfo_dir="${PREFIX}/share/metainfo"
+
+    step "Installing ${APP_NAME} ${APP_VERSION} into ${PREFIX}"
+
+    install_file "${PAYLOAD_DIR}/bin/${BIN_NAME}" "${bin_dir}/${BIN_NAME}" 755
+    ok "binary        -> ${bin_dir}/${BIN_NAME}"
+
+    # The desktop entry ships with a placeholder Exec/TryExec because the
+    # prefix is only known now, at install time. Rewrite it to the absolute
+    # path so launching works regardless of the session's PATH.
+    local desktop_dest="${desktop_dir}/${APP_ID}.desktop"
+    mkdir -p "$desktop_dir"
+    sed -e "s|^Exec=.*|Exec=${bin_dir}/${BIN_NAME} %f|" \
+        -e "s|^TryExec=.*|TryExec=${bin_dir}/${BIN_NAME}|" \
+        "${PAYLOAD_DIR}/share/applications/${APP_ID}.desktop" > "$desktop_dest"
+    chmod 644 "$desktop_dest"
+    INSTALLED_FILES+=("$desktop_dest")
+    ok "desktop entry -> ${desktop_dest}"
+
+    install_file "${PAYLOAD_DIR}/share/icons/hicolor/512x512/apps/${APP_ID}.png" \
+                 "${icon_dir}/${APP_ID}.png" 644
+    ok "icon          -> ${icon_dir}/${APP_ID}.png"
+
+    if [ -f "${PAYLOAD_DIR}/share/metainfo/${APP_ID}.metainfo.xml" ]; then
+        install_file "${PAYLOAD_DIR}/share/metainfo/${APP_ID}.metainfo.xml" \
+                     "${metainfo_dir}/${APP_ID}.metainfo.xml" 644
+        ok "app metadata  -> ${metainfo_dir}/${APP_ID}.metainfo.xml"
+    fi
+
+    # Record what we installed so uninstall is exact rather than guesswork.
+    local manifest; manifest="$(manifest_path)"
+    mkdir -p "$(dirname "$manifest")"
+    printf '%s\n' "${INSTALLED_FILES[@]}" > "$manifest"
+    printf '%s\n' "$manifest" >> "$manifest"
+    ok "manifest      -> ${manifest}"
+
+    refresh_desktop_caches
+    warn_if_not_on_path
+
+    printf '\n%s%s %s installed.%s\n' "$C_GREEN" "$C_BOLD" "$APP_NAME" "$C_RESET"
+    info "Look for ${C_BOLD}${APP_NAME}${C_RESET} in your applications menu, or run: ${bin_dir}/${BIN_NAME}"
+}
+
+do_uninstall() {
+    local manifest; manifest="$(manifest_path)"
+    if [ ! -f "$manifest" ]; then
+        die "no install manifest at ${manifest}; nothing to uninstall under prefix ${PREFIX}"
+    fi
+
+    step "Removing ${APP_NAME} from ${PREFIX}"
+    local removed=0
+    while IFS= read -r file; do
+        [ -n "$file" ] || continue
+        if [ -e "$file" ]; then
+            rm -f "$file" && removed=$((removed + 1))
+        fi
+    done < "$manifest"
+
+    # Clean up now-empty private data dir.
+    rmdir "${PREFIX}/share/${BIN_NAME}" 2>/dev/null || true
+
+    ok "removed ${removed} file(s)"
+    refresh_desktop_caches
+    printf '\n%s%s uninstalled.%s\n' "$C_GREEN" "$APP_NAME" "$C_RESET"
+}
+
+# Without this the launcher does not appear until the session is restarted.
+refresh_desktop_caches() {
+    step "Refreshing desktop database and icon cache"
+
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        update-desktop-database "${PREFIX}/share/applications" >/dev/null 2>&1 \
+            && ok "desktop database updated" \
+            || warn "update-desktop-database failed (non-fatal)"
+    else
+        warn "update-desktop-database not found; the launcher may only appear after re-login"
+    fi
+
+    if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+        gtk-update-icon-cache -f -t "${PREFIX}/share/icons/hicolor" >/dev/null 2>&1 \
+            && ok "icon cache updated" \
+            || true   # commonly fails on user prefixes with no existing index.theme; harmless
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# TUI
+# ---------------------------------------------------------------------------
+print_info() {
+    printf '%s%s System %s\n' "$C_BOLD" "$C_DIM" "$C_RESET"
+    printf '  Distribution   : %s\n' "$DISTRO_NAME"
+    printf '  Family         : %s\n' "$DISTRO_FAMILY"
+    printf '  Package manager: %s\n' "$PKG_MANAGER"
+    printf '  Privileges     : %s\n' "$(is_root && echo 'root (system-wide install)' || echo 'user (per-user install)')"
+    printf '\n%s%s Install plan %s\n' "$C_BOLD" "$C_DIM" "$C_RESET"
+    printf '  Prefix         : %s\n' "$PREFIX"
+    printf '  Binary         : %s/bin/%s\n' "$PREFIX" "$BIN_NAME"
+    printf '  Desktop entry  : %s/share/applications/%s.desktop\n' "$PREFIX" "$APP_ID"
+    printf '  Icon           : %s/share/icons/hicolor/512x512/apps/%s.png\n' "$PREFIX" "$APP_ID"
+    if [ -f "$(manifest_path)" ]; then
+        printf '  Existing install detected (will be overwritten by Install)\n'
+    fi
+    printf '\n'
+}
+
+banner() {
+    printf '\n%s' "$C_BOLD"
+    printf '  Kites %s - RISC-V simulator and assembly editor\n' "$APP_VERSION"
+    printf '%s  %s\n\n' "$C_RESET" "$HOMEPAGE"
+}
+
+menu() {
+    while true; do
+        banner
+        print_info
+        printf '%s Actions %s\n' "$C_BOLD" "$C_RESET"
+        printf '  1) Install\n'
+        printf '  2) Uninstall\n'
+        printf '  3) Change install prefix (currently: %s)\n' "$PREFIX"
+        printf '  4) Quit\n\n'
+
+        local choice=""
+        read -r -p "Select [1-4]: " choice || { printf '\n'; exit 0; }
+        printf '\n'
+
+        case "$choice" in
+            1)
+                local confirm=""
+                read -r -p "Install ${APP_NAME} ${APP_VERSION} to ${PREFIX}? [Y/n] " confirm || true
+                case "${confirm:-Y}" in
+                    [Nn]*) info "Cancelled."; ;;
+                    *) do_install; return 0 ;;
+                esac
+                ;;
+            2)
+                local confirm=""
+                read -r -p "Remove ${APP_NAME} from ${PREFIX}? [y/N] " confirm || true
+                case "${confirm:-N}" in
+                    [Yy]*) do_uninstall; return 0 ;;
+                    *) info "Cancelled." ;;
+                esac
+                ;;
+            3)
+                local new_prefix=""
+                read -r -p "New prefix (blank to keep ${PREFIX}): " new_prefix || true
+                if [ -n "$new_prefix" ]; then
+                    PREFIX="${new_prefix%/}"
+                    info "Prefix set to ${PREFIX}"
+                fi
+                ;;
+            4) info "Nothing to do."; return 0 ;;
+            *) warn "Please choose 1, 2, 3 or 4." ;;
+        esac
+        printf '\n'
+    done
+}
+
+# ---------------------------------------------------------------------------
+main() {
+    detect_system
+
+    case "${1:-}" in
+        install)   banner; print_info; do_install ;;
+        uninstall) banner; do_uninstall ;;
+        info)      banner; print_info ;;
+        ""|menu)
+            if [ -t 0 ]; then
+                menu
+            else
+                die "no terminal available for the interactive menu; pass 'install', 'uninstall' or 'info'"
+            fi
+            ;;
+        -h|--help|help)
+            banner
+            sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+            ;;
+        *) die "unknown command '${1}' (expected: install, uninstall, info)" ;;
+    esac
+}
+
+main "$@"

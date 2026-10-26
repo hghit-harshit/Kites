@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream metainfo. This is what makes Kites show up with a proper name,
+  description and icon in software centers (GNOME Software, KDE Discover)
+  rather than as a bare binary. Validate with:  appstream-util validate
+-->
+<component type="desktop-application">
+  <id>@KITES_APP_ID@</id>
+
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+
+  <name>Kites</name>
+  <summary>@KITES_SUMMARY@</summary>
+
+  <description>
+    <p>
+      Kites is a RISC-V simulator and assembly code editor built around the
+      RISC-V ISA. It is aimed at learning and teaching computer architecture:
+      you write RISC-V assembly, assemble it, and watch it execute.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Supports the I, M, D and F extensions in single-cycle mode</li>
+      <li>Supports the I and M extensions in 5-stage pipelined mode, with configurable hazard detection and forwarding</li>
+      <li>Assembly editor with syntax highlighting, live diagnostics and autocompletion</li>
+      <li>Register, memory and cache inspectors, plus an execution profiler</li>
+      <li>Configurable cache hierarchy with pluggable replacement policies, scriptable in Lua</li>
+      <li>Step, undo and redo through execution for debugging</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">@KITES_APP_ID@.desktop</launchable>
+
+  <url type="homepage">@KITES_HOMEPAGE_URL@</url>
+  <url type="bugtracker">@KITES_HOMEPAGE_URL@/issues</url>
+
+  <developer id="io.github.hghit_harshit">
+    <name>@KITES_VENDOR@</name>
+  </developer>
+
+  <content_rating type="oars-1.1"/>
+
+  <categories>
+    <category>Development</category>
+    <category>IDE</category>
+    <category>Education</category>
+  </categories>
+
+  <!--
+    TODO(maintainers): software centers show screenshots prominently and
+    AppStream validation warns without them. Add real ones by uploading
+    images somewhere stable and listing them here, e.g.:
+      <screenshots>
+        <screenshot type="default">
+          <image>https://.../editor.png</image>
+          <caption>Editing and stepping through RISC-V assembly</caption>
+        </screenshot>
+      </screenshots>
+  -->
+
+  <releases>
+    <release version="@KITES_VERSION@" date="@KITES_RELEASE_DATE@"/>
+  </releases>
+</component>

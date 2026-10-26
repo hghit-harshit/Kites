@@ -148,3 +148,10 @@ if(ENABLE_TESTS)
     enable_testing()
     add_subdirectory(test)
 endif()
+
+# ---------------------------------------------------------------------------
+# Linux desktop integration, packaging and the in-app version string.
+# Everything lives in cmake/KitesPackaging.cmake; see packaging/README.md.
+# Included last because it attaches to the already-defined targets.
+# ---------------------------------------------------------------------------
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/KitesPackaging.cmake)

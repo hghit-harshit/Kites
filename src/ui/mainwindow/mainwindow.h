@@ -1,4 +1,5 @@
 #pragma once
+#include "file_service/file_service.h"
 #include "processor/processor_manager.h"
 #include "ui/common/kitestab.h"
 #include "ui/register_table/registercontainer.h"
@@ -48,6 +49,10 @@ public:
     void setUpUI();
     ~MainWindow();
 
+protected:
+    /// Offers to save unsaved work before the window closes.
+    void closeEvent(QCloseEvent *event) override;
+
 private:
     void setUpStatusBar();
     void setUpToolBar();
@@ -55,6 +60,8 @@ private:
     void setUpMenubar();
     void setUpTabs();
     void toggleTheme(const QString &themeId);
+    /// Reflects the current file name and unsaved marker in the title bar.
+    void updateWindowTitle();
     bool tryParseAndLoadProgram();
     void run();
     void processorChangeDialog();
@@ -64,6 +71,7 @@ private:
     QListWidget       *m_sidebar           {nullptr};
     QStackedWidget    *m_stackedTabs       {nullptr};
     RegisterContainer *m_registerContainer {nullptr};
+    FileService       *m_fileService       {nullptr};
     ProcessorManager  *m_processorManager  {nullptr};
     QThread           *m_processorThread   {nullptr};
     TabIndex           m_currentTabIndex   {TabIndex::EditorTabIndex};
