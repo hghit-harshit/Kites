@@ -49,6 +49,7 @@ void IconManager::setUpIconPaths()
     m_iconPaths[toIndex(Icon::Pause)]     = ":/icons/pause.svg";
     m_iconPaths[toIndex(Icon::Resume)]    = ":/icons/resume.svg";
     m_iconPaths[toIndex(Icon::Step)]      = ":/icons/step.svg";
+    m_iconPaths[toIndex(Icon::Debug)]     = ":/icons/debug.svg";
     m_iconPaths[toIndex(Icon::Undo)]      = ":/icons/undo-dot.svg";
     m_iconPaths[toIndex(Icon::Redo)]      = ":/icons/redo-dot.svg";
 

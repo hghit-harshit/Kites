@@ -46,7 +46,7 @@ bool ProcessorBase::IsStopRequested() const
 void ProcessorBase::ClearStop()
 {
     stop_requested_ = false;
-    pause_requested_ = false;
+    pause_requested_ = start_paused_.exchange(false);
 }
 
 void ProcessorBase::LoadProgram(const AssembledProgram &program)

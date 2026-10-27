@@ -82,6 +82,8 @@ private:
     unsigned int m_stepDelayMs{1000};
 public slots:
     void runSlot();
+    // same as runSlot but the processor starts paused so the user can step from the first instruction
+    void debugRunSlot();
     void processorClockedSlot(const ProcessorState &processorState);
 
 signals:

@@ -36,19 +36,7 @@ void RV5StageVM_Base::Run()
             if (stop_requested_) // if we were requested to stop while paused
                 break;
         }
-        last_executed_pc_ = id_ex_reg_.pc; // this pc will be executed in this step, 
-        //so we set it as the last executed pc before we step
-        Step();
-        SetActiveWireNames();
-        cpi_ = instructions_retired_
-                   ? static_cast<float>(cycle_s_) / static_cast<float>(instructions_retired_)
-                   : 0.0f;
-        ipc_ = cycle_s_ ? static_cast<float>(instructions_retired_) / static_cast<float>(cycle_s_)
-                        : 0.0f;
-        
-        setProcessorState();
-        emit updateCircuitStateSignal(active_wires_);
-        emit processorClockedSignal(processor_state_);
+        StepAndNotify();
 
         // handling the delay
         {
@@ -66,6 +54,29 @@ void RV5StageVM_Base::Run()
         // this will get rid of any highlights as they pause when we stop
         // before execution is complete
     }
+}
+
+bool RV5StageVM_Base::StepAndNotify()
+{
+    QMutexLocker locker(&step_mutex_);
+    if (program_counter_ >= program_size_ && is_pipeline_drained())
+    {
+        return false;
+    }
+    last_executed_pc_ = id_ex_reg_.pc; // this pc will be executed in this step,
+    //so we set it as the last executed pc before we step
+    Step();
+    SetActiveWireNames();
+    cpi_ = instructions_retired_
+               ? static_cast<float>(cycle_s_) / static_cast<float>(instructions_retired_)
+               : 0.0f;
+    ipc_ = cycle_s_ ? static_cast<float>(instructions_retired_) / static_cast<float>(cycle_s_)
+                    : 0.0f;
+
+    setProcessorState();
+    emit updateCircuitStateSignal(active_wires_);
+    emit processorClockedSignal(processor_state_);
+    return program_counter_ < program_size_ || !is_pipeline_drained();
 }
 
 void RV5StageVM_Base::DebugRun()

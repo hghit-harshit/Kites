@@ -76,6 +76,7 @@ class RV5StageVM_Base : public ProcessorBase
     bool is_pipeline_drained() const;
     void setProcessorState() override;
     void Run() override; // run debug run adn reset are same across all rv5s vms
+    bool StepAndNotify() override;
 
     // --- Private methods for each pipeline stage ---
     virtual void pipeline_fetch() = 0;

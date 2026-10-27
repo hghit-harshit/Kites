@@ -140,15 +140,7 @@ void RVSSProcessor::Run()
                 break;
             }
         }
-        last_executed_pc_ = program_counter_;
-        Step();
-        SetActiveWireNames();
-        setProcessorState();
-        emit processorClockedSignal(processor_state_);
-        emit updateCircuitStateSignal(active_wires_);
-        active_wires_.erase(active_wires_.begin() + always_active_wires_count_,
-                            active_wires_.end());
-        // clear active wires after emitting signal except always active wires
+        StepAndNotify();
         // handling the delay
         {
             QMutexLocker locker(&pause_mutex_);
@@ -1179,6 +1171,25 @@ void RVSSProcessor::Step()
     DumpRegisters(globals::registers_dump_file_path, registers_);
     DumpState(globals::vm_state_dump_file_path);
 
+}
+
+bool RVSSProcessor::StepAndNotify()
+{
+    QMutexLocker locker(&step_mutex_);
+    if (program_counter_ >= program_size_)
+    {
+        return false;
+    }
+    last_executed_pc_ = program_counter_;
+    Step();
+    SetActiveWireNames();
+    setProcessorState();
+    emit processorClockedSignal(processor_state_);
+    emit updateCircuitStateSignal(active_wires_);
+    active_wires_.erase(active_wires_.begin() + always_active_wires_count_,
+                        active_wires_.end());
+    // clear active wires after emitting signal except always active wires
+    return program_counter_ < program_size_;
 }
 
 void RVSSProcessor::Undo()

@@ -56,7 +56,7 @@ private:
     void setUpTabs();
     void toggleTheme(const QString &themeId);
     bool tryParseAndLoadProgram();
-    void run();
+    void run(bool startPaused = false);
     void processorChangeDialog();
     Ui::MainWindow *ui;
 
@@ -78,5 +78,6 @@ public slots:
 signals:
     void processorChangedSignal();
     void runProcessorSignal();
+    void debugRunProcessorSignal();
 };
 } // namespace Kites

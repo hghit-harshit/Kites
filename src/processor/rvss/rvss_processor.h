@@ -77,6 +77,7 @@ class RVSSProcessor : public ProcessorBase
     void Run() override;
     void DebugRun() override;
     void Step() override;
+    bool StepAndNotify() override;
     void Undo() override;
     void Redo() override;
     void Reset() override;

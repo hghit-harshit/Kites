@@ -89,9 +89,13 @@ class ProcessorBase : public QObject
     AssembledProgram program_;
     std::atomic<bool> stop_requested_ {false};
     std::atomic<bool> pause_requested_ {false};
+    // one shot flag, when set the next ClearStop() leaves the processor paused (used by debug run)
+    std::atomic<bool> start_paused_ {false};
 
     QMutex pause_mutex_;
     QWaitCondition pause_wait_condition_;
+    // serializes cycles between the run thread and manual steps from the gui thread
+    QMutex step_mutex_;
 
     std::mutex input_mutex_;
     std::condition_variable input_cv_;
@@ -159,6 +163,10 @@ class ProcessorBase : public QObject
     virtual void Run()      = 0;
     virtual void DebugRun() = 0;
     virtual void Step()     = 0;
+    /**@brief Executes one step and notifies the ui (circuit, highlights, registers).
+     * @return true if the program still has work remaining after this step
+     */
+    virtual bool StepAndNotify() = 0;
     virtual void Undo()     = 0;
     virtual void Redo()     = 0;
     virtual void Reset()    = 0;

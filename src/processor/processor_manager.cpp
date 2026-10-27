@@ -96,6 +96,12 @@ void ProcessorManager::runSlot()
     emit runFinishedSignal();
 }
 
+void ProcessorManager::debugRunSlot()
+{
+    m_currentProcessor->start_paused_ = true;
+    runSlot();
+}
+
 void ProcessorManager::processorClockedSlot(const ProcessorState &processorState)
 {
     //first we get all the necesary info from the prcossor and then update the related
@@ -195,7 +201,11 @@ void ProcessorManager::step()
 {
     try
     {
-        m_currentProcessor->Step();
+        if (!m_currentProcessor->StepAndNotify())
+        {
+            // program finished while stepping, let the run thread exit so the ui resets
+            m_currentProcessor->RequestStop();
+        }
     }
     catch (const std::exception &e)
     {
