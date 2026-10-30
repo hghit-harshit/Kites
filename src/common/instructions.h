@@ -114,6 +114,7 @@ enum class Instruction
     kmulh,
     kmulhsu,
     kmulhu,
+    kmul128,
     kdiv,
     kdivu,
     krem,
