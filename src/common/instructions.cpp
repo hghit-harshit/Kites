@@ -34,6 +34,7 @@ std::unordered_map<Instruction, InstructionEncoding> instruction_encoding_map = 
     {Instruction::kmulh, {0b0110011, -1, 0b001, -1, -1, 0b0000001}},
     {Instruction::kmulhsu, {0b0110011, -1, 0b010, -1, -1, 0b0000001}},
     {Instruction::kmulhu, {0b0110011, -1, 0b011, -1, -1, 0b0000001}},
+    {Instruction::kmul128, {0b0001011, -1, 0b000, -1, -1, 0b0000001}},
     {Instruction::kdiv, {0b0110011, -1, 0b100, -1, -1, 0b0000001}},
     {Instruction::kdivu, {0b0110011, -1, 0b101, -1, -1, 0b0000001}},
     {Instruction::krem, {0b0110011, -1, 0b110, -1, -1, 0b0000001}},
@@ -214,6 +215,7 @@ std::unordered_map<std::string, Instruction> instruction_string_map = {
     {"mulh", Instruction::kmulh},
     {"mulhsu", Instruction::kmulhsu},
     {"mulhu", Instruction::kmulhu},
+    {"mul128", Instruction::kmul128},
     {"div", Instruction::kdiv},
     {"divu", Instruction::kdivu},
     {"rem", Instruction::krem},
@@ -362,7 +364,7 @@ static const std::unordered_set<std::string> valid_instructions = {
     "bnez", "blez", "bgez", "bltz", "bgtz", "bgt", "ble", "bgtu", "bleu", "j", "jr", "ret", "call",
     "tail", "fence", "fence_i",
 
-    "mul", "mulh", "mulhsu", "mulhu", "div", "divu", "rem", "remu", "mulw", "divw", "divuw", "remw",
+    "mul", "mulh", "mulhsu", "mulhu", "mul128", "div", "divu", "rem", "remu", "mulw", "divw", "divuw", "remw",
     "remuw",
 
     // RV64F
@@ -404,6 +406,7 @@ static const std::unordered_set<std::string> RTypeInstructions = {
     "mulh",
     "mulhsu",
     "mulhu",
+    "mul128",
     "div",
     "divu",
     "rem",
@@ -539,6 +542,7 @@ std::unordered_map<std::string, RTypeInstructionEncoding> R_type_instruction_enc
     {"mulh", {0b0110011, 0b001, 0b0000001}},   // O_GPR_C_GPR_C_GPR
     {"mulhsu", {0b0110011, 0b010, 0b0000001}}, // O_GPR_C_GPR_C_GPR
     {"mulhu", {0b0110011, 0b011, 0b0000001}},  // O_GPR_C_GPR_C_GPR
+    {"mul128", {0b0001011, 0b000, 0b0000001}}, // custom-0
     {"div", {0b0110011, 0b100, 0b0000001}},    // O_GPR_C_GPR_C_GPR
     {"divu", {0b0110011, 0b101, 0b0000001}},   // O_GPR_C_GPR_C_GPR
     {"rem", {0b0110011, 0b110, 0b0000001}},    // O_GPR_C_GPR_C_GPR
@@ -861,6 +865,7 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
     {"mulh", {SyntaxType::O_GPR_C_GPR_C_GPR}},
     {"mulhsu", {SyntaxType::O_GPR_C_GPR_C_GPR}},
     {"mulhu", {SyntaxType::O_GPR_C_GPR_C_GPR}},
+    {"mul128", {SyntaxType::O_GPR_C_GPR_C_GPR}},
     {"div", {SyntaxType::O_GPR_C_GPR_C_GPR}},
     {"divu", {SyntaxType::O_GPR_C_GPR_C_GPR}},
     {"rem", {SyntaxType::O_GPR_C_GPR_C_GPR}},
@@ -1397,6 +1402,11 @@ std::string disassemble(uint32_t instruction)
             return name + " " + xr(rd) + ", " + xr(rs1) + ", " + xr(rs2);
         break;
     }
+
+    case 0b0001011: // custom-0 MUL128
+        if (funct7 == 0b0000001 && funct3 == 0 && rd >= 2 && rd <= 30 && (rd % 2) == 0)
+            return "mul128 " + xr(rd) + ", " + xr(rs1) + ", " + xr(rs2);
+        break;
 
     case 0b0111011:
     { // R-type integer word (RV64)
