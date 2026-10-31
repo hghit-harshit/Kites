@@ -344,6 +344,13 @@ inline std::ostream &operator<<(std::ostream &os, const AluOp &op)
     }
     return os;
 }
+
+struct AluResult128
+{
+    uint64_t low;
+    uint64_t high;
+};
+
 /**
  * @brief The alu class is responsible for performing arithmetic and logic operations.
  */
@@ -367,6 +374,7 @@ class Alu
      * @return A pair (result, overflow_flag).
      */
     [[nodiscard]] static std::pair<uint64_t, bool> execute(AluOp op, uint64_t a, uint64_t b);
+    [[nodiscard]] static AluResult128 execute128(uint64_t a, uint64_t b);
 
     // TODO: check all the floating point operations
 

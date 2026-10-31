@@ -25,6 +25,10 @@ void RV5SControlUnit::SetControlSignals(uint32_t instruction)
         reg_write_ = true;
         alu_op_ = 2; // ALUOp code '2' tells ALU Control to decode R-type.
         break;
+    case 0b0001011: // MUL128
+        reg_write_ = true;
+        alu_op_ = 5; // Dedicated control code for MUL128
+        break;
     case 0b0010011: // I-type ALU (ADDI, ANDI, etc.)
         alu_src_ = true;
         reg_write_ = true;
@@ -113,6 +117,11 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
     uint8_t funct5 = (instruction >> 20) & 0b11111;
     uint8_t funct2 = (instruction >> 25) & 0b11;
 
+    if (opcode == 0b0001011)
+    {
+    return alu::AluOp::NONE;
+    }
+    
     switch (alu_op_)
     {
     case 0: // ALUOp=0 -> Must be ADD (for Loads, Stores, JALR, LUI, AUIPC).

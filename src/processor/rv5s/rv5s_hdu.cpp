@@ -46,15 +46,33 @@ int check_data_hazard(const IF_ID_Register &if_id_reg, const ID_EX_Register &id_
     uint8_t if_id_frs3 = (instruction >> 27) & 0x1F; // For FMA (R4 format)
 
     // --- 2. Check for GPR Hazard (Source writes GPR, Dependent reads GPR) ---
-    // Two-cycle hazard: current EX/MEM instruction writes a GPR the IF/ID instruction reads
-    bool gpr_hazard_two_cycle = (ex_mem_reg.reg_write && (ex_mem_reg.rd != 0)) &&
-                                (ex_mem_reg.rd == if_id_rs1 || ex_mem_reg.rd == if_id_rs2);
+        // Two-cycle hazard: current EX/MEM instruction.
+    bool ex_mem_is_mul128 =
+        (ex_mem_reg.instruction & 0b1111111) == 0b0001011;
 
-    // One-cycle hazard: previous EX/MEM instruction (now further down) writes a GPR the IF/ID
-    // instruction reads
+    bool gpr_hazard_two_cycle =
+        (ex_mem_reg.reg_write && ex_mem_reg.rd != 0) &&
+        (
+            ex_mem_reg.rd == if_id_rs1 ||
+            ex_mem_reg.rd == if_id_rs2 ||
+            (ex_mem_is_mul128 &&
+             (ex_mem_reg.rd + 1 == if_id_rs1 ||
+              ex_mem_reg.rd + 1 == if_id_rs2))
+        );
+
+    // One-cycle hazard: previous EX/MEM instruction.
+    bool prev_ex_mem_is_mul128 =
+        (ex_mem_reg.prev_instruction & 0b1111111) == 0b0001011;
+
     bool gpr_hazard_one_cycle =
-        (ex_mem_reg.prev_reg_write && (ex_mem_reg.prev_rd != 0)) &&
-        (ex_mem_reg.prev_rd == if_id_rs1 || ex_mem_reg.prev_rd == if_id_rs2);
+        (ex_mem_reg.prev_reg_write && ex_mem_reg.prev_rd != 0) &&
+        (
+            ex_mem_reg.prev_rd == if_id_rs1 ||
+            ex_mem_reg.prev_rd == if_id_rs2 ||
+            (prev_ex_mem_is_mul128 &&
+             (ex_mem_reg.prev_rd + 1 == if_id_rs1 ||
+              ex_mem_reg.prev_rd + 1 == if_id_rs2))
+        );
 
     bool gpr_hazard = gpr_hazard_one_cycle || gpr_hazard_two_cycle;
 

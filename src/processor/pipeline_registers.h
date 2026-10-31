@@ -88,8 +88,10 @@ struct EX_MEM_Register
 {
     uint64_t pc {INVALID_PC};           // Passing PC for highlighting purposes
     uint32_t instruction {NOP};  // Pass full instruction for reference in MEM
+    uint32_t prev_instruction {NOP}; // Previous instruction, used for hazard detection
     // --- GPR Results ---
     uint64_t alu_result {0};  // GPR Write Data (ALU Result, Link Address, etc.)
+    uint64_t high_result {0};
     uint64_t reg2_data  {0};  // Data from rs2, needed for Store instructions
 
     uint8_t rd      {0};  // GPR Destination register index
@@ -121,8 +123,10 @@ struct EX_MEM_Register
     {
         pc          = INVALID_PC;
         instruction = NOP;
+        prev_instruction = NOP;
 
         alu_result = 0;
+        high_result = 0;
         reg2_data  = 0;
         rd         = 0;
         prev_rd    = 0;
@@ -153,14 +157,17 @@ struct MEM_WB_Register
 {
     uint64_t pc {INVALID_PC};           // Passing PC for highlighting purposes
     uint32_t instruction {NOP};  // Pass full instruction for reference in WB
+    uint32_t prev_instruction {NOP}; // Previous instruction, used for forwarding
     // --- GPR Results ---
     uint64_t memory_data {0};           // GPR Write Data (Data read from memory in a Load)
     uint64_t alu_result  {0};           // GPR Write Data (ALU result, Link Address, etc.)
+    uint64_t high_result {0};           // Upper 64 bits of MUL128 result
     uint8_t  rd          {0};           // GPR Destination register index
 
     uint64_t prev_memory_data {0};  // Previous Memory data (for forwarding)
     uint8_t  prev_rd          {0};  // Previous GPR Destination register index
     uint64_t prev_alu_result  {0};  // Previous ALU result
+    uint64_t prev_high_result {0};
     // --- FPR Results ---
     uint64_t f_memory_data {0};  // FPR Write Data (Data read from memory in FLW/FLD)
     uint64_t f_alu_result  {0};  // FPR Write Data (F-ALU result)
@@ -181,10 +188,14 @@ struct MEM_WB_Register
     {
         pc          = INVALID_PC;
         instruction = NOP;
+        prev_instruction = NOP;
 
         memory_data = 0;
         alu_result  = 0;
         rd          = 0;
+
+        high_result = 0;
+        prev_high_result = 0;
 
         prev_memory_data = 0;
         prev_rd          = 0;

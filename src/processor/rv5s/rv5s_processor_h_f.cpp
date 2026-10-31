@@ -122,7 +122,6 @@ void RV5StageProcessorHF::SetActiveWireNames()
         active_wires_.append("RdP4_to_FU");
         active_wires_.append("WBMux_to_RF");
     }
-
     // Forwarding unit activity: show FWD wires when forwarding is relevant
     if (ex_mem_reg_.reg_write && ex_mem_reg_.rd != 0)
     {
@@ -281,6 +280,7 @@ void RV5StageProcessorHF::pipeline_execute()
     uint32_t instruction = id_ex_reg_.instruction;
     bool overflow;
     uint64_t alu_result;
+    uint64_t high_result = 0;
 
     bool is_f_instruction = instruction_set::isFInstruction(instruction);
     bool is_d_instruction = instruction_set::isDInstruction(instruction);
@@ -302,57 +302,107 @@ void RV5StageProcessorHF::pipeline_execute()
         uint8_t forward_a = 0; // 10 = EX/MEM, 01 = MEM/WB
         uint8_t forward_b = 0;
 
-        // **Priority 1: EX/MEM Forward** (R-R, R-Store hazard solved)
-        if (ex_mem_reg_.reg_write && (ex_mem_reg_.rd != 0))
+        // Identify whether the EX/MEM instruction is MUL128.
+        bool ex_mem_is_mul128 =
+            (ex_mem_reg_.instruction & 0b1111111) == 0b0001011;
+
+        // Priority 1: EX/MEM forwarding.
+        if (ex_mem_reg_.reg_write && ex_mem_reg_.rd != 0)
         {
-            if (ex_mem_reg_.rd == id_ex_reg_.rs1)
+            uint8_t ex_rd = ex_mem_reg_.rd;
+
+            if (ex_rd == id_ex_reg_.rs1 ||
+                (ex_mem_is_mul128 && ex_rd + 1 == id_ex_reg_.rs1))
+            {
                 forward_a = 2;
-            if (ex_mem_reg_.rd == id_ex_reg_.rs2)
+            }
+
+            if (ex_rd == id_ex_reg_.rs2 ||
+                (ex_mem_is_mul128 && ex_rd + 1 == id_ex_reg_.rs2))
+            {
                 forward_b = 2;
+            }
         }
 
-        // **Priority 2: MEM/WB Forward** (R-R, L-Store hazard solved)
-        if (mem_wb_reg_.prev_reg_write && (mem_wb_reg_.prev_rd != 0))
+        // Priority 2: MEM/WB forwarding.
+        bool mem_wb_is_mul128 =
+            (mem_wb_reg_.prev_instruction & 0b1111111) == 0b0001011;
+
+        if (mem_wb_reg_.prev_reg_write && mem_wb_reg_.prev_rd != 0)
         {
-            // Forward A from MEM/WB unless EX/MEM is already forwarding
-            if (mem_wb_reg_.prev_rd == id_ex_reg_.rs1 && forward_a != 2)
+            uint8_t wb_rd = mem_wb_reg_.prev_rd;
+
+            if ((wb_rd == id_ex_reg_.rs1 ||
+                 (mem_wb_is_mul128 && wb_rd + 1 == id_ex_reg_.rs1)) &&
+                forward_a != 2)
+            {
                 forward_a = 1;
-            // Forward B from MEM/WB unless EX/MEM is already forwarding
-            if (mem_wb_reg_.prev_rd == id_ex_reg_.rs2 && forward_b != 2)
+            }
+
+            if ((wb_rd == id_ex_reg_.rs2 ||
+                 (mem_wb_is_mul128 && wb_rd + 1 == id_ex_reg_.rs2)) &&
+                forward_b != 2)
+            {
                 forward_b = 1;
+            }
         }
 
         // --- FORWARDING APPLICATION ---
-
         if (forward_a == 2)
         {
-            alu_in1 = ex_mem_reg_.alu_result;
+            if (ex_mem_is_mul128 && id_ex_reg_.rs1 == ex_mem_reg_.rd + 1)
+                alu_in1 = ex_mem_reg_.high_result;
+            else
+                alu_in1 = ex_mem_reg_.alu_result;
         }
         else if (forward_a == 1)
         {
-            alu_in1 = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data
-                                                  : mem_wb_reg_.prev_alu_result;
+            if (mem_wb_is_mul128 && id_ex_reg_.rs1 == mem_wb_reg_.prev_rd + 1)
+                alu_in1 = mem_wb_reg_.prev_high_result;
+            else
+                alu_in1 = mem_wb_reg_.prev_mem_to_reg
+                    ? mem_wb_reg_.prev_memory_data
+                    : mem_wb_reg_.prev_alu_result;
         }
 
         if (forward_b == 2)
         {
-            alu_in2 = ex_mem_reg_.alu_result;
+            if (ex_mem_is_mul128 && id_ex_reg_.rs2 == ex_mem_reg_.rd + 1)
+                alu_in2 = ex_mem_reg_.high_result;
+            else
+                alu_in2 = ex_mem_reg_.alu_result;
         }
         else if (forward_b == 1)
         {
-            alu_in2 = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data
-                                                  : mem_wb_reg_.prev_alu_result;
+            if (mem_wb_is_mul128 && id_ex_reg_.rs2 == mem_wb_reg_.prev_rd + 1)
+                alu_in2 = mem_wb_reg_.prev_high_result;
+            else
+                alu_in2 = mem_wb_reg_.prev_mem_to_reg
+                    ? mem_wb_reg_.prev_memory_data
+                    : mem_wb_reg_.prev_alu_result;
         }
-
-        // Re-apply immediate value check (must happen AFTER forwarding application)
+        // Immediate selection must happen AFTER forwarding.
         if (id_ex_reg_.alu_src)
         {
             alu_in2 = static_cast<uint64_t>(id_ex_reg_.imm);
         }
 
         // --- EXECUTION ---
-        alu::AluOp alu_operation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
-        std::tie(alu_result, overflow) = alu::Alu::execute(alu_operation, alu_in1, alu_in2);
+        if ((instruction & 0b1111111) == 0b0001011)
+        {
+            auto result = alu::Alu::execute128(alu_in1, alu_in2);
+
+            alu_result = result.low;
+            high_result = result.high;
+        }
+        else
+        {
+            alu::AluOp alu_operation =
+                control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
+
+            std::tie(alu_result, overflow) =
+                alu::Alu::execute(alu_operation, alu_in1, alu_in2);
+        }
         // temporary fix for lui instruction
 
         if ((id_ex_reg_.instruction & 0b1111111) == 0b0110111) // lui
@@ -363,20 +413,34 @@ void RV5StageProcessorHF::pipeline_execute()
         // Latch data for EX/MEM Register
 
         // Store Data: CRITICAL FORWARDING - Store data must also be forwarded!
+                // Store data forwarding: handle both MUL128 destination registers.
         uint64_t store_data = id_ex_reg_.reg2_data;
+
         if (forward_b == 2)
         {
-            store_data = ex_mem_reg_.alu_result;
+            if (ex_mem_is_mul128 && id_ex_reg_.rs2 == ex_mem_reg_.rd + 1)
+                store_data = ex_mem_reg_.high_result;
+            else
+                store_data = ex_mem_reg_.alu_result;
         }
         else if (forward_b == 1)
         {
-            store_data = mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data
-                                                     : mem_wb_reg_.prev_alu_result;
+            if (mem_wb_is_mul128 &&
+                id_ex_reg_.rs2 == mem_wb_reg_.prev_rd + 1)
+            {
+                store_data = mem_wb_reg_.prev_high_result;
+            }
+            else
+            {
+                store_data = mem_wb_reg_.prev_mem_to_reg
+                    ? mem_wb_reg_.prev_memory_data
+                    : mem_wb_reg_.prev_alu_result;
+            }
         }
 
         ex_mem_reg_.reg2_data = store_data;
     }
-
+    ex_mem_reg_.prev_instruction = ex_mem_reg_.instruction;
     ex_mem_reg_.prev_reg_write = ex_mem_reg_.reg_write;
     ex_mem_reg_.prev_rd = ex_mem_reg_.rd;
     ex_mem_reg_.prev_freg_write = ex_mem_reg_.freg_write;
@@ -384,12 +448,20 @@ void RV5StageProcessorHF::pipeline_execute()
     ex_mem_reg_.pc = id_ex_reg_.pc;
     ex_mem_reg_.instruction = id_ex_reg_.instruction;
     ex_mem_reg_.alu_result = alu_result;
+    ex_mem_reg_.high_result = high_result;
     ex_mem_reg_.f_alu_result = (is_f_instruction || is_d_instruction) ? alu_result : 0;
     ex_mem_reg_.rd = id_ex_reg_.rd;
     ex_mem_reg_.frd = id_ex_reg_.frd;
     // NOTE: reg2_data and freg2_data are set inside the integer/FP execute
     // branches above with proper forwarding applied — do NOT overwrite here.
     ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
+    // MUL128 with an invalid destination pair (rd must be even, in [2, 30]) writes nothing,
+    // so it must not be visible to forwarding or hazard detection either.
+    if ((instruction & 0b1111111) == 0b0001011 &&
+        (id_ex_reg_.rd < 2 || id_ex_reg_.rd > 30 || (id_ex_reg_.rd & 1) != 0))
+    {
+        ex_mem_reg_.reg_write = false;
+    }
     ex_mem_reg_.freg_write = id_ex_reg_.freg_write;
     ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
     ex_mem_reg_.prev_mem_read = ex_mem_reg_.mem_read;

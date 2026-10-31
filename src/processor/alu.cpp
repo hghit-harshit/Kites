@@ -279,6 +279,38 @@ namespace alu
     }
 }
 
+AluResult128 Alu::execute128(uint64_t a, uint64_t b)
+{
+    // Split both 64-bit operands into 32-bit halves.
+    uint64_t a_low = static_cast<uint32_t>(a);
+    uint64_t a_high = a >> 32;
+
+    uint64_t b_low = static_cast<uint32_t>(b);
+    uint64_t b_high = b >> 32;
+
+    // Multiply the lower halves.
+    uint64_t product = a_low * b_low;
+
+    uint64_t low_word = static_cast<uint32_t>(product);
+    uint64_t carry = product >> 32;
+
+    // Add the cross-products.
+    product = a_high * b_low + carry;
+
+    uint64_t middle_word = static_cast<uint32_t>(product);
+    uint64_t high_word = product >> 32;
+
+    product = a_low * b_high + middle_word;
+
+    carry = product >> 32;
+
+    // Assemble the final 128-bit result.
+    uint64_t low = (product << 32) | low_word;
+    uint64_t high = a_high * b_high + high_word + carry;
+
+    return {low, high};
+}
+
 [[nodiscard]] std::pair<uint64_t, uint8_t> Alu::fpexecute(AluOp op, uint64_t ina, uint64_t inb,
                                                           uint64_t inc, uint8_t rm)
 {

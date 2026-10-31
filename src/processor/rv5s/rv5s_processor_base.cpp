@@ -387,6 +387,21 @@ void RV5StageVM_Base::register_write_back(const uint64_t &write_data)
         registers_.WriteGpr(mem_wb_reg_.rd, write_data << 12);
         break;
     }
+
+        case 0b0001011: // MUL128
+    {
+        uint8_t rd = mem_wb_reg_.rd;
+
+        // MUL128 requires an even destination register pair:
+        // rd must be in the range x2 to x30.
+        if (rd >= 2 && rd <= 30 && rd % 2 == 0)
+        {
+            registers_.WriteGpr(rd, mem_wb_reg_.alu_result);
+            registers_.WriteGpr(rd + 1, mem_wb_reg_.high_result);
+        }
+        break;
+    }
+
     default:
         break;
     }
@@ -437,11 +452,14 @@ void RV5StageVM_Base::pipeline_memory()
     // since we are running cycle backward
     // by the time execture check this register forwarding previous results are gone
     // so we store these seperately
+    mem_wb_reg_.prev_instruction = mem_wb_reg_.instruction;
     mem_wb_reg_.prev_rd          = mem_wb_reg_.rd;
     mem_wb_reg_.prev_alu_result  = mem_wb_reg_.alu_result;
+    mem_wb_reg_.prev_high_result = mem_wb_reg_.high_result;
     mem_wb_reg_.prev_mem_to_reg  = mem_wb_reg_.mem_to_reg;
     mem_wb_reg_.prev_reg_write   = mem_wb_reg_.reg_write;
     mem_wb_reg_.prev_memory_data = mem_wb_reg_.memory_data;
+    
     // Save FPR prev fields for forwarding (mirrors GPR prev fields above)
     mem_wb_reg_.prev_frd           = mem_wb_reg_.frd;
     mem_wb_reg_.prev_f_alu_result  = mem_wb_reg_.f_alu_result;
@@ -451,6 +469,7 @@ void RV5StageVM_Base::pipeline_memory()
     mem_wb_reg_.pc          = ex_mem_reg_.pc;
     mem_wb_reg_.instruction = ex_mem_reg_.instruction;
     mem_wb_reg_.alu_result  = ex_mem_reg_.alu_result;
+    mem_wb_reg_.high_result = ex_mem_reg_.high_result;
     mem_wb_reg_.rd          = ex_mem_reg_.rd;
     mem_wb_reg_.reg_write   = ex_mem_reg_.reg_write;
     mem_wb_reg_.mem_to_reg  = ex_mem_reg_.mem_to_reg;
@@ -604,6 +623,14 @@ void RV5StageVM_Base::pipeline_writeback()
             mem_wb_reg_.mem_to_reg ? mem_wb_reg_.memory_data : mem_wb_reg_.alu_result;
         // JAL/JALR write the link address, not the ALU result.
         uint8_t opcode = mem_wb_reg_.instruction & 0b1111111;
+        // MUL128 must write to a valid even register pair.
+        if (opcode == 0b0001011 &&
+            (mem_wb_reg_.rd < 2 ||
+             mem_wb_reg_.rd > 30 ||
+             mem_wb_reg_.rd % 2 != 0))
+        {
+            return;
+        }
         if (opcode == 0b1100111 || opcode == 0b1101111)
         {
             write_data = mem_wb_reg_.pc + 4;
@@ -616,6 +643,23 @@ void RV5StageVM_Base::pipeline_writeback()
             current_delta_.register_changes.push_back({mem_wb_reg_.rd,
                                                        0, // GPR type
                                                        old_value, write_data});
+        }
+
+        if (opcode == 0b0001011)
+        {
+            uint8_t high_rd = mem_wb_reg_.rd + 1;
+            uint64_t old_high_value = registers_.ReadGpr(high_rd);
+            uint64_t new_high_value = mem_wb_reg_.high_result;
+
+            if (old_high_value != new_high_value)
+            {
+                current_delta_.register_changes.push_back({
+                    high_rd,
+                    0,
+                    old_high_value,
+                    new_high_value
+                });
+            }
         }
 
         switch (opcode)
@@ -643,6 +687,12 @@ void RV5StageVM_Base::pipeline_writeback()
         case 0b0110111:
         { // LUI
             registers_.WriteGpr(mem_wb_reg_.rd, write_data);
+            break;
+        }
+        case 0b0001011: // MUL128
+        {
+            registers_.WriteGpr(mem_wb_reg_.rd, mem_wb_reg_.alu_result);
+            registers_.WriteGpr(mem_wb_reg_.rd + 1, mem_wb_reg_.high_result);
             break;
         }
         default:

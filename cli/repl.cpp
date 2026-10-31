@@ -118,16 +118,21 @@ std::string FirstToken(const std::string &line)
 
 int RunRepl(ProcessorManager &manager, command_handler::ReplState &state)
 {
-    QObject::connect(&manager, &ProcessorManager::runErrorSignal, &manager,
-                      [](const QString &message, int sourceLine)
-                      {
-                          std::cerr << "run error: " << message.toStdString();
-                          if (sourceLine > 0)
-                          {
-                              std::cerr << " (line " << sourceLine << ")";
-                          }
-                          std::cerr << std::endl;
-                      });
+QObject::connect(&manager, &ProcessorManager::processorPausedAtBreakpointSignal, &manager,
+                 [&manager, &state]()
+                 {
+                     uint64_t end_pc = state.currentProgram.text_buffer.size() * 4;
+
+                     if (manager.getProgramCounter() == end_pc)
+                     {
+                         // Automatically resume at the internal end-of-program breakpoint.
+                         manager.resume();
+                         return;
+                     }
+
+                     std::cout << "paused at breakpoint, PC=0x" << std::hex
+                               << manager.getProgramCounter() << std::dec << std::endl;
+                 });
     QObject::connect(&manager, &ProcessorManager::processorPausedAtBreakpointSignal, &manager,
                       [&manager]()
                       {
