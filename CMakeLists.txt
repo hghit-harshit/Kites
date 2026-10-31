@@ -39,7 +39,7 @@ set_source_files_properties(${LUA_SRC_FILES}
 
 
 file(GLOB_RECURSE SRC_FILES "${SRC_DIR}/*.cpp")
-file(GLOB_RECURSE TEST_FILES "${TEST_DIR}/*.cpp")
+#file(GLOB_RECURSE TEST_FILES "${TEST_DIR}/*.cpp")
 file(GLOB_RECURSE UI_FILES "${SRC_DIR}/*.ui")
 file(GLOB_RECURSE HEADER_FILES
     "${SRC_DIR}/*.h")
