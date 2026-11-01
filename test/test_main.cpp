@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
+#ifdef _WIN32
 #include <windows.h>
+#endif
 #include <QLoggingCategory>
 
 int main(int argc, char *argv[]) 
