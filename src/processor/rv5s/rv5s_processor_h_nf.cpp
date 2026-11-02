@@ -170,6 +170,7 @@ void RV5StageProcessorHNF::Step()
 
     if (currently_stalling || stalls_needed > 0)
     {
+        total_stalls_++;
         id_ex_reg_.reset();
         stall_fetch_and_decode_ = true;
     }
