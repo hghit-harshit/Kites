@@ -36,8 +36,8 @@ inline DecodedInst decode(uint32_t w)
     case 0x63: d.kind = Kind::Branch; d.reads_rs1 = d.reads_rs2 = true; d.is_branch = true; d.is_barrier = true; break;
     case 0x03: d.kind = Kind::Load;  d.writes_rd = true; d.reads_rs1 = true; d.is_load = true; break;
     case 0x23: d.kind = Kind::Store; d.reads_rs1 = d.reads_rs2 = true; d.is_store = true; break;
-    case 0x13: d.kind = Kind::OpImm; d.writes_rd = true; d.reads_rs1 = true; break;
-    case 0x33: d.kind = Kind::Op;    d.writes_rd = true; d.reads_rs1 = d.reads_rs2 = true; break;
+    case 0x13: case 0x1B: d.kind = Kind::OpImm; d.writes_rd = true; d.reads_rs1 = true; break;
+    case 0x33: case 0x3B: d.kind = Kind::Op;    d.writes_rd = true; d.reads_rs1 = d.reads_rs2 = true; break;
     case 0x73: d.kind = Kind::Ecall; d.is_barrier = true; break;
     default:   d.kind = Kind::Other; d.is_barrier = true; break;
     }
