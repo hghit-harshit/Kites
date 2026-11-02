@@ -236,6 +236,7 @@ void RV5StageProcessorHF::Step()
     {
         // STALL: Freeze IF/ID (by preventing its update) and inject NOP into ID/EX
         id_ex_reg_.reset();
+        total_stalls_++;
         // Skip pipeline_decode() - The instruction in IF/ID stays put.
         stall_fetch_and_decode_ = true;
     }
