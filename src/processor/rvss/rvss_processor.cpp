@@ -227,8 +227,8 @@ void RVSSProcessor::Execute()
             UpdateProgramCounter(-4);
             return_address_ = program_counter_ + 4;
             if (opcode == 0b1100111)
-            { // JALR
-                UpdateProgramCounter(-program_counter_ + (execution_result_));
+            { // JALR: target = (rs1 + imm) & ~1
+                UpdateProgramCounter(-program_counter_ + (execution_result_ & ~1ULL));
             }
             else
             { // JAL
