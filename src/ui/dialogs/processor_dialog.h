@@ -3,7 +3,6 @@
 
 #include "processor/processor_types.h"
 #include <QDialog>
-#include <QTreeWidgetItem>
 
 namespace Kites
 {
@@ -22,10 +21,9 @@ class ProcessorDialog : public QDialog
 
   private:
     Ui::ProcessorDialog *ui;
-    QTreeWidgetItem *m_currentSelectedItem = nullptr;
+    void setPipelineOptionsEnabled(bool enabled);
   private slots:
     void on_buttonBox_accepted();
-    // void on_treeWidget_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
 
   signals:
     void vmSelected(const ProcessorType &vmType);
