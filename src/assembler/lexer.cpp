@@ -417,6 +417,7 @@ std::vector<Token> Lexer::getTokenList()
 {
     while (std::getline(*input_, current_line_))
     {
+        source_lines_.push_back(current_line_);
         pos_ = 0;
         column_number_ = 1;
         line_number_++;

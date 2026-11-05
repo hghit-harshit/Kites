@@ -73,6 +73,7 @@ class Parser
   private:
     std::string filename_;               ///< The filename being parsed.
     std::vector<Token> tokens_;          ///< The list of tokens to parse.
+    std::vector<std::string> source_lines_; ///< Source text, used for error context.
     size_t pos_ = 0;                     ///< The current position in the token list.
     unsigned int instruction_index_ = 0; ///< The current instruction index.
 
@@ -128,6 +129,19 @@ class Parser
      */
     void recordError(const ParseError &error);
 
+    /**
+     * @brief Returns the text of a 1-based source line, or "" if unavailable.
+     * Uses the lexer's in-memory copy, so it works for stream input too.
+     */
+    std::string sourceLine(unsigned int lineNumber) const
+    {
+        if (lineNumber >= 1 && lineNumber <= source_lines_.size())
+        {
+            return source_lines_[lineNumber - 1];
+        }
+        return "";
+    }
+
     bool parse_O_GPR_C_GPR_C_GPR();
     bool parse_O_GPR_C_GPR_C_I();
     bool parse_O_GPR_C_I();
@@ -177,8 +191,9 @@ class Parser
      * @param filename The name of the file to parse.
      * @param tokens The list of tokens to parse.
      */
-    explicit Parser(std::string filename, const std::vector<Token> &tokens)
-        : filename_(std::move(filename)), tokens_(tokens)
+    explicit Parser(std::string filename, const std::vector<Token> &tokens,
+                    std::vector<std::string> sourceLines = {})
+        : filename_(std::move(filename)), tokens_(tokens), source_lines_(std::move(sourceLines))
     {
     }
 

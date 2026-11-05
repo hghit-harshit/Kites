@@ -126,7 +126,7 @@ void Parser::parseDataDirective()
                     "Invalid directive",
                     "Expected .dword, .word, .halfword, .byte, .float, .double, .string, .zero",
                     filename_, currentToken().line_number, currentToken().column_number,
-                    GetLineFromFile(filename_, currentToken().line_number)));
+                    sourceLine(currentToken().line_number)));
             }
             symbol_table_[currentToken().value] = {data_index_, currentToken().line_number, true};
             nextToken();
@@ -260,7 +260,7 @@ void Parser::parseDataDirective()
                         errors_.all_errors.emplace_back(errors::SyntaxError(
                             "Invalid zero directive", "Expected a positive number", filename_,
                             currentToken().line_number, currentToken().column_number,
-                            GetLineFromFile(filename_, currentToken().line_number)));
+                            sourceLine(currentToken().line_number)));
                     }
                 }
                 nextToken();
@@ -295,7 +295,7 @@ void Parser::parseDataDirective()
                 "Invalid directive",
                 "Expected .dword, .word, .halfword, .byte, .string, .float, .double, .zero",
                 filename_, currentToken().line_number, currentToken().column_number,
-                GetLineFromFile(filename_, currentToken().line_number)));
+                sourceLine(currentToken().line_number)));
             nextToken();
         }
     }
@@ -320,7 +320,7 @@ void Parser::parseTextDirective()
                     "Label already defined at line " +
                         std::to_string(symbol_table_[currentToken().value].line_number),
                     filename_, currentToken().line_number, currentToken().column_number,
-                    GetLineFromFile(filename_, currentToken().line_number)));
+                    sourceLine(currentToken().line_number)));
                 nextToken();
                 continue;
             }
@@ -502,7 +502,7 @@ void Parser::parseTextDirective()
                     "Syntax error",
                     "Expected: " + instruction_set::getExpectedSyntaxes(currentToken().value),
                     filename_, currentToken().line_number, currentToken().column_number,
-                    GetLineFromFile(filename_, currentToken().line_number)));
+                    sourceLine(currentToken().line_number)));
 
                 skipCurrentLine();
             }
@@ -514,7 +514,7 @@ void Parser::parseTextDirective()
             errors_.all_errors.emplace_back(errors::UnexpectedTokenError(
                 "Unexpected token", filename_, currentToken().line_number,
                 currentToken().column_number,
-                GetLineFromFile(filename_, currentToken().line_number)));
+                sourceLine(currentToken().line_number)));
 
             skipCurrentLine();
             continue;
@@ -546,7 +546,7 @@ void Parser::parseBSSDirective()
         //           errors::SyntaxError("Invalid syntax", "Expected a number after .space",
         //                               filename_, currentToken().line_number,
         //                               currentToken().column_number,
-        //                               GetLineFromFile(filename_, currentToken().line_number)));
+        //                               sourceLine(currentToken().line_number)));
         //       nextToken();
         //     }
         //   } else {
@@ -557,7 +557,7 @@ void Parser::parseBSSDirective()
         //         errors::SyntaxError("Invalid label", "Expected: .space",
         //                             filename_, currentToken().line_number,
         //                             currentToken().column_number,
-        //                             GetLineFromFile(filename_, currentToken().line_number)));
+        //                             sourceLine(currentToken().line_number)));
         //     nextToken();
         //   }
         // } else {
@@ -568,7 +568,7 @@ void Parser::parseBSSDirective()
         //       errors::SyntaxError("Invalid directive", "Expected: .space",
         //                           filename_, currentToken().line_number,
         //                           currentToken().column_number,
-        //                           GetLineFromFile(filename_, currentToken().line_number)));
+        //                           sourceLine(currentToken().line_number)));
         //   nextToken();
         // }
     }
@@ -617,7 +617,7 @@ void Parser::parse()
             errors_.all_errors.emplace_back(errors::SyntaxError(
                 "Invalid token", "Expected: .data, .text, or <opcode> or <label>", filename_,
                 currentToken().line_number, currentToken().column_number,
-                GetLineFromFile(filename_, currentToken().line_number)));
+                sourceLine(currentToken().line_number)));
             nextToken();
         }
     }
@@ -665,7 +665,7 @@ void Parser::parse()
             errors_.all_errors.emplace_back(errors::SyntaxError(
                 "Invalid token", "Expected: .data, .text, .bss or <opcode> or <label>", filename_,
                 currentToken().line_number, currentToken().column_number,
-                GetLineFromFile(filename_, currentToken().line_number)));
+                sourceLine(currentToken().line_number)));
             nextToken();
         }
     }
@@ -693,7 +693,7 @@ void Parser::parse()
                         errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                             "Immediate value out of range", "Expected: -4096 <= imm <= 4095",
                             filename_, block.getLineNumber(), 0,
-                            GetLineFromFile(filename_, block.getLineNumber())));
+                            sourceLine(block.getLineNumber())));
                         continue;
                     }
                 }
@@ -704,7 +704,7 @@ void Parser::parse()
                     errors_.all_errors.emplace_back(errors::InvalidLabelRefError(
                         "Invalid label reference", "Label references data", filename_,
                         block.getLineNumber(), 0,
-                        GetLineFromFile(filename_, block.getLineNumber())));
+                        sourceLine(block.getLineNumber())));
                 }
             }
             else if (instruction_set::isValidJTypeInstruction(block.getOpcode()))
@@ -725,7 +725,7 @@ void Parser::parse()
                         errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                             "Immediate value out of range", "Expected: -1048576 <= imm <= 1048575",
                             filename_, block.getLineNumber(), 0,
-                            GetLineFromFile(filename_, block.getLineNumber())));
+                            sourceLine(block.getLineNumber())));
                         continue;
                     }
                 }
@@ -745,7 +745,7 @@ void Parser::parse()
                         errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                             "Immediate value out of range", "Expected: -1048576 <= imm <= 1048575",
                             filename_, block.getLineNumber(), 0,
-                            GetLineFromFile(filename_, block.getLineNumber())));
+                            sourceLine(block.getLineNumber())));
                         continue;
                     }
                 }
@@ -756,7 +756,7 @@ void Parser::parse()
                                        "Invalid label reference: Label references data"));
                 errors_.all_errors.emplace_back(errors::InvalidLabelRefError(
                     "Invalid label reference", "Label reference not found", filename_,
-                    block.getLineNumber(), 0, GetLineFromFile(filename_, block.getLineNumber())));
+                    block.getLineNumber(), 0, sourceLine(block.getLineNumber())));
                 continue;
             }
             intermediate_code_[index].first = block;
@@ -768,7 +768,7 @@ void Parser::parse()
                                    "Invalid label reference: Label reference not found"));
             errors_.all_errors.emplace_back(errors::InvalidLabelRefError(
                 "Invalid label reference", "Label reference not found", filename_,
-                block.getLineNumber(), 0, GetLineFromFile(filename_, block.getLineNumber())));
+                block.getLineNumber(), 0, sourceLine(block.getLineNumber())));
         }
     }
 }

@@ -74,7 +74,7 @@ bool Parser::parse_pseudo()
                 errors_.all_errors.emplace_back(errors::InvalidLabelRefError(
                     "Invalid label reference", "Expected: Label defined in .data section",
                     filename_, currentToken().line_number, currentToken().column_number,
-                    GetLineFromFile(filename_, currentToken().line_number)));
+                    sourceLine(currentToken().line_number)));
             }
             skipCurrentLine();
             // instruction_index_+=2;
@@ -244,7 +244,7 @@ bool Parser::parse_pseudo()
                 errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                     "Immediate value out of range", "Expected: -2^63 <= imm <= 2^63 - 1", filename_,
                     currentToken().line_number, currentToken().column_number,
-                    GetLineFromFile(filename_, currentToken().line_number)));
+                    sourceLine(currentToken().line_number)));
             }
             skipCurrentLine();
             return true;
@@ -913,7 +913,7 @@ bool Parser::parse_pseudo()
                     errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                         "Immediate value out of range", "Expected: -1048576 <= imm <= 1048575",
                         filename_, peekToken(1).line_number, peekToken(1).column_number,
-                        GetLineFromFile(filename_, peekToken(1).line_number)));
+                        sourceLine(peekToken(1).line_number)));
                     skipCurrentLine();
                     return true;
                 }

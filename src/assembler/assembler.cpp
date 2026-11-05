@@ -74,7 +74,7 @@ AssembledProgram assemble(const std::string &filename)
 
     std::vector<Token> tokens = lexer->getTokenList();
 
-    Parser parser(lexer->getFilename(), tokens);
+    Parser parser(lexer->getFilename(), tokens, lexer->getSourceLines());
     parser.parse();
 
     AssembledProgram program;
@@ -114,7 +114,7 @@ AssembledProgram assemble(std::istream& source)
     }
 
     std::vector<Token> tokens = lexer->getTokenList();
-    Parser parser(lexer->getFilename(), tokens);
+    Parser parser(lexer->getFilename(), tokens, lexer->getSourceLines());
     parser.parse();
 
     AssembledProgram program;
