@@ -360,7 +360,7 @@ static const std::unordered_set<std::string> valid_instructions = {
 
     "la", "nop", "li", "mv", "not", "neg", "negw", "sext.w", "seqz", "snez", "sltz", "sgtz", "beqz",
     "bnez", "blez", "bgez", "bltz", "bgtz", "bgt", "ble", "bgtu", "bleu", "j", "jr", "ret", "call",
-    "tail", "fence", "fence_i",
+    "tail", "fence", "fence.i",
 
     "mul", "mulh", "mulhsu", "mulhu", "div", "divu", "rem", "remu", "mulw", "divw", "divuw", "remw",
     "remuw",
@@ -429,7 +429,8 @@ static const std::unordered_set<std::string> I1TypeInstructions = {
 static const std::unordered_set<std::string> I2TypeInstructions = {"slli",  "srli",  "srai",
                                                                    "slliw", "srliw", "sraiw"};
 
-static const std::unordered_set<std::string> I3TypeInstructions = {"ecall", "ebreak"};
+static const std::unordered_set<std::string> I3TypeInstructions = {"ecall", "ebreak", "fence",
+                                                                   "fence.i"};
 
 static const std::unordered_set<std::string> STypeInstructions = {"sb", "sh", "sw", "sd"};
 
@@ -443,7 +444,7 @@ static const std::unordered_set<std::string> JTypeInstructions = {"jal"};
 static const std::unordered_set<std::string> PseudoInstructions = {
     "la",   "nop",  "li",   "mv",   "not",  "neg",  "negw", "sext.w", "seqz",    "snez",
     "sltz", "sgtz", "beqz", "bnez", "blez", "bgez", "bltz", "bgtz",   "bgt",     "ble",
-    "bgtu", "bleu", "j",    "jr",   "ret",  "call", "tail", "fence",  "fence_i",
+    "bgtu", "bleu", "j",    "jr",   "ret",  "call", "tail",
 };
 
 static const std::unordered_set<std::string> BaseExtensionInstructions = {
@@ -574,8 +575,10 @@ std::unordered_map<std::string, I1TypeInstructionEncoding> I1_type_instruction_e
 };
 
 std::unordered_map<std::string, I3TypeInstructionEncoding> I3_type_instruction_encoding_map = {
-    {"ecall", {0b1110011, 0b000, 0b0000000}},  // O
-    {"ebreak", {0b1110011, 0b001, 0b0000000}}, // O
+    {"ecall", {0b1110011, 0b000, 0b0000000, 0x000}},   // O
+    {"ebreak", {0b1110011, 0b000, 0b0000000, 0x001}},  // O
+    {"fence", {0b0001111, 0b000, 0b0000000, 0x0FF}},   // O  (pred = succ = iorw)
+    {"fence.i", {0b0001111, 0b001, 0b0000000, 0x000}}, // O
 };
 
 std::unordered_map<std::string, I2TypeInstructionEncoding> I2_type_instruction_encoding_map = {
@@ -822,7 +825,7 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
     {"csrrci", {SyntaxType::O_GPR_C_CSR_C_I}},
 
     {"fence", {SyntaxType::O}},
-    {"fence_i", {SyntaxType::O}},
+    {"fence.i", {SyntaxType::O}},
 
     ///////////////////////////////////////////////////////////////////////////////////
 
@@ -853,8 +856,6 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
     {"ret", {SyntaxType::PSEUDO}},
     {"call", {SyntaxType::PSEUDO}},
     {"tail", {SyntaxType::PSEUDO}},
-    {"fence", {SyntaxType::PSEUDO}},
-    {"fence_i", {SyntaxType::PSEUDO}},
 
     ///////////////////////////////////////////////////////////////////////////////////
     {"mul", {SyntaxType::O_GPR_C_GPR_C_GPR}},

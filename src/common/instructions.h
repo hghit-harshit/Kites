@@ -253,9 +253,11 @@ struct I3TypeInstructionEncoding
     std::bitset<7> opcode;
     std::bitset<3> funct3;
     std::bitset<7> funct7;
+    std::bitset<12> imm; ///< Fixed imm[11:0] field (1 for ebreak, pred/succ bits for fence).
 
-    I3TypeInstructionEncoding(unsigned int opcode, unsigned int funct3, unsigned int funct7)
-        : opcode(opcode), funct3(funct3), funct7(funct7)
+    I3TypeInstructionEncoding(unsigned int opcode, unsigned int funct3, unsigned int funct7,
+                              unsigned int imm = 0)
+        : opcode(opcode), funct3(funct3), funct7(funct7), imm(imm)
     {
     }
 };
