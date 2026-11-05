@@ -431,9 +431,9 @@ uint64_t RV5StageProcessorNHF::pipeline_execute_float()
     uint64_t reg2_value = id_ex_reg_.freg2_data;
     uint64_t reg3_value = id_ex_reg_.freg3_data;
 
-    if (funct7 == 0b1101000 || funct7 == 0b1111000 || opcode == 0b0000111 || opcode == 0b0100111)
+    if (instruction_set::fpReadsGprRs1(instruction))
     {
-        reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
+        reg1_value = forward_gpr(id_ex_reg_.rs1, id_ex_reg_.reg1_data);
     }
 
     if (id_ex_reg_.alu_src)
@@ -447,7 +447,7 @@ uint64_t RV5StageProcessorNHF::pipeline_execute_float()
     uint8_t fwd_c = 0;
 
     // EX/MEM forwarding (highest priority)
-    if (ex_mem_reg_.freg_write && (ex_mem_reg_.frd != 0))
+    if (ex_mem_reg_.freg_write) // f0 is a normal register: no frd != 0 check
     {
         if (ex_mem_reg_.frd == id_ex_reg_.frs1)
             fwd_a = 2;
@@ -458,7 +458,7 @@ uint64_t RV5StageProcessorNHF::pipeline_execute_float()
     }
 
     // MEM/WB forwarding (lower priority)
-    if (mem_wb_reg_.prev_freg_write && (mem_wb_reg_.prev_frd != 0))
+    if (mem_wb_reg_.prev_freg_write) // f0 is a normal register
     {
         if (mem_wb_reg_.prev_frd == id_ex_reg_.frs1 && fwd_a != 2)
             fwd_a = 1;
@@ -489,9 +489,9 @@ uint64_t RV5StageProcessorNHF::pipeline_execute_float()
 
     // Re-apply GPR-read override (for conversion ops) after forwarding decision: if instruction
     // requires GPR, use it.
-    if (funct7 == 0b1101000 || funct7 == 0b1111000 || opcode == 0b0000111 || opcode == 0b0100111)
+    if (instruction_set::fpReadsGprRs1(instruction))
     {
-        reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
+        reg1_value = forward_gpr(id_ex_reg_.rs1, id_ex_reg_.reg1_data);
     }
 
     // Re-apply immediate if ALUSrc was set (immediates take precedence for reg2)
@@ -539,9 +539,9 @@ uint64_t RV5StageProcessorNHF::pipeline_execute_double()
     uint64_t reg2_value = id_ex_reg_.freg2_data;
     uint64_t reg3_value = id_ex_reg_.freg3_data;
 
-    if (funct7 == 0b1101001 || funct7 == 0b1111001 || opcode == 0b0000111 || opcode == 0b0100111)
+    if (instruction_set::fpReadsGprRs1(instruction))
     {
-        reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
+        reg1_value = forward_gpr(id_ex_reg_.rs1, id_ex_reg_.reg1_data);
     }
 
     if (id_ex_reg_.alu_src)
@@ -556,7 +556,7 @@ uint64_t RV5StageProcessorNHF::pipeline_execute_double()
     uint8_t fwd_b = 0;
     uint8_t fwd_c = 0;
 
-    if (ex_mem_reg_.freg_write && (ex_mem_reg_.frd != 0))
+    if (ex_mem_reg_.freg_write) // f0 is a normal register: no frd != 0 check
     {
         if (ex_mem_reg_.frd == id_ex_reg_.frs1)
             fwd_a = 2;
@@ -566,7 +566,7 @@ uint64_t RV5StageProcessorNHF::pipeline_execute_double()
             fwd_c = 2;
     }
 
-    if (mem_wb_reg_.prev_freg_write && (mem_wb_reg_.prev_frd != 0))
+    if (mem_wb_reg_.prev_freg_write) // f0 is a normal register
     {
         if (mem_wb_reg_.prev_frd == id_ex_reg_.frs1 && fwd_a != 2)
             fwd_a = 1;
@@ -595,9 +595,9 @@ uint64_t RV5StageProcessorNHF::pipeline_execute_double()
                                                  : mem_wb_reg_.prev_f_alu_result;
 
     // Re-apply GPR-read override for specific instructions
-    if (funct7 == 0b1101001 || funct7 == 0b1111001 || opcode == 0b0000111 || opcode == 0b0100111)
+    if (instruction_set::fpReadsGprRs1(instruction))
     {
-        reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
+        reg1_value = forward_gpr(id_ex_reg_.rs1, id_ex_reg_.reg1_data);
     }
 
     // Re-apply immediate for reg2

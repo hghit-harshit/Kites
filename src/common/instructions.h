@@ -516,6 +516,15 @@ bool isValidFDSTypeInstruction(const std::string &instruction);
 bool isFInstruction(const uint32_t &instruction);
 bool isDInstruction(const uint32_t &instruction);
 
+/// F/D instruction whose destination is an integer register (feq/flt/fle, fcvt to int,
+/// fmv.x.*, fclass).
+bool fpWritesGpr(uint32_t instruction);
+/// F/D instruction whose destination is a floating-point register (not stores, not fpWritesGpr).
+bool fpWritesFpr(uint32_t instruction);
+/// F/D instruction that reads an integer register through rs1 (load/store base address,
+/// fcvt from int, fmv.*.x).
+bool fpReadsGprRs1(uint32_t instruction);
+
 std::string getExpectedSyntaxes(const std::string &opcode);
 
 /**

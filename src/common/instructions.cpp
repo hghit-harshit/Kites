@@ -1170,6 +1170,62 @@ bool isDInstruction(const uint32_t &instruction)
     return false;
 }
 
+bool fpWritesGpr(uint32_t instruction)
+{
+    if ((instruction & 0b1111111) != 0b1010011)
+    {
+        return false;
+    }
+    switch ((instruction >> 25) & 0b1111111)
+    {
+    case 0b1010000: // feq/flt/fle.s
+    case 0b1010001: // feq/flt/fle.d
+    case 0b1100000: // fcvt.{w,wu,l,lu}.s
+    case 0b1100001: // fcvt.{w,wu,l,lu}.d
+    case 0b1110000: // fmv.x.w, fclass.s
+    case 0b1110001: // fmv.x.d, fclass.d
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool fpReadsGprRs1(uint32_t instruction)
+{
+    const uint8_t opcode = instruction & 0b1111111;
+    if (opcode == 0b0000111 || opcode == 0b0100111)
+    {
+        return true; // flw/fld/fsw/fsd: rs1 is the base address
+    }
+    if (opcode != 0b1010011)
+    {
+        return false;
+    }
+    switch ((instruction >> 25) & 0b1111111)
+    {
+    case 0b1101000: // fcvt.s.{w,wu,l,lu}
+    case 0b1101001: // fcvt.d.{w,wu,l,lu}
+    case 0b1111000: // fmv.w.x
+    case 0b1111001: // fmv.d.x
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool fpWritesFpr(uint32_t instruction)
+{
+    if (!isFInstruction(instruction) && !isDInstruction(instruction))
+    {
+        return false;
+    }
+    if ((instruction & 0b1111111) == 0b0100111)
+    {
+        return false; // fsw/fsd write memory
+    }
+    return !fpWritesGpr(instruction);
+}
+
 std::string getExpectedSyntaxes(const std::string &opcode)
 {
     static const std::unordered_map<std::string, std::string> opcodeSyntaxMap = {

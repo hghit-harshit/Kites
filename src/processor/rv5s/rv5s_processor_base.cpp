@@ -209,8 +209,9 @@ void RV5StageVM_Base::pipeline_decode()
     id_ex_reg_.rd = (instruction >> 7) & 0x1F;
 
     // Extract FP register indices for F/D instructions
-    if (instruction_set::isFInstruction(instruction) ||
-        instruction_set::isDInstruction(instruction))
+    const bool is_fp = instruction_set::isFInstruction(instruction) ||
+                       instruction_set::isDInstruction(instruction);
+    if (is_fp)
     {
         id_ex_reg_.frs1 = (instruction >> 15) & 0x1F;
         id_ex_reg_.frs2 = (instruction >> 20) & 0x1F;
@@ -221,20 +222,24 @@ void RV5StageVM_Base::pipeline_decode()
         id_ex_reg_.freg2_data = registers_.ReadFpr(id_ex_reg_.frs2);
         id_ex_reg_.freg3_data = registers_.ReadFpr(id_ex_reg_.frs3);
 
-
-        // For load instructions, rs1 is a GPR base address.
-        // For integer-to-float conversions / moves, rs1 is also a GPR source.
+        // Loads/stores (base address), fcvt-from-int and fmv.*.x read a GPR via rs1.
+        // Latch it here so EX can forward it like any integer operand. rs2 is an FPR.
+        id_ex_reg_.reg1_data = registers_.ReadGpr(id_ex_reg_.rs1);
+        id_ex_reg_.reg2_data = 0;
     }
     else
     {
+        id_ex_reg_.frs1 = id_ex_reg_.frs2 = id_ex_reg_.frs3 = id_ex_reg_.frd = 0;
         id_ex_reg_.reg1_data = registers_.ReadGpr(id_ex_reg_.rs1);
         id_ex_reg_.reg2_data = registers_.ReadGpr(id_ex_reg_.rs2);
     }
 
-    // Pass all control signals to the next stage
-    id_ex_reg_.reg_write  = control_unit_.GetRegWrite();
-    id_ex_reg_.freg_write = instruction_set::isFInstruction(instruction) ||
-                            instruction_set::isDInstruction(instruction);
+    // Pass all control signals to the next stage.
+    // reg_write = writes a GPR; freg_write = writes an FPR. They are mutually exclusive, so
+    // GPR forwarding/hazard logic never acts on an FP destination and vice versa.
+    id_ex_reg_.reg_write  = is_fp ? instruction_set::fpWritesGpr(instruction)
+                                  : control_unit_.GetRegWrite();
+    id_ex_reg_.freg_write = instruction_set::fpWritesFpr(instruction);
     id_ex_reg_.branch     = control_unit_.GetBranch();
     id_ex_reg_.alu_src    = control_unit_.GetAluSrc();
     id_ex_reg_.mem_read   = control_unit_.GetMemRead();
@@ -580,7 +585,7 @@ void RV5StageVM_Base::pipeline_writeback()
         instructions_retired_++;
     }
 
-    if (!mem_wb_reg_.reg_write)
+    if (!mem_wb_reg_.reg_write && !mem_wb_reg_.freg_write)
     {
         return;
     }
@@ -829,11 +834,12 @@ bool RV5StageVM_Base::is_pipeline_drained() const
         return false;
     // EX/MEM: Check for architectural side effects (Reg Write, Mem Read, Mem Write).
     // A NOP will have all these control signals disabled (false).
-    if (ex_mem_reg_.reg_write || ex_mem_reg_.mem_read || ex_mem_reg_.mem_write)
+    if (ex_mem_reg_.reg_write || ex_mem_reg_.freg_write || ex_mem_reg_.mem_read ||
+        ex_mem_reg_.mem_write)
         return false;
 
-    // MEM/WB: Check for final architectural side effect (Reg Write).
-    if (mem_wb_reg_.reg_write)
+    // MEM/WB: Check for final architectural side effect (GPR or FPR write).
+    if (mem_wb_reg_.reg_write || mem_wb_reg_.freg_write)
         return false;
 
     return true;

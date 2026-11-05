@@ -75,11 +75,11 @@ void RV5SControlUnit::SetControlSignals(uint32_t instruction)
         alu_op_ = 2; // Decode as R-type
         break;
 
-    // F and D Extensions
-    case 0b0000111: // F-Type Load (FLW, FLD)
+    // F and D Extensions. reg_write_ means "writes a GPR"; FP-register writes are
+    // tracked separately (ID_EX freg_write) so forwarding/hazards never confuse xN and fN.
+    case 0b0000111: // F-Type Load (FLW, FLD) -> FPR
         alu_src_ = true;
         mem_to_reg_ = true;
-        reg_write_ = true;
         mem_read_ = true;
         alu_op_ = 0; // ALU performs ADD for address calculation
         break;
@@ -89,14 +89,13 @@ void RV5SControlUnit::SetControlSignals(uint32_t instruction)
         alu_op_ = 0; // ALU performs ADD for address calculation
         break;
     case 0b1010011: // F-Type R-type (FADD, FSUB, etc.)
-        reg_write_ = true;
+        reg_write_ = instruction_set::fpWritesGpr(instruction); // feq, fcvt.w, fmv.x, fclass
         alu_op_ = 3; // ALUOp code '3' for FP R-type decode
         break;
-    case 0b1000011: // FMADD
-    case 0b1000111: // FMSUB
-    case 0b1001011: // FNMADD
-    case 0b1001111: // FNMSUB
-        reg_write_ = true;
+    case 0b1000011: // FMADD  -> FPR
+    case 0b1000111: // FMSUB  -> FPR
+    case 0b1001011: // FNMSUB -> FPR
+    case 0b1001111: // FNMADD -> FPR
         alu_op_ = 4; // ALUOp code '4' for FMA-type decode
         break;
     }
