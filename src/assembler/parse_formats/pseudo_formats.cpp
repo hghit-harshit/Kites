@@ -137,6 +137,19 @@ bool Parser::parse_pseudo()
                 instruction_number_line_number_mapping_[instruction_index_++] = addiBlock.getLineNumber();
             };
 
+            auto emitAddiw = [&](const std::string &rd, int64_t imm)
+            {
+                ICUnit addiwBlock;
+                addiwBlock.setLineNumber(currentToken().line_number);
+                addiwBlock.setInstructionIndex(instruction_index_);
+                addiwBlock.setOpcode("addiw");
+                addiwBlock.setRd(rd);
+                addiwBlock.setRs1(rd);
+                addiwBlock.setImm(std::to_string(imm));
+                intermediate_code_.emplace_back(addiwBlock, true);
+                instruction_number_line_number_mapping_[instruction_index_++] = addiwBlock.getLineNumber();
+            };
+
             auto emitLui = [&](const std::string &rd, int64_t top20)
             {
                 ICUnit luiBlock;
@@ -179,11 +192,15 @@ bool Parser::parse_pseudo()
                     return;
                 }
 
+                // On RV64, lui sign-extends bit 31. For values near INT32_MAX the
+                // rounded upper part is 0x80000 (negative), so the low part must be
+                // added with a 32-bit add (addiw) that wraps and re-sign-extends,
+                // exactly as GNU as does. addi would leave the upper 32 bits set.
                 int64_t upper = (signedValue + 2048) >> 12;
                 int64_t lower = signedValue - (upper << 12);
-                emitLui(rd, upper);
+                emitLui(rd, upper & 0xFFFFF);
                 if (lower != 0)
-                    emitAddi(rd, lower);
+                    emitAddiw(rd, lower);
             };
 
             auto countTrailingZeros64 = [](uint64_t v) -> int
