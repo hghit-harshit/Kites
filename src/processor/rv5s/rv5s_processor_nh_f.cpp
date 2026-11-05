@@ -294,14 +294,12 @@ void RV5StageProcessorNHF::pipeline_execute()
                                                   : mem_wb_reg_.prev_alu_result;
         }
 
-        // Re-apply immediate value check after forwarding for ALU_B if needed
-        if (id_ex_reg_.alu_src && id_ex_reg_.alu_op != 0)
+        // Re-apply the immediate after forwarding: whenever ALUSrc is set, operand B is the
+        // immediate. (JALR has alu_op 0 and no memory access; the old condition let a
+        // forwarded rs2-field value replace its offset.)
+        if (id_ex_reg_.alu_src)
         {
             alu_in2 = static_cast<uint64_t>(id_ex_reg_.imm);
-        }
-        else if (id_ex_reg_.alu_src && (id_ex_reg_.mem_read || id_ex_reg_.mem_write))
-        {
-            alu_in2 = id_ex_reg_.alu_src ? static_cast<uint64_t>(id_ex_reg_.imm) : alu_in2;
         }
 
         // --- EXECUTION ---
