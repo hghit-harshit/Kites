@@ -110,10 +110,18 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
     uint8_t opcode = instruction & 0b1111111;
     uint8_t funct3 = (instruction >> 12) & 0b111;
     uint8_t funct7 = (instruction >> 25) & 0b1111111;
+    uint8_t funct6 = (instruction >> 26) & 0b111111;
     uint8_t funct5 = (instruction >> 20) & 0b11111;
     uint8_t funct2 = (instruction >> 25) & 0b11;
 
-    switch (alu_op_)
+    // Derive ALUOp from the instruction being executed. The member alu_op_ holds
+    // whatever the Decode stage saw last (a younger instruction, or stale state
+    // after an undo), so it must not be used here.
+    RV5SControlUnit decoded;
+    decoded.SetControlSignals(instruction);
+    const uint8_t aluOp = decoded.alu_op_;
+
+    switch (aluOp)
     {
     case 0: // ALUOp=0 -> Must be ADD (for Loads, Stores, JALR, LUI, AUIPC).
         return alu::AluOp::ADD;
@@ -157,8 +165,8 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
                 return alu::AluOp::AND; // ANDI
             case 0b001:
                 return alu::AluOp::SLL; // SLLI
-            case 0b101:                  // For SRAI/SRLI, we need to check funct7
-                if (funct7 == 0b0100000)
+            case 0b101: // SRAI/SRLI: RV64 shamt is 6 bits, so bit 25 is shamt[5]; check funct6
+                if (funct6 == 0b010000)
                     return alu::AluOp::SRA; // SRAI
                 return alu::AluOp::SRL;     // SRLI
             default:
