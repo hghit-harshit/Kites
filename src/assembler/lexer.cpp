@@ -221,8 +221,9 @@ Token Lexer::number()
     }
     else if (std::regex_match(value, float_regex))
     {
-
-        return {TokenType::FLOAT, std::to_string(std::stod(value)), line_number_, start_column};
+        // Keep the literal text as written: the parser converts it once with stof/stod.
+        // Round-tripping through std::to_string here kept only 6 decimal places.
+        return {TokenType::FLOAT, value, line_number_, start_column};
     }
 
     return {TokenType::INVALID, "Invalid", line_number_, start_column};
