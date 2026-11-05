@@ -7,6 +7,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cfenv>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -14,6 +15,7 @@
 #include <string>
 
 #include "assembler/assembler.h"
+#include "processor/alu.h"
 #include "processor/rv5s/rv5s_processor_h_f.h"
 #include "processor/rv5s/rv5s_processor_h_nf.h"
 #include "processor/rv5s/rv5s_processor_nh_f.h"
@@ -120,6 +122,29 @@ TYPED_TEST(FpFmaConversion, PrecisionConversions)
     auto &r = vm->registers_;
     EXPECT_EQ(r.ReadFpr(17), doubleBits(0.5)) << "fcvt.d.s";
     EXPECT_EQ(static_cast<uint32_t>(r.ReadFpr(18)), floatBits(1.25f)) << "fcvt.s.d";
+}
+
+// The FP ALU switches the host rounding mode per instruction; it must restore it on
+// every return path (address adds for flw/fld, fmv and fclass return early).
+TEST(FpAluRoundingMode, HostRoundingModeIsRestored)
+{
+    using Kites::alu::Alu;
+    using Kites::alu::AluOp;
+    const int original = std::fegetround();
+    for (uint8_t rm = 0; rm <= 4; ++rm)
+    {
+        SCOPED_TRACE(static_cast<int>(rm));
+        (void)Alu::fpexecute(AluOp::ADD, 0x1000, 8, 0, rm);
+        EXPECT_EQ(std::fegetround(), original) << "fpexecute ADD";
+        (void)Alu::dfpexecute(AluOp::ADD, 0x1000, 8, 0, rm);
+        EXPECT_EQ(std::fegetround(), original) << "dfpexecute ADD";
+        (void)Alu::dfpexecute(AluOp::FCLASS_D, 0, 0, 0, rm);
+        EXPECT_EQ(std::fegetround(), original) << "dfpexecute FCLASS_D";
+        (void)Alu::dfpexecute(AluOp::FMV_D_X, 1, 0, 0, rm);
+        EXPECT_EQ(std::fegetround(), original) << "dfpexecute FMV_D_X";
+        (void)Alu::fpexecute(AluOp::FADD_S, 0x3F800000, 0x3F800000, 0, rm);
+        EXPECT_EQ(std::fegetround(), original) << "fpexecute FADD_S";
+    }
 }
 
 TYPED_TEST(FpFmaConversion, IntegerToDoubleConversions)

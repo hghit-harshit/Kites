@@ -14,6 +14,20 @@ namespace Kites
 {
 namespace alu
 {
+namespace
+{
+/// Restores the host floating-point rounding mode when it goes out of scope, so no
+/// return path of fpexecute/dfpexecute can leak the mode it selected for one instruction.
+struct RoundingModeGuard
+{
+    int saved = std::fegetround();
+    RoundingModeGuard() = default;
+    RoundingModeGuard(const RoundingModeGuard &) = delete;
+    RoundingModeGuard &operator=(const RoundingModeGuard &) = delete;
+    ~RoundingModeGuard() { std::fesetround(saved); }
+};
+} // namespace
+
 
 [[nodiscard]] std::pair<uint64_t, bool> Alu::execute(AluOp op, uint64_t a, uint64_t b)
 {
@@ -295,6 +309,7 @@ namespace alu
     uint8_t fcsr = 0;
 
     int original_rm = std::fegetround();
+    const RoundingModeGuard rounding_mode_guard; // restores original_rm on every return
 
     switch (rm)
     {
@@ -674,6 +689,7 @@ namespace alu
     uint8_t fcsr = 0;
 
     int original_rm = std::fegetround();
+    const RoundingModeGuard rounding_mode_guard; // restores original_rm on every return
 
     switch (rm)
     {
