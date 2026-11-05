@@ -875,7 +875,7 @@ struct RoundingModeGuard
         result = static_cast<double>(la);
         break;
     }
-    case AluOp::FCVT_S_LU:
+    case AluOp::FCVT_D_LU:
     {
         auto ula = static_cast<uint64_t>(ina);
         result = static_cast<double>(ula);
@@ -1017,14 +1017,22 @@ struct RoundingModeGuard
     }
     case AluOp::FCVT_D_S:
     {
-        auto fa = static_cast<float>(ina);
+        // ina holds single-precision bits in its low word: reinterpret, then widen.
+        const auto single_bits = static_cast<uint32_t>(ina);
+        float fa;
+        std::memcpy(&fa, &single_bits, sizeof(float));
         result = static_cast<double>(fa);
         break;
     }
     case AluOp::FCVT_S_D:
     {
-        auto da = static_cast<double>(ina);
-        result = static_cast<float>(da);
+        // a already holds the double; narrow it (raises inexact/overflow as needed) and
+        // return single-precision bits in the low word, like every other .s result.
+        const float narrowed = static_cast<float>(a);
+        uint32_t single_bits;
+        std::memcpy(&single_bits, &narrowed, sizeof(float));
+        int_result = single_bits;
+        is_int_result = true;
         break;
     }
     case AluOp::FMV_D_X:

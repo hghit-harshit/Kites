@@ -379,6 +379,10 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
             return alu::AluOp::FMV_W_X;
         case 0b1111001:
             return alu::AluOp::FMV_D_X;
+        case 0b0100000: // FCVT.S.D
+            return alu::AluOp::FCVT_S_D;
+        case 0b0100001: // FCVT.D.S
+            return alu::AluOp::FCVT_D_S;
         }
         break;
 

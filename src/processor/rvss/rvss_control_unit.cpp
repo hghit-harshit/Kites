@@ -581,12 +581,16 @@ alu::AluOp RVSSControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
     }
 
         // F extension + D extension
-        // TODO: correct this
 
+    // Fused multiply-add (R4 format): fmt in funct2 selects S (00) or D (01).
     case 0b1000011:
-    {
-        return alu::AluOp::FMADD_S;
-    }
+        return (funct2 == 0b00) ? alu::AluOp::FMADD_S : alu::AluOp::FMADD_D;
+    case 0b1000111:
+        return (funct2 == 0b00) ? alu::AluOp::FMSUB_S : alu::AluOp::FMSUB_D;
+    case 0b1001011:
+        return (funct2 == 0b00) ? alu::AluOp::FNMSUB_S : alu::AluOp::FNMSUB_D;
+    case 0b1001111:
+        return (funct2 == 0b00) ? alu::AluOp::FNMADD_S : alu::AluOp::FNMADD_D;
 
     case 0b1010011:
     {
@@ -868,66 +872,10 @@ alu::AluOp RVSSControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
             }
             break;
         }
-        case 0b1000011:
-        { // FMADD.S, FMADD.D
-            switch (funct2)
-            {
-            case 0b00:
-            { // FMADD.S
-                return alu::AluOp::FMADD_S;
-            }
-            case 0b01:
-            { // FMADD.D
-                return alu::AluOp::FMADD_D;
-            }
-            }
-            break;
-        }
-        case 0b1000111:
-        { // FMSUB.S, FMSUB.D
-            switch (funct2)
-            {
-            case 0b00:
-            { // FMSUB.S
-                return alu::AluOp::FMSUB_S;
-            }
-            case 0b01:
-            { // FMSUB.D
-                return alu::AluOp::FMSUB_D;
-            }
-            }
-            break;
-        }
-        case 0b1001011:
-        { // FNMSUB.S, FNMSUB.D
-            switch (funct2)
-            {
-            case 0b00:
-            { // FNMSUB.S
-                return alu::AluOp::FNMSUB_S;
-            }
-            case 0b01:
-            { // FNMSUB.D
-                return alu::AluOp::FNMSUB_D;
-            }
-            }
-            break;
-        }
-        case 0b1001111:
-        { // FNMADD.S, FNMADD.D
-            switch (funct2)
-            {
-            case 0b00:
-            { // FNMADD.S
-                return alu::AluOp::FNMADD_S;
-            }
-            case 0b01:
-            { // FNMADD.D
-                return alu::AluOp::FNMADD_D;
-            }
-            }
-            break;
-        }
+        case 0b0100000: // FCVT.S.D
+            return alu::AluOp::FCVT_S_D;
+        case 0b0100001: // FCVT.D.S
+            return alu::AluOp::FCVT_D_S;
         }
         break;
     }
