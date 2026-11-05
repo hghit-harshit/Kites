@@ -154,7 +154,7 @@ void RVSSProcessor::Run()
     {
         emit processorClockedSignal(processor_state_);
     }
-    if (program_counter_ >= program_size_)
+    if (!stop_requested_ && program_counter_ >= program_size_)
     {
         output_status_ = "VM_PROGRAM_END";
     }
@@ -1091,7 +1091,11 @@ void RVSSProcessor::DebugRun()
                 redo_stack_.pop();
             }
             current_delta_ = RVSingleStageStepDelta();
-            if (program_counter_ < program_size_)
+            if (stop_requested_)
+            {
+                // A syscall that stopped the VM (e.g. exit) already set the status; keep it.
+            }
+            else if (program_counter_ < program_size_)
             {
                 std::cout << "VM_STEP_COMPLETED" << std::endl;
                 output_status_ = "VM_STEP_COMPLETED";
@@ -1117,7 +1121,7 @@ void RVSSProcessor::DebugRun()
             break;
         }
     }
-    if (program_counter_ >= program_size_)
+    if (!stop_requested_ && program_counter_ >= program_size_)
     {
         std::cout << "VM_PROGRAM_END" << std::endl;
         output_status_ = "VM_PROGRAM_END";
@@ -1152,7 +1156,11 @@ void RVSSProcessor::Step()
 
         current_delta_ = RVSingleStageStepDelta();
 
-        if (program_counter_ < program_size_)
+        if (stop_requested_)
+        {
+            // A syscall that stopped the VM (e.g. exit) already set the status; keep it.
+        }
+        else if (program_counter_ < program_size_)
         {
             std::cout << "VM_STEP_COMPLETED" << std::endl;
             output_status_ = "VM_STEP_COMPLETED";
