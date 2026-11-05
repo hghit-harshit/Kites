@@ -165,6 +165,7 @@ int32_t ProcessorBase::ImmGenerator(uint32_t instruction)
     {
     /*** I-TYPE (Load, alu Immediate, JALR, FPU Loads) ***/
     case 0b0010011: // alu Immediate (ADDI, SLTI, SLTIU, XORI, ORI, ANDI, SLLI, SRLI, SRAI)
+    case 0b0011011: // alu Immediate 32-bit (ADDIW, SLLIW, SRLIW, SRAIW)
     case 0b0000011: // Load (LB, LH, LW, LD, LBU, LHU, LWU)
     case 0b1100111: // JALR
     case 0b0001111: // FENCE
