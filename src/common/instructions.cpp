@@ -502,7 +502,7 @@ static const std::unordered_set<std::string> FDExtensionITypeInstructions = {"fl
 static const std::unordered_set<std::string> FDExtensionSTypeInstructions = {"fsw", "fsd"};
 
 static const std::unordered_set<std::string> FExtensionInstructions = {
-    "flw",       "fsw",      "fmadd.s",  "fmsub.d",   "fnmsub.s", "fnmadd.s",
+    "flw",       "fsw",      "fmadd.s",  "fmsub.s",   "fnmsub.s", "fnmadd.s",
     "fadd.s",    "fsub.s",   "fmul.s",   "fdiv.s",    "fsqrt.s",  "fsgnj.s",
     "fsgnjn.s",  "fsgnjx.s", "fmin.s",   "fmax.s",    "fcvt.w.s", "fcvt.wu.s",
     "fmv.x.w",   "feq.s",    "flt.s",    "fle.s",     "fclass.s", "fcvt.s.w",
@@ -1121,7 +1121,13 @@ bool isFInstruction(const uint32_t &instruction)
             }
             return true;
         }
+        break;
     }
+    case 0b1000011: // fmadd
+    case 0b1000111: // fmsub
+    case 0b1001011: // fnmsub
+    case 0b1001111: // fnmadd
+        return (funct7 & 0b11) == 0b00; // fmt = S
     default:
         break;
     }
@@ -1156,6 +1162,7 @@ bool isDInstruction(const uint32_t &instruction)
         {
             return true; // fcvt.s.d
         }
+        break;
     }
     default:
         break;
