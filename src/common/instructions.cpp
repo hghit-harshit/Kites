@@ -775,6 +775,17 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
     {"slt", {SyntaxType::O_GPR_C_GPR_C_GPR}},
     {"sltu", {SyntaxType::O_GPR_C_GPR_C_GPR}},
 
+    {"addw", {SyntaxType::O_GPR_C_GPR_C_GPR}},
+    {"subw", {SyntaxType::O_GPR_C_GPR_C_GPR}},
+    {"sllw", {SyntaxType::O_GPR_C_GPR_C_GPR}},
+    {"srlw", {SyntaxType::O_GPR_C_GPR_C_GPR}},
+    {"sraw", {SyntaxType::O_GPR_C_GPR_C_GPR}},
+
+    {"addiw", {SyntaxType::O_GPR_C_GPR_C_I}},
+    {"slliw", {SyntaxType::O_GPR_C_GPR_C_I}},
+    {"srliw", {SyntaxType::O_GPR_C_GPR_C_I}},
+    {"sraiw", {SyntaxType::O_GPR_C_GPR_C_I}},
+
     {"addi", {SyntaxType::O_GPR_C_GPR_C_I}},
     {"xori", {SyntaxType::O_GPR_C_GPR_C_I}},
     {"ori", {SyntaxType::O_GPR_C_GPR_C_I}},
