@@ -372,6 +372,11 @@ void RVSSProcessor::ExecuteDouble()
 
     int32_t imm = ImmGenerator(current_instruction_);
 
+    if (rm == 0b111) // dynamic rounding mode: use frm, like ExecuteFloat
+    {
+        rm = registers_.ReadCsr(0x002);
+    }
+
     uint64_t reg1_value = registers_.ReadFpr(rs1);
     uint64_t reg2_value = registers_.ReadFpr(rs2);
     uint64_t reg3_value = registers_.ReadFpr(rs3);
