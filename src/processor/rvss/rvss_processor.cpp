@@ -501,7 +501,7 @@ void RVSSProcessor::HandleSyscall()
         }
         output_status_ = "VM_EXIT";
         std::cout << "Exited with exit code: " << registers_.ReadGpr(10) << std::endl;
-        exit(0); // Exit the program
+        // stop_requested_ ends the run loop; never call exit() here, it kills the GUI.
         break;
     }
     case SYSCALL_READ:
