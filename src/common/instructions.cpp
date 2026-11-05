@@ -486,7 +486,7 @@ static const std::unordered_set<std::string> FDExtensionR2TypeInstructions = {
 static const std::unordered_set<std::string> FDExtensionR3TypeInstructions = {
     "fmv.x.w",
     "fmv.w.x",
-    "fclass.s"
+    "fclass.s",
     "fclass.d",
     "fmv.x.d",
     "fmv.d.x",
