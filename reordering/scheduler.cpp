@@ -6,7 +6,7 @@
 
 // helper function
 
-int scheduler::delay(dpd_format type, parsed_instruction a, parsed_instruction)
+int scheduler::delay(dpd_format type, parsed_instruction a)
 {
     switch (type)
     {
@@ -20,6 +20,17 @@ int scheduler::delay(dpd_format type, parsed_instruction a, parsed_instruction)
     default:
         return 1;
     }
+}
+
+// helper function
+
+std::vector<parsed_instruction>
+scheduler::flatten(std::vector<std::vector<parsed_instruction>> current)
+{
+    std::vector<parsed_instruction> p;
+    for (const auto &blk : current)
+        p.insert(p.end(), blk.begin(), blk.end());
+    return p;
 }
 
 scheduler::scheduler(std::vector<std::vector<parsed_instruction>> blocks,
@@ -47,7 +58,7 @@ std::vector<int> scheduler::block_scheduler(const std::vector<parsed_instruction
         {
             if (block[k][l].frmt != dpd_format::NA)
             {
-                dly[k][l] = delay(block[k][l].frmt, instrs[k], instrs[l]);
+                dly[k][l] = delay(block[k][l].frmt, instrs[k]);
                 indeg[l]++;
             }
         }
@@ -99,6 +110,24 @@ std::vector<int> scheduler::block_scheduler(const std::vector<parsed_instruction
     return reordered_block;
 }
 
+int scheduler::program_cycles(const std::vector<parsed_instruction> &program)
+{
+    std::vector<int> avail(32, 0); // cycle at which each register's latest value is usable
+    int prev = -1;
+    for (const parsed_instruction &x : program)
+    {
+        int t = prev + 1;
+        if (x.rs1 > 0)
+            t = std::max(t, avail[x.rs1]);
+        if (x.rs2 > 0)
+            t = std::max(t, avail[x.rs2]);
+        if (x.rd > 0)
+            avail[x.rd] = t + delay(dpd_format::RAW, x);
+        prev = t;
+    }
+    return prev + 1;
+}
+
 int scheduler::block_cycles(std::vector<parsed_instruction> &instrs,
                             std::vector<std::vector<depend_description>> &block,
                             std::vector<int> &order)
@@ -110,7 +139,7 @@ int scheduler::block_cycles(std::vector<parsed_instruction> &instrs,
         int t = cycle + 1;
         for (int k = 0; k < node; k++)
             if (block[k][node].frmt != dpd_format::NA && issue[k] != -1)
-                t = std::max(t, issue[k] + delay(block[k][node].frmt, instrs[k], instrs[node]));
+                t = std::max(t, issue[k] + delay(block[k][node].frmt, instrs[k]));
         issue[node] = t;
         cycle = t;
     }
@@ -119,40 +148,30 @@ int scheduler::block_cycles(std::vector<parsed_instruction> &instrs,
 
 std::vector<parsed_instruction> scheduler::code_scheduler(int *cycles_before, int *cycles_after)
 {
-    std::vector<parsed_instruction> program;
 
-    int total_before = 0;
-    int total_after = 0;
-    for (int b = 0; b < blocks.size(); b++)
+    std::vector<std::vector<parsed_instruction>> current = blocks;
+
+    int total_before = program_cycles(flatten(current));
+    for (size_t b = 0; b < blocks.size(); b++)
     {
-        std::vector<parsed_instruction> &instrs = blocks[b];
-        std::vector<std::vector<depend_description>> &dep = depend_matrix_full[b];
+        std::vector<int> scheduled_order = block_scheduler(blocks[b], depend_matrix_full[b]);
 
-        std::vector<int> original_order(instrs.size());
-        std::iota(original_order.begin(), original_order.end(), 0);
+        std::vector<parsed_instruction> original_block = current[b];
+        const int before = program_cycles(flatten(current));
 
-        std::vector<int> scheduled_order = block_scheduler(instrs, dep);
+        for (size_t k = 0; k < scheduled_order.size(); k++)
+            current[b][k] = blocks[b][scheduled_order[k]];
+        const int after = program_cycles(flatten(current));
 
-        int cycles_before_re = block_cycles(instrs, dep, original_order);
-        int cycles_after_re = block_cycles(instrs, dep, scheduled_order);
-
-        std::vector<int> final_order = original_order;
-
-        if (cycles_after_re < cycles_before_re)
-        {
-            final_order = scheduled_order;
-        }
-        total_after += std::min(cycles_after_re,cycles_before_re);
-        total_before += cycles_before_re;
-
-        for (int order : final_order)
-        {
-            program.push_back(instrs[order]);
-        }
+        // keep the new order only if the WHOLE program gets strictly faster
+        if (!(after < before))
+            current[b] = original_block;
     }
 
-    *cycles_after = total_after;
-    *cycles_before = total_before;
-
+    std::vector<parsed_instruction> program = flatten(current);
+    if (cycles_before)
+        *cycles_before = total_before;
+    if (cycles_after)
+        *cycles_after = program_cycles(program);
     return program;
 }
