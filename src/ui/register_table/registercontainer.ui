@@ -28,7 +28,17 @@
      </item>
      <item>
       <property name="text">
-       <string>Decimal/Float</string>
+       <string>Signed Decimal</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unsigned Decimal</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Float</string>
       </property>
      </item>
     </widget>

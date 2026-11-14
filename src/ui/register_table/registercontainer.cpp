@@ -55,9 +55,17 @@ RegisterContainer::RegisterContainer(QWidget *parent, RegisterFile *regfile)
                 {
                     m_registerModel->setDisplayBase(Base::Binary);
                 }
-                else if (text == "Decimal/Float")
+                else if (text == "Signed Decimal")
                 {
-                    m_registerModel->setDisplayBase(Base::Decimal);
+                    m_registerModel->setDisplayBase(Base::SignedDecimal);
+                }
+                else if (text == "Unsigned Decimal")
+                {
+                    m_registerModel->setDisplayBase(Base::UnsignedDecimal);
+                }
+                else if (text == "Float")
+                {
+                    m_registerModel->setDisplayBase(Base::Float);
                 }
             });
 }

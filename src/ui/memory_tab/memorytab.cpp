@@ -59,9 +59,13 @@ MemoryTab::MemoryTab(QWidget *parent, MemoryController *memoryController)
                 {
                     m_memoryModel->setDisplayBase(Base::Binary);
                 }
-                else if (text == "Decimal")
+                else if (text == "Signed Decimal")
                 {
-                    m_memoryModel->setDisplayBase(Base::Decimal);
+                    m_memoryModel->setDisplayBase(Base::SignedDecimal);
+                }
+                else if (text == "Unsigned Decimal")
+                {
+                    m_memoryModel->setDisplayBase(Base::UnsignedDecimal);
                 }
             });
 }

@@ -187,19 +187,6 @@ QVariant MemoryModel::data(const QModelIndex &index, int role) const
         //  refactor this swithch to dynamically give the byte based on column number
         //  so that we have have an arbitrary byte sized block
         //  for supporting 32 bit arch in future
-        QString prefix;
-        switch (m_displayBase)
-        {
-        case Base::Hexadecimal:
-            prefix = "0x";
-            break;
-        case Base::Decimal:
-            prefix = "";
-            break;
-        case Base::Binary:
-            prefix = "0b";
-            break;
-        }
         switch (index.column())
         {
         case 0: // Address
@@ -209,14 +196,12 @@ QVariant MemoryModel::data(const QModelIndex &index, int role) const
         case 1: // Double Word
         {
             uint64_t doubleWord = m_memoryController->readDoubleWord_d(alignedAddress);
-            return QString("%1%2").arg(prefix).arg(
-                QString::number(doubleWord, static_cast<int>(m_displayBase)).toUpper());
+            return formatInteger(doubleWord, 64, m_displayBase);
         }
         default:
         {
             uint8_t byte = m_memoryController->readByte_d(alignedAddress + (index.column() - 2));
-            return QString("%1%2").arg(prefix).arg(
-                QString::number(byte, static_cast<int>(m_displayBase)).toUpper());
+            return formatInteger(byte, 8, m_displayBase);
         }
         }
     }

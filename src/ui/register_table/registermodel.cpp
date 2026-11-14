@@ -103,15 +103,10 @@ QVariant RegisterModel::data(const QModelIndex &index, int role) const
             if (row < 32)
             {
                 uint64_t value = m_currentRegisterFile->ReadGpr(row);
-                switch (m_displayBase)
-                {
-                case Base::Binary:
-                    return QString("0b%1").arg(QString::number(value, 2));
-                case Base::Decimal:
-                    return QString::number(static_cast<int64_t>(value));
-                case Base::Hexadecimal:
-                    return QString("0x%1").arg(QString::number(value, 16).toUpper());
-                }
+                // Float mode only affects FP registers; GPRs show signed decimal there.
+                const Base base =
+                    (m_displayBase == Base::Float) ? Base::SignedDecimal : m_displayBase;
+                return formatInteger(value, 64, base);
             }
             else if (row < 64)
             {
@@ -120,14 +115,7 @@ QVariant RegisterModel::data(const QModelIndex &index, int role) const
                 // read raw bits of FP register (you must have this function)
                 uint64_t raw = m_currentRegisterFile->ReadFpr(fIndex);
 
-                switch (m_displayBase)
-                {
-                case Base::Binary:
-                {
-                    return QString("0b%1").arg(QString::number(raw, 2));
-                }
-
-                case Base::Decimal:
+                if (m_displayBase == Base::Float)
                 {
                     uint32_t upper32 = static_cast<uint32_t>(raw >> 32);
                     if (upper32 == 0)
@@ -146,12 +134,7 @@ QVariant RegisterModel::data(const QModelIndex &index, int role) const
                         return QString::number(dval, 'g', 16);
                     }
                 }
-
-                case Base::Hexadecimal:
-                {
-                    return QString("0x%1").arg(QString::number(raw, 16).toUpper());
-                }
-                }
+                return formatInteger(raw, 64, m_displayBase);
             }
             else
             {
