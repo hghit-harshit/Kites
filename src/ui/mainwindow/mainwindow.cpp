@@ -278,12 +278,12 @@ void MainWindow::setUpSidebar()
     m_sidebar->addItem(new QListWidgetItem(iconManager.getIcon(Icon::Memory), "Memory"));
     m_sidebar->addItem(new QListWidgetItem(iconManager.getIcon(Icon::Processor), "Processor"));
     m_sidebar->addItem(new QListWidgetItem(iconManager.getIcon(Icon::Cache), "Cache"));
+    m_sidebar->addItem(new QListWidgetItem(iconManager.getIcon(Icon::Compiler), "Compiler"));
+    m_sidebar->addItem(new QListWidgetItem(iconManager.getIcon(Icon::Profiler), "Profiler"));
     m_sidebar->addItem(
         new QListWidgetItem(iconManager.getIcon(Icon::Compiler),
                             "Reorder")); // for ui of redoredered code this uses a exixting icon of
                                          // compiler no new icon is there
-    m_sidebar->addItem(new QListWidgetItem(iconManager.getIcon(Icon::Compiler), "Compiler"));
-    m_sidebar->addItem(new QListWidgetItem(iconManager.getIcon(Icon::Profiler), "Profiler"));
     m_sidebar->setIconSize(QSize(20, 20));
     m_sidebar->setMinimumWidth(48);
     m_sidebar->setCurrentRow(0);
@@ -411,10 +411,10 @@ void MainWindow::setUpTabs()
     m_tabs[TabIndex::MemoryTabIndex] =
         new MemoryTab(this, m_processorManager->getMemoryController());
     m_tabs[TabIndex::ProcessorTabIndex] = new ProcessorTab(this, m_processorManager);
-    m_tabs[TabIndex::ReorderTabIndex] = new ReorderTab(this); // tab for reordered code in ui
     m_tabs[TabIndex::CacheTabIndex] = new CacheTab(this, m_processorManager->getMemoryController());
     m_tabs[TabIndex::CompilerTabIndex] = new CompilerTab(this);
     m_tabs[TabIndex::ProfilerTabIndex] = new ProfilerTab(this, m_processorManager->getProfiler());
+    m_tabs[TabIndex::ReorderTabIndex] = new ReorderTab(this); // tab for reordered code in ui
     // a little experiment
     connect(this, &MainWindow::processorChangedSignal,
             dynamic_cast<ProcessorTab *>(m_tabs[TabIndex::ProcessorTabIndex]),
@@ -422,11 +422,11 @@ void MainWindow::setUpTabs()
 
     m_stackedTabs->addWidget(m_tabs[TabIndex::EditorTabIndex]);
     m_stackedTabs->addWidget(m_tabs[TabIndex::MemoryTabIndex]);
-    m_stackedTabs->addWidget(m_tabs[TabIndex::ReorderTabIndex]); // ui tab for reoredred code
     m_stackedTabs->addWidget(m_tabs[TabIndex::ProcessorTabIndex]);
     m_stackedTabs->addWidget(m_tabs[TabIndex::CacheTabIndex]);
     m_stackedTabs->addWidget(m_tabs[TabIndex::CompilerTabIndex]);
     m_stackedTabs->addWidget(m_tabs[TabIndex::ProfilerTabIndex]);
+    m_stackedTabs->addWidget(m_tabs[TabIndex::ReorderTabIndex]); // ui tab for reoredred code
 }
 
 bool MainWindow::tryParseAndLoadProgram()
