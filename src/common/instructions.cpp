@@ -360,7 +360,7 @@ static const std::unordered_set<std::string> valid_instructions = {
 
     "la", "nop", "li", "mv", "not", "neg", "negw", "sext.w", "seqz", "snez", "sltz", "sgtz", "beqz",
     "bnez", "blez", "bgez", "bltz", "bgtz", "bgt", "ble", "bgtu", "bleu", "j", "jr", "ret", "call",
-    "tail", "fence", "fence_i",
+    "tail", "fence", "fence.i",
 
     "mul", "mulh", "mulhsu", "mulhu", "div", "divu", "rem", "remu", "mulw", "divw", "divuw", "remw",
     "remuw",
@@ -429,7 +429,8 @@ static const std::unordered_set<std::string> I1TypeInstructions = {
 static const std::unordered_set<std::string> I2TypeInstructions = {"slli",  "srli",  "srai",
                                                                    "slliw", "srliw", "sraiw"};
 
-static const std::unordered_set<std::string> I3TypeInstructions = {"ecall", "ebreak"};
+static const std::unordered_set<std::string> I3TypeInstructions = {"ecall", "ebreak", "fence",
+                                                                   "fence.i"};
 
 static const std::unordered_set<std::string> STypeInstructions = {"sb", "sh", "sw", "sd"};
 
@@ -443,7 +444,7 @@ static const std::unordered_set<std::string> JTypeInstructions = {"jal"};
 static const std::unordered_set<std::string> PseudoInstructions = {
     "la",   "nop",  "li",   "mv",   "not",  "neg",  "negw", "sext.w", "seqz",    "snez",
     "sltz", "sgtz", "beqz", "bnez", "blez", "bgez", "bltz", "bgtz",   "bgt",     "ble",
-    "bgtu", "bleu", "j",    "jr",   "ret",  "call", "tail", "fence",  "fence_i",
+    "bgtu", "bleu", "j",    "jr",   "ret",  "call", "tail",
 };
 
 static const std::unordered_set<std::string> BaseExtensionInstructions = {
@@ -486,7 +487,7 @@ static const std::unordered_set<std::string> FDExtensionR2TypeInstructions = {
 static const std::unordered_set<std::string> FDExtensionR3TypeInstructions = {
     "fmv.x.w",
     "fmv.w.x",
-    "fclass.s"
+    "fclass.s",
     "fclass.d",
     "fmv.x.d",
     "fmv.d.x",
@@ -501,7 +502,7 @@ static const std::unordered_set<std::string> FDExtensionITypeInstructions = {"fl
 static const std::unordered_set<std::string> FDExtensionSTypeInstructions = {"fsw", "fsd"};
 
 static const std::unordered_set<std::string> FExtensionInstructions = {
-    "flw",       "fsw",      "fmadd.s",  "fmsub.d",   "fnmsub.s", "fnmadd.s",
+    "flw",       "fsw",      "fmadd.s",  "fmsub.s",   "fnmsub.s", "fnmadd.s",
     "fadd.s",    "fsub.s",   "fmul.s",   "fdiv.s",    "fsqrt.s",  "fsgnj.s",
     "fsgnjn.s",  "fsgnjx.s", "fmin.s",   "fmax.s",    "fcvt.w.s", "fcvt.wu.s",
     "fmv.x.w",   "feq.s",    "flt.s",    "fle.s",     "fclass.s", "fcvt.s.w",
@@ -574,8 +575,10 @@ std::unordered_map<std::string, I1TypeInstructionEncoding> I1_type_instruction_e
 };
 
 std::unordered_map<std::string, I3TypeInstructionEncoding> I3_type_instruction_encoding_map = {
-    {"ecall", {0b1110011, 0b000, 0b0000000}},  // O
-    {"ebreak", {0b1110011, 0b001, 0b0000000}}, // O
+    {"ecall", {0b1110011, 0b000, 0b0000000, 0x000}},   // O
+    {"ebreak", {0b1110011, 0b000, 0b0000000, 0x001}},  // O
+    {"fence", {0b0001111, 0b000, 0b0000000, 0x0FF}},   // O  (pred = succ = iorw)
+    {"fence.i", {0b0001111, 0b001, 0b0000000, 0x000}}, // O
 };
 
 std::unordered_map<std::string, I2TypeInstructionEncoding> I2_type_instruction_encoding_map = {
@@ -772,6 +775,17 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
     {"slt", {SyntaxType::O_GPR_C_GPR_C_GPR}},
     {"sltu", {SyntaxType::O_GPR_C_GPR_C_GPR}},
 
+    {"addw", {SyntaxType::O_GPR_C_GPR_C_GPR}},
+    {"subw", {SyntaxType::O_GPR_C_GPR_C_GPR}},
+    {"sllw", {SyntaxType::O_GPR_C_GPR_C_GPR}},
+    {"srlw", {SyntaxType::O_GPR_C_GPR_C_GPR}},
+    {"sraw", {SyntaxType::O_GPR_C_GPR_C_GPR}},
+
+    {"addiw", {SyntaxType::O_GPR_C_GPR_C_I}},
+    {"slliw", {SyntaxType::O_GPR_C_GPR_C_I}},
+    {"srliw", {SyntaxType::O_GPR_C_GPR_C_I}},
+    {"sraiw", {SyntaxType::O_GPR_C_GPR_C_I}},
+
     {"addi", {SyntaxType::O_GPR_C_GPR_C_I}},
     {"xori", {SyntaxType::O_GPR_C_GPR_C_I}},
     {"ori", {SyntaxType::O_GPR_C_GPR_C_I}},
@@ -822,7 +836,7 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
     {"csrrci", {SyntaxType::O_GPR_C_CSR_C_I}},
 
     {"fence", {SyntaxType::O}},
-    {"fence_i", {SyntaxType::O}},
+    {"fence.i", {SyntaxType::O}},
 
     ///////////////////////////////////////////////////////////////////////////////////
 
@@ -853,8 +867,6 @@ std::unordered_map<std::string, std::vector<SyntaxType>> instruction_syntax_map 
     {"ret", {SyntaxType::PSEUDO}},
     {"call", {SyntaxType::PSEUDO}},
     {"tail", {SyntaxType::PSEUDO}},
-    {"fence", {SyntaxType::PSEUDO}},
-    {"fence_i", {SyntaxType::PSEUDO}},
 
     ///////////////////////////////////////////////////////////////////////////////////
     {"mul", {SyntaxType::O_GPR_C_GPR_C_GPR}},
@@ -1109,7 +1121,13 @@ bool isFInstruction(const uint32_t &instruction)
             }
             return true;
         }
+        break;
     }
+    case 0b1000011: // fmadd
+    case 0b1000111: // fmsub
+    case 0b1001011: // fnmsub
+    case 0b1001111: // fnmadd
+        return (funct7 & 0b11) == 0b00; // fmt = S
     default:
         break;
     }
@@ -1144,11 +1162,68 @@ bool isDInstruction(const uint32_t &instruction)
         {
             return true; // fcvt.s.d
         }
+        break;
     }
     default:
         break;
     }
     return false;
+}
+
+bool fpWritesGpr(uint32_t instruction)
+{
+    if ((instruction & 0b1111111) != 0b1010011)
+    {
+        return false;
+    }
+    switch ((instruction >> 25) & 0b1111111)
+    {
+    case 0b1010000: // feq/flt/fle.s
+    case 0b1010001: // feq/flt/fle.d
+    case 0b1100000: // fcvt.{w,wu,l,lu}.s
+    case 0b1100001: // fcvt.{w,wu,l,lu}.d
+    case 0b1110000: // fmv.x.w, fclass.s
+    case 0b1110001: // fmv.x.d, fclass.d
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool fpReadsGprRs1(uint32_t instruction)
+{
+    const uint8_t opcode = instruction & 0b1111111;
+    if (opcode == 0b0000111 || opcode == 0b0100111)
+    {
+        return true; // flw/fld/fsw/fsd: rs1 is the base address
+    }
+    if (opcode != 0b1010011)
+    {
+        return false;
+    }
+    switch ((instruction >> 25) & 0b1111111)
+    {
+    case 0b1101000: // fcvt.s.{w,wu,l,lu}
+    case 0b1101001: // fcvt.d.{w,wu,l,lu}
+    case 0b1111000: // fmv.w.x
+    case 0b1111001: // fmv.d.x
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool fpWritesFpr(uint32_t instruction)
+{
+    if (!isFInstruction(instruction) && !isDInstruction(instruction))
+    {
+        return false;
+    }
+    if ((instruction & 0b1111111) == 0b0100111)
+    {
+        return false; // fsw/fsd write memory
+    }
+    return !fpWritesGpr(instruction);
 }
 
 std::string getExpectedSyntaxes(const std::string &opcode)

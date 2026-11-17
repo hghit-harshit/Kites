@@ -124,7 +124,7 @@ uint32_t generateI3TypeMachineCode(const ICUnit &block)
     const auto &encoding = instruction_set::I3_type_instruction_encoding_map.at(block.getOpcode());
     const uint32_t rd = 0;
     const uint32_t rs1 = 0;
-    const uint32_t imm = 0;
+    const uint32_t imm = static_cast<uint32_t>(encoding.imm.to_ulong());
     uint32_t machineCode = 0;
     machineCode |= (imm << 20);
     machineCode |= (rs1 << 15);

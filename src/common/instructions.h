@@ -253,9 +253,11 @@ struct I3TypeInstructionEncoding
     std::bitset<7> opcode;
     std::bitset<3> funct3;
     std::bitset<7> funct7;
+    std::bitset<12> imm; ///< Fixed imm[11:0] field (1 for ebreak, pred/succ bits for fence).
 
-    I3TypeInstructionEncoding(unsigned int opcode, unsigned int funct3, unsigned int funct7)
-        : opcode(opcode), funct3(funct3), funct7(funct7)
+    I3TypeInstructionEncoding(unsigned int opcode, unsigned int funct3, unsigned int funct7,
+                              unsigned int imm = 0)
+        : opcode(opcode), funct3(funct3), funct7(funct7), imm(imm)
     {
     }
 };
@@ -513,6 +515,15 @@ bool isValidFDSTypeInstruction(const std::string &instruction);
 
 bool isFInstruction(const uint32_t &instruction);
 bool isDInstruction(const uint32_t &instruction);
+
+/// F/D instruction whose destination is an integer register (feq/flt/fle, fcvt to int,
+/// fmv.x.*, fclass).
+bool fpWritesGpr(uint32_t instruction);
+/// F/D instruction whose destination is a floating-point register (not stores, not fpWritesGpr).
+bool fpWritesFpr(uint32_t instruction);
+/// F/D instruction that reads an integer register through rs1 (load/store base address,
+/// fcvt from int, fmv.*.x).
+bool fpReadsGprRs1(uint32_t instruction);
 
 std::string getExpectedSyntaxes(const std::string &opcode);
 

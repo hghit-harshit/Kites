@@ -377,7 +377,7 @@ bool isValidExpainsionLine(const QString &line,
          {"nop", {0, {}}},
          {"ret", {0, {}}},
          {"fence", {0, {}}},
-         {"fence_i", {0, {}}},
+         {"fence.i", {0, {}}},
 
          // CSR: rd, csr, rs1
          {"csrrw", {3, {1}}},

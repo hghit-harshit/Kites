@@ -74,7 +74,7 @@ bool Parser::parse_pseudo()
                 errors_.all_errors.emplace_back(errors::InvalidLabelRefError(
                     "Invalid label reference", "Expected: Label defined in .data section",
                     filename_, currentToken().line_number, currentToken().column_number,
-                    GetLineFromFile(filename_, currentToken().line_number)));
+                    sourceLine(currentToken().line_number)));
             }
             skipCurrentLine();
             // instruction_index_+=2;
@@ -137,6 +137,19 @@ bool Parser::parse_pseudo()
                 instruction_number_line_number_mapping_[instruction_index_++] = addiBlock.getLineNumber();
             };
 
+            auto emitAddiw = [&](const std::string &rd, int64_t imm)
+            {
+                ICUnit addiwBlock;
+                addiwBlock.setLineNumber(currentToken().line_number);
+                addiwBlock.setInstructionIndex(instruction_index_);
+                addiwBlock.setOpcode("addiw");
+                addiwBlock.setRd(rd);
+                addiwBlock.setRs1(rd);
+                addiwBlock.setImm(std::to_string(imm));
+                intermediate_code_.emplace_back(addiwBlock, true);
+                instruction_number_line_number_mapping_[instruction_index_++] = addiwBlock.getLineNumber();
+            };
+
             auto emitLui = [&](const std::string &rd, int64_t top20)
             {
                 ICUnit luiBlock;
@@ -179,11 +192,15 @@ bool Parser::parse_pseudo()
                     return;
                 }
 
+                // On RV64, lui sign-extends bit 31. For values near INT32_MAX the
+                // rounded upper part is 0x80000 (negative), so the low part must be
+                // added with a 32-bit add (addiw) that wraps and re-sign-extends,
+                // exactly as GNU as does. addi would leave the upper 32 bits set.
                 int64_t upper = (signedValue + 2048) >> 12;
                 int64_t lower = signedValue - (upper << 12);
-                emitLui(rd, upper);
+                emitLui(rd, upper & 0xFFFFF);
                 if (lower != 0)
-                    emitAddi(rd, lower);
+                    emitAddiw(rd, lower);
             };
 
             auto countTrailingZeros64 = [](uint64_t v) -> int
@@ -244,7 +261,7 @@ bool Parser::parse_pseudo()
                 errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                     "Immediate value out of range", "Expected: -2^63 <= imm <= 2^63 - 1", filename_,
                     currentToken().line_number, currentToken().column_number,
-                    GetLineFromFile(filename_, currentToken().line_number)));
+                    sourceLine(currentToken().line_number)));
             }
             skipCurrentLine();
             return true;
@@ -913,7 +930,7 @@ bool Parser::parse_pseudo()
                     errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                         "Immediate value out of range", "Expected: -1048576 <= imm <= 1048575",
                         filename_, peekToken(1).line_number, peekToken(1).column_number,
-                        GetLineFromFile(filename_, peekToken(1).line_number)));
+                        sourceLine(peekToken(1).line_number)));
                     skipCurrentLine();
                     return true;
                 }

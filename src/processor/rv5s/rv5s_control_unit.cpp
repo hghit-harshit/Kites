@@ -75,11 +75,11 @@ void RV5SControlUnit::SetControlSignals(uint32_t instruction)
         alu_op_ = 2; // Decode as R-type
         break;
 
-    // F and D Extensions
-    case 0b0000111: // F-Type Load (FLW, FLD)
+    // F and D Extensions. reg_write_ means "writes a GPR"; FP-register writes are
+    // tracked separately (ID_EX freg_write) so forwarding/hazards never confuse xN and fN.
+    case 0b0000111: // F-Type Load (FLW, FLD) -> FPR
         alu_src_ = true;
         mem_to_reg_ = true;
-        reg_write_ = true;
         mem_read_ = true;
         alu_op_ = 0; // ALU performs ADD for address calculation
         break;
@@ -89,14 +89,13 @@ void RV5SControlUnit::SetControlSignals(uint32_t instruction)
         alu_op_ = 0; // ALU performs ADD for address calculation
         break;
     case 0b1010011: // F-Type R-type (FADD, FSUB, etc.)
-        reg_write_ = true;
+        reg_write_ = instruction_set::fpWritesGpr(instruction); // feq, fcvt.w, fmv.x, fclass
         alu_op_ = 3; // ALUOp code '3' for FP R-type decode
         break;
-    case 0b1000011: // FMADD
-    case 0b1000111: // FMSUB
-    case 0b1001011: // FNMADD
-    case 0b1001111: // FNMSUB
-        reg_write_ = true;
+    case 0b1000011: // FMADD  -> FPR
+    case 0b1000111: // FMSUB  -> FPR
+    case 0b1001011: // FNMSUB -> FPR
+    case 0b1001111: // FNMADD -> FPR
         alu_op_ = 4; // ALUOp code '4' for FMA-type decode
         break;
     }
@@ -110,10 +109,18 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
     uint8_t opcode = instruction & 0b1111111;
     uint8_t funct3 = (instruction >> 12) & 0b111;
     uint8_t funct7 = (instruction >> 25) & 0b1111111;
+    uint8_t funct6 = (instruction >> 26) & 0b111111;
     uint8_t funct5 = (instruction >> 20) & 0b11111;
     uint8_t funct2 = (instruction >> 25) & 0b11;
 
-    switch (alu_op_)
+    // Derive ALUOp from the instruction being executed. The member alu_op_ holds
+    // whatever the Decode stage saw last (a younger instruction, or stale state
+    // after an undo), so it must not be used here.
+    RV5SControlUnit decoded;
+    decoded.SetControlSignals(instruction);
+    const uint8_t aluOp = decoded.alu_op_;
+
+    switch (aluOp)
     {
     case 0: // ALUOp=0 -> Must be ADD (for Loads, Stores, JALR, LUI, AUIPC).
         return alu::AluOp::ADD;
@@ -157,8 +164,8 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
                 return alu::AluOp::AND; // ANDI
             case 0b001:
                 return alu::AluOp::SLL; // SLLI
-            case 0b101:                  // For SRAI/SRLI, we need to check funct7
-                if (funct7 == 0b0100000)
+            case 0b101: // SRAI/SRLI: RV64 shamt is 6 bits, so bit 25 is shamt[5]; check funct6
+                if (funct6 == 0b010000)
                     return alu::AluOp::SRA; // SRAI
                 return alu::AluOp::SRL;     // SRLI
             default:
@@ -371,6 +378,10 @@ alu::AluOp RV5SControlUnit::GetAluSignal(uint32_t instruction, bool ALUOp)
             return alu::AluOp::FMV_W_X;
         case 0b1111001:
             return alu::AluOp::FMV_D_X;
+        case 0b0100000: // FCVT.S.D
+            return alu::AluOp::FCVT_S_D;
+        case 0b0100001: // FCVT.D.S
+            return alu::AluOp::FCVT_D_S;
         }
         break;
 

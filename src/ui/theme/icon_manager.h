@@ -14,6 +14,7 @@ enum class Icon
     Pause,
     Resume,
     Step,
+    Debug,
     Undo,
     Redo,
     Editor,

@@ -76,6 +76,7 @@ class RV5StageVM_Base : public ProcessorBase
     bool is_pipeline_drained() const;
     void setProcessorState() override;
     void Run() override; // run debug run adn reset are same across all rv5s vms
+    bool StepAndNotify() override;
 
     // --- Private methods for each pipeline stage ---
     virtual void pipeline_fetch() = 0;
@@ -91,6 +92,29 @@ class RV5StageVM_Base : public ProcessorBase
 
     uint64_t execute_float();
     uint64_t execute_double();
+
+    /**
+     * @brief Value of GPR @p rs as seen by the instruction in EX, with forwarding applied:
+     * EX/MEM first, then MEM/WB, else the value latched in ID. Used by the forwarding
+     * pipelines for FP instructions that read a GPR (load/store base, fcvt from int, fmv.*.x).
+     */
+    uint64_t forward_gpr(uint8_t rs, uint64_t latched) const
+    {
+        if (rs == 0)
+        {
+            return 0;
+        }
+        if (ex_mem_reg_.reg_write && ex_mem_reg_.rd == rs)
+        {
+            return ex_mem_reg_.alu_result;
+        }
+        if (mem_wb_reg_.prev_reg_write && mem_wb_reg_.prev_rd == rs)
+        {
+            return mem_wb_reg_.prev_mem_to_reg ? mem_wb_reg_.prev_memory_data
+                                               : mem_wb_reg_.prev_alu_result;
+        }
+        return latched;
+    }
 
     void execute_csr() {};
 

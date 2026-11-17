@@ -85,7 +85,7 @@ bool Parser::parse_O_GPR_C_CSR_C_I()
             errors_.all_errors.emplace_back(errors::ImmediateOutOfRangeError(
                 "Immediate value out of range", "Expected:0 <= imm <= 31", filename_,
                 peekToken(5).line_number, peekToken(5).column_number,
-                GetLineFromFile(filename_, peekToken(5).line_number)));
+                sourceLine(peekToken(5).line_number)));
             skipCurrentLine();
             return true;
         }

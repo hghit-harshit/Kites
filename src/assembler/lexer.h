@@ -36,6 +36,7 @@ class Lexer
     size_t pos_;                 ///< The current position within the current line.
 
     std::vector<Token> tokens_; ///< A list of tokens generated during the lexing process.
+    std::vector<std::string> source_lines_; ///< Every source line read, for error context.
 
     /**
      * @brief Skips whitespace characters (spaces, tabs, etc.) in the input.
@@ -150,6 +151,11 @@ class Lexer
      * @return A vector containing all the tokens.
      */
     std::vector<Token> getTokenList();
+
+    /**
+     * @brief Returns every source line read by getTokenList(), in order (line 1 at index 0).
+     */
+    const std::vector<std::string> &getSourceLines() const { return source_lines_; }
 };
 }//namespace Kites
 #endif // LEXER_H

@@ -140,15 +140,7 @@ void RVSSProcessor::Run()
                 break;
             }
         }
-        last_executed_pc_ = program_counter_;
-        Step();
-        SetActiveWireNames();
-        setProcessorState();
-        emit processorClockedSignal(processor_state_);
-        emit updateCircuitStateSignal(active_wires_);
-        active_wires_.erase(active_wires_.begin() + always_active_wires_count_,
-                            active_wires_.end());
-        // clear active wires after emitting signal except always active wires
+        StepAndNotify();
         // handling the delay
         {
             QMutexLocker locker(&pause_mutex_);
@@ -162,7 +154,7 @@ void RVSSProcessor::Run()
     {
         emit processorClockedSignal(processor_state_);
     }
-    if (program_counter_ >= program_size_)
+    if (!stop_requested_ && program_counter_ >= program_size_)
     {
         output_status_ = "VM_PROGRAM_END";
     }
@@ -235,8 +227,8 @@ void RVSSProcessor::Execute()
             UpdateProgramCounter(-4);
             return_address_ = program_counter_ + 4;
             if (opcode == 0b1100111)
-            { // JALR
-                UpdateProgramCounter(-program_counter_ + (execution_result_));
+            { // JALR: target = (rs1 + imm) & ~1
+                UpdateProgramCounter(-program_counter_ + (execution_result_ & ~1ULL));
             }
             else
             { // JAL
@@ -380,6 +372,11 @@ void RVSSProcessor::ExecuteDouble()
 
     int32_t imm = ImmGenerator(current_instruction_);
 
+    if (rm == 0b111) // dynamic rounding mode: use frm, like ExecuteFloat
+    {
+        rm = registers_.ReadCsr(0x002);
+    }
+
     uint64_t reg1_value = registers_.ReadFpr(rs1);
     uint64_t reg2_value = registers_.ReadFpr(rs2);
     uint64_t reg3_value = registers_.ReadFpr(rs3);
@@ -509,7 +506,7 @@ void RVSSProcessor::HandleSyscall()
         }
         output_status_ = "VM_EXIT";
         std::cout << "Exited with exit code: " << registers_.ReadGpr(10) << std::endl;
-        exit(0); // Exit the program
+        // stop_requested_ ends the run loop; never call exit() here, it kills the GUI.
         break;
     }
     case SYSCALL_READ:
@@ -1099,7 +1096,11 @@ void RVSSProcessor::DebugRun()
                 redo_stack_.pop();
             }
             current_delta_ = RVSingleStageStepDelta();
-            if (program_counter_ < program_size_)
+            if (stop_requested_)
+            {
+                // A syscall that stopped the VM (e.g. exit) already set the status; keep it.
+            }
+            else if (program_counter_ < program_size_)
             {
                 std::cout << "VM_STEP_COMPLETED" << std::endl;
                 output_status_ = "VM_STEP_COMPLETED";
@@ -1125,7 +1126,7 @@ void RVSSProcessor::DebugRun()
             break;
         }
     }
-    if (program_counter_ >= program_size_)
+    if (!stop_requested_ && program_counter_ >= program_size_)
     {
         std::cout << "VM_PROGRAM_END" << std::endl;
         output_status_ = "VM_PROGRAM_END";
@@ -1160,7 +1161,11 @@ void RVSSProcessor::Step()
 
         current_delta_ = RVSingleStageStepDelta();
 
-        if (program_counter_ < program_size_)
+        if (stop_requested_)
+        {
+            // A syscall that stopped the VM (e.g. exit) already set the status; keep it.
+        }
+        else if (program_counter_ < program_size_)
         {
             std::cout << "VM_STEP_COMPLETED" << std::endl;
             output_status_ = "VM_STEP_COMPLETED";
@@ -1179,6 +1184,25 @@ void RVSSProcessor::Step()
     DumpRegisters(globals::registers_dump_file_path, registers_);
     DumpState(globals::vm_state_dump_file_path);
 
+}
+
+bool RVSSProcessor::StepAndNotify()
+{
+    QMutexLocker locker(&step_mutex_);
+    if (program_counter_ >= program_size_)
+    {
+        return false;
+    }
+    last_executed_pc_ = program_counter_;
+    Step();
+    SetActiveWireNames();
+    setProcessorState();
+    emit processorClockedSignal(processor_state_);
+    emit updateCircuitStateSignal(active_wires_);
+    active_wires_.erase(active_wires_.begin() + always_active_wires_count_,
+                        active_wires_.end());
+    // clear active wires after emitting signal except always active wires
+    return program_counter_ < program_size_;
 }
 
 void RVSSProcessor::Undo()

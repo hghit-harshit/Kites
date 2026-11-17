@@ -78,6 +78,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     setCentralWidget(central);
     resize(1200, 800);
     connect(this, &MainWindow::runProcessorSignal, m_processorManager, &ProcessorManager::runSlot);
+    connect(this, &MainWindow::debugRunProcessorSignal, m_processorManager,
+            &ProcessorManager::debugRunSlot);
     // well temporarily disable the toolbar buttons when vm is running
     connect(m_processorManager, &ProcessorManager::runFinishedSignal, this,
             &MainWindow::runFinishedSlot);
@@ -147,6 +149,7 @@ void MainWindow::setUpToolBar()
     undoAction->setIcon(IconManager::getInstance().getIcon(Icon::Undo));
     redoAction->setIcon(IconManager::getInstance().getIcon(Icon::Redo));
     stepAction->setIcon(IconManager::getInstance().getIcon(Icon::Step));
+    debugAction->setIcon(IconManager::getInstance().getIcon(Icon::Debug));
     // tooltips for accessibility
     processorAction->setToolTip("Processor settings");
     runAction->setToolTip("Run program");
@@ -170,7 +173,7 @@ void MainWindow::setUpToolBar()
     spinboxAction->setDefaultWidget(spinbox);
     toolbar->addAction(processorAction);
     toolbar->addAction(runAction);
-    // toolbar->addAction(debugAction);
+    toolbar->addAction(debugAction);
     toolbar->addAction(spinboxAction);
     toolbar->addAction(pauseAction);
     toolbar->addAction(stepAction);
@@ -207,17 +210,18 @@ void MainWindow::setUpToolBar()
             {
                 debugAction->setDisabled(true);
                 processorAction->setDisabled(true);
+                // debug run starts paused, so the toolbar starts in the paused state
+                runAction->setText("Stop");
+                runAction->setIcon(IconManager::getInstance().getIcon(Icon::Stop));
+                runAction->setToolTip("Stop execution");
                 pauseAction->setEnabled(true);
+                pauseAction->setText("Resume");
+                pauseAction->setIcon(IconManager::getInstance().getIcon(Icon::Resume));
+                pauseAction->setToolTip("Resume execution");
                 stepAction->setEnabled(true);
                 undoAction->setEnabled(true);
                 redoAction->setEnabled(true);
-                // setEditorNavigationEnabled(false);
-                auto editorTab = dynamic_cast<EditorTab *>(m_tabs[TabIndex::EditorTabIndex]);
-                if (editorTab)
-                {
-                    editorTab->setExpandedLocked(true);
-                }
-                m_processorManager->debugRun();
+                this->run(true);
             });
 
     connect(processorAction, &QAction::triggered, this, &MainWindow::processorChangeDialog);
@@ -226,13 +230,14 @@ void MainWindow::setUpToolBar()
             [this](int value) { m_processorManager->setStepDelay(value); });
 
     connect(pauseAction, &QAction::triggered, this,
-            [this, pauseAction, undoAction, redoAction]()
+            [this, pauseAction, stepAction, undoAction, redoAction]()
             {
                 if (pauseAction->text() == "Pause")
                 {
                     pauseAction->setText("Resume");
                     pauseAction->setIcon(IconManager::getInstance().getIcon(Icon::Resume));
                     pauseAction->setToolTip("Resume execution");
+                    stepAction->setEnabled(true);
                     undoAction->setEnabled(true);
                     redoAction->setEnabled(true);
                     m_processorManager->pause();
@@ -242,6 +247,7 @@ void MainWindow::setUpToolBar()
                     pauseAction->setText("Pause");
                     pauseAction->setIcon(IconManager::getInstance().getIcon(Icon::Pause));
                     pauseAction->setToolTip("Pause execution");
+                    stepAction->setDisabled(true);
                     undoAction->setDisabled(true);
                     redoAction->setDisabled(true);
                     m_processorManager->resume();
@@ -250,11 +256,14 @@ void MainWindow::setUpToolBar()
 
     // we also connect the vm paused at breakpoint signal to change the pause button text
     connect(m_processorManager, &ProcessorManager::processorPausedAtBreakpointSignal, this,
-            [this, pauseAction]()
+            [this, pauseAction, stepAction, undoAction, redoAction]()
             {
                 pauseAction->setText("Resume");
                 pauseAction->setIcon(IconManager::getInstance().getIcon(Icon::Resume));
                 pauseAction->setToolTip("Resume execution");
+                stepAction->setEnabled(true);
+                undoAction->setEnabled(true);
+                redoAction->setEnabled(true);
             });
 
     connect(stepAction, &QAction::triggered, this, [this]() { m_processorManager->step(); });
@@ -518,7 +527,7 @@ bool MainWindow::tryParseAndLoadProgram()
     }
 }
 
-void MainWindow::run()
+void MainWindow::run(bool startPaused)
 {
     // as soon s as run is clicked we disable the toolbar buttons
     // disableToolBarButtons();
@@ -531,7 +540,14 @@ void MainWindow::run()
             editorTab->setExpandedLocked(true);
         }
 
-        emit runProcessorSignal();
+        if (startPaused)
+        {
+            emit debugRunProcessorSignal();
+        }
+        else
+        {
+            emit runProcessorSignal();
+        }
     }
     else
     {
@@ -600,7 +616,7 @@ void MainWindow::runFinishedSlot()
             // in case we stop while paused
         }
 
-        if (action->text() == "Pause" || action->text() == "Stop")
+        if (action->text() == "Pause" || action->text() == "Stop" || action->text() == "Step")
         {
             action->setDisabled(true);
         }
