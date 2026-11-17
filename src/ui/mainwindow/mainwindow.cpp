@@ -451,11 +451,8 @@ bool MainWindow::tryParseAndLoadProgram()
         std::ofstream out(globals::temporary_assembly_file_path);
         out << rawText;
         out.close();
-        AssembledProgram assembledProgram =
-            assemble(globals::temporary_assembly_file_path.string());
 
-        AssembledProgram assembledProgram =
-            assemble(globals::temporary_assembly_file_path.string());
+        AssembledProgram assembledProgram = assemble(globals::temporary_assembly_file_path.string());
 
         if (auto *reorderTab = dynamic_cast<ReorderTab *>(m_tabs[TabIndex::ReorderTabIndex]))
         {
@@ -481,8 +478,6 @@ bool MainWindow::tryParseAndLoadProgram()
                 reorderTab->clear();
             }
         }
-
-        DumpDisasssembly(globals::disassembly_file_path, assembledProgram); // existing line
 
         DumpDisasssembly(globals::disassembly_file_path, assembledProgram);
         std::ifstream in(globals::disassembly_file_path);
