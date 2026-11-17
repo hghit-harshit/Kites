@@ -75,7 +75,9 @@ static InstrFormat format_classifier(int opcode)
     case 0b0110011:
         return InstrFormat::R;
 
-    case 0b0010011:
+    case 0b0010011: // I-type (e.g., addi, slli)
+    case 0b0011011: // I-type 32-bit (e.g., addiw, slliw) -> ADDED FOR ADDIW
+    case 0b1100111: // I-type (jalr)
         return InstrFormat::I;
 
     case 0b0000011:
@@ -90,11 +92,11 @@ static InstrFormat format_classifier(int opcode)
     case 0b1101111:
         return InstrFormat::J;
 
-    case 0b0110111:
+    case 0b0110111: // U-type (lui, auipc)
+    case 0b0010111:
         return InstrFormat::U;
 
-    case 0b1100111:
-        return InstrFormat::I;
+    
 
     default:
         return InstrFormat::Unknown;
@@ -138,9 +140,9 @@ static vector<int> operand_number_giver(string binary_code, InstrFormat type)
     }
     case InstrFormat::U:
     {
-        registers[0] = sext(binary_code.substr(0, 20) + "000000000000"); // this is imm
-
-        registers[1] = stoi(binary_code.substr(20, 5), nullptr, 2); // thsi is rd
+        int imm20 = sext(binary_code.substr(0, 20));
+        registers[0] = imm20 << 12;                                 // imm
+        registers[1] = stoi(binary_code.substr(20, 5), nullptr, 2); // rd
         break;
     }
     case InstrFormat::J:
