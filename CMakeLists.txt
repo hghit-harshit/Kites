@@ -45,6 +45,9 @@ file(GLOB_RECURSE HEADER_FILES
     "${SRC_DIR}/*.h")
 
 list(APPEND SRC_FILES ${LUA_SRC_FILES})
+file(GLOB REORDER_SRC CONFIGURE_DEPENDS "reordering/*.cpp")
+list(FILTER REORDER_SRC EXCLUDE REGEX ".*tester[.]cpp$")   # tester.cpp has its own main()
+list(APPEND SRC_FILES ${REORDER_SRC})
 
 ##############resourecs setup#################
 qt6_add_resources(APP_RESOURCES 
@@ -72,6 +75,7 @@ target_include_directories(kites_core PUBLIC
     "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_autogen/include"
     ${SRC_DIR}
     ${EXTERNAL_DIR}/lua-5.5.0/src
+    ${CMAKE_SOURCE_DIR}
 )
 
 target_link_libraries(kites_core

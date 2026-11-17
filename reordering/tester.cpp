@@ -1,9 +1,10 @@
+#include "DAG.h"
 #include "parser.h"
+#include "scheduler.h"
 #include <cstdio>
 
 int main()
 {
-
 
     std::string hexcode =
         "0x10000093 0x20000113 0x0000a183 0x0040a203 0x004182b3 0x0080a303 0x405303b3 0x00c0a403 "
@@ -13,14 +14,28 @@ int main()
         "0x01c12823 0x0d1e0e93 0x01beef33 0x01e12a23 ";
 
     parser p(hexcode);
+    std::vector<parsed_instruction> instr = p.instructions();
 
-    std::vector<parsed_instruction> mewo = p.instructions();
+    bool forwarding = 1;
+    DAG dag(instr, forwarding);
 
-    for (auto it : mewo)
-    {
-        printf("%i rs1 =  %d rs2 = %d  rd = %d imm = %d mem_off = %d off = %d \n", it.format,
-               it.rs1, it.rs2, it.rd, it.imm, it.memory_add_offset, it.offset);
-    }
+    scheduler s(dag.blocks(), dag.depend_matrix_full(), forwarding);
+
+    int before = 0;
+    int after = 0;
+
+    std::vector<parsed_instruction> reordered_code = s.code_scheduler(&before, &after);
+
+    printf("cycles before = %d\n",before);
+
+    printf("with forwarding cycles after reoredering  = %d\n", after);
+    forwarding = 0;
+    after = 0;
+    before  =0;
+    s = scheduler(dag.blocks(),dag.depend_matrix_full(),forwarding);
+    reordered_code = s.code_scheduler(&before, &after);
+    printf("cycles before = %d\n",before);
+    printf("without forwarding cycles after reoredering  = %d", after);
 
     return 0;
 }

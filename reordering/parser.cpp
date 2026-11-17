@@ -93,6 +93,9 @@ static InstrFormat format_classifier(int opcode)
     case 0b0110111:
         return InstrFormat::U;
 
+    case 0b1100111:
+        return InstrFormat::I;
+
     default:
         return InstrFormat::Unknown;
     }

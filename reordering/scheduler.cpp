@@ -112,7 +112,7 @@ std::vector<int> scheduler::block_scheduler(const std::vector<parsed_instruction
 
 int scheduler::program_cycles(const std::vector<parsed_instruction> &program)
 {
-    std::vector<int> avail(32, 0); // cycle at which each register's latest value is usable
+    std::vector<int> avail(32, 0); 
     int prev = -1;
     for (const parsed_instruction &x : program)
     {
@@ -163,7 +163,7 @@ std::vector<parsed_instruction> scheduler::code_scheduler(int *cycles_before, in
             current[b][k] = blocks[b][scheduled_order[k]];
         const int after = program_cycles(flatten(current));
 
-        // keep the new order only if the WHOLE program gets strictly faster
+        
         if (!(after < before))
             current[b] = original_block;
     }
