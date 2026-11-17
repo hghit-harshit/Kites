@@ -82,12 +82,21 @@ ReorderResult reorderWords(const std::vector<uint32_t> &text, bool forwarding)
 
 std::string formatReordered(const ReorderResult &r)
 {
+    // Same layout as the Disassembly view: "<addr>: <hex word>   <instruction>".
+    // The original -> new instruction numbers are drawn by the Reorder tab's right gutter
+    // (from r.origIndex), so they are intentionally not part of the text.
+    const size_t n = r.words.size();
+    int hexDigits = 1;
+    for (size_t t = n * 4; t >>= 4;)
+        ++hexDigits;
+
     std::ostringstream o;
-    for (size_t k = 0; k < r.words.size(); ++k)
+    for (size_t k = 0; k < n; ++k)
     {
-        o << std::hex << std::setfill('0') << std::setw(4) << (k * 4) << ": "
-          << std::setw(8) << r.words[k] << std::dec << std::setfill(' ') << "   "
-          << instruction_set::disassemble(r.words[k]) << "   ; orig #" << r.origIndex[k] << "\n";
+        o << "  " << std::setfill(' ') << std::setw(hexDigits) << std::right << std::hex << (k * 4)
+          << std::dec << std::left << std::setw(0) << ": " << std::setfill('0') << std::setw(8)
+          << std::right << std::hex << r.words[k] << std::dec << std::setfill(' ')
+          << "             " << instruction_set::disassemble(r.words[k]) << "\n";
     }
     return o.str();
 }

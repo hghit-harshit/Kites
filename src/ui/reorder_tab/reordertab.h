@@ -2,10 +2,12 @@
 #include "ui/common/kitestab.h"
 #include <QCheckBox>
 #include <QLabel>
-#include <QPlainTextEdit>
+#include <vector>
 
 namespace Kites
 {
+class ReorderEditor;
+
 class ReorderTab : public KitesTab
 {
     Q_OBJECT
@@ -17,11 +19,13 @@ class ReorderTab : public KitesTab
     }
 
   public slots:
-    void setReordered(const QString &text, int before, int after);
+    // text: one line per instruction; origIndex[k] = original instruction # of line k
+    void setReordered(const QString &text, const std::vector<int> &origIndex, int before,
+                      int after);
     void clear();
 
   private:
-    QPlainTextEdit *m_view;
+    ReorderEditor *m_view;
     QLabel *m_stats;
     QCheckBox *m_exec;
 };
