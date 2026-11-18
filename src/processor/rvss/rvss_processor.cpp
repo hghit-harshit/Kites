@@ -28,6 +28,7 @@ namespace Kites
 {
 RVSSProcessor::RVSSProcessor() : ProcessorBase()
 {
+    m_undoBuffer.push(StepDelta{}); // empty sentinel entry (see UndoBuffer)
     DumpRegisters(globals::registers_dump_file_path, registers_);
     DumpState(globals::vm_state_dump_file_path);
 #ifndef DISABLE_GUI
@@ -531,14 +532,6 @@ void RVSSProcessor::HandleSyscall()
                 input_queue_.pop();
             }
 
-            std::vector<uint8_t> old_bytes_vec(length, 0);
-            std::vector<uint8_t> new_bytes_vec(length, 0);
-
-            for (size_t i = 0; i < length; ++i)
-            {
-                old_bytes_vec[i] = memory_controller_.peekByte(buffer_address + i);
-            }
-
             for (size_t i = 0; i < input.size() && i < length; ++i)
             {
                 memory_controller_.writeByte(buffer_address + i, static_cast<uint8_t>(input[i]));
@@ -547,13 +540,6 @@ void RVSSProcessor::HandleSyscall()
             {
                 memory_controller_.writeByte(buffer_address + input.size(), '\0');
             }
-
-            for (size_t i = 0; i < length; ++i)
-            {
-                new_bytes_vec[i] = memory_controller_.peekByte(buffer_address + i);
-            }
-
-            current_delta_.memory_changes.push_back({buffer_address, old_bytes_vec, new_bytes_vec});
 
             uint64_t old_reg = registers_.ReadGpr(10);
             unsigned int reg_index = 10;
@@ -686,73 +672,25 @@ void RVSSProcessor::WriteMemory()
         }
     }
 
-    uint64_t addr = 0;
-    std::vector<uint8_t> old_bytes_vec;
-    std::vector<uint8_t> new_bytes_vec;
-
-    // Undo bookkeeping reads use peekByte so they do not show up as cache accesses.
-
+    // Undo of stores is handled by the memory controller's per-step history.
     if (control_unit_.GetMemWrite())
     {
         switch (funct3)
         {
-        case 0b000:
-        { // SB
-            addr = execution_result_;
-            old_bytes_vec.push_back(memory_controller_.peekByte(addr));
+        case 0b000: // SB
             memory_controller_.writeByte(execution_result_, registers_.ReadGpr(rs2) & 0xFF);
-            new_bytes_vec.push_back(memory_controller_.peekByte(addr));
             break;
-        }
-        case 0b001:
-        { // SH
-            addr = execution_result_;
-            for (size_t i = 0; i < 2; ++i)
-            {
-                old_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
-            }
+        case 0b001: // SH
             memory_controller_.writeHalfWord(execution_result_, registers_.ReadGpr(rs2) & 0xFFFF);
-            for (size_t i = 0; i < 2; ++i)
-            {
-                new_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
-            }
             break;
-        }
-        case 0b010:
-        { // SW
-            addr = execution_result_;
-            for (size_t i = 0; i < 4; ++i)
-            {
-                old_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
-            }
+        case 0b010: // SW
             memory_controller_.writeWord(execution_result_, registers_.ReadGpr(rs2) & 0xFFFFFFFF);
-            for (size_t i = 0; i < 4; ++i)
-            {
-                new_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
-            }
             break;
-        }
-        case 0b011:
-        { // SD
-            addr = execution_result_;
-            for (size_t i = 0; i < 8; ++i)
-            {
-                old_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
-            }
+        case 0b011: // SD
             memory_controller_.writeDoubleWord(execution_result_,
                                                registers_.ReadGpr(rs2) & 0xFFFFFFFFFFFFFFFF);
-            for (size_t i = 0; i < 8; ++i)
-            {
-                new_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
-            }
             break;
         }
-        }
-    }
-
-    if (old_bytes_vec != new_bytes_vec)
-    {
-        current_delta_.memory_changes.push_back({addr, old_bytes_vec, new_bytes_vec});
     }
 }
 
@@ -765,29 +703,10 @@ void RVSSProcessor::WriteMemoryFloat()
         memory_result_ = memory_controller_.readWord(execution_result_);
     }
 
-    uint64_t addr = 0;
-    std::vector<uint8_t> old_bytes_vec;
-    std::vector<uint8_t> new_bytes_vec;
-
     if (control_unit_.GetMemWrite())
     { // FSW
-        addr = execution_result_;
-        for (size_t i = 0; i < 4; ++i)
-        {
-            old_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
-        }
         uint32_t val = registers_.ReadFpr(rs2) & 0xFFFFFFFF;
         memory_controller_.writeWord(execution_result_, val);
-        // new_bytes_vec.push_back(memory_controller_.ReadByte(addr));
-        for (size_t i = 0; i < 4; ++i)
-        {
-            new_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
-        }
-    }
-
-    if (old_bytes_vec != new_bytes_vec)
-    {
-        current_delta_.memory_changes.push_back({addr, old_bytes_vec, new_bytes_vec});
     }
 }
 
@@ -800,27 +719,9 @@ void RVSSProcessor::WriteMemoryDouble()
         memory_result_ = memory_controller_.readDoubleWord(execution_result_);
     }
 
-    uint64_t addr = 0;
-    std::vector<uint8_t> old_bytes_vec;
-    std::vector<uint8_t> new_bytes_vec;
-
     if (control_unit_.GetMemWrite())
     { // FSD
-        addr = execution_result_;
-        for (size_t i = 0; i < 8; ++i)
-        {
-            old_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
-        }
         memory_controller_.writeDoubleWord(execution_result_, registers_.ReadFpr(rs2));
-        for (size_t i = 0; i < 8; ++i)
-        {
-            new_bytes_vec.push_back(memory_controller_.peekByte(addr + i));
-        }
-    }
-
-    if (old_bytes_vec != new_bytes_vec)
-    {
-        current_delta_.memory_changes.push_back({addr, old_bytes_vec, new_bytes_vec});
     }
 }
 
@@ -1079,6 +980,7 @@ void RVSSProcessor::DebugRun()
         if (std::find(breakpoints_.begin(), breakpoints_.end(), program_counter_) ==
             breakpoints_.end())
         {
+            memory_controller_.beginStep();
             Fetch();
             Decode();
             Execute();
@@ -1089,12 +991,8 @@ void RVSSProcessor::DebugRun()
             std::cout << "Program Counter: " << program_counter_ << std::endl;
 
             current_delta_.new_pc = program_counter_;
-            // history_.push(current_delta_);
-            undo_stack_.push(current_delta_);
-            while (!redo_stack_.empty())
-            {
-                redo_stack_.pop();
-            }
+            m_undoBuffer.push(current_delta_); // also drops any redo history
+            memory_controller_.commitStep();
             current_delta_ = RVSingleStageStepDelta();
             if (stop_requested_)
             {
@@ -1140,6 +1038,7 @@ void RVSSProcessor::Step()
     current_delta_.old_pc = program_counter_;
     if (program_counter_ < program_size_)
     {
+        memory_controller_.beginStep();
         Fetch();
         Decode();
         Execute();
@@ -1151,13 +1050,8 @@ void RVSSProcessor::Step()
 
         current_delta_.new_pc = program_counter_;
 
-        // history_.push(current_delta_);
-
-        undo_stack_.push(current_delta_);
-        while (!redo_stack_.empty())
-        {
-            redo_stack_.pop();
-        }
+        m_undoBuffer.push(current_delta_); // also drops any redo history
+        memory_controller_.commitStep();
 
         current_delta_ = RVSingleStageStepDelta();
 
@@ -1208,55 +1102,27 @@ bool RVSSProcessor::StepAndNotify()
 void RVSSProcessor::Undo()
 {
     qInfo() << "Attempting to undo last step in rvss";
-    if (undo_stack_.empty())
+    if (!m_undoBuffer.canUndo())
     {
         std::cout << "VM_NO_MORE_UNDO" << std::endl;
         output_status_ = "VM_NO_MORE_UNDO";
         return;
     }
 
-    StepDelta last = undo_stack_.top();
-    undo_stack_.pop();
+    const StepDelta &last = m_undoBuffer.current();
 
     for (const auto &change : last.register_changes)
     {
-        switch (change.reg_type)
-        {
-        case 0:
-        { // GPR
-            registers_.WriteGpr(change.reg_index, change.old_value);
-            break;
-        }
-        case 1:
-        { // CSR
-            registers_.WriteCsr(change.reg_index, change.old_value);
-            break;
-        }
-        case 2:
-        { // FPR
-            registers_.WriteFpr(change.reg_index, change.old_value);
-            break;
-        }
-        default:
-            std::cerr << "Invalid register type: " << change.reg_type << std::endl;
-            break;
-        }
+        writeChangedRegister(change, change.old_value);
     }
-
-    for (const auto &change : last.memory_changes)
-    {
-        for (size_t i = 0; i < change.old_bytes_vec.size(); ++i)
-        {
-            memory_controller_.writeByte(change.address + i, change.old_bytes_vec[i]);
-        }
-    }
+    memory_controller_.undoStep(); // main memory and caches, without counting as accesses
 
     program_counter_ = last.old_pc;
     instructions_retired_--;
     cycle_s_--;
     std::cout << "Program Counter: " << program_counter_ << std::endl;
 
-    redo_stack_.push(last);
+    m_undoBuffer.undo();
 
     output_status_ = "VM_UNDO_COMPLETED";
     std::cout << "VM_UNDO_COMPLETED" << std::endl;
@@ -1274,54 +1140,20 @@ void RVSSProcessor::Undo()
 void RVSSProcessor::Redo()
 {
     qInfo() << "Attempting to redo last undone step in rvss";
-    if (redo_stack_.empty())
+    auto entry = m_undoBuffer.redo();
+    if (!entry)
     {
         std::cout << "VM_NO_MORE_REDO" << std::endl;
         return;
     }
 
-    StepDelta next = redo_stack_.top();
-    redo_stack_.pop();
-
-    // if (!history_.can_redo()) {
-    //       std::cout << "Nothing to redo.\n";
-    //       return;
-    //   }
-
-    //   StepDelta next = history_.redo();
+    const StepDelta &next = entry->get();
 
     for (const auto &change : next.register_changes)
     {
-        switch (change.reg_type)
-        {
-        case 0:
-        { // GPR
-            registers_.WriteGpr(change.reg_index, change.new_value);
-            break;
-        }
-        case 1:
-        { // CSR
-            registers_.WriteCsr(change.reg_index, change.new_value);
-            break;
-        }
-        case 2:
-        { // FPR
-            registers_.WriteFpr(change.reg_index, change.new_value);
-            break;
-        }
-        default:
-            std::cerr << "Invalid register type: " << change.reg_type << std::endl;
-            break;
-        }
+        writeChangedRegister(change, change.new_value);
     }
-
-    for (const auto &change : next.memory_changes)
-    {
-        for (size_t i = 0; i < change.new_bytes_vec.size(); ++i)
-        {
-            memory_controller_.writeByte(change.address + i, change.new_bytes_vec[i]);
-        }
-    }
+    memory_controller_.redoStep(); // main memory and caches, without counting as accesses
 
     program_counter_ = next.new_pc;
     instructions_retired_++;
@@ -1329,7 +1161,6 @@ void RVSSProcessor::Redo()
     DumpRegisters(globals::registers_dump_file_path, registers_);
     DumpState(globals::vm_state_dump_file_path);
     std::cout << "Program Counter: " << program_counter_ << std::endl;
-    undo_stack_.push(next);
 
     SetActiveWireNames();
     setProcessorState();
@@ -1357,10 +1188,9 @@ void RVSSProcessor::Reset()
     csr_write_val_ = 0;
     csr_uimm_ = 0;
     current_delta_.register_changes.clear();
-    current_delta_.memory_changes.clear();
     current_delta_.old_pc = 0;
     current_delta_.new_pc = 0;
-    undo_stack_ = std::stack<StepDelta>();
-    redo_stack_ = std::stack<StepDelta>();
+    m_undoBuffer.clear();
+    m_undoBuffer.push(StepDelta{});
 }
 }//namespaace Kites

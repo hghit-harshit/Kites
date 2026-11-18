@@ -1,10 +1,81 @@
 #include "common/debug_colors.h"
 #include "common/instructions.h"
 #include "processor/rv5s/rv5s_processor_base.h"
+#include "processor/rv5s/rv5s_hdu.h"
+#include <tuple>
 #include <thread>
 
 namespace Kites
 {
+RV5StageVM_Base::RV5StageVM_Base(bool hazardDetection, bool forwarding)
+    : m_hazardDetection(hazardDetection), m_forwarding(forwarding)
+{
+}
+
+void RV5StageVM_Base::Step()
+{
+    begin_step_delta();
+
+    // Back stages first (WB -> MEM -> EX) so their results are visible to ID and IF.
+    pipeline_writeback();
+    pipeline_memory();
+    pipeline_execute();
+
+    if (m_hazardDetection && computeStall())
+    {
+        // Freeze IF/ID and the PC, and inject a bubble into ID/EX.
+        id_ex_reg_.reset();
+        stall_fetch_and_decode_ = true;
+    }
+    else
+    {
+        pipeline_decode();
+        stall_fetch_and_decode_ = false;
+    }
+
+    fetch_and_advance_pc(stall_fetch_and_decode_);
+    cycle_s_++;
+
+    finalize_step_delta();
+}
+
+bool RV5StageVM_Base::computeStall()
+{
+    // stall_cycles_ doubles as the countdown of an ongoing multi-cycle stall.
+    if (stall_cycles_ > 0)
+    {
+        stall_cycles_--;
+        return true;
+    }
+
+    const int stallsNeeded = check_data_hazard(if_id_reg_, id_ex_reg_, ex_mem_reg_, m_forwarding);
+    if (stallsNeeded > 0)
+    {
+        stall_cycles_ = stallsNeeded - 1; // this cycle is the first stall
+        return true;
+    }
+    return false;
+}
+
+void RV5StageVM_Base::pipeline_fetch()
+{
+    if (stall_fetch_and_decode_)
+    {
+        return; // IF/ID keeps the stalled instruction
+    }
+
+    if (program_counter_ < program_size_)
+    {
+        if_id_reg_.instruction = memory_controller_.readInstruction(program_counter_);
+        if_id_reg_.pc = program_counter_;
+    }
+    else
+    {
+        // Past the end of the program, inject NOPs to drain the pipeline.
+        if_id_reg_.reset();
+    }
+}
+
 void RV5StageVM_Base::Run()
 {
     ClearStop();
@@ -103,6 +174,7 @@ void RV5StageVM_Base::Reset()
     cycle_s_              = 0;
     stall_cycles_         = 0;
     pc_redirected_        = false;
+    stall_fetch_and_decode_ = false;
     last_breakpoint_pc_.reset(); // Clear breakpoint tracking on reset
 
     registers_.Reset();
@@ -114,13 +186,14 @@ void RV5StageVM_Base::Reset()
     ex_mem_reg_.reset();
     mem_wb_reg_.reset();
     current_delta_ = RV5StageStepDelta{};
-    undo_stack_ = std::stack<RV5StageStepDelta>();
-    redo_stack_ = std::stack<RV5StageStepDelta>();
+    m_undoBuffer.clear();
+    m_undoBuffer.push(RV5StageStepDelta{});
     processor_state_.reset();
 }
 
 void RV5StageVM_Base::begin_step_delta()
 {
+    memory_controller_.beginStep();
     current_delta_                           = RV5StageStepDelta{};
     current_delta_.old_pc                    = program_counter_;
     current_delta_.old_cycle                 = cycle_s_;
@@ -147,11 +220,8 @@ void RV5StageVM_Base::finalize_step_delta()
     current_delta_.pipeline_register_change.new_ex_mem_reg = ex_mem_reg_;
     current_delta_.pipeline_register_change.new_mem_wb_reg = mem_wb_reg_;
 
-    undo_stack_.push(current_delta_);
-    while (!redo_stack_.empty())
-    {
-        redo_stack_.pop();
-    }
+    m_undoBuffer.push(current_delta_); // also drops any redo history
+    memory_controller_.commitStep();
 }
 
 void RV5StageVM_Base::setProcessorState()
@@ -248,70 +318,24 @@ void RV5StageVM_Base::pipeline_decode()
     id_ex_reg_.alu_op     = control_unit_.GetAluOp();
 }
 
+// Undo of stores is handled by the memory controller's per-step history.
 void RV5StageVM_Base::memory_writeback()
 {
-    auto read_bytes = [&](uint64_t addr, size_t byte_count)
-    {
-        std::vector<uint8_t> bytes;
-        bytes.reserve(byte_count);
-        for (size_t i = 0; i < byte_count; ++i)
-        {
-            bytes.push_back(memory_controller_.peekByte(addr + i));
-        }
-        return bytes;
-    };
-
     switch ((mem_wb_reg_.instruction >> 12) & 0b111)
     {
-    case 0b000:
-    { // SB
-        auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 1);
+    case 0b000: // SB
         memory_controller_.writeByte(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data & 0xFF);
-        auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 1);
-        if (old_bytes_vec != new_bytes_vec)
-        {
-            current_delta_.memory_changes.push_back(
-                {ex_mem_reg_.alu_result, old_bytes_vec, new_bytes_vec});
-        }
         break;
-    }
-    case 0b001:
-    { // SH
-        auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 2);
+    case 0b001: // SH
         memory_controller_.writeHalfWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data & 0xFFFF);
-        auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 2);
-        if (old_bytes_vec != new_bytes_vec)
-        {
-            current_delta_.memory_changes.push_back(
-                {ex_mem_reg_.alu_result, old_bytes_vec, new_bytes_vec});
-        }
         break;
-    }
-    case 0b010:
-    { // SW
-        auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
+    case 0b010: // SW
         memory_controller_.writeWord(ex_mem_reg_.alu_result, ex_mem_reg_.reg2_data & 0xFFFFFFFF);
-        auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
-        if (old_bytes_vec != new_bytes_vec)
-        {
-            current_delta_.memory_changes.push_back(
-                {ex_mem_reg_.alu_result, old_bytes_vec, new_bytes_vec});
-        }
         break;
-    }
-    case 0b011:
-    { // SD
-        auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 8);
+    case 0b011: // SD
         memory_controller_.writeDoubleWord(ex_mem_reg_.alu_result,
                                            ex_mem_reg_.reg2_data & 0xFFFFFFFFFFFFFFFF);
-        auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 8);
-        if (old_bytes_vec != new_bytes_vec)
-        {
-            current_delta_.memory_changes.push_back(
-                {ex_mem_reg_.alu_result, old_bytes_vec, new_bytes_vec});
-        }
         break;
-    }
     }
 }
 
@@ -534,40 +558,15 @@ void RV5StageVM_Base::pipeline_memory()
     }
     else if (ex_mem_reg_.mem_write)
     {
-        auto read_bytes = [&](uint64_t addr, size_t byte_count)
-        {
-            std::vector<uint8_t> bytes;
-            bytes.reserve(byte_count);
-            for (size_t i = 0; i < byte_count; ++i)
-            {
-                bytes.push_back(memory_controller_.peekByte(addr + i));
-            }
-            return bytes;
-        };
-
         if (is_F_Instruction)
         { // FSW
-            auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
             memory_controller_.writeWord(ex_mem_reg_.alu_result,
                                          ex_mem_reg_.freg2_data & 0xFFFFFFFF);
-            auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 4);
-            if (old_bytes_vec != new_bytes_vec)
-            {
-                current_delta_.memory_changes.push_back(
-                    {ex_mem_reg_.alu_result, old_bytes_vec, new_bytes_vec});
-            }
         }
         else if (is_D_Instruction)
         { // FSD
-            auto old_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 8);
             memory_controller_.writeDoubleWord(ex_mem_reg_.alu_result,
                                                ex_mem_reg_.freg2_data & 0xFFFFFFFFFFFFFFFF);
-            auto new_bytes_vec = read_bytes(ex_mem_reg_.alu_result, 8);
-            if (old_bytes_vec != new_bytes_vec)
-            {
-                current_delta_.memory_changes.push_back(
-                    {ex_mem_reg_.alu_result, old_bytes_vec, new_bytes_vec});
-            }
         }
         else
         {
@@ -741,80 +740,204 @@ void RV5StageVM_Base::pipeline_writeback_double()
     }
 }
 
-uint64_t RV5StageVM_Base::execute_float()
+void RV5StageVM_Base::pipeline_execute()
 {
-    uint32_t instruction = id_ex_reg_.instruction;
-    uint8_t opcode = instruction & 0b1111111;
-    uint8_t funct3 = (instruction >> 12) & 0b111;
-    uint8_t funct7 = (instruction >> 25) & 0b1111111;
-    uint8_t rm = funct3;
-
-    uint8_t fcsr_status = 0;
-    uint64_t alu_result = 0;
-
-    if (rm == 0b111)
+    if (handleSystemInExecute())
     {
-        rm = registers_.ReadCsr(0x002);
+        return;
     }
 
-    uint64_t reg1_value = id_ex_reg_.freg1_data;
-    uint64_t reg2_value = id_ex_reg_.freg2_data;
-    uint64_t reg3_value = id_ex_reg_.freg3_data;
+    const uint32_t instruction = id_ex_reg_.instruction;
+    const bool isFp = instruction_set::isFInstruction(instruction) ||
+                      instruction_set::isDInstruction(instruction);
 
-    if (funct7 == 0b1101000 || funct7 == 0b1111000 || opcode == 0b0000111 || opcode == 0b0100111)
-    {
-        reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
-    }
+    uint64_t aluResult =
+        isFp ? executeFp(instruction_set::isDInstruction(instruction)) : executeInteger();
+    aluResult = applyUpperImmediate(aluResult);
 
-    if (id_ex_reg_.alu_src)
-    {
-        reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
-    }
-
-    alu::AluOp aluOperation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
-    std::tie(alu_result, fcsr_status) =
-        alu::Alu::fpexecute(aluOperation, reg1_value, reg2_value, reg3_value, rm);
-
-    registers_.WriteCsr(0x003, fcsr_status);
-    return alu_result;
+    latchExMem(aluResult, isFp);
+    resolveBranchOrJump(aluResult);
 }
 
-uint64_t RV5StageVM_Base::execute_double()
+uint64_t RV5StageVM_Base::executeInteger()
 {
-    uint32_t instruction = id_ex_reg_.instruction;
-    uint8_t opcode = instruction & 0b1111111;
-    uint8_t funct3 = (instruction >> 12) & 0b111;
-    uint8_t funct7 = (instruction >> 25) & 0b1111111;
-    uint8_t rm = funct3;
+    const uint32_t instruction = id_ex_reg_.instruction;
 
-    uint8_t fcsr_status = 0;
-    uint64_t alu_result = 0;
+    const uint64_t aluIn1 = gprOperand(id_ex_reg_.rs1, id_ex_reg_.reg1_data);
+    const uint64_t rs2Value = gprOperand(id_ex_reg_.rs2, id_ex_reg_.reg2_data);
+    const uint64_t aluIn2 = id_ex_reg_.alu_src ? static_cast<uint64_t>(id_ex_reg_.imm) : rs2Value;
 
-    if (rm == 0b111)
+    alu::AluOp aluOperation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
+    uint64_t aluResult = 0;
+    bool overflow = false;
+    std::tie(aluResult, overflow) = alu::Alu::execute(aluOperation, aluIn1, aluIn2);
+
+    // Store data must see the same (possibly forwarded) rs2 value as the ALU.
+    ex_mem_reg_.reg2_data = rs2Value;
+    return aluResult;
+}
+
+uint64_t RV5StageVM_Base::fpRs1Operand(bool isDouble) const
+{
+    const uint32_t instruction = id_ex_reg_.instruction;
+    if (m_forwarding)
+    {
+        return instruction_set::fpReadsGprRs1(instruction)
+                   ? forward_gpr(id_ex_reg_.rs1, id_ex_reg_.reg1_data)
+                   : forwardFpr(id_ex_reg_.frs1, id_ex_reg_.freg1_data);
+    }
+
+    // Without forwarding the GPR is read from the register file in EX, i.e. after this
+    // cycle's write back. Loads/stores use it as base address; fcvt/fmv from int as source.
+    const uint8_t opcode = instruction & 0b1111111;
+    const uint8_t funct7 = (instruction >> 25) & 0b1111111;
+    const uint8_t cvtFromInt = isDouble ? 0b1101001 : 0b1101000;
+    const uint8_t moveFromInt = isDouble ? 0b1111001 : 0b1111000;
+    if (funct7 == cvtFromInt || funct7 == moveFromInt || opcode == 0b0000111 ||
+        opcode == 0b0100111)
+    {
+        return registers_.ReadGpr(id_ex_reg_.rs1);
+    }
+    return id_ex_reg_.freg1_data;
+}
+
+uint64_t RV5StageVM_Base::executeFp(bool isDouble)
+{
+    const uint32_t instruction = id_ex_reg_.instruction;
+
+    uint8_t rm = (instruction >> 12) & 0b111;
+    if (rm == 0b111) // dynamic rounding mode
     {
         rm = registers_.ReadCsr(0x002);
     }
 
-    uint64_t reg1_value = id_ex_reg_.freg1_data;
-    uint64_t reg2_value = id_ex_reg_.freg2_data;
-    uint64_t reg3_value = id_ex_reg_.freg3_data;
+    const uint64_t frs2Value = fprOperand(id_ex_reg_.frs2, id_ex_reg_.freg2_data);
+    const uint64_t reg1Value = fpRs1Operand(isDouble);
+    // two casts: the inner one sign-extends the immediate
+    const uint64_t reg2Value =
+        id_ex_reg_.alu_src ? static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm))
+                           : frs2Value;
+    const uint64_t reg3Value = fprOperand(id_ex_reg_.frs3, id_ex_reg_.freg3_data);
 
-    if (funct7 == 0b1101001 || funct7 == 0b1111001 || opcode == 0b0000111 || opcode == 0b0100111)
+    // Store data for fsw/fsd (frs2), forwarded like any other operand.
+    ex_mem_reg_.freg2_data = frs2Value;
+
+    alu::AluOp aluOperation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
+    uint64_t aluResult = 0;
+    uint8_t fcsrStatus = 0;
+    if (isDouble)
     {
-        reg1_value = registers_.ReadGpr(id_ex_reg_.rs1);
+        std::tie(aluResult, fcsrStatus) =
+            alu::Alu::dfpexecute(aluOperation, reg1Value, reg2Value, reg3Value, rm);
+    }
+    else
+    {
+        std::tie(aluResult, fcsrStatus) =
+            alu::Alu::fpexecute(aluOperation, reg1Value, reg2Value, reg3Value, rm);
     }
 
-    if (id_ex_reg_.alu_src)
+    registers_.WriteCsr(0x003, fcsrStatus);
+    return aluResult;
+}
+
+uint64_t RV5StageVM_Base::applyUpperImmediate(uint64_t aluResult) const
+{
+    const uint8_t opcode = id_ex_reg_.instruction & 0b1111111;
+    if (opcode == 0b0110111) // lui
     {
-        reg2_value = static_cast<uint64_t>(static_cast<int64_t>(id_ex_reg_.imm));
+        return static_cast<uint64_t>(id_ex_reg_.imm << 12);
     }
+    if (opcode == 0b0010111) // auipc
+    {
+        return id_ex_reg_.pc + static_cast<uint64_t>(static_cast<int64_t>(static_cast<int32_t>(
+                                   static_cast<uint32_t>(id_ex_reg_.imm) << 12)));
+    }
+    return aluResult;
+}
 
-    alu::AluOp alu_operation = control_unit_.GetAluSignal(instruction, id_ex_reg_.alu_op > 0);
-    std::tie(alu_result, fcsr_status) =
-        alu::Alu::dfpexecute(alu_operation, reg1_value, reg2_value, reg3_value, rm);
+void RV5StageVM_Base::latchExMem(uint64_t aluResult, bool isFp)
+{
+    ex_mem_reg_.prev_reg_write = ex_mem_reg_.reg_write;
+    ex_mem_reg_.prev_rd = ex_mem_reg_.rd;
+    ex_mem_reg_.prev_freg_write = ex_mem_reg_.freg_write;
+    ex_mem_reg_.prev_frd = ex_mem_reg_.frd;
+    ex_mem_reg_.pc = id_ex_reg_.pc;
+    ex_mem_reg_.instruction = id_ex_reg_.instruction;
+    ex_mem_reg_.alu_result = aluResult;
+    ex_mem_reg_.f_alu_result = isFp ? aluResult : 0;
+    ex_mem_reg_.rd = id_ex_reg_.rd;
+    ex_mem_reg_.frd = id_ex_reg_.frd;
+    if (!m_forwarding)
+    {
+        // Without forwarding both store-data fields come straight from ID/EX. With forwarding
+        // the execute path latched its own (forwarded) one and leaves the other untouched.
+        ex_mem_reg_.reg2_data = id_ex_reg_.reg2_data;
+        ex_mem_reg_.freg2_data = id_ex_reg_.freg2_data;
+    }
+    ex_mem_reg_.reg_write = id_ex_reg_.reg_write;
+    ex_mem_reg_.freg_write = id_ex_reg_.freg_write;
+    ex_mem_reg_.mem_to_reg = id_ex_reg_.mem_to_reg;
+    ex_mem_reg_.prev_mem_read = ex_mem_reg_.mem_read;
+    ex_mem_reg_.prev_mem_write = ex_mem_reg_.mem_write;
+    ex_mem_reg_.mem_read = id_ex_reg_.mem_read;
+    ex_mem_reg_.mem_write = id_ex_reg_.mem_write;
+    ex_mem_reg_.prev_branch_taken = ex_mem_reg_.branch_taken;
+    ex_mem_reg_.branch_taken = false;
+    ex_mem_reg_.branch_target_pc = 0;
+}
 
-    registers_.WriteCsr(0x003, fcsr_status);
-    return alu_result;
+void RV5StageVM_Base::resolveBranchOrJump(uint64_t aluResult)
+{
+    const uint32_t instruction = id_ex_reg_.instruction;
+    const uint8_t opcode = instruction & 0b1111111;
+
+    // Conditional branch (B-type): the ALU computed SUB (BEQ/BNE) or SLT/SLTU (the rest).
+    if (id_ex_reg_.branch && opcode == 0b1100011)
+    {
+        bool conditionMet = false;
+        switch ((instruction >> 12) & 0x7)
+        {
+        case 0b000: // BEQ
+            conditionMet = (aluResult == 0);
+            break;
+        case 0b001: // BNE
+            conditionMet = (aluResult != 0);
+            break;
+        case 0b100: // BLT
+        case 0b110: // BLTU
+            conditionMet = (aluResult == 1);
+            break;
+        case 0b101: // BGE
+        case 0b111: // BGEU
+            conditionMet = (aluResult == 0);
+            break;
+        }
+
+        if (conditionMet)
+        {
+            // MEM redirects the PC and flushes.
+            ex_mem_reg_.branch_taken = true;
+            ex_mem_reg_.branch_target_pc = id_ex_reg_.pc + id_ex_reg_.imm;
+        }
+    }
+    // Unconditional jump (JAL/JALR): redirect now, killing the instruction in IF/ID.
+    else if (opcode == 0b1101111 || opcode == 0b1100111)
+    {
+        uint64_t jumpTarget = 0;
+        if (opcode == 0b1101111)
+        {
+            jumpTarget = id_ex_reg_.pc + id_ex_reg_.imm; // JAL
+        }
+        else
+        {
+            jumpTarget = aluResult & ~1;                // JALR (ALU result is rs1 + imm)
+            ex_mem_reg_.alu_result = id_ex_reg_.pc + 4; // link address
+        }
+
+        redirect_pc(jumpTarget);
+        if_id_reg_.reset();
+        ex_mem_reg_.branch_taken = true;
+    }
 }
 
 bool RV5StageVM_Base::is_pipeline_drained() const
@@ -847,43 +970,18 @@ bool RV5StageVM_Base::is_pipeline_drained() const
 
 void RV5StageVM_Base::Undo()
 {
-    if (undo_stack_.empty())
+    if (!m_undoBuffer.canUndo())
     {
         return;
     }
 
-    RV5StageStepDelta last = undo_stack_.top();
-    undo_stack_.pop();
+    const RV5StageStepDelta &last = m_undoBuffer.current();
 
     for (auto it = last.register_changes.rbegin(); it != last.register_changes.rend(); ++it)
     {
-        const auto &change = *it;
-        switch (change.reg_type)
-        {
-        case 0:
-            registers_.WriteGpr(change.reg_index, change.old_value);
-            break;
-        case 1:
-            registers_.WriteCsr(change.reg_index, change.old_value);
-            break;
-        case 2:
-            registers_.WriteFpr(change.reg_index, change.old_value);
-            break;
-        default:
-            break;
-        }
+        writeChangedRegister(*it, it->old_value);
     }
-
-    for (auto it = last.memory_changes.rbegin(); it != last.memory_changes.rend(); ++it)
-    {
-        const auto &change = *it;
-        for (size_t i = 0; i < change.old_bytes_vec.size(); ++i)
-        {
-            // Through the cache, like the store being undone: bypassing it would leave the
-            // new value in a dirty L1 line, where every later read still sees it.
-            memory_controller_.writeByte(change.address + i, change.old_bytes_vec[i]);
-        }
-    }
+    memory_controller_.undoStep(); // main memory and caches, without counting as accesses
 
     program_counter_ = last.old_pc;
     cycle_s_ = last.old_cycle;
@@ -896,7 +994,7 @@ void RV5StageVM_Base::Undo()
     ex_mem_reg_ = last.pipeline_register_change.old_ex_mem_reg;
     mem_wb_reg_ = last.pipeline_register_change.old_mem_wb_reg;
 
-    redo_stack_.push(last);
+    m_undoBuffer.undo();
 
     cpi_ = instructions_retired_
                ? static_cast<float>(cycle_s_) / static_cast<float>(instructions_retired_)
@@ -911,39 +1009,19 @@ void RV5StageVM_Base::Undo()
 
 void RV5StageVM_Base::Redo()
 {
-    if (redo_stack_.empty())
+    auto entry = m_undoBuffer.redo();
+    if (!entry)
     {
         return;
     }
 
-    RV5StageStepDelta next = redo_stack_.top();
-    redo_stack_.pop();
+    const RV5StageStepDelta &next = entry->get();
 
     for (const auto &change : next.register_changes)
     {
-        switch (change.reg_type)
-        {
-        case 0:
-            registers_.WriteGpr(change.reg_index, change.new_value);
-            break;
-        case 1:
-            registers_.WriteCsr(change.reg_index, change.new_value);
-            break;
-        case 2:
-            registers_.WriteFpr(change.reg_index, change.new_value);
-            break;
-        default:
-            break;
-        }
+        writeChangedRegister(change, change.new_value);
     }
-
-    for (const auto &change : next.memory_changes)
-    {
-        for (size_t i = 0; i < change.new_bytes_vec.size(); ++i)
-        {
-            memory_controller_.writeByte(change.address + i, change.new_bytes_vec[i]);
-        }
-    }
+    memory_controller_.redoStep(); // main memory and caches, without counting as accesses
 
     program_counter_ = next.new_pc;
     cycle_s_ = next.new_cycle;
@@ -955,8 +1033,6 @@ void RV5StageVM_Base::Redo()
     id_ex_reg_ = next.pipeline_register_change.new_id_ex_reg;
     ex_mem_reg_ = next.pipeline_register_change.new_ex_mem_reg;
     mem_wb_reg_ = next.pipeline_register_change.new_mem_wb_reg;
-
-    undo_stack_.push(next);
 
     cpi_ = instructions_retired_
                ? static_cast<float>(cycle_s_) / static_cast<float>(instructions_retired_)

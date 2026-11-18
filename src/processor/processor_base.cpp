@@ -49,6 +49,24 @@ void ProcessorBase::ClearStop()
     pause_requested_ = start_paused_.exchange(false);
 }
 
+void ProcessorBase::writeChangedRegister(const RegisterChange &change, uint64_t value)
+{
+    switch (change.reg_type)
+    {
+    case 0:
+        registers_.WriteGpr(change.reg_index, value);
+        break;
+    case 1:
+        registers_.WriteCsr(change.reg_index, value);
+        break;
+    case 2:
+        registers_.WriteFpr(change.reg_index, value);
+        break;
+    default:
+        break;
+    }
+}
+
 void ProcessorBase::LoadProgram(const AssembledProgram &program)
 {
     program_ = program;
@@ -59,7 +77,6 @@ void ProcessorBase::LoadProgram(const AssembledProgram &program)
         counter += 4;
     }
     program_size_ = counter;
-    AddBreakpoint(program_size_, false); // address
 
     unsigned int data_counter = 0;
     uint64_t base_data_address = vm_config::config.getDataSectionStart();

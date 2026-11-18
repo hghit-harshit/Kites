@@ -15,8 +15,6 @@
 #include <stack>
 #include <vector>
 
-
-// TODO: use a circular buffer instead of a stack for undo/redo
 namespace Kites
 {
 struct RVSingleStageStepDelta : public StepDelta
@@ -24,7 +22,6 @@ struct RVSingleStageStepDelta : public StepDelta
     // uint64_t old_pc;
     // uint64_t new_pc;
     // std::vector<RegisterChange> register_changes;
-    // std::vector<MemoryChange> memory_changes;
 };
 
 class RVSSProcessor : public ProcessorBase
@@ -47,8 +44,8 @@ class RVSSProcessor : public ProcessorBase
     uint64_t csr_write_val_{};
     uint8_t csr_uimm_{};
 
-    std::stack<StepDelta> undo_stack_;
-    std::stack<StepDelta> redo_stack_;
+    // Per-step deltas; the first entry is an empty sentinel (see UndoBuffer).
+    UndoBuffer<StepDelta> m_undoBuffer{UndoBuffer<StepDelta>::unbounded};
 
     RVSingleStageStepDelta current_delta_;
 

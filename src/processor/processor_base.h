@@ -53,13 +53,8 @@ struct RegisterChange
     uint64_t new_value;
 };
 
-struct MemoryChange
-{
-    uint64_t address;
-    std::vector<uint8_t> old_bytes_vec;
-    std::vector<uint8_t> new_bytes_vec;
-};
-
+// Memory and cache changes are not part of a step delta: MemoryController keeps its own
+// per-step history (see MemoryController::undoStep).
 struct StepDelta
 {
     uint64_t old_pc{};
@@ -73,7 +68,6 @@ struct StepDelta
     unsigned int old_branch_mispredictions{};
     unsigned int new_branch_mispredictions{};
     std::vector<RegisterChange> register_changes{};
-    std::vector<MemoryChange> memory_changes{};
 };
 
 /**
@@ -133,7 +127,6 @@ class ProcessorBase : public QObject
 
 
     std::unique_ptr<CircuitScene> circuit_scene_; // Circuit scene for visualization
-    UndoBuffer<StepDelta> m_undoBuffer{100};
     void LoadProgram(const AssembledProgram &program);
     uint64_t program_size_ = 0;
 
@@ -171,6 +164,9 @@ class ProcessorBase : public QObject
     virtual void Redo()     = 0;
     virtual void Reset()    = 0;
     void DumpState(const std::filesystem::path &filename);
+
+    /// @brief Writes @p value to the GPR, CSR or FPR that @p change refers to (undo/redo).
+    void writeChangedRegister(const RegisterChange &change, uint64_t value);
 
     void ModifyRegister(const std::string &reg_name, uint64_t value);
     void PushInput(const std::string &input)
