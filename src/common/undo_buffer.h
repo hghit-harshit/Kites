@@ -9,7 +9,7 @@ namespace Kites
 {
 /**
  * Circular undo/redo history holding at most `capacity` entries; pushing past that
- * overwrites the oldest.
+ * overwrites the oldest. A capacity of `unbounded` (0) keeps every entry instead.
  *
  * When entries are per-step *changes*, keep an empty entry first (push one after every
  * clear()), since canUndo() needs a step before the current one:
@@ -20,8 +20,10 @@ template <typename T>
 class UndoBuffer
 {
 public:
+    static constexpr size_t unbounded = 0;
+
     UndoBuffer(size_t capacity)
-    :m_oldest(0), m_size(0), m_current(0)
+    :m_oldest(0), m_size(0), m_current(0), m_unbounded(capacity == unbounded)
     {
         m_data.resize(capacity); // resize, not reserve: capacity() is m_data.size()
     }
@@ -29,9 +31,11 @@ public:
     void setCapacity(size_t capacity)
     {
         clear();
+        m_unbounded = capacity == unbounded;
         m_data.clear();
         m_data.resize(capacity);
     }
+    /// @brief Entries that fit before the oldest is overwritten (current storage if unbounded).
     [[nodiscard]] size_t capacity() const
     {
         return m_data.size();
@@ -39,6 +43,10 @@ public:
 
     void clear()
     {
+        if(m_unbounded)
+        {
+            m_data.clear(); // release the history, like clearing a stack would
+        }
         m_oldest = 0;
         m_size = 0;
         m_current = 0;
@@ -62,11 +70,11 @@ public:
 
     void push(const T& value)
     {
-        assert(capacity() > 0);
         if(m_current + 1 < m_size)
         {
             m_size = m_current + 1;
         }
+        growIfUnbounded();
 
         if(m_size < capacity())
         {
@@ -83,11 +91,11 @@ public:
 
     void push(T&& value)
     {
-        assert(capacity() > 0);
         if(m_current + 1 < m_size)
         {
             m_size = m_current + 1;
         }
+        growIfUnbounded();
 
         if(m_size < capacity())
         {
@@ -123,6 +131,16 @@ public:
 
 private:
 
+    void growIfUnbounded()
+    {
+        // Unbounded buffers never wrap (m_oldest stays 0): make room at the end instead.
+        if(m_unbounded && m_size == m_data.size())
+        {
+            m_data.emplace_back();
+        }
+        assert(capacity() > 0);
+    }
+
     size_t physicalIndex(size_t logicalIndex) const
     {
         return (m_oldest + logicalIndex) % m_data.size();
@@ -131,5 +149,6 @@ private:
     size_t m_oldest;
     size_t m_size;
     size_t m_current;
+    bool m_unbounded;
 };
 }
