@@ -11,7 +11,7 @@
 #include "repl.h"
 #include "utils/utils.h"
 
-#include <QCoreApplication>
+#include <QApplication>
 #include <QObject>
 #include <QString>
 
@@ -48,7 +48,17 @@ const std::unordered_map<std::string, Kites::ProcessorType> processorTypes = {
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication app(argc, argv);
+    // In a GUI build kites_core gives every processor a QGraphicsScene, and that crashes without
+    // a QApplication. Run one headless: prefer the offscreen plugin, fall back to the native one.
+    if (!qEnvironmentVariableIsSet("QT_QPA_PLATFORM"))
+    {
+#ifdef Q_OS_WIN
+        qputenv("QT_QPA_PLATFORM", "offscreen;windows");
+#else
+        qputenv("QT_QPA_PLATFORM", "offscreen;xcb;wayland");
+#endif
+    }
+    QApplication app(argc, argv);
 
     Kites::setupVmStateDirectory();
 
