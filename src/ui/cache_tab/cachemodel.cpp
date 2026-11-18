@@ -34,6 +34,8 @@ void CacheModel::attachCache(Cache *cache)
                 });
         connect(m_cache, &Cache::cacheMissSignal, this, &CacheModel::onCacheMiss);
         connect(m_cache, &Cache::cacheHitSignal, this, &CacheModel::onCacheHit);
+        connect(m_cache, &Cache::cacheHighlightRestoredSignal, this,
+                &CacheModel::onHighlightRestored);
     }
 
     endResetModel();
@@ -251,6 +253,19 @@ void CacheModel::onCacheHit(uint64_t address)
         return;
 
     m_last_hit_row = addressToHitRow(address);
+    beginResetModel();
+    endResetModel();
+}
+
+// Undo/redo: highlight the hit/miss of the step now shown (rows from the restored lines).
+void CacheModel::onHighlightRestored(bool hasHit, uint64_t hitAddress, bool hasMiss,
+                                     uint64_t missAddress)
+{
+    if (!m_cache)
+        return;
+
+    m_last_hit_row = hasHit ? addressToHitRow(hitAddress) : -1;
+    m_last_miss_row = hasMiss ? addressToRow(missAddress) : -1;
     beginResetModel();
     endResetModel();
 }

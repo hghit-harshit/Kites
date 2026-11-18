@@ -34,6 +34,14 @@ class MemoryController : public QObject
 
     void reset();
 
+    // Undo/redo of the whole hierarchy (main memory, L1, L2, instruction cache), one entry per
+    // processor step. Call beginStep()/commitStep() around every step. undoStep()/redoStep()
+    // restore the state directly: no cache accesses, no hit/miss signals; views are refreshed.
+    void beginStep();
+    void commitStep();
+    void undoStep();
+    void redoStep();
+
     void writeByte(uint64_t address, uint8_t value);
     void writeHalfWord(uint64_t address, uint16_t value);
 

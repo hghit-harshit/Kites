@@ -7,6 +7,7 @@
 #ifndef MAIN_MEMORY_H
 #define MAIN_MEMORY_H
 
+#include "common/undo_buffer.h"
 #include "config/config.h"
 #include "memory_block.h"
 #include "memory_device.h"
@@ -18,6 +19,18 @@
 
 namespace Kites
 {
+/// @brief The bytes of main memory one processor step changed.
+struct MainMemoryChange
+{
+    struct ByteChange
+    {
+        uint64_t address;
+        uint8_t oldValue;
+        uint8_t newValue;
+    };
+    std::vector<ByteChange> bytes;
+};
+
 /**
  * @brief Represents a memory management system with dynamic memory block allocation.
  */
@@ -87,6 +100,15 @@ private:
      */
     void writeLine(uint64_t address, std::span<const uint8_t> data) override;
 
+    /// @brief Saves the old value of @p address the first time a recorded step writes it.
+    void recordWrite(uint64_t address);
+    /// @brief Puts back the old (or new) bytes of @p change; returns the addresses written.
+    std::vector<uint64_t> restoreStep(const MainMemoryChange &change, bool toNew);
+
+    UndoBuffer<MainMemoryChange> m_undoBuffer{UndoBuffer<MainMemoryChange>::unbounded};
+    MainMemoryChange m_pendingChange; // the step being recorded
+    bool m_recording{false};
+
   public:
     /**
      * @brief Constructs a Memory object.
@@ -94,6 +116,7 @@ private:
     MainMemory()
     {
         block_size_ = vm_config::config.getMemoryBlockSize();
+        clearHistory();
     }
     /**
      * @brief Destroys the Memory object.
@@ -103,7 +126,17 @@ private:
     void reset()
     {
         blocks_.clear();
+        clearHistory();
     }
+
+    // Undo/redo history, one entry per processor step, mirroring Cache: between beginStep()
+    // and commitStep() the first write to each byte is recorded. undo/redoStep return the
+    // addresses they restored so views can be refreshed.
+    void beginStep();
+    void commitStep();
+    std::vector<uint64_t> undoStep();
+    std::vector<uint64_t> redoStep();
+    void clearHistory();
 
     /**
      * @brief Reads a single byte from the given memory address.

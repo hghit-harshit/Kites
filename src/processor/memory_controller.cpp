@@ -134,6 +134,44 @@ void MemoryController::getMemoryPoint(std::string address)
     return memory_.getMemoryPoint(address);
 }
 
+void MemoryController::beginStep()
+{
+    memory_.beginStep();
+    l1_cache_.beginStep();
+    l2_cache_.beginStep();
+    instruction_cache_.beginStep();
+}
+
+void MemoryController::commitStep()
+{
+    memory_.commitStep();
+    l1_cache_.commitStep();
+    l2_cache_.commitStep();
+    instruction_cache_.commitStep();
+}
+
+void MemoryController::undoStep()
+{
+    l1_cache_.undoStep();
+    l2_cache_.undoStep();
+    instruction_cache_.undoStep();
+    for (uint64_t address : memory_.undoStep())
+    {
+        emit memoryUpdated(address);
+    }
+}
+
+void MemoryController::redoStep()
+{
+    l1_cache_.redoStep();
+    l2_cache_.redoStep();
+    instruction_cache_.redoStep();
+    for (uint64_t address : memory_.redoStep())
+    {
+        emit memoryUpdated(address);
+    }
+}
+
 Cache *MemoryController::getL1Cache()
 {
     return &l1_cache_;

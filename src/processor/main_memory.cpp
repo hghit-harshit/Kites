@@ -42,10 +42,91 @@ void MainMemory::write(uint64_t address, uint8_t value)
         throw std::out_of_range(std::string("Memory address out of range: ") +
                                 std::to_string(address));
     }
+    recordWrite(address);
     uint64_t block_index = getBlockIndex(address);
     uint64_t offset = getBlockOffset(address);
     ensureBlockExists(block_index);
     blocks_[block_index].data[offset] = value;
+}
+
+// ── Undo/redo history ─────────────────────────────────────────────────────────
+
+void MainMemory::recordWrite(uint64_t address)
+{
+    if (!m_recording)
+    {
+        return;
+    }
+    auto &bytes = m_pendingChange.bytes;
+    bool alreadySaved = std::any_of(bytes.begin(), bytes.end(),
+                                    [&](const auto &saved) { return saved.address == address; });
+    if (!alreadySaved)
+    {
+        // newValue is filled in by commitStep()
+        uint8_t oldValue = read(address);
+        bytes.push_back({address, oldValue, oldValue});
+    }
+}
+
+void MainMemory::beginStep()
+{
+    m_pendingChange = MainMemoryChange{};
+    m_recording     = true;
+}
+
+void MainMemory::commitStep()
+{
+    if (!m_recording)
+    {
+        beginStep(); // still push an entry, so the history stays in step with the processor
+    }
+    for (auto &saved : m_pendingChange.bytes)
+    {
+        saved.newValue = read(saved.address);
+    }
+    m_undoBuffer.push(std::move(m_pendingChange));
+    m_pendingChange = MainMemoryChange{};
+    m_recording     = false;
+}
+
+std::vector<uint64_t> MainMemory::undoStep()
+{
+    if (!m_undoBuffer.canUndo())
+    {
+        return {};
+    }
+    std::vector<uint64_t> addresses = restoreStep(m_undoBuffer.current(), false);
+    m_undoBuffer.undo();
+    return addresses;
+}
+
+std::vector<uint64_t> MainMemory::redoStep()
+{
+    if (auto change = m_undoBuffer.redo())
+    {
+        return restoreStep(change->get(), true);
+    }
+    return {};
+}
+
+void MainMemory::clearHistory()
+{
+    m_undoBuffer.clear();
+    m_undoBuffer.push(MainMemoryChange{}); // empty first entry, see UndoBuffer
+    m_pendingChange = MainMemoryChange{};
+    m_recording     = false;
+}
+
+std::vector<uint64_t> MainMemory::restoreStep(const MainMemoryChange &change, bool toNew)
+{
+    std::vector<uint64_t> addresses;
+    addresses.reserve(change.bytes.size());
+    for (const auto &saved : change.bytes)
+    {
+        write(saved.address, toNew ? saved.newValue : saved.oldValue); // not recording here
+        addresses.push_back(saved.address);
+    }
+    return addresses;
 }
 
 uint64_t MainMemory::getBlockIndex(uint64_t address) const
@@ -100,6 +181,10 @@ void MainMemory::writeLine(uint64_t address, std::span<const uint8_t> data)
     {
         throw std::out_of_range(std::string("Memory address out of range: ") +
                                 std::to_string(address));
+    }
+    for (size_t i = 0; i < data.size(); ++i)
+    {
+        recordWrite(address + i);
     }
     uint64_t block_index = getBlockIndex(address);
     uint64_t offset = getBlockOffset(address);

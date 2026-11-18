@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <deque>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -58,6 +59,11 @@ struct CacheChange
     size_t newWriteBackCount{0};
     uint64_t oldTimestamp{0};
     uint64_t newTimestamp{0};
+    // Last hit/miss addresses, which the cache view highlights.
+    std::optional<uint64_t> oldLastHitAddress;
+    std::optional<uint64_t> newLastHitAddress;
+    std::optional<uint64_t> oldLastMissAddress;
+    std::optional<uint64_t> newLastMissAddress;
 };
 //default values for cache configuration
 //maybe we will move its location later on
@@ -158,6 +164,9 @@ private:
     // Every change to a line goes through this, so a recorded step saves the line first.
     CacheLine &lineForWrite(size_t setIndex, size_t wayIndex);
     void restoreStep(const CacheChange &change, bool toNew);
+    // Every hit/miss is reported through these, so the last ones can be restored by undo.
+    void notifyHit(uint64_t address);
+    void notifyMiss(uint64_t address);
     // These functions are used to read and write
     uint8_t getByteFromCache(uint64_t address);
     void putByteInCache(uint64_t address, uint8_t value);
@@ -193,16 +202,21 @@ private:
     size_t m_writeBackCount {0};
     // common setup function
     void setupCache(size_t cache_size, size_t lineSizeInBytes,size_t wayCount);
-    //TODO get this buffer size from config
-    UndoBuffer<CacheChange> m_undoBuffer{100};
+    // Unbounded like the processor's history, so the two stay in step however far you undo.
+    UndoBuffer<CacheChange> m_undoBuffer{UndoBuffer<CacheChange>::unbounded};
     CacheChange m_pendingChange;  // the step being recorded
     bool m_recording{false};
     uint64_t m_generation{0};
+    std::optional<uint64_t> m_lastHitAddress;
+    std::optional<uint64_t> m_lastMissAddress;
 signals:
     //TODO : Maybe we can combine hit and miss into one signal with a bool parameter
     void cacheMissSignal(uint64_t address);
     void cacheHitSignal(uint64_t address);
     void cacheLineUpdatedSignal(uint64_t address);
+    // Undo/redo restored the last hit/miss (has* is false when there was none yet).
+    void cacheHighlightRestoredSignal(bool hasHit, uint64_t hitAddress, bool hasMiss,
+                                      uint64_t missAddress);
     void cacheReconfiguredSignal(CacheConfig newConfig);
     void cacheStatsUpdatedSignal(CacheStats newStats);
     void customPolicyScriptLoadedSignal(bool success, const std::string &errorMessage = "");

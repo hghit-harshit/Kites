@@ -24,6 +24,7 @@ public slots:
     void updateCacheConfig(CacheConfig newConfig);
     void onCacheMiss(uint64_t address);
     void onCacheHit(uint64_t address);
+    void onHighlightRestored(bool hasHit, uint64_t hitAddress, bool hasMiss, uint64_t missAddress);
 
 private:
     size_t rowToSetIndex(int row) const;

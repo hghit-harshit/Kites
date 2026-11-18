@@ -50,6 +50,8 @@ void Cache::setupCache(size_t setCount, size_t lineSize, size_t wayCount)
 
     m_sets.clear();
     m_timestampCounter = 0;
+    m_lastHitAddress.reset();
+    m_lastMissAddress.reset();
     m_sets.reserve(m_setCount);
     for (size_t i = 0; i < m_setCount; ++i)
     {
@@ -120,8 +122,8 @@ std::span<const uint8_t> Cache::readLine(uint64_t address, size_t lineSize)
                                        //with the address of the start of the line
                                        // and if size of this cache is larger than calling cache
                                        // address will not align
-    if(hit)emit cacheHitSignal(address);
-    else emit cacheMissSignal(address);
+    if(hit)notifyHit(address);
+    else notifyMiss(address);
     updateStats();
     return std::span<const uint8_t>(m_sets[setIndex][wayIndex].data.data() + offset, lineSize);
 }
@@ -141,7 +143,7 @@ void Cache::writeLine(uint64_t address, std::span<const uint8_t> data)
         if(m_allocationPolicy == AllocationPolicy::NoWriteAllocate)
         {
             m_nextLevelMemoryRef.writeLine(address, data);
-            emit cacheMissSignal(address);
+            notifyMiss(address);
             updateStats();
             return;
         }
@@ -168,8 +170,8 @@ void Cache::writeLine(uint64_t address, std::span<const uint8_t> data)
     {
         line.dirty = true;
     }
-    if(hit)emit cacheHitSignal(address);
-    else emit cacheMissSignal(address);
+    if(hit)notifyHit(address);
+    else notifyMiss(address);
     updateStats();
     
 }
@@ -326,14 +328,28 @@ CacheLine &Cache::lineForWrite(size_t setIndex, size_t wayIndex)
     return line;
 }
 
+void Cache::notifyHit(uint64_t address)
+{
+    m_lastHitAddress = address;
+    emit cacheHitSignal(address);
+}
+
+void Cache::notifyMiss(uint64_t address)
+{
+    m_lastMissAddress = address;
+    emit cacheMissSignal(address);
+}
+
 void Cache::beginStep()
 {
-    m_pendingChange                   = CacheChange{};
-    m_pendingChange.oldHitCount       = m_hitCount;
-    m_pendingChange.oldMissCount      = m_missCount;
-    m_pendingChange.oldWriteBackCount = m_writeBackCount;
-    m_pendingChange.oldTimestamp      = m_timestampCounter;
-    m_recording                       = true;
+    m_pendingChange                    = CacheChange{};
+    m_pendingChange.oldHitCount        = m_hitCount;
+    m_pendingChange.oldMissCount       = m_missCount;
+    m_pendingChange.oldWriteBackCount  = m_writeBackCount;
+    m_pendingChange.oldTimestamp       = m_timestampCounter;
+    m_pendingChange.oldLastHitAddress  = m_lastHitAddress;
+    m_pendingChange.oldLastMissAddress = m_lastMissAddress;
+    m_recording                        = true;
 }
 
 void Cache::commitStep()
@@ -350,6 +366,8 @@ void Cache::commitStep()
     m_pendingChange.newMissCount      = m_missCount;
     m_pendingChange.newWriteBackCount = m_writeBackCount;
     m_pendingChange.newTimestamp      = m_timestampCounter;
+    m_pendingChange.newLastHitAddress  = m_lastHitAddress;
+    m_pendingChange.newLastMissAddress = m_lastMissAddress;
     m_undoBuffer.push(std::move(m_pendingChange));
     m_pendingChange = CacheChange{};
     m_recording     = false;
@@ -391,9 +409,14 @@ void Cache::restoreStep(const CacheChange &change, bool toNew)
     m_missCount        = toNew ? change.newMissCount : change.oldMissCount;
     m_writeBackCount   = toNew ? change.newWriteBackCount : change.oldWriteBackCount;
     m_timestampCounter = toNew ? change.newTimestamp : change.oldTimestamp;
+    m_lastHitAddress   = toNew ? change.newLastHitAddress : change.oldLastHitAddress;
+    m_lastMissAddress  = toNew ? change.newLastMissAddress : change.oldLastMissAddress;
 
     // Repaint only: a restore is not an access, so no hit/miss signals.
     emit cacheLineUpdatedSignal(0);
+    emit cacheHighlightRestoredSignal(m_lastHitAddress.has_value(), m_lastHitAddress.value_or(0),
+                                      m_lastMissAddress.has_value(),
+                                      m_lastMissAddress.value_or(0));
     updateStats();
 }
 
@@ -516,11 +539,11 @@ T Cache::readGeneric(uint64_t address)
 
     if(hit)
     {
-        emit cacheHitSignal(address);
+        notifyHit(address);
     }
     else
     {
-        emit cacheMissSignal(address);
+        notifyMiss(address);
     }
     emit cacheLineUpdatedSignal(address);
     updateStats();
@@ -567,7 +590,7 @@ void Cache::writeGeneric(uint64_t address, T value)
             {
                 emit cacheLineUpdatedSignal(address);
             }
-            emit cacheMissSignal(address);
+            notifyMiss(address);
             updateStats();
             return;
         }
@@ -608,11 +631,11 @@ void Cache::writeGeneric(uint64_t address, T value)
 
     if(hit)
     {
-        emit cacheHitSignal(address);
+        notifyHit(address);
     }
     else
     {
-        emit cacheMissSignal(address);
+        notifyMiss(address);
     }
     emit cacheLineUpdatedSignal(address);
     updateStats();
@@ -678,6 +701,8 @@ void Cache::reset()
     m_hitCount = 0;
     m_missCount = 0;
     m_writeBackCount = 0;
+    m_lastHitAddress.reset();
+    m_lastMissAddress.reset();
     clearHistory();
     updateStats();
 }
